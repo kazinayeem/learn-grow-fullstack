@@ -25,4 +25,12 @@ router.get("/instructors", requireAuth, requireRoles("admin"), controller.getAll
 router.patch("/instructors/:instructorId/approve", requireAuth, requireRoles("admin"), controller.approveInstructor);
 router.patch("/instructors/:instructorId/reject", requireAuth, requireRoles("admin"), controller.rejectInstructor);
 
+// Admin routes for user management with pagination/CRUD
+router.get("/admin", requireAuth, requireRoles("admin"), controller.listUsers);
+router.post("/admin", requireAuth, requireRoles("admin"), controller.createUserAdmin);
+router.get("/admin/:id", requireAuth, requireRoles("admin"), controller.getUserByIdAdmin);
+router.put("/admin/:id", requireAuth, requireRoles("admin"), controller.updateUserAdmin);
+router.patch("/admin/:id/role", requireAuth, requireRoles("admin"), controller.updateUserRoleAdmin);
+router.delete("/admin/:id", requireAuth, requireRoles("admin"), controller.deleteUserAdmin);
+
 export default router;

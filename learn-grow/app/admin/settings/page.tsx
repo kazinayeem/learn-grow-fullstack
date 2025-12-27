@@ -3,8 +3,11 @@
 import { Card, CardBody, Button, Input, Spinner } from "@nextui-org/react";
 import { useGetCommissionQuery, useUpdateCommissionMutation } from "@/redux/api/settingsApi";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { FaArrowLeft } from "react-icons/fa";
 
 export default function AdminSettingsPage() {
+  const router = useRouter();
   const { data, isLoading, refetch } = useGetCommissionQuery();
   const [updateCommission, { isLoading: saving }] = useUpdateCommissionMutation();
   const [commission, setCommission] = useState<number>(20);
@@ -23,6 +26,19 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
+      {/* Back Button */}
+      <div className="mb-6">
+        <Button
+          isIconOnly
+          variant="light"
+          size="lg"
+          onPress={() => router.push("/admin")}
+          startContent={<FaArrowLeft />}
+        >
+          Back to Dashboard
+        </Button>
+      </div>
+
       <h1 className="text-3xl font-bold mb-6">Platform Settings</h1>
       <Card>
         <CardBody className="space-y-4">

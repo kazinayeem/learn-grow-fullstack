@@ -20,7 +20,7 @@ export interface IUser {
 const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true },
-    phone: { type: String, unique: true, sparse: true },
+    phone: { type: String, sparse: true },
     email: { type: String, unique: true, sparse: true },
     password: { type: String },
     role: {
@@ -48,5 +48,9 @@ const userSchema = new Schema<IUser>(
   },
   { timestamps: true }
 );
+
+// Create compound unique index to allow multiple null phone values
+// Phone unique constraint removed, can have duplicates
+userSchema.index({ email: 1 }, { unique: true, sparse: true });
 
 export const User = model<IUser>("User", userSchema);

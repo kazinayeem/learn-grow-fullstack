@@ -20,32 +20,39 @@ export const userApi = createApi({
     }),
     tagTypes: ["Users"],
     endpoints: (builder) => ({
-        // Get all users (Admin only)
-        getAllUsers: builder.query({
-            query: () => "/",
+        // Admin: List users with pagination, search, role filter
+        getUsersAdmin: builder.query({
+            query: ({ page = 1, limit = 10, search = "", role = "" } = {}) => {
+                const params = new URLSearchParams();
+                params.set("page", String(page));
+                params.set("limit", String(limit));
+                if (search) params.set("search", search);
+                if (role) params.set("role", role);
+                return `/admin?${params.toString()}`;
+            },
             providesTags: ["Users"],
         }),
 
-        // Get user by ID
+        // Get user by ID (Admin)
         getUserById: builder.query({
-            query: (id) => `/${id}`,
+            query: (id) => `/admin/${id}`,
             providesTags: ["Users"],
         }),
 
         // Create new user (Admin only)
         createUser: builder.mutation({
             query: (userData) => ({
-                url: "/",
+                url: "/admin",
                 method: "POST",
                 body: userData,
             }),
             invalidatesTags: ["Users"],
         }),
 
-        // Update user
+        // Update user (Admin)
         updateUser: builder.mutation({
             query: ({ id, ...userData }) => ({
-                url: `/${id}`,
+                url: `/admin/${id}`,
                 method: "PUT",
                 body: userData,
             }),
@@ -55,7 +62,7 @@ export const userApi = createApi({
         // Delete user (Admin only)
         deleteUser: builder.mutation({
             query: (id) => ({
-                url: `/${id}`,
+                url: `/admin/${id}`,
                 method: "DELETE",
             }),
             invalidatesTags: ["Users"],
@@ -64,14 +71,14 @@ export const userApi = createApi({
         // Update user role (Admin only)
         updateUserRole: builder.mutation({
             query: ({ id, role }) => ({
-                url: `/${id}/role`,
+                url: `/admin/${id}/role`,
                 method: "PATCH",
                 body: { role },
             }),
             invalidatesTags: ["Users"],
         }),
 
-        // Get all instructors
+        // Get all instructors (for admin)
         getAllInstructors: builder.query({
             query: () => "/instructors",
             providesTags: ["Users"],
@@ -98,7 +105,7 @@ export const userApi = createApi({
 });
 
 export const {
-    useGetAllUsersQuery,
+    useGetUsersAdminQuery,
     useGetUserByIdQuery,
     useCreateUserMutation,
     useUpdateUserMutation,
