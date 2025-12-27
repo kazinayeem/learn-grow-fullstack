@@ -1,0 +1,24 @@
+// write gitignore file contents here
+node_modules
+dist
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.DS_Store
+.vscode
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.idea
+coverage
+logs
+*.log
+debug
+*.tsbuildinfo
+.cache
+.tmp
+*.local
+*.swp
+*.swo

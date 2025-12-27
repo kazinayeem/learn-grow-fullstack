@@ -1,0 +1,100 @@
+import { Quiz } from "@/redux/slices/quizAssignmentSlice";
+
+export const sampleQuizzes: Quiz[] = [
+    {
+        id: "QUIZ-JS-BASICS",
+        type: "quiz",
+        courseId: "SAMPLE", // Replace with actual course ID
+        title: "JavaScript Fundamentals Quiz",
+        description: "Test your knowledge of JavaScript basics including variables, functions, and data types",
+        passingScore: 70,
+        timeLimit: 15,
+        createdAt: new Date().toISOString(),
+        questions: [
+            {
+                id: "Q1",
+                type: "multiple-choice",
+                question: "What keyword is used to declare a constant variable in JavaScript?",
+                options: ["var", "let", "const", "static"],
+                correctAnswer: "const",
+                points: 10,
+            },
+            {
+                id: "Q2",
+                type: "true-false",
+                question: "JavaScript is a compiled language",
+                correctAnswer: "false",
+                points: 5,
+            },
+            {
+                id: "Q3",
+                type: "multiple-choice",
+                question: "Which of the following is NOT a JavaScript data type?",
+                options: ["String", "Number", "Boolean", "Character"],
+                correctAnswer: "Character",
+                points: 10,
+            },
+            {
+                id: "Q4",
+                type: "short-answer",
+                question: "What does DOM stand for?",
+                correctAnswer: "Document Object Model",
+                points: 10,
+            },
+            {
+                id: "Q5",
+                type: "true-false",
+                question: "In JavaScript, 'null' and 'undefined' are the same",
+                correctAnswer: "false",
+                points: 5,
+            },
+        ],
+    },
+    {
+        id: "QUIZ-REACT-BASICS",
+        type: "quiz",
+        courseId: "SAMPLE",
+        title: "React Fundamentals Quiz",
+        description: "Test your understanding of React components, hooks, and state management",
+        passingScore: 75,
+        timeLimit: 20,
+        createdAt: new Date().toISOString(),
+        questions: [
+            {
+                id: "Q1",
+                type: "multiple-choice",
+                question: "What hook is used to manage state in functional components?",
+                options: ["useEffect", "useState", "useContext", "useReducer"],
+                correctAnswer: "useState",
+                points: 10,
+            },
+            {
+                id: "Q2",
+                type: "true-false",
+                question: "React components must return only one root element",
+                correctAnswer: "true",
+                points: 5,
+            },
+            {
+                id: "Q3",
+                type: "short-answer",
+                question: "What does JSX stand for?",
+                correctAnswer: "JavaScript XML",
+                points: 10,
+            },
+            {
+                id: "Q4",
+                type: "multiple-choice",
+                question: "Which method is called when a component is removed from the DOM?",
+                options: [
+                    "componentDidMount",
+                    "componentWillUnmount",
+                    "componentDidUpdate",
+                    "render",
+                ],
+                correctAnswer: "componentWillUnmount",
+                points: 15,
+            },
+        ],
+    },
+];

@@ -1,0 +1,35 @@
+{
+  "name": "learn-grow-fullstack",
+  "version": "1.0.0",
+  "description": "Learn & Grow - Complete Learning Platform (Backend + Frontend)",
+  "private": true,
+  "scripts": {
+    "install-all": "npm install && cd grow-backend && npm install && cd ../learn-grow && npm install && cd ..",
+    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "backend:dev": "cd grow-backend && npm run dev",
+    "backend:build": "cd grow-backend && npm run build",
+    "backend:start": "cd grow-backend && npm start",
+    "frontend:dev": "cd learn-grow && npm run dev",
+    "frontend:build": "cd learn-grow && npm run build",
+    "frontend:start": "cd learn-grow && npm run start",
+    "build": "npm run backend:build && npm run frontend:build",
+    "start": "concurrently \"npm run backend:start\" \"npm run frontend:start\""
+  },
+  "keywords": [
+    "learning",
+    "education",
+    "platform",
+    "courses",
+    "student",
+    "instructor"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
