@@ -1,7 +1,7 @@
 // write gitignore file contents here
 node_modules
 dist
-.env
+
 .env.local
 .env.development
 .env.test
