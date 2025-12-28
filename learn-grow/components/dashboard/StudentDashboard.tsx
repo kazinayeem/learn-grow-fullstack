@@ -298,18 +298,9 @@ export default function StudentDashboard() {
                                                                 </span>
                                                             </div>
                                                         </div>
-                                                        <Button
-                                                            color="primary"
-                                                            size="sm"
-                                                            variant="flat"
-                                                            isIconOnly
-                                                            onPress={(e) => {
-                                                                e.stopPropagation();
-                                                                router.push(`/courses/${course._id}/learn`);
-                                                            }}
-                                                        >
+                                                        <div className="text-primary text-xl">
                                                             <FaRocket />
-                                                        </Button>
+                                                        </div>
                                                     </div>
                                                 </CardBody>
                                             </Card>
