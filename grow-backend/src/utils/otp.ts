@@ -228,6 +228,59 @@ export const sendWelcomeEmail = async (
   }
 };
 
+/** Send guardian credentials to the student's email */
+export const sendGuardianCredentialsEmail = async (
+  studentEmail: string,
+  studentName: string,
+  guardianEmail: string,
+  guardianPassword: string
+): Promise<boolean> => {
+  try {
+    const transporter = nodemailer.createTransport({
+      host: ENV.EMAIL_HOST,
+      port: ENV.EMAIL_PORT,
+      secure: ENV.EMAIL_PORT === 465,
+      auth: {
+        user: ENV.EMAIL_USER,
+        pass: ENV.EMAIL_PASSWORD,
+      },
+    });
+
+    const mailOptions = {
+      from: ENV.EMAIL_USER,
+      to: studentEmail,
+      subject: "Guardian Account Created – Credentials Inside",
+      html: `
+        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
+          <div style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); padding: 24px; color: white; text-align: center; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0;">Guardian Account Created</h2>
+            <p style="margin: 8px 0 0;">Share these credentials with your guardian</p>
+          </div>
+          <div style="padding: 24px; background: #f9fafb; border-radius: 0 0 8px 8px;">
+            <p style="font-size: 15px; color: #111827;">Hi ${studentName || "there"},</p>
+            <p style="font-size: 14px; color: #374151; line-height: 1.6;">We created a guardian account linked to your profile. Please share the credentials below with your parent/guardian.</p>
+            <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; margin: 16px 0;">
+              <p style="margin: 0 0 8px; font-weight: 600; color: #111827;">Guardian Login</p>
+              <ul style="list-style: none; padding: 0; margin: 0; color: #374151; font-size: 14px;">
+                <li><strong>Email:</strong> ${guardianEmail}</li>
+                <li><strong>Password:</strong> ${guardianPassword}</li>
+              </ul>
+            </div>
+            <p style="font-size: 14px; color: #374151;">For security, ask your guardian to change the password after first login.</p>
+            <a href="${ENV.FRONTEND_URL || "http://localhost:3000"}/login" style="display: inline-block; margin-top: 12px; padding: 10px 16px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px;">Open Login</a>
+          </div>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error("Failed to send guardian credentials email:", error);
+    return false;
+  }
+};
+
 /**
  * Send Instructor Approval Email
  */

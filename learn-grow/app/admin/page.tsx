@@ -15,6 +15,10 @@ import {
     FaShieldAlt,
     FaBriefcase,
     FaFileAlt,
+    FaCalendarAlt,
+    FaUserTie,
+    FaClipboardList,
+    FaCreditCard,
 } from "react-icons/fa";
 
 function AdminDashboardContent() {
@@ -106,6 +110,34 @@ function AdminDashboardContent() {
             icon: <FaFileAlt className="text-3xl" />,
             color: "from-cyan-500 to-cyan-600",
             href: "/blog/create",
+        },
+        {
+            title: "Manage Events",
+            description: "Create and manage events",
+            icon: <FaCalendarAlt className="text-3xl" />,
+            color: "from-red-500 to-red-600",
+            href: "/admin/events",
+        },
+        {
+            title: "Manage Guests",
+            description: "Add and manage event guests",
+            icon: <FaUserTie className="text-3xl" />,
+            color: "from-violet-500 to-violet-600",
+            href: "/admin/guests",
+        },
+        {
+            title: "Event Registrations",
+            description: "View all event registrations",
+            icon: <FaClipboardList className="text-3xl" />,
+            color: "from-emerald-500 to-emerald-600",
+            href: "/admin/registrations",
+        },
+        {
+            title: "Payment Methods",
+            description: "Manage payment options",
+            icon: <FaCreditCard className="text-3xl" />,
+            color: "from-blue-500 to-blue-600",
+            href: "/admin/payment-methods",
         },
     ];
 

@@ -12,13 +12,31 @@ import {
 } from "@nextui-org/react";
 import { useRouter, useParams } from "next/navigation";
 import DOMPurify from "isomorphic-dompurify";
-import { useGetBlogByIdQuery } from "@/redux/api/blogApi";
+import { useGetBlogBySlugQuery } from "@/redux/api/blogApi";
 import { FaArrowLeft, FaEdit, FaTrash } from "react-icons/fa";
+
+// Helper function to decode HTML entities
+const decodeHtmlEntities = (html: string): string => {
+  if (typeof document === "undefined") {
+    // Server-side fallback
+    return html
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&amp;/g, "&")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&#39;/g, "'");
+  }
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = html;
+  return textarea.value;
+};
 
 export default function BlogDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const blogId = params.id as string;
+  const blogSlug = params.slug as string;
   const [userId, setUserId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
 
@@ -35,8 +53,8 @@ export default function BlogDetailPage() {
     }
   }, []);
 
-  const { data: blogResponse, isLoading } = useGetBlogByIdQuery(blogId, {
-    skip: !blogId,
+  const { data: blogResponse, isLoading } = useGetBlogBySlugQuery(blogSlug, {
+    skip: !blogSlug,
   });
 
   const blog = blogResponse?.data;
@@ -109,8 +127,8 @@ export default function BlogDetailPage() {
                   </Chip>
                 )}
                 {blog.metaTags && blog.metaTags.length > 0 && (
-                  blog.metaTags.map((tag: string) => (
-                    <Chip key={tag} size="sm" variant="bordered">
+                  blog.metaTags.map((tag: string, index: number) => (
+                    <Chip key={`${tag}-${index}`} size="sm" variant="bordered">
                       #{tag}
                     </Chip>
                   ))
@@ -175,7 +193,7 @@ export default function BlogDetailPage() {
               <div
                 className="prose prose-lg max-w-none"
                 dangerouslySetInnerHTML={{
-                  __html: DOMPurify.sanitize(blog.content),
+                  __html: DOMPurify.sanitize(decodeHtmlEntities(blog.content)),
                 }}
               />
             </CardBody>
@@ -197,7 +215,7 @@ export default function BlogDetailPage() {
                     <Button
                       variant="bordered"
                       startContent={<FaEdit />}
-                      onPress={() => router.push(`/blog/${blogId}/edit`)}
+                      onPress={() => router.push(`/blog/${blogSlug}/edit`)}
                     >
                       Edit
                     </Button>

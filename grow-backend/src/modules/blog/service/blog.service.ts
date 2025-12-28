@@ -20,7 +20,8 @@ const calculateReadTime = (content: string): number => {
 // ===== BLOG SERVICES =====
 
 export const createBlog = async (data: Partial<IBlog>) => {
-  const slug = generateSlug(data.title || "");
+  // Use provided slug or generate from title
+  const slug = data.slug && data.slug.trim() ? data.slug.trim() : generateSlug(data.title || "");
   const readTime = calculateReadTime(data.content || "");
 
   return Blog.create({
@@ -108,9 +109,12 @@ export const getApprovalPendingBlogs = async () => {
 };
 
 export const updateBlog = async (id: string, data: Partial<IBlog>) => {
-  // Recalculate slug if title changed
-  if (data.title) {
+  // Recalculate slug if title changed, but allow custom slug
+  if (data.title && !data.slug) {
     data.slug = generateSlug(data.title);
+  } else if (data.slug) {
+    // Validate and normalize provided slug
+    data.slug = data.slug.trim().toLowerCase().replace(/\s+/g, "-");
   }
 
   // Recalculate read time if content changed

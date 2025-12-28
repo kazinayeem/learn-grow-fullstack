@@ -78,13 +78,9 @@ export const getAllBlogs = async (req: Request, res: Response) => {
   try {
     const filters: any = { ...req.query };
 
-    // Instructors and admins see their own unpublished blogs
-    if (req.userRole === "instructor" || req.userRole === "admin") {
-      // Can filter to see own blogs or all (for admin)
-      if (!filters.authorId && req.userRole === "instructor") {
-        filters.authorId = req.userId;
-      }
-    }
+    // Public blogs (published and approved) - shown to all users
+    // Remove the automatic author filter - let the service handle public vs personal blogs
+    // Users can filter by their own blogs if needed via query parameter
 
     const result = await service.getAllBlogs(filters);
 

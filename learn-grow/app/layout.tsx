@@ -2,7 +2,7 @@ import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
 import clsx from "clsx";
 import React from "react";
-
+import  { Toaster } from "react-hot-toast";
 import { Providers } from "./providers";
 import { siteConfig } from "@/config/site";
 import {
@@ -57,6 +57,7 @@ export default function RootLayout({
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
           <LayoutWrapper>{children}</LayoutWrapper>
+          <Toaster position="top-center" reverseOrder={false} />
         </Providers>
       </body>
     </html>

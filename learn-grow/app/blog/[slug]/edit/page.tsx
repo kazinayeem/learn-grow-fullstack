@@ -20,7 +20,7 @@ import {
 } from "@nextui-org/react";
 import dynamic from "next/dynamic";
 import { 
-  useGetBlogByIdQuery, 
+  useGetBlogBySlugQuery, 
   useUpdateBlogMutation, 
   useGetAllBlogsQuery,
   useCreateBlogCategoryMutation,
@@ -46,7 +46,7 @@ const modules = {
 export default function EditBlogPage() {
   const router = useRouter();
   const params = useParams();
-  const blogId = params?.id as string;
+  const blogSlug = params?.slug as string;
 
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -57,6 +57,7 @@ export default function EditBlogPage() {
   const [newCategoryDesc, setNewCategoryDesc] = useState("");
   const [formData, setFormData] = useState({
     title: "",
+    slug: "",
     excerpt: "",
     content: "",
     image: "",
@@ -65,6 +66,17 @@ export default function EditBlogPage() {
     isPublished: true,
   });
   const [categories, setCategories] = useState<any[]>([]);
+
+  // Function to generate slug from title
+  const generateSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .substring(0, 100);
+  };
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
@@ -84,9 +96,9 @@ export default function EditBlogPage() {
     router.replace("/login");
   }, [router]);
 
-  const { data: blogResponse, isLoading: isBlogLoading } = useGetBlogByIdQuery(
-    blogId,
-    { skip: !blogId || !isAuthorized }
+  const { data: blogResponse, isLoading: isBlogLoading } = useGetBlogBySlugQuery(
+    blogSlug,
+    { skip: !blogSlug || !isAuthorized }
   );
 
   const { data: categoriesResponse, refetch: refetchCategories } = useGetAllBlogCategoriesQuery(undefined, {
@@ -112,6 +124,7 @@ export default function EditBlogPage() {
 
       setFormData({
         title: blog.title || "",
+        slug: blog.slug || "",
         excerpt: blog.excerpt || "",
         content: blog.content || "",
         image: blog.image || "",
@@ -133,10 +146,12 @@ export default function EditBlogPage() {
   }, [categoriesResponse]);
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    const newData = { ...formData, [field]: value };
+    // Auto-generate slug from title when title changes
+    if (field === "title") {
+      newData.slug = generateSlug(value);
+    }
+    setFormData(newData);
   };
 
   const handleCreateCategory = async () => {
@@ -167,6 +182,10 @@ export default function EditBlogPage() {
         toast.error("Title is required");
         return;
       }
+      if (!formData.slug.trim()) {
+        toast.error("Slug is required");
+        return;
+      }
       if (!formData.content.trim()) {
         toast.error("Content is required");
         return;
@@ -177,8 +196,9 @@ export default function EditBlogPage() {
       }
 
       await updateBlog({
-        id: blogId,
+        id: blogSlug,
         title: formData.title,
+        slug: formData.slug,
         excerpt: formData.excerpt,
         content: formData.content,
         image: formData.image,
@@ -237,6 +257,20 @@ export default function EditBlogPage() {
                   }
                   size="lg"
                   className="w-full"
+                />
+              </div>
+
+              {/* Slug */}
+              <div>
+                <Input
+                  label="Blog Slug (URL)"
+                  placeholder="auto-generated-from-title"
+                  value={formData.slug}
+                  onValueChange={(value) =>
+                    handleInputChange("slug", value)
+                  }
+                  description="Unique URL-friendly identifier. Auto-generated from title but can be manually edited."
+                  helperText="Use only lowercase letters, numbers, and hyphens"
                 />
               </div>
 

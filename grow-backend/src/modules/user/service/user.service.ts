@@ -1,5 +1,8 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { User } from "../model/user.model";
+import { StudentProfile } from "../model/studentProfile.model";
+import { GuardianProfile } from "../model/guardianProfile.model";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -14,6 +17,7 @@ import {
   isOTPExpired,
   sendWelcomeEmail,
   sendInstructorApprovalEmail,
+  sendGuardianCredentialsEmail,
 } from "@/utils/otp";
 
 interface RegisterInput {
@@ -49,6 +53,17 @@ export const sendOtp = async (
   phone?: string
 ): Promise<{ success: boolean; message: string; otp?: string }> => {
   try {
+    // If email is provided and already verified, stop early
+    if (email) {
+      const existingEmailUser = await User.findOne({ email }).lean();
+      if (existingEmailUser && existingEmailUser.isVerified) {
+        return {
+          success: false,
+          message: "An account with this email already exists. Please login instead.",
+        };
+      }
+    }
+
     const otp = generateOTP();
     const otpExpiresAt = getOTPExpirationTime();
 
@@ -173,16 +188,9 @@ export const verifyOtp = async (
  */
 export const register = async (input: RegisterInput): Promise<AuthResponse> => {
   try {
-    const { name, email, phone, password, role } = input;
-
-    // Validate role
-    const validRoles = ["student", "instructor", "guardian"];
-    if (!validRoles.includes(role)) {
-      return {
-        success: false,
-        message: "Invalid role. Must be student, instructor, or guardian",
-      };
-    }
+    // Force student-only registration
+    const { name, email, phone, password } = input;
+    const role: "student" = "student";
 
     // Require at least one contact method
     if (!email && !phone) {
@@ -260,6 +268,51 @@ export const register = async (input: RegisterInput): Promise<AuthResponse> => {
       );
     }
 
+    // Auto-create guardian account for students (1:1 relationship)
+    if (role === "student") {
+      try {
+        const guardianPasswordPlain = crypto.randomBytes(9).toString("base64").replace(/[^a-zA-Z0-9]/g, "").slice(0, 12);
+        const guardianPassword = await bcrypt.hash(guardianPasswordPlain, 10);
+
+        const suffix = user._id.toString().slice(-6);
+        const guardianEmail = email
+          ? email.replace("@", `+guardian_${suffix}@`)
+          : `guardian-${suffix}@learnandgrow.local`;
+
+        // Create guardian account (without phone to avoid duplication)
+        const guardian = await User.create({
+          name: `${name}'s Guardian`,
+          email: guardianEmail,
+          password: guardianPassword,
+          role: "guardian",
+          isVerified: true,
+        });
+
+        // Create StudentProfile with guardianId link
+        await StudentProfile.findOneAndUpdate(
+          { userId: user._id },
+          { $setOnInsert: { userId: user._id }, $set: { guardianId: guardian._id } },
+          { upsert: true }
+        );
+
+        // Create GuardianProfile with studentId link
+        await GuardianProfile.findOneAndUpdate(
+          { userId: guardian._id },
+          { $setOnInsert: { userId: guardian._id }, $set: { studentId: user._id } },
+          { upsert: true }
+        );
+
+        // Send guardian credentials email
+        if (email) {
+          sendGuardianCredentialsEmail(email, name, guardianEmail, guardianPasswordPlain).catch(err =>
+            console.error("Failed to send guardian credentials email:", err)
+          );
+        }
+      } catch (err) {
+        console.error("Guardian auto-create failed:", err);
+      }
+    }
+
     return {
       success: true,
       message: `Registration successful as ${role}`,
@@ -326,6 +379,15 @@ export const login = async (input: LoginInput): Promise<AuthResponse> => {
       return {
         success: false,
         message: "Invalid email/phone or password",
+      };
+    }
+
+    // Allow students, guardians, instructors, admins, and super admins to login
+    const allowedRoles = ["student", "guardian", "instructor", "admin", "super_admin"];
+    if (!allowedRoles.includes(user.role)) {
+      return {
+        success: false,
+        message: `User role '${user.role}' is not authorized to login.`,
       };
     }
 
@@ -650,7 +712,7 @@ export const rejectInstructor = async (
 };
 
 /**
- * Get user profile
+ * Get user profile with related student/guardian info
  */
 export const getUserProfile = async (userId: string): Promise<AuthResponse> => {
   try {
@@ -663,11 +725,40 @@ export const getUserProfile = async (userId: string): Promise<AuthResponse> => {
       };
     }
 
+    let guardianInfo: any = null;
+    let studentInfo: any = null;
+
+    if (user.role === "student") {
+      // Get student's guardian (1:1 relationship)
+      const studentProfile = await StudentProfile.findOne({ userId }).populate({
+        path: "guardianId",
+        select: "name email phone role isVerified createdAt",
+      });
+
+      if (studentProfile?.guardianId) {
+        guardianInfo = studentProfile.guardianId;
+      }
+    } else if (user.role === "guardian") {
+      // Get guardian's student (1:1 relationship)
+      const guardianProfile = await GuardianProfile.findOne({ userId }).populate({
+        path: "studentId",
+        select: "name email phone role isVerified createdAt",
+      });
+
+      if (guardianProfile?.studentId) {
+        studentInfo = guardianProfile.studentId;
+      }
+    }
+
     return {
       success: true,
       message: "Profile retrieved successfully",
       data: {
         user,
+        relations: {
+          guardian: guardianInfo, // For students
+          student: studentInfo,    // For guardians
+        },
         accessToken: "",
         refreshToken: "",
       },
@@ -679,6 +770,82 @@ export const getUserProfile = async (userId: string): Promise<AuthResponse> => {
       message: error.message || "Failed to get profile",
       error: error.message,
     };
+  }
+};
+
+/**
+ * Guardian: link an existing student to the guardian account
+ */
+export const connectChildAsGuardian = async (
+  guardianId: string,
+  payload: { studentId?: string; studentEmail?: string; studentPhone?: string }
+): Promise<{ success: boolean; message: string; data?: any; error?: string }> => {
+  try {
+    const guardian = await User.findById(guardianId);
+
+    if (!guardian || guardian.role !== "guardian") {
+      return { success: false, message: "Only guardians can connect students" };
+    }
+
+    const query: any = {};
+    if (payload.studentId) {
+      query._id = payload.studentId;
+    } else if (payload.studentEmail) {
+      query.email = payload.studentEmail;
+    } else if (payload.studentPhone) {
+      query.phone = payload.studentPhone;
+    }
+
+    if (Object.keys(query).length === 0) {
+      return { success: false, message: "Student email, phone, or ID is required" };
+    }
+
+    const student = await User.findOne(query);
+    if (!student || student.role !== "student") {
+      return { success: false, message: "Student not found" };
+    }
+
+    // Link guardian to student (both directions)
+    const guardianChildren = (guardian.children || []).map(id => id.toString());
+    if (!guardianChildren.includes(student._id.toString())) {
+      guardian.children = [...(guardian.children || []), student._id] as any;
+    }
+
+    const studentGuardians = (student.guardians || []).map(id => id.toString());
+    if (!studentGuardians.includes(guardian._id.toString())) {
+      student.guardians = [...(student.guardians || []), guardian._id] as any;
+    }
+
+    await Promise.all([guardian.save(), student.save()]);
+
+    // Upsert student profile guardian pointer (non-blocking)
+    StudentProfile.findOneAndUpdate(
+      { userId: student._id },
+      { $setOnInsert: { userId: student._id }, $set: { guardianId: guardian._id } },
+      { upsert: true }
+    ).catch(err => console.error("Failed to upsert student profile guardian (manual link):", err));
+
+    return {
+      success: true,
+      message: "Student linked to guardian",
+      data: {
+        guardian: {
+          id: guardian._id,
+          name: guardian.name,
+          email: guardian.email,
+          children: guardian.children,
+        },
+        student: {
+          id: student._id,
+          name: student.name,
+          email: student.email,
+          phone: student.phone,
+        },
+      },
+    };
+  } catch (error: any) {
+    console.error("Connect child error:", error);
+    return { success: false, message: error.message || "Failed to connect child", error: error.message };
   }
 };
 
@@ -1130,7 +1297,6 @@ export const updateProfile = async (
     };
   }
 };
-
 /**
  * Update profile photo
  */

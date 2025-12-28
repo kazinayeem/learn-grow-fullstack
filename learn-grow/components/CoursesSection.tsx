@@ -9,81 +9,6 @@ const CoursesSection = () => {
   const { data, isLoading, error } = useGetFeaturedCoursesQuery();
   const router = useRouter();
 
-  // Placeholder data for offline mode
-  const sampleCourses = [
-    {
-      _id: "1",
-      title: "Arduino দিয়ে রোবটিক্স",
-      title_en: "Arduino Robotics",
-      subtitle: "আমার রোবট তৈরি করুন ও ইলেকট্রনিক্স শিখুন",
-      description: "Arduino ব্যবহার করে আমার রোবট তৈরির মাধ্যমে রোবটিক্স এবং ইলেকট্রনিক্সের মূল বিষয়গুলো আয়ত্ত করুন। শিক্ষার্থীরা...",
-      description_en: "Master robotics and electronics fundamentals by building your own robot with Arduino",
-      price: 3500,
-      duration: "8 weeks",
-      ageRange: "10-16 years",
-      level: "Beginner",
-      img: "https://images.unsplash.com/photo-1535378433864-ed1c29cee23d?q=80&w=1000&auto=format&fit=crop",
-      features: [
-        "লাইভ ইন্টারঅ্যাক্টিভ লেকচারিং (সন্ধ্যা সময়)",
-        "Arduino Uno কিট র্যাসবেরি পাই",
-        "ধাপে ধাপে প্রজেক্ট গাইড"
-      ]
-    },
-    {
-      _id: "2",
-      title: "Python ও AI দিয়ে কোডিং",
-      title_en: "Python & AI Coding",
-      subtitle: "Python আয়ত্ত করুন ও AI আপ্লিকেশন তৈরি করুন",
-      description: "সুন্দা থেকে Python প্রোগ্রামিং শিখুন এবং আর্টিফিশিয়াল ইন্টেলিজেন্সে তৈরি দিন। আমার AI টুল ও লাইব্রেরির ব্যবহার করে...",
-      description_en: "Learn Python from scratch and dive into AI. Build real projects with AI tools",
-      price: 4500,
-      duration: "10 weeks",
-      ageRange: "12-18 years",
-      level: "Intermediate",
-      img: "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=1000&auto=format&fit=crop",
-      features: [
-        "লাইভ কোডিং সেশন (সন্ধ্যা সময়)",
-        "ইন্টারঅ্যাক্টিভ কোডিং চ্যালেঞ্জ",
-        "৫০+ হ্যান্ড-অন প্রজেক্ট"
-      ]
-    },
-    {
-      _id: "3",
-      title: "কোডারদের জন্য গণিত",
-      title_en: "Math for Coders",
-      subtitle: "কোডিংয়ের মাধ্যমে গণিত মজাদার করুন",
-      description: "আবিষ্কার করুন কীভাবে গণিত সব প্রযুক্তিকে চালিত করে। ইন্টারঅ্যাক্টিভ কোডিং প্রজেক্টের মাধ্যমে গাণিতিক ধারণা শিখুন...",
-      description_en: "Discover how math powers all technology through interactive coding projects",
-      price: 2500,
-      duration: "6 weeks",
-      ageRange: "10-15 years",
-      level: "Beginner",
-      img: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=1000&auto=format&fit=crop",
-      features: [
-        "জিরোজেরো থেকে ইন্টারমিডিয়েট পর্যা",
-        "গেম ো আনিমেশনের মাধ্যমে শিক্ষা",
-        "সাপ্তাহিক চ্যালেঞ্জ প্রব্লেম"
-      ]
-    },
-    {
-      _id: "4",
-      title: "বাস্তব সাইয়া ল্যাব",
-      title_en: "Practical Science Lab",
-      subtitle: "হাতে-কলমে বিজ্ঞান পরীক্ষা",
-      description: "আপনার বাড়িতে একটি সাইয়া ল্যাবের পরিবেশ করুন। উত্তেজনাপূর্ণ পরীক্ষা-নিরীক্ষা করুন, বৈজ্ঞানিক পদ্ধতি শিখুন...",
-      description_en: "Turn your home into a science lab! Conduct exciting experiments and learn scientific methods",
-      price: 3000,
-      duration: "4 weeks",
-      ageRange: "8-14 years",
-      level: "Beginner",
-      img: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=1000&auto=format&fit=crop",
-      features: [
-        "পরীক্ষা কিট বাসায় ডেলিভারি",
-        "লাইভ পরীক্ষা দেখুন",
-        "ধাপে ধাপে ভিডিও গাইড"
-      ]
-    }
-  ];
 
   if (error) {
     // If API fails, show sample courses instead of error message
@@ -98,7 +23,7 @@ const CoursesSection = () => {
     const fromApi = data?.data || data || [];
     const filtered = fromApi.filter((c: any) => c.isPublished && c.isAdminApproved && c.isFeatured);
     if (filtered.length > 0) return filtered;
-    if (error) return sampleCourses;
+   
     return [];
   }, [data, error]);
 

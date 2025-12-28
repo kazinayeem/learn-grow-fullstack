@@ -3,5 +3,6 @@ declare namespace Express {
     userId?: string;
     userRole?: "admin" | "instructor" | "student" | "guardian";
     validatedBody?: any;
+    subscription?: any;
   }
 }

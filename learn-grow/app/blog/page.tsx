@@ -24,6 +24,24 @@ import {
 } from "@/redux/api/blogApi";
 import { FaPlus, FaSearch } from "react-icons/fa";
 
+// Helper function to decode HTML entities
+const decodeHtmlEntities = (html: string): string => {
+  if (typeof document === "undefined") {
+    // Server-side fallback
+    return html
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&amp;/g, "&")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&#39;/g, "'");
+  }
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = html;
+  return textarea.value;
+};
+
 export default function BlogPage() {
   const router = useRouter();
   const [page, setPage] = useState(1);
@@ -51,6 +69,7 @@ export default function BlogPage() {
       limit: 9,
       search: search || undefined,
       category: selectedCategory || undefined,
+      status: "approved",
     }
   );
 
@@ -162,7 +181,7 @@ export default function BlogPage() {
                   key={blog._id}
                   isPressable
                   className="hover:shadow-lg transition-shadow"
-                  onPress={() => router.push(`/blog/${blog._id}`)}
+                  onPress={() => router.push(`/blog/${blog.slug}`)}
                 >
                   {blog.image && (
                     <CardHeader className="p-0">
@@ -191,7 +210,7 @@ export default function BlogPage() {
                     <p
                       className="text-gray-600 text-sm mb-4 line-clamp-2"
                       dangerouslySetInnerHTML={{
-                        __html: DOMPurify.sanitize(blog.excerpt),
+                        __html: DOMPurify.sanitize(decodeHtmlEntities(blog.excerpt)),
                       }}
                     />
                     <div className="flex items-center justify-between text-xs text-gray-500 mb-2">

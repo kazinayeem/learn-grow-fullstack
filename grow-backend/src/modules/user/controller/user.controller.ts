@@ -460,6 +460,73 @@ export const updateProfile = async (req: Request, res: Response) => {
 };
 
 /**
+ * Guardian: Connect/link a student to guardian account
+ */
+export const guardianConnectChild = async (req: Request, res: Response) => {
+  try {
+    const guardianId = req.userId;
+    const { studentEmail, studentPhone } = req.body;
+
+    if (!guardianId) {
+      return res.status(401).json({
+        success: false,
+        message: "Guardian not authenticated",
+      });
+    }
+
+    const result = await service.guardianConnectChild(guardianId, studentEmail, studentPhone);
+
+    if (result.success) {
+      return res.status(200).json(result);
+    } else {
+      return res.status(400).json(result);
+    }
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to connect student",
+    });
+  }
+};
+
+/**
+ * Student: Accept guardian request
+ */
+export const studentAcceptGuardian = async (req: Request, res: Response) => {
+  try {
+    const studentId = req.userId;
+    const { guardianId } = req.body;
+
+    if (!studentId) {
+      return res.status(401).json({
+        success: false,
+        message: "Student not authenticated",
+      });
+    }
+
+    if (!guardianId) {
+      return res.status(400).json({
+        success: false,
+        message: "Guardian ID is required",
+      });
+    }
+
+    const result = await service.studentAcceptGuardian(studentId, guardianId);
+
+    if (result.success) {
+      return res.status(200).json(result);
+    } else {
+      return res.status(400).json(result);
+    }
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to accept guardian",
+    });
+  }
+};
+
+/**
  * Update profile photo
  */
 export const updateProfilePhoto = async (req: Request, res: Response) => {

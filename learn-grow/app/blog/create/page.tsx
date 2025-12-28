@@ -39,6 +39,7 @@ export default function CreateBlogPage() {
   const [newCategoryDesc, setNewCategoryDesc] = useState("");
   const [formData, setFormData] = useState({
     title: "",
+    slug: "",
     content: "",
     excerpt: "",
     category: "",
@@ -46,6 +47,17 @@ export default function CreateBlogPage() {
     image: "",
     isPublished: false,
   });
+
+  // Function to generate slug from title
+  const generateSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .substring(0, 100);
+  };
 
   const { data: categoriesResponse, refetch: refetchCategories } = useGetAllBlogCategoriesQuery(undefined);
   const [createBlog, { isLoading: isCreating }] = useCreateBlogMutation();
@@ -74,7 +86,12 @@ export default function CreateBlogPage() {
     field: string,
     value: any
   ) => {
-    setFormData({ ...formData, [field]: value });
+    const newData = { ...formData, [field]: value };
+    // Auto-generate slug from title
+    if (field === "title") {
+      newData.slug = generateSlug(value);
+    }
+    setFormData(newData);
   };
 
   const handleCreateCategory = async () => {
@@ -102,6 +119,10 @@ export default function CreateBlogPage() {
   const handleSubmit = async (publish: boolean = false) => {
     if (!formData.title.trim()) {
       toast.error("Title is required");
+      return;
+    }
+    if (!formData.slug.trim()) {
+      toast.error("Slug is required");
       return;
     }
     if (!formData.content.trim()) {
@@ -173,6 +194,18 @@ export default function CreateBlogPage() {
                 required
                 minLength={5}
                 maxLength={200}
+              />
+
+              {/* Slug */}
+              <Input
+                label="Blog Slug (URL)"
+                placeholder="auto-generated-from-title"
+                value={formData.slug}
+                onValueChange={(value) =>
+                  handleInputChange("slug", value)
+                }
+                description="Unique URL-friendly identifier. Auto-generated from title but can be manually edited."
+                helperText="Use only lowercase letters, numbers, and hyphens"
               />
 
               {/* Category */}

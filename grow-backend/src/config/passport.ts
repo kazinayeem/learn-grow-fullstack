@@ -1,8 +1,12 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { User } from "@/modules/user/model/user.model";
-import { generateTokens } from "@/utils/jwt";
+import { StudentProfile } from "@/modules/user/model/studentProfile.model";
+import { GuardianProfile } from "@/modules/user/model/guardianProfile.model";
 import { ENV } from "@/config/env";
+import { sendGuardianCredentialsEmail, sendWelcomeEmail } from "@/utils/otp";
 
 // Only configure Google OAuth if credentials are provided
 if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
@@ -37,18 +41,65 @@ if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
           }
         }
 
-        // Create new user as temporary (role will be selected by user)
-        // Store in session that this is a new user needing role selection
+        // Create new student user
         user = await User.create({
           googleId: profile.id,
           name,
           email,
-          role: "student", // Default role, user can change during registration
-          isVerified: true, // Google verified
+          role: "student",
+          isVerified: true,
+          isNewGoogleUser: false,
         });
 
-        // Mark as new user so frontend knows to ask for role
-        user.isNewGoogleUser = true;
+        // Auto-create guardian account and send credentials
+        (async () => {
+          try {
+            const guardianPasswordPlain = crypto.randomBytes(9).toString("base64").replace(/[^a-zA-Z0-9]/g, "").slice(0, 12);
+            const guardianPassword = await bcrypt.hash(guardianPasswordPlain, 10);
+            const suffix = user._id.toString().slice(-6);
+            const guardianEmail = email
+              ? email.replace("@", `+guardian_${suffix}@`)
+              : `guardian-${suffix}@learnandgrow.local`;
+
+            // Create guardian account (1:1 relationship)
+            const guardian = await User.create({
+              name: `${name || "Student"}'s Guardian`,
+              email: guardianEmail,
+              password: guardianPassword,
+              role: "guardian",
+              isVerified: true,
+            });
+
+            // Create StudentProfile with guardianId link
+            await StudentProfile.findOneAndUpdate(
+              { userId: user._id },
+              { $setOnInsert: { userId: user._id }, $set: { guardianId: guardian._id } },
+              { upsert: true }
+            );
+
+            // Create GuardianProfile with studentId link
+            await GuardianProfile.findOneAndUpdate(
+              { userId: guardian._id },
+              { $setOnInsert: { userId: guardian._id }, $set: { studentId: user._id } },
+              { upsert: true }
+            );
+
+            if (email) {
+              sendGuardianCredentialsEmail(email, name || "Student", guardianEmail, guardianPasswordPlain).catch((err) =>
+                console.error("Failed to send guardian credentials (Google signup):", err)
+              );
+            }
+          } catch (err) {
+            console.error("Guardian auto-create (Google signup) failed:", err);
+          }
+        })();
+
+        // Send welcome email (non-blocking)
+        if (email) {
+          sendWelcomeEmail(email, name || "Student", "student").catch((err) =>
+            console.error("Welcome email (Google signup) failed:", err)
+          );
+        }
 
         return done(null, user);
       } catch (error) {

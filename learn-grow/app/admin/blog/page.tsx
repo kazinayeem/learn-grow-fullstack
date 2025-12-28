@@ -238,7 +238,7 @@ export default function AdminBlogPage() {
                             isIconOnly
                             variant="light"
                             size="sm"
-                            onPress={() => router.push(`/blog/${blog._id}`)}
+                            onPress={() => router.push(`/blog/${blog.slug}`)}
                           >
                             <FaEye />
                           </Button>

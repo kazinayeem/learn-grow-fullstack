@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import api from "@/lib/axios";
+import { login } from "@/lib/auth";
+import { toast } from "react-toastify";
 
 export default function Login() {
     const router = useRouter();
@@ -21,63 +22,34 @@ export default function Login() {
         console.log("🔐 Attempting login for:", phone);
 
         try {
-            // Try real API first
-            const { data } = await api.post('/auth/login', { phone, password });
+            // Use real API via lib/auth
+            const { data, success, message } = await login({ phone, password });
 
-            console.log("✅ API Login successful:", data);
+            if (success && data) {
+                console.log("✅ API Login successful:", data);
+                toast.success(`Welcome back, ${data.user.name}!`);
 
-            // Save real data from backend
-            localStorage.setItem("token", data.data.token);
-            localStorage.setItem("user", JSON.stringify(data.data.user));
-            localStorage.setItem("userRole", data.data.user.role);
-
-            // Redirect based on role from backend
-            const role = data.data.user.role;
-            if (role === "admin") router.push("/admin");
-            else if (role === "instructor") router.push("/instructor");
-            else if (role === "guardian") router.push("/guardian");
-            else if (role === "student") router.push("/student");
-
+                // Redirect based on role from backend
+                const role = data.user.role;
+                if (role === "admin" || role === "super_admin") router.push("/admin");
+                else if (role === "instructor") router.push("/instructor");
+                else if (role === "guardian") router.push("/guardian");
+                else if (role === "student") router.push("/student");
+            } else {
+                setError(message || "Login failed");
+                toast.error(message || "Login failed");
+            }
             setIsLoading(false);
         } catch (apiError: any) {
-            console.warn("⚠️ API unavailable, falling back to mock auth:", apiError.message);
-
-            // FALLBACK: Mock authentication if backend is down
-            if (phone === "01706276447" && password === "@M.jabed3834") {
-                loginUserMock("admin", phone);
-            } else if (phone === "01711111111" && password === "teacher123") {
-                loginUserMock("instructor", phone);
-            } else if (phone === "01722222222" && password === "student123") {
-                loginUserMock("student", phone);
-            } else if (phone === "01733333333" && password === "guardian123") {
-                loginUserMock("guardian", phone);
-            } else {
-                setError("Invalid credentials. Backend may be offline.");
-                setIsLoading(false);
-            }
-        }
-    };
-
-    const loginUserMock = (role: string, identifier: string) => {
-        console.log("📱 Mock login as:", role);
-        try {
-            localStorage.setItem("userRole", role);
-            localStorage.setItem("user", JSON.stringify({ identifier, role }));
-
-            // Redirect based on role
-            if (role === "admin") router.push("/admin");
-            else if (role === "instructor") router.push("/instructor");
-            else if (role === "guardian") router.push("/guardian");
-            else router.push("/student");
-        } catch (err) {
-            console.error("Login error:", err);
-            setError("Login Error");
+            console.error("❌ Login error:", apiError);
+            const errorMsg = apiError.response?.data?.message || apiError.message || "Login failed";
+            setError(errorMsg);
+            toast.error(errorMsg);
             setIsLoading(false);
         }
     };
 
     const handleQuickLogin = async (type: "admin" | "instructor" | "student" | "parent") => {
-        // Restored Verified Credentials
         const creds = {
             admin: { loginInput: "01706276447", password: "@M.jabed3834" },
             instructor: { loginInput: "01711111111", password: "teacher123" },
@@ -87,15 +59,29 @@ export default function Login() {
         const selected = creds[type];
         setCredentials(selected);
 
-        // Auto-login logic
-        const roleMap: Record<string, string> = {
-            admin: "admin", instructor: "instructor", student: "student", parent: "guardian"
-        };
-
+        // Auto-login after setting credentials
         setIsLoading(true);
-        setTimeout(() => {
-            loginUser(roleMap[type], selected.loginInput);
-        }, 500);
+        try {
+            const { data, success, message } = await login({ phone: selected.loginInput, password: selected.password });
+            
+            if (success && data) {
+                toast.success(`Welcome, ${data.user.name}!`);
+                const role = data.user.role;
+                if (role === "admin" || role === "super_admin") router.push("/admin");
+                else if (role === "instructor") router.push("/instructor");
+                else if (role === "guardian") router.push("/guardian");
+                else router.push("/student");
+            } else {
+                setError(message || "Login failed");
+                toast.error(message || "Login failed");
+            }
+        } catch (err: any) {
+            const errorMsg = err.response?.data?.message || "Login failed";
+            setError(errorMsg);
+            toast.error(errorMsg);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -141,7 +127,7 @@ export default function Login() {
                     </div>
 
                     {error && (
-                        <div className="text-red-400 text-sm text-center bg-red-900/20 p-2 rounded-lg border border-red-500/20">
+                        <div className="text-red-400 text-sm text-center bg-red-900/20 p-3 rounded-lg border border-red-500/20">
                             {error}
                         </div>
                     )}
@@ -163,28 +149,32 @@ export default function Login() {
                             <button
                                 type="button"
                                 onClick={() => handleQuickLogin("admin")}
-                                className="px-3 py-2 text-xs font-medium text-white bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                                disabled={isLoading}
+                                className="px-3 py-2 text-xs font-medium text-white bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"
                             >
                                 Login as Admin
                             </button>
                             <button
                                 type="button"
                                 onClick={() => handleQuickLogin("instructor")}
-                                className="px-3 py-2 text-xs font-medium text-white bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                                disabled={isLoading}
+                                className="px-3 py-2 text-xs font-medium text-white bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"
                             >
                                 Login as Instructor
                             </button>
                             <button
                                 type="button"
                                 onClick={() => handleQuickLogin("student")}
-                                className="px-3 py-2 text-xs font-medium text-white bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                                disabled={isLoading}
+                                className="px-3 py-2 text-xs font-medium text-white bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"
                             >
                                 Login as Student
                             </button>
                             <button
                                 type="button"
                                 onClick={() => handleQuickLogin("parent")}
-                                className="px-3 py-2 text-xs font-medium text-white bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                                disabled={isLoading}
+                                className="px-3 py-2 text-xs font-medium text-white bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"
                             >
                                 Login as Parent
                             </button>
@@ -193,7 +183,7 @@ export default function Login() {
 
                     <div className="text-center">
                         <a
-                            href="/auth/register"
+                            href="/register"
                             className="font-medium text-purple-300 hover:text-purple-200 transition-colors text-sm"
                         >
                             Don't have an account? Register

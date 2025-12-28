@@ -180,7 +180,7 @@ export default function StudentBlogsPage() {
                             variant="light"
                             size="sm"
                             onPress={() =>
-                              router.push(`/blog/${blog._id}`)
+                              router.push(`/blog/${blog.slug}`)
                             }
                           >
                             <FaEye />
@@ -191,7 +191,7 @@ export default function StudentBlogsPage() {
                             variant="light"
                             size="sm"
                             onPress={() =>
-                              router.push(`/blog/${blog._id}/edit`)
+                              router.push(`/blog/${blog.slug}/edit`)
                             }
                           >
                             <FaEdit />
@@ -250,7 +250,7 @@ export default function StudentBlogsPage() {
                   <Button
                     color="primary"
                     onPress={() => {
-                      router.push(`/blog/${selectedBlog._id}/edit`);
+                      router.push(`/blog/${selectedBlog.slug}/edit`);
                       onClose();
                     }}
                   >

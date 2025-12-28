@@ -14,6 +14,9 @@ import { siteContentRoutes } from "@/modules/siteContent";
 import { settingsRoutes } from "@/modules/settings";
 import { statusRoutes } from "@/modules/status";
 import blogRoutes from "@/modules/blog/routes/blog.route";
+import eventRoutes from "@/modules/event/routes/event.route";
+import paymentMethodRoutes from "@/modules/payment/routes/payment-method.route";
+import orderRoutes from "@/modules/order/routes/order.route";
 import googleRoutes from "@/modules/user/routes/google.routes";
 import { ENV } from "@/config/env";
 import "@/config/passport";
@@ -55,6 +58,9 @@ export const createApp = () => {
   // Other routes
   app.use("/api/category", categoryRoutes);
   app.use("/api/blog", blogRoutes);
+  app.use("/api/events", eventRoutes);
+  app.use("/api/payment-methods", paymentMethodRoutes);
+  app.use("/api/orders", orderRoutes);
   app.use("/api/job", jobRoutes);
   app.use("/api/course", courseRoutes);
   app.use("/api/assessment", assessmentRoutes);

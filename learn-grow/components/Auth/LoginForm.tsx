@@ -10,21 +10,15 @@ import {
   Divider,
   Link,
   Spinner,
-  RadioGroup,
-  Radio,
 } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { login, loginWithGoogle } from "@/lib/auth";
 import { FcGoogle } from "react-icons/fc";
 
-type LoginMethod = "email" | "phone" | "password";
-
 export default function LoginForm() {
   const router = useRouter();
-  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -32,10 +26,6 @@ export default function LoginForm() {
 
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
-
-  const isValidPhone = (phone: string) => {
-    return /^\d{10,}$/.test(phone.replace(/\D/g, ""));
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -63,19 +53,23 @@ export default function LoginForm() {
       const result = await login({ email, password });
 
       if (result.success) {
-        toast.success("Login successful!");
+        // Get user role and redirect to appropriate dashboard
         const role = result.data?.user.role;
-
+        
+        toast.success("Login successful! Redirecting to dashboard...");
+        
         // Redirect based on role
-        const roleRedirects: Record<string, string> = {
-          student: "/student",
-          instructor: "/instructor",
-          guardian: "/guardian",
-          admin: "/admin",
-        };
-
-        const redirectUrl = roleRedirects[role || ""] || "/dashboard";
-        router.push(redirectUrl);
+        if (role === "admin" || role === "super_admin") {
+          router.push("/admin");
+        } else if (role === "instructor") {
+          router.push("/instructor");
+        } else if (role === "guardian") {
+          router.push("/guardian");
+        } else if (role === "student") {
+          router.push("/student");
+        } else {
+          router.push("/");
+        }
       } else {
         setError(result.message);
         toast.error(result.message);
@@ -131,7 +125,7 @@ export default function LoginForm() {
             <Divider className="flex-1" />
           </div>
 
-          {/* Login Method Selection - Email Only */}
+          {/* Login Form */}
           <form onSubmit={handleLogin} className="space-y-4">
             {/* Email Input */}
             <Input

@@ -7,7 +7,9 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "db:drop-phone-index": "tsx src/scripts/dropPhoneIndex.ts"
+    "db:drop-phone-index": "tsx src/scripts/dropPhoneIndex.ts",
+    "db:seed-blogs": "tsx src/scripts/seedBlogsSimple.ts",
+    "db:sync-indexes": "tsx src/scripts/syncIndexes.ts"
   },
   "author": "",
   "license": "MIT",

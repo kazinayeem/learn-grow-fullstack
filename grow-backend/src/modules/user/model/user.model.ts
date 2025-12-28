@@ -7,7 +7,6 @@ export interface IUser {
   password: string;
   role: "admin" | "instructor" | "student" | "guardian";
   profileImage?: string;
-  children?: Types.ObjectId[];
   otp?: string;
   otpExpiresAt?: Date;
   refreshToken?: string;
@@ -27,7 +26,7 @@ const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true },
     phone: { type: String, sparse: true, index: true }, // Index but NOT unique
-    email: { type: String, unique: true, sparse: true },
+    email: { type: String, sparse: true },
     password: { type: String },
     role: {
       type: String,
@@ -36,7 +35,6 @@ const userSchema = new Schema<IUser>(
       required: true,
     },
     profileImage: String,
-    children: [{ type: Schema.Types.ObjectId, ref: "User" }],
     otp: String,
     otpExpiresAt: Date,
     refreshToken: String,
