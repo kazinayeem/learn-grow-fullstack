@@ -193,9 +193,19 @@ export default function StudentDashboard() {
                                     className="h-20 flex-col"
                                     variant="flat"
                                     color="warning"
+                                    onPress={() => router.push("/blog/create")}
                                 >
                                     <span className="text-2xl mb-1">📝</span>
-                                    <span className="text-xs">Quizzes</span>
+                                    <span className="text-xs">Write Blog</span>
+                                </Button>
+                                <Button
+                                    className="h-20 flex-col"
+                                    variant="flat"
+                                    color="secondary"
+                                    onPress={() => router.push("/student/blogs")}
+                                >
+                                    <span className="text-2xl mb-1">📄</span>
+                                    <span className="text-xs">My Blogs</span>
                                 </Button>
                             </CardBody>
                         </Card>

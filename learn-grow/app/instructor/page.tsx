@@ -13,6 +13,7 @@ import {
     FaVideo,
     FaExclamationTriangle,
     FaClipboard,
+    FaFileAlt,
 } from "react-icons/fa";
 import { useGetInstructorCoursesQuery } from "@/redux/api/courseApi";
 import { useGetInstructorStatsQuery } from "@/redux/api/userApi";
@@ -117,6 +118,13 @@ function InstructorDashboardContent() {
             icon: <FaVideo className="text-3xl" />,
             color: "from-red-500 to-red-600",
             href: "/instructor/live-classes",
+        },
+        {
+            title: "My Blogs",
+            description: "Create and manage blog posts",
+            icon: <FaFileAlt className="text-3xl" />,
+            color: "from-orange-500 to-orange-600",
+            href: "/instructor/blogs",
         },
     ];
 

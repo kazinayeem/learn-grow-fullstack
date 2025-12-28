@@ -24,9 +24,6 @@ import {
 } from "@/redux/api/blogApi";
 import { FaPlus, FaSearch } from "react-icons/fa";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 10; // SSR: revalidate every 10 seconds
-
 export default function BlogPage() {
   const router = useRouter();
   const [page, setPage] = useState(1);

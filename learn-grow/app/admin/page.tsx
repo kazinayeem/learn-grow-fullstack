@@ -14,6 +14,7 @@ import {
     FaCog,
     FaShieldAlt,
     FaBriefcase,
+    FaFileAlt,
 } from "react-icons/fa";
 
 function AdminDashboardContent() {
@@ -91,6 +92,13 @@ function AdminDashboardContent() {
             icon: <FaBriefcase className="text-3xl" />,
             color: "from-teal-500 to-teal-600",
             href: "/admin/jobs",
+        },
+        {
+            title: "Manage Blogs",
+            description: "Approve blogs and post articles",
+            icon: <FaFileAlt className="text-3xl" />,
+            color: "from-indigo-500 to-indigo-600",
+            href: "/admin/blog",
         },
     ];
 
