@@ -1,122 +1,235 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Card, CardBody, CardHeader, Image, Chip, Button, Spinner } from "@nextui-org/react";
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Image,
+  Chip,
+  Button,
+  Spinner,
+  Input,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  Pagination,
+} from "@nextui-org/react";
 import { useRouter } from "next/navigation";
-import { defaultBlogData } from "@/lib/blogData";
-import { useGetSiteContentQuery } from "@/redux/api/siteContentApi";
+import DOMPurify from "isomorphic-dompurify";
+import {
+  useGetAllBlogsQuery,
+  useGetAllBlogCategoriesQuery,
+} from "@/redux/api/blogApi";
+import { FaPlus, FaSearch } from "react-icons/fa";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 10; // SSR: revalidate every 10 seconds
 
 export default function BlogPage() {
-    const router = useRouter();
-    const { data: apiData, isLoading } = useGetSiteContentQuery("blog");
+  const router = useRouter();
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [userRole, setUserRole] = useState<string | null>(null);
 
-    // Use API data if available, otherwise default
-    const data = (apiData?.data?.content && Object.keys(apiData.data.content).length > 0)
-        ? apiData.data.content
-        : defaultBlogData;
-
-    if (isLoading) {
-        return <div className="min-h-screen flex items-center justify-center"><Spinner size="lg" label="Loading Blog..." /></div>;
+  // Get user role from localStorage
+  useEffect(() => {
+    try {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        setUserRole(user.role);
+      }
+    } catch (e) {
+      console.error("Failed to get user role");
     }
+  }, []);
 
-    const { hero, featuredPost, posts, categories } = data;
+  // Fetch blogs and categories
+  const { data: blogsResponse, isLoading: blogsLoading } = useGetAllBlogsQuery(
+    {
+      page,
+      limit: 9,
+      search: search || undefined,
+      category: selectedCategory || undefined,
+    }
+  );
 
+  const { data: categoriesResponse } = useGetAllBlogCategoriesQuery();
+
+  const blogs = blogsResponse?.data || [];
+  const pagination = blogsResponse?.pagination || {};
+  const categories = categoriesResponse?.data || [];
+
+  const handleSearch = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  const handleCategoryFilter = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    setPage(1);
+  };
+
+  if (blogsLoading) {
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
-            {/* Hero */}
-            <div
-                className="text-white py-20 px-6"
-                style={{
-                    background: 'linear-gradient(135deg, #121064 0%, #1e1b8f 50%, #2d1ba8 100%)'
-                }}
-            >
-                <div className="container mx-auto max-w-7xl text-center">
-                    <Chip className="mb-4 bg-white/10 text-white border border-white/20" variant="flat">
-                        {hero.tag}
-                    </Chip>
-                    <h1 className="text-4xl md:text-5xl font-bold mb-6">
-                        {hero.title}
-                    </h1>
-                    <p className="text-xl text-blue-100 max-w-3xl mx-auto">
-                        {hero.subtitle}
-                    </p>
-                </div>
-            </div>
-
-            <div className="container mx-auto max-w-7xl px-6 py-12">
-                {/* Categories */}
-                <div className="flex flex-wrap gap-2 justify-center mb-12">
-                    {categories.map((cat) => (
-                        <Button key={cat} size="sm" variant={cat === "All" ? "solid" : "bordered"} color="primary">
-                            {cat}
-                        </Button>
-                    ))}
-                </div>
-
-                {/* Featured Post */}
-                <Card className="mb-12 overflow-hidden hover:shadow-xl transition-shadow">
-                    <CardBody className="p-0">
-                        <div className="grid grid-cols-1 md:grid-cols-2">
-                            <Image
-                                src={featuredPost.image}
-                                alt={featuredPost.title}
-                                className="w-full h-full object-cover"
-                                removeWrapper
-                            />
-                            <div className="p-8 flex flex-col justify-center">
-                                <Chip color="warning" size="sm" className="mb-4 w-fit">Featured</Chip>
-                                <h2 className="text-3xl font-bold mb-4">{featuredPost.title}</h2>
-                                <p className="text-gray-600 mb-6">{featuredPost.excerpt}</p>
-                                <div className="flex items-center gap-4 text-sm text-gray-500 mb-6">
-                                    <span>{featuredPost.author}</span>
-                                    <span>•</span>
-                                    <span>{featuredPost.date}</span>
-                                    <span>•</span>
-                                    <span>{featuredPost.readTime}</span>
-                                </div>
-                                <Button color="primary" className="w-fit">
-                                    Read More →
-                                </Button>
-                            </div>
-                        </div>
-                    </CardBody>
-                </Card>
-
-                {/* Blog Posts Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {posts.map((post, index) => (
-                        <Card key={index} isPressable className="hover:shadow-lg transition-shadow">
-                            <CardHeader className="p-0">
-                                <Image
-                                    src={post.image}
-                                    alt={post.title}
-                                    className="w-full h-48 object-cover"
-                                    removeWrapper
-                                />
-                            </CardHeader>
-                            <CardBody className="p-6">
-                                <Chip color="primary" size="sm" variant="flat" className="mb-3">
-                                    {post.category}
-                                </Chip>
-                                <h3 className="text-xl font-bold mb-3 line-clamp-2">{post.title}</h3>
-                                <p className="text-gray-600 text-sm mb-4 line-clamp-2">{post.excerpt}</p>
-                                <div className="flex items-center justify-between text-xs text-gray-500">
-                                    <span>{post.author}</span>
-                                    <span>{post.readTime}</span>
-                                </div>
-                                <p className="text-xs text-gray-400 mt-1">{post.date}</p>
-                            </CardBody>
-                        </Card>
-                    ))}
-                </div>
-
-                {/* Load More */}
-                <div className="text-center mt-12">
-                    <Button size="lg" variant="bordered">
-                        Load More Articles
-                    </Button>
-                </div>
-            </div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <Spinner size="lg" label="Loading blogs..." />
+      </div>
     );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-20">
+      {/* Hero Section */}
+      <div
+        className="text-white py-20 px-6"
+        style={{
+          background:
+            "linear-gradient(135deg, #121064 0%, #1e1b8f 50%, #2d1ba8 100%)",
+        }}
+      >
+        <div className="container mx-auto max-w-7xl text-center">
+          <Chip
+            className="mb-4 bg-white/10 text-white border border-white/20"
+            variant="flat"
+          >
+            Our Blog
+          </Chip>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">
+            Insights & Updates
+          </h1>
+          <p className="text-xl text-blue-100 max-w-3xl mx-auto">
+            Discover articles, tutorials, and insights from our community
+          </p>
+          {userRole && ["student", "instructor", "admin"].includes(userRole) && (
+            <Button
+              color="primary"
+              size="lg"
+              startContent={<FaPlus />}
+              className="mt-6"
+              onPress={() => router.push("/blog/create")}
+            >
+              Write a Blog
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="container mx-auto max-w-7xl px-6 py-12">
+        {/* Search and Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
+          <Input
+            placeholder="Search blogs..."
+            startContent={<FaSearch />}
+            value={search}
+            onValueChange={handleSearch}
+            variant="bordered"
+            className="md:col-span-2"
+          />
+          <Dropdown>
+            <DropdownTrigger>
+              <Button variant="bordered" className="w-full">
+                {selectedCategory
+                  ? categories.find((c) => c._id === selectedCategory)?.name ||
+                    "Filter"
+                  : "All Categories"}
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              onAction={(key) => handleCategoryFilter(key as string)}
+            >
+              <DropdownItem key="">All Categories</DropdownItem>
+              {categories.map((cat) => (
+                <DropdownItem key={cat._id}>{cat.name}</DropdownItem>
+              ))}
+            </DropdownMenu>
+          </Dropdown>
+        </div>
+
+        {/* Blog Grid */}
+        {blogs.length === 0 ? (
+          <Card className="border-2 border-dashed">
+            <CardBody className="p-12 text-center">
+              <p className="text-gray-500 mb-4">No blogs found</p>
+              <Button
+                color="primary"
+                variant="flat"
+                onPress={() => router.push("/blog/create")}
+              >
+                Be the first to write
+              </Button>
+            </CardBody>
+          </Card>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+              {blogs.map((blog: any) => (
+                <Card
+                  key={blog._id}
+                  isPressable
+                  className="hover:shadow-lg transition-shadow"
+                  onPress={() => router.push(`/blog/${blog._id}`)}
+                >
+                  {blog.image && (
+                    <CardHeader className="p-0">
+                      <Image
+                        src={blog.image}
+                        alt={blog.title}
+                        className="w-full h-48 object-cover"
+                        removeWrapper
+                      />
+                    </CardHeader>
+                  )}
+                  <CardBody className="p-6">
+                    {blog.category && (
+                      <Chip
+                        color="primary"
+                        size="sm"
+                        variant="flat"
+                        className="mb-3 w-fit"
+                      >
+                        {blog.category.name}
+                      </Chip>
+                    )}
+                    <h3 className="text-xl font-bold mb-3 line-clamp-2">
+                      {blog.title}
+                    </h3>
+                    <p
+                      className="text-gray-600 text-sm mb-4 line-clamp-2"
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(blog.excerpt),
+                      }}
+                    />
+                    <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                      <span>{blog.author?.name || "Anonymous"}</span>
+                      <span>{blog.readTime || 5} min read</span>
+                    </div>
+                    <p className="text-xs text-gray-400">
+                      {new Date(blog.createdAt).toLocaleDateString()}
+                    </p>
+                  </CardBody>
+                </Card>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {(pagination as any)?.totalPages > 1 && (
+              <div className="flex justify-center">
+                <Pagination
+                  color="primary"
+                  page={page}
+                  total={(pagination as any)?.totalPages || 1}
+                  onChange={setPage}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
+
