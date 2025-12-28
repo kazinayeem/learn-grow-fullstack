@@ -95,11 +95,14 @@ const AuthButtons = () => {
     syncAuth();
     const onStorage = () => syncAuth();
     const onFocus = () => syncAuth();
+    const onAuthChange = () => syncAuth();
     window.addEventListener("storage", onStorage);
     window.addEventListener("focus", onFocus);
+    window.addEventListener("auth-change", onAuthChange);
     return () => {
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("focus", onFocus);
+      window.removeEventListener("auth-change", onAuthChange);
     };
   }, []);
 

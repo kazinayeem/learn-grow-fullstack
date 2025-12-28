@@ -273,6 +273,7 @@ export default function InstructorCoursesPage() {
                         startContent={<FaPlus />}
                         onPress={() => router.push("/instructor/courses/create")}
                         isLoading={isLoading || isCreating}
+                        isDisabled={!isApproved}
                     >
                         Create New Course
                     </Button>

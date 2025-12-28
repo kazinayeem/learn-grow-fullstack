@@ -36,23 +36,21 @@ export default function StudentBlogsPage() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
   useEffect(() => {
-    try {
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      try {
         const user = JSON.parse(userStr);
         if (["student", "instructor", "admin"].includes(user.role)) {
           setUserId(user._id || user.id);
           setIsAuthorized(true);
+          return;
         }
+      } catch (e) {
+        console.error("Auth check failed");
       }
-    } catch (e) {
-      console.error("Auth check failed");
     }
-
-    if (!isAuthorized) {
-      router.replace("/login");
-    }
-  }, [isAuthorized, router]);
+    router.replace("/login");
+  }, [router]);
 
   const { data: blogsResponse, isLoading, refetch } = useGetAllBlogsQuery(
     {

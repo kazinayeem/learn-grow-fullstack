@@ -150,14 +150,8 @@ export default function BlogPage() {
         {blogs.length === 0 ? (
           <Card className="border-2 border-dashed">
             <CardBody className="p-12 text-center">
-              <p className="text-gray-500 mb-4">No blogs found</p>
-              <Button
-                color="primary"
-                variant="flat"
-                onPress={() => router.push("/blog/create")}
-              >
-                Be the first to write
-              </Button>
+              <p className="text-gray-500 text-lg">No blogs found</p>
+              <p className="text-gray-400 text-sm mt-2">Check back later for new articles!</p>
             </CardBody>
           </Card>
         ) : (

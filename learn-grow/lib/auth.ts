@@ -174,6 +174,9 @@ export const register = async (userData: {
     if (typeof window !== "undefined") {
       localStorage.setItem("user", JSON.stringify(response.data.data.user));
       localStorage.setItem("token", accessToken);
+      
+      // Trigger custom event for navbar to update
+      window.dispatchEvent(new Event("auth-change"));
     }
 
     return response.data;
@@ -214,6 +217,9 @@ export const login = async (credentials: {
     if (typeof window !== "undefined") {
       localStorage.setItem("user", JSON.stringify(response.data.data.user));
       localStorage.setItem("token", accessToken);
+      
+      // Trigger custom event for navbar to update
+      window.dispatchEvent(new Event("auth-change"));
     }
 
     return response.data;
@@ -236,6 +242,16 @@ export const logout = async (): Promise<{ success: boolean; message: string }> =
     Cookies.remove("accessToken");
     Cookies.remove("refreshToken");
     Cookies.remove("userRole");
+    
+    // Clear localStorage
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      localStorage.removeItem("userRole");
+      
+      // Trigger custom event for navbar to update
+      window.dispatchEvent(new Event("auth-change"));
+    }
 
     return { success: true, message: "Logged out successfully" };
   } catch (error: any) {

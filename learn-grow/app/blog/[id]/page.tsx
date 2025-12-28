@@ -19,12 +19,32 @@ export default function BlogDetailPage() {
   const router = useRouter();
   const params = useParams();
   const blogId = params.id as string;
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setUserId(user._id || user.id);
+        setUserRole(user.role);
+      } catch (e) {
+        console.error("Failed to get user info");
+      }
+    }
+  }, []);
 
   const { data: blogResponse, isLoading } = useGetBlogByIdQuery(blogId, {
     skip: !blogId,
   });
 
   const blog = blogResponse?.data;
+
+  // Check if user can edit/delete
+  const isOwner = blog && userId && (blog.author?._id === userId || blog.author?.id === userId);
+  const isAdmin = userRole === "admin";
+  const canManage = isOwner || isAdmin;
 
   if (isLoading) {
     return (
@@ -172,22 +192,24 @@ export default function BlogDetailPage() {
                     {new Date(blog.updatedAt).toLocaleDateString()}
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="bordered"
-                    startContent={<FaEdit />}
-                    onPress={() => router.push(`/blog/${blogId}/edit`)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    color="danger"
-                    variant="bordered"
-                    startContent={<FaTrash />}
-                  >
-                    Delete
-                  </Button>
-                </div>
+                {canManage && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="bordered"
+                      startContent={<FaEdit />}
+                      onPress={() => router.push(`/blog/${blogId}/edit`)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      color="danger"
+                      variant="bordered"
+                      startContent={<FaTrash />}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardBody>
           </Card>

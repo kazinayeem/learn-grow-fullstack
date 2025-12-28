@@ -11,20 +11,32 @@ import {
   SelectItem,
   Chip,
   Spinner,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
 } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
+import dynamic from "next/dynamic";
+import "react-quill-new/dist/quill.snow.css";
 import {
   useCreateBlogMutation,
   useGetAllBlogCategoriesQuery,
+  useCreateBlogCategoryMutation,
 } from "@/redux/api/blogApi";
 import { toast } from "react-toastify";
-import { FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft, FaPlus } from "react-icons/fa";
+
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
 export default function CreateBlogPage() {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryDesc, setNewCategoryDesc] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -35,29 +47,28 @@ export default function CreateBlogPage() {
     isPublished: false,
   });
 
-  const { data: categoriesResponse } = useGetAllBlogCategoriesQuery();
+  const { data: categoriesResponse, refetch: refetchCategories } = useGetAllBlogCategoriesQuery(undefined);
   const [createBlog, { isLoading: isCreating }] = useCreateBlogMutation();
+  const [createCategory, { isLoading: isCreatingCategory }] = useCreateBlogCategoryMutation();
 
   const categories = categoriesResponse?.data || [];
 
   // Check authorization
   useEffect(() => {
-    try {
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      try {
         const user = JSON.parse(userStr);
         if (["student", "instructor", "admin"].includes(user.role)) {
           setIsAuthorized(true);
+          return;
         }
+      } catch (e) {
+        console.error("Auth check failed");
       }
-    } catch (e) {
-      console.error("Auth check failed");
     }
-
-    if (!isAuthorized) {
-      router.replace("/login");
-    }
-  }, [isAuthorized, router]);
+    router.replace("/login");
+  }, [router]);
 
   const handleInputChange = (
     field: string,
@@ -66,9 +77,29 @@ export default function CreateBlogPage() {
     setFormData({ ...formData, [field]: value });
   };
 
-  const handleSubmit = async (e: React.FormEvent, publish: boolean = false) => {
-    e.preventDefault();
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast.error("Category name is required");
+      return;
+    }
 
+    try {
+      await createCategory({
+        name: newCategoryName,
+        description: newCategoryDesc,
+      }).unwrap();
+
+      toast.success("Category created successfully!");
+      setNewCategoryName("");
+      setNewCategoryDesc("");
+      refetchCategories();
+      onOpenChange();
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Failed to create category");
+    }
+  };
+
+  const handleSubmit = async (publish: boolean = false) => {
     if (!formData.title.trim()) {
       toast.error("Title is required");
       return;
@@ -145,19 +176,48 @@ export default function CreateBlogPage() {
               />
 
               {/* Category */}
-              <Select
-                label="Category"
-                placeholder="Select a category"
-                selectedKeys={formData.category ? [formData.category] : []}
-                onChange={(e) => handleInputChange("category", e.target.value)}
-                required
-              >
-                {categories.map((cat: any) => (
-                  <SelectItem key={cat._id} value={cat._id}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </Select>
+              <div>
+                {categories.length === 0 ? (
+                  <div className="border rounded-lg p-4 bg-blue-50">
+                    <p className="text-sm text-gray-600 mb-3">No categories available. Create one to continue.</p>
+                    <Button
+                      color="primary"
+                      variant="flat"
+                      size="sm"
+                      startContent={<FaPlus />}
+                      onPress={onOpen}
+                    >
+                      Create Category
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Select
+                      label="Category"
+                      placeholder="Select a category"
+                      selectedKeys={formData.category ? [formData.category] : []}
+                      onChange={(e) => handleInputChange("category", e.target.value)}
+                      required
+                      className="flex-1"
+                    >
+                      {categories.map((cat: any) => (
+                        <SelectItem key={cat._id} value={cat._id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </Select>
+                    <Button
+                      isIconOnly
+                      color="primary"
+                      variant="flat"
+                      onPress={onOpen}
+                      className="mt-6"
+                    >
+                      <FaPlus />
+                    </Button>
+                  </div>
+                )}
+              </div>
 
               {/* Excerpt */}
               <Textarea
@@ -224,7 +284,7 @@ export default function CreateBlogPage() {
                   color="primary"
                   size="lg"
                   isLoading={isCreating}
-                  onPress={(e) => handleSubmit(e as any, true)}
+                  onPress={() => handleSubmit(true)}
                 >
                   Publish Now
                 </Button>
@@ -232,7 +292,7 @@ export default function CreateBlogPage() {
                   variant="bordered"
                   size="lg"
                   isLoading={isCreating}
-                  onPress={(e) => handleSubmit(e as any, false)}
+                  onPress={() => handleSubmit(false)}
                 >
                   Save as Draft
                 </Button>
@@ -241,6 +301,47 @@ export default function CreateBlogPage() {
           </CardBody>
         </Card>
       </div>
+
+      {/* Create Category Modal */}
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                Create New Category
+              </ModalHeader>
+              <ModalBody>
+                <Input
+                  label="Category Name"
+                  placeholder="e.g., Technology, Lifestyle, Business"
+                  value={newCategoryName}
+                  onValueChange={setNewCategoryName}
+                  required
+                />
+                <Textarea
+                  label="Description (optional)"
+                  placeholder="Brief description of this category"
+                  value={newCategoryDesc}
+                  onValueChange={setNewCategoryDesc}
+                  minRows={2}
+                />
+              </ModalBody>
+              <ModalFooter>
+                <Button color="danger" variant="light" onPress={onClose}>
+                  Cancel
+                </Button>
+                <Button
+                  color="primary"
+                  isLoading={isCreatingCategory}
+                  onPress={handleCreateCategory}
+                >
+                  Create Category
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

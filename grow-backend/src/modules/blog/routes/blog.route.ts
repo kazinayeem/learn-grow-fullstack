@@ -67,11 +67,11 @@ router.patch(
 
 // ===== CATEGORY ROUTES =====
 
-// Create category (admin only)
+// Create category (authenticated users)
 router.post(
   "/category/create",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("student", "instructor", "admin"),
   controller.createCategory
 );
 

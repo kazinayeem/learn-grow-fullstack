@@ -66,8 +66,8 @@ function InstructorDashboardContent() {
         const totalStudents = courses.reduce((sum: number, c: any) => sum + (c.studentsEnrolled || c.enrolled || 0), 0);
         const totalEarnings = courses.reduce((sum: number, c: any) => sum + (c.revenue || 0), 0);
         const thisMonthEarnings = courses.reduce((sum: number, c: any) => sum + (c.revenueThisMonth || 0), 0);
-        const ratedCourses = courses.filter((c) => c.rating);
-        const completionRate = courses.length ? Math.round((courses.reduce((sum, c: any) => sum + (c.completionRate || 0), 0) / courses.length) || 0) : 0;
+        const ratedCourses = courses.filter((c: any) => c.rating);
+        const completionRate = courses.length ? Math.round((courses.reduce((sum: number, c: any) => sum + (c.completionRate || 0), 0) / courses.length) || 0) : 0;
 
         return {
             totalCourses,
@@ -77,7 +77,7 @@ function InstructorDashboardContent() {
             thisMonthEarnings,
             completionRate,
             avgRating: ratedCourses.length
-                ? (ratedCourses.reduce((sum, c) => sum + (c.rating || 0), 0) / ratedCourses.length).toFixed(1)
+                ? (ratedCourses.reduce((sum: number, c: any) => sum + (c.rating || 0), 0) / ratedCourses.length).toFixed(1)
                 : "0.0",
             studentEngagement: completionRate,
         };
@@ -125,6 +125,13 @@ function InstructorDashboardContent() {
             icon: <FaFileAlt className="text-3xl" />,
             color: "from-orange-500 to-orange-600",
             href: "/instructor/blogs",
+        },
+        {
+            title: "Write Blog",
+            description: "Publish a new article",
+            icon: <FaFileAlt className="text-3xl" />,
+            color: "from-amber-500 to-amber-600",
+            href: "/blog/create",
         },
     ];
 

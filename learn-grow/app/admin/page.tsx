@@ -95,10 +95,17 @@ function AdminDashboardContent() {
         },
         {
             title: "Manage Blogs",
-            description: "Approve blogs and post articles",
+            description: "Approve blogs and manage articles",
             icon: <FaFileAlt className="text-3xl" />,
             color: "from-indigo-500 to-indigo-600",
             href: "/admin/blog",
+        },
+        {
+            title: "Create Blog",
+            description: "Write and publish a new blog post",
+            icon: <FaFileAlt className="text-3xl" />,
+            color: "from-cyan-500 to-cyan-600",
+            href: "/blog/create",
         },
     ];
 
