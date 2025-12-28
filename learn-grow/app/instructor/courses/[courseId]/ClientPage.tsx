@@ -56,11 +56,12 @@ import {
     useGetAssessmentsByCourseQuery,
 } from "@/redux/api/courseApi";
 import { toast } from "react-toastify";
+import DOMPurify from "isomorphic-dompurify";
 
 interface Lesson {
     id: string;
     title: string;
-    type: "video" | "article" | "quiz";
+    type: "video" | "pdf" | "quiz" | "assignment";
     description?: string;
     contentUrl?: string;
     isFreePreview?: boolean;
@@ -128,7 +129,7 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
     }, [router]);
 
     // Fetch course data from backend
-    const { data: courseResponse, isLoading: courseLoading, error: courseError } = useGetCourseByIdQuery(courseId);
+    const { data: courseResponse, isLoading: courseLoading, error: courseError, refetch: refetchCourse } = useGetCourseByIdQuery(courseId);
     const courseData = courseResponse?.data || null;
 
     // Mutations
@@ -218,7 +219,7 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                     title: newModuleTitle,
                     description: newModuleDescription,
                     resources: newModuleResource,
-                    orderIndex: modules.length, // Set order index based on current module count
+                    orderIndex: modules.length,
                 }).unwrap();
                 toast.success("Module created successfully!");
             }
@@ -227,6 +228,8 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
             setNewModuleResource("");
             setEditingModuleId(null);
             onCloseModuleModal();
+            // Non-blocking refetch to prevent hanging
+            refetchCourse().catch(() => console.warn("Refetch delayed"))
         } catch (err: any) {
             const errorMsg = err?.data?.message || "Failed to save module";
             toast.error(errorMsg);
@@ -239,6 +242,8 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
             try {
                 await deleteModule(moduleId).unwrap();
                 toast.success("Module deleted successfully!");
+                // Non-blocking refetch to prevent hanging
+                refetchCourse().catch(() => console.warn("Refetch delayed"))
             } catch (err: any) {
                 const errorMsg = err?.data?.message || "Failed to delete module";
                 toast.error(errorMsg);
@@ -276,13 +281,15 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                     description: newLesson.description,
                     contentUrl: newLesson.contentUrl,
                     isFreePreview: newLesson.isFreePreview,
-                    orderIndex: lessonCount, // Set order index based on current lesson count
+                    orderIndex: lessonCount,
                 }).unwrap();
                 toast.success("Lesson created successfully!");
             }
             setNewLesson({ type: "video" });
             setEditingLessonId(null);
             onCloseLessonModal();
+            // Non-blocking refetch to prevent hanging
+            refetchCourse().catch(() => console.warn("Refetch delayed"))
         } catch (err: any) {
             const errorMsg = err?.data?.message || "Failed to save lesson";
             toast.error(errorMsg);
@@ -295,6 +302,8 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
             try {
                 await deleteLesson(lessonId).unwrap();
                 toast.success("Lesson deleted successfully!");
+                // Non-blocking refetch to prevent hanging
+                refetchCourse().catch(() => console.warn("Refetch delayed"))
             } catch (err: any) {
                 const errorMsg = err?.data?.message || "Failed to delete lesson";
                 toast.error(errorMsg);
@@ -442,7 +451,10 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                                 </span>
                             </div>
                             <h1 className="text-3xl md:text-4xl font-bold mb-2">{courseData?.title || "Loading..."}</h1>
-                            <p className="text-blue-100 max-w-2xl">{courseData?.description}</p>
+                            <div 
+                                className="text-blue-100 max-w-2xl prose prose-invert"
+                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(String(courseData?.description || "")) }}
+                            />
                         </div>
                         <div className="flex flex-wrap gap-3 justify-end">
                             <Button
@@ -565,19 +577,29 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                                 <h2 className="text-2xl font-bold">Course Curriculum</h2>
                                 <p className="text-gray-600">Organize your course into modules and lessons.</p>
                             </div>
-                            <Button
-                                color="primary"
-                                startContent={<FaPlus />}
-                                onPress={() => {
-                                    setNewModuleTitle("");
-                                    setNewModuleDescription("");
-                                    setNewModuleResource("");
-                                    setEditingModuleId(null);
-                                    onOpenModuleModal();
-                                }}
-                            >
-                                Add Module
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="flat"
+                                    isIconOnly
+                                    onPress={() => refetchCourse()}
+                                    title="Refresh curriculum"
+                                >
+                                    🔄
+                                </Button>
+                                <Button
+                                    color="primary"
+                                    startContent={<FaPlus />}
+                                    onPress={() => {
+                                        setNewModuleTitle("");
+                                        setNewModuleDescription("");
+                                        setNewModuleResource("");
+                                        setEditingModuleId(null);
+                                        onOpenModuleModal();
+                                    }}
+                                >
+                                    Add Module
+                                </Button>
+                            </div>
                         </div>
 
                         {modules.length === 0 ? (
@@ -997,9 +1019,9 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                                     </Button>
                                     <Button
                                         size="sm"
-                                        color={newLesson.type === "article" ? "primary" : "default"}
-                                        variant={newLesson.type === "article" ? "solid" : "bordered"}
-                                        onPress={() => setNewLesson({ ...newLesson, type: "article" })}
+                                        color={newLesson.type === "pdf" ? "primary" : "default"}
+                                        variant={newLesson.type === "pdf" ? "solid" : "bordered"}
+                                        onPress={() => setNewLesson({ ...newLesson, type: "pdf" })}
                                         startContent={<FaFileAlt />}
                                     >
                                         Article
@@ -1020,67 +1042,14 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                         {/* Content Material Section */}
                         <div className="mt-2">
                             <label className="text-sm font-medium mb-2 block">Content Material</label>
-                            <Tabs
-                                aria-label="Content Source"
-                                size="sm"
-                                classNames={{
-                                    tabList: "w-full",
-                                    cursor: "w-full bg-primary",
-                                }}
-                            >
-                                <Tab key="upload" title={
-                                    <div className="flex items-center space-x-2">
-                                        <FaCloudUploadAlt />
-                                        <span>Upload File</span>
-                                    </div>
-                                }>
-                                    <div className="mt-4 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:bg-gray-50 transition cursor-pointer relative group bg-gray-50/50">
-                                        <input
-                                            type="file"
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                            onChange={(e) => {
-                                                if (e.target.files && e.target.files[0]) {
-                                                    // Mock upload behavior
-                                                    const file = e.target.files[0];
-                                                    setNewLesson({ ...newLesson, contentUrl: URL.createObjectURL(file) });
-                                                    alert(`File selected: ${file.name}`);
-                                                }
-                                            }}
-                                        />
-                                        <div className="flex flex-col items-center justify-center text-gray-500 group-hover:text-primary transition-colors">
-                                            <div className="p-4 bg-white rounded-full shadow-sm mb-3">
-                                                <FaCloudUploadAlt className="text-3xl" />
-                                            </div>
-                                            <p className="font-semibold">Click to upload or drag and drop</p>
-                                            <p className="text-xs mt-1">
-                                                {newLesson.type === "video" ? "MP4, WebM (Max 2GB)" :
-                                                    newLesson.type === "article" ? "PDF, DOCX, TXT (Max 10MB)" : "Any file"}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    {newLesson.contentUrl && newLesson.contentUrl.startsWith("blob:") && (
-                                        <div className="mt-2 p-2 bg-green-50 text-green-700 text-sm rounded-md flex items-center gap-2">
-                                            <FaCheckCircle /> File selected and ready to upload
-                                        </div>
-                                    )}
-                                </Tab>
-                                <Tab key="url" title={
-                                    <div className="flex items-center space-x-2">
-                                        <FaLink />
-                                        <span>External Link</span>
-                                    </div>
-                                }>
-                                    <Input
-                                        className="mt-4"
-                                        label="External URL"
-                                        placeholder={`https://...`}
-                                        startContent={<FaLink className="text-gray-400" />}
-                                        value={newLesson.contentUrl || ""}
-                                        onChange={(e) => setNewLesson({ ...newLesson, contentUrl: e.target.value })}
-                                        description="Direct link to video (YouTube/Vimeo) or document"
-                                    />
-                                </Tab>
-                            </Tabs>
+                            <Input
+                                label="External URL"
+                                placeholder="http://localhost:3000/instructor/courses/6950d2a7eb35fc97e3791a70/"
+                                startContent={<FaLink className="text-gray-400" />}
+                                value={newLesson.contentUrl || ""}
+                                onChange={(e) => setNewLesson({ ...newLesson, contentUrl: e.target.value })}
+                                description="Direct link to video (YouTube/Vimeo) or document"
+                            />
                         </div>
 
                         <div className="flex items-center gap-2 mt-2">

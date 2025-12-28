@@ -18,15 +18,10 @@ export default function AuthCallbackPage() {
 
         if (success) {
           const role = searchParams.get("role");
-          const roleRedirects: Record<string, string> = {
-            student: "/student/dashboard",
-            instructor: "/instructor/dashboard",
-            guardian: "/guardian/dashboard",
-            admin: "/admin",
-          };
+          const redirect = searchParams.get("redirect");
 
-          const redirectUrl = roleRedirects[role || "student"] || "/dashboard";
-          toast.success("Google login successful!");
+          const redirectUrl = redirect || "/student"; // Default to /student
+          toast.success("Login successful!");
           router.push(redirectUrl);
         } else {
           toast.error("Authentication failed. Please try again.");

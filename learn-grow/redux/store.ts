@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { baseApi } from "./api/baseApi";
 import { userApi } from "./api/userApi";
+import { quizApi } from "./api/quizApi";
 import enrollmentReducer, { loadEnrollments } from "./slices/enrollmentSlice";
 import paymentReducer, { loadPayments } from "./slices/paymentSlice";
 import quizAssignmentReducer, {
@@ -19,6 +20,7 @@ export const store = configureStore({
     reducer: {
         [baseApi.reducerPath]: baseApi.reducer,
         [userApi.reducerPath]: userApi.reducer,
+        [quizApi.reducerPath]: quizApi.reducer,
         enrollment: enrollmentReducer,
         payment: paymentReducer,
         quizAssignment: quizAssignmentReducer,
@@ -26,7 +28,7 @@ export const store = configureStore({
         courseContent: courseContentReducer,
     },
     middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat(baseApi.middleware, userApi.middleware),
+        getDefaultMiddleware().concat(baseApi.middleware, userApi.middleware, quizApi.middleware),
 });
 
 // Load data from localStorage on initialization

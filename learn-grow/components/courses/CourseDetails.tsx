@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
     Image,
     Button,
@@ -20,6 +20,7 @@ import type { RootState } from "@/redux/store";
 import PaymentModal from "@/components/payment/PaymentModal";
 import CourseModules from "@/components/course/CourseModules";
 import QuizList from "@/components/quiz/QuizList";
+import DOMPurify from "isomorphic-dompurify";
 
 interface CourseDetailsProps {
     courseId: string;
@@ -193,9 +194,10 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                 <Card>
                                     <CardBody>
                                         <h3 className="text-xl font-semibold mb-3">Description</h3>
-                                        <p className="text-default-600 leading-relaxed whitespace-pre-line">
-                                            {course.description}
-                                        </p>
+                                        <div
+                                          className="prose max-w-none text-default-600"
+                                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(String(course.description || "")) }}
+                                        />
                                     </CardBody>
                                 </Card>
                             </Tab>
@@ -206,6 +208,112 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                     isEnrolled={isEnrolled}
                                     modulesFromApi={course.modules}
                                 />
+                            </Tab>
+
+                            <Tab key="instructor" title="👨‍🏫 Instructor">
+                                <Card>
+                                    <CardBody className="space-y-6">
+                                        <div className="flex items-start gap-4">
+                                            {course.instructorId?.profileImage ? (
+                                                <img
+                                                    src={course.instructorId.profileImage}
+                                                    alt={course.instructorId.name || "Instructor"}
+                                                    className="w-24 h-24 rounded-full object-cover border-3 border-primary shadow-lg"
+                                                />
+                                            ) : (
+                                                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-4xl shadow-lg">
+                                                    {(course.instructorId?.name || "U")[0]?.toUpperCase()}
+                                                </div>
+                                            )}
+                                            <div className="flex-1">
+                                                <h3 className="text-2xl font-bold mb-2">
+                                                    {course.instructorId?.name || "Unknown Instructor"}
+                                                </h3>
+                                                <p className="text-default-500 mb-4">
+                                                    {course.instructorId?.role || "Instructor"}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <Divider />
+
+                                        <div className="space-y-4">
+                                            <h4 className="text-lg font-semibold">Contact Information</h4>
+                                            <div className="space-y-3">
+                                                {course.instructorId?.email && (
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                                            <span className="text-xl">📧</span>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm text-default-500">Email</p>
+                                                            <p className="font-medium">{course.instructorId.email}</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {course.instructorId?.phone && (
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center">
+                                                            <span className="text-xl">📱</span>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm text-default-500">Phone</p>
+                                                            <p className="font-medium">{course.instructorId.phone}</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {course.instructorId?.bio && (
+                                            <>
+                                                <Divider />
+                                                <div className="space-y-3">
+                                                    <h4 className="text-lg font-semibold">About</h4>
+                                                    <p className="text-default-600 leading-relaxed">
+                                                        {course.instructorId.bio}
+                                                    </p>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {course.instructorId?.expertise && course.instructorId.expertise.length > 0 && (
+                                            <>
+                                                <Divider />
+                                                <div className="space-y-3">
+                                                    <h4 className="text-lg font-semibold">Expertise</h4>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {course.instructorId.expertise.map((skill: string, index: number) => (
+                                                            <Chip key={index} color="primary" variant="flat">
+                                                                {skill}
+                                                            </Chip>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {(course.instructorId?.experience || course.instructorId?.education) && (
+                                            <>
+                                                <Divider />
+                                                <div className="space-y-4">
+                                                    {course.instructorId?.experience && (
+                                                        <div>
+                                                            <h4 className="text-lg font-semibold mb-2">Experience</h4>
+                                                            <p className="text-default-600">{course.instructorId.experience}</p>
+                                                        </div>
+                                                    )}
+                                                    {course.instructorId?.education && (
+                                                        <div>
+                                                            <h4 className="text-lg font-semibold mb-2">Education</h4>
+                                                            <p className="text-default-600">{course.instructorId.education}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
+                                    </CardBody>
+                                </Card>
                             </Tab>
 
                             <Tab key="quizzes" title="📝 Quizzes">
@@ -221,8 +329,50 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                 <div className="text-center">
                                     <p className="text-default-500 text-sm mb-2">Price</p>
                                     <p className="text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                                        ${course.price}
+                                        BDT {course.price}
                                     </p>
+                                </div>
+
+                                <Divider />
+
+                                {/* Instructor Information */}
+                                <div className="space-y-3">
+                                    <p className="font-semibold text-lg">Instructor:</p>
+                                    <div className="flex items-start gap-3">
+                                        {course.instructorId?.profileImage ? (
+                                            <img
+                                                src={course.instructorId.profileImage}
+                                                alt={course.instructorId.name || "Instructor"}
+                                                className="w-16 h-16 rounded-full object-cover border-2 border-primary"
+                                            />
+                                        ) : (
+                                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-2xl flex-shrink-0">
+                                                {(course.instructorId?.name || course.instructorName || "Unknown")[0]?.toUpperCase()}
+                                            </div>
+                                        )}
+                                        <div className="flex-1">
+                                            <p className="font-semibold text-lg">
+                                                {course.instructorId?.name || course.instructorName || "Unknown Instructor"}
+                                            </p>
+                                            {course.instructorId?.email && (
+                                                <p className="text-sm text-default-500 flex items-center gap-1">
+                                                    <span>📧</span>
+                                                    {course.instructorId.email}
+                                                </p>
+                                            )}
+                                            {course.instructorId?.phone && (
+                                                <p className="text-sm text-default-500 flex items-center gap-1">
+                                                    <span>📱</span>
+                                                    {course.instructorId.phone}
+                                                </p>
+                                            )}
+                                            {course.instructorId?.bio && (
+                                                <p className="text-sm text-default-600 mt-2 line-clamp-3">
+                                                    {course.instructorId.bio}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <Divider />
@@ -257,6 +407,7 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
 
                                 <Divider />
 
+                                {/* Registration gating logic */}
                                 {isEnrolled ? (
                                     <Button
                                         color="success"
@@ -268,15 +419,19 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                         Go to Dashboard
                                     </Button>
                                 ) : (
-                                    <Button
+                                    <>
+                                      <RegistrationInfo course={course} />
+                                      <Button
                                         color="primary"
                                         size="lg"
                                         className="w-full font-semibold shadow-lg"
                                         variant="shadow"
                                         onPress={handleEnrollClick}
-                                    >
-                                        {course.price > 0 ? "💳 Buy Now" : "🎓 Enroll Free"}
-                                    </Button>
+                                        isDisabled={!isEnrollmentOpen(course)}
+                                      >
+                                        {isEnrollmentOpen(course) ? (course.price > 0 ? "💳 Buy Now" : "🎓 Enroll Free") : "Enrollment Closed"}
+                                      </Button>
+                                    </>
                                 )}
 
                                 <Button
@@ -301,5 +456,63 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                 amount={course.price}
             />
         </>
+    );
+}
+
+function isEnrollmentOpen(course: any): boolean {
+    const open = !!course?.isRegistrationOpen;
+    const deadline = course?.registrationDeadline ? new Date(course.registrationDeadline) : null;
+    const now = new Date();
+    if (deadline && !isNaN(deadline.getTime())) {
+        return open && now < deadline;
+    }
+    return open;
+}
+
+function RegistrationInfo({ course }: { course: any }) {
+    const deadline = useMemo(() => {
+        if (!course?.registrationDeadline) return null;
+        const d = new Date(course.registrationDeadline);
+        return isNaN(d.getTime()) ? null : d;
+    }, [course?.registrationDeadline]);
+
+    const [remaining, setRemaining] = useState<string>("");
+
+    useEffect(() => {
+        if (!deadline) return;
+        const tick = () => {
+            const now = new Date().getTime();
+            const end = deadline.getTime();
+            const diff = end - now;
+            if (diff <= 0) {
+                setRemaining("0d 0h 0m 0s");
+                return;
+            }
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            setRemaining(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+        };
+        tick();
+        const interval = setInterval(tick, 1000);
+        return () => clearInterval(interval);
+    }, [deadline]);
+
+    const open = isEnrollmentOpen(course);
+
+    return (
+        <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">Registration:</span>
+                <span className={open ? "text-success" : "text-danger"}>{open ? "Open" : "Closed"}</span>
+            </div>
+            {deadline && (
+                <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">Closes in:</span>
+                    <span>{remaining}</span>
+                </div>
+            )}
+        </div>
     );
 }

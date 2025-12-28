@@ -3,7 +3,8 @@ import { Schema, model, Types } from "mongoose";
 export interface ICourse {
   title: string;
   description: string;
-  category: string;
+  category: Types.ObjectId | string;
+  type: "live" | "recorded";
   price: number;
   discountPrice?: number;
   thumbnail?: string;
@@ -17,6 +18,8 @@ export interface ICourse {
   isPublished: boolean;
   isFeatured?: boolean;
   isAdminApproved?: boolean; // For admin approval of published courses
+  isRegistrationOpen?: boolean;
+  registrationDeadline?: Date | null;
   tags?: string[];
   learningOutcomes?: string[];
   prerequisites?: string[];
@@ -39,9 +42,14 @@ const courseSchema = new Schema<ICourse>(
       minlength: 20,
     },
     category: {
-      type: String,
+      type: Schema.Types.Mixed,
       required: true,
-      trim: true,
+    },
+    type: {
+      type: String,
+      enum: ["live", "recorded"],
+      required: true,
+      default: "recorded",
     },
     price: {
       type: Number,
@@ -97,6 +105,14 @@ const courseSchema = new Schema<ICourse>(
     isAdminApproved: {
       type: Boolean,
       default: false,
+    },
+    isRegistrationOpen: {
+      type: Boolean,
+      default: false,
+    },
+    registrationDeadline: {
+      type: Date,
+      default: null,
     },
     tags: [String],
     learningOutcomes: [String],

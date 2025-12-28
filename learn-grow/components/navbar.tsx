@@ -27,44 +27,80 @@ import {
   Skeleton
 } from "@nextui-org/react";
 import Cookies from "js-cookie";
+import { useRouter } from "next/navigation";
 import { getDashboardUrl } from "@/lib/utils/dashboard";
 import { logout as apiLogout } from "@/lib/auth";
 
 const AuthButtons = () => {
+  const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [user, setUser] = React.useState<any>(null);
   const [dashboardUrl, setDashboardUrl] = React.useState("/dashboard");
 
   React.useEffect(() => {
-    const tokenFromCookie = Cookies.get("accessToken");
-    const tokenFromStorage = localStorage.getItem("token");
-    const token = tokenFromCookie || tokenFromStorage;
+    const syncAuth = async () => {
+      const tokenFromCookie = Cookies.get("accessToken");
+      const tokenFromStorage = localStorage.getItem("token");
+      const token = tokenFromCookie || tokenFromStorage;
 
-    const userData = localStorage.getItem("user");
-    let userRole = Cookies.get("userRole") || localStorage.getItem("userRole");
+      const userData = localStorage.getItem("user");
+      let userRole = Cookies.get("userRole") || localStorage.getItem("userRole");
 
-    if (token) {
-      setIsAuthenticated(true);
-      if (userData) {
-        try {
-          const parsedUser = JSON.parse(userData);
-          setUser(parsedUser);
-          // Fallback: Use role from user object if localStorage 'userRole' is missing
-          if (!userRole && parsedUser.role) {
-            userRole = parsedUser.role;
+      if (token) {
+        setIsAuthenticated(true);
+        if (userData) {
+          try {
+            const parsedUser = JSON.parse(userData);
+            setUser(parsedUser);
+            if (!userRole && parsedUser.role) {
+              userRole = parsedUser.role;
+            }
+          } catch (e) {
+            console.error("Navbar: Error parsing user data", e);
           }
-        } catch (e) {
-          console.error("Navbar: Error parsing user data", e);
+        } else {
+          // Fetch profile if token exists but user data is missing
+          try {
+            const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (resp.ok) {
+              const json = await resp.json();
+              const u = json?.data;
+              if (u) {
+                setUser(u);
+                userRole = u.role || userRole;
+                // Cache for subsequent renders
+                try {
+                  localStorage.setItem("user", JSON.stringify(u));
+                  if (u.role) localStorage.setItem("userRole", u.role);
+                } catch {}
+              }
+            }
+          } catch (err) {
+            console.warn("Navbar: failed to fetch profile", err);
+          }
         }
-      }
 
-      // Set dynamic dashboard URL based on role
-      const url = getDashboardUrl(userRole || undefined);
-      console.log("Navbar: Determined Dashboard URL:", url, "for role:", userRole);
-      setDashboardUrl(url);
-    }
-    setIsLoading(false);
+        const url = getDashboardUrl(userRole || undefined);
+        setDashboardUrl(url);
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+      setIsLoading(false);
+    };
+
+    syncAuth();
+    const onStorage = () => syncAuth();
+    const onFocus = () => syncAuth();
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("focus", onFocus);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -103,9 +139,9 @@ const AuthButtons = () => {
             as="button"
             className="transition-transform"
             color="primary"
-            name={user?.name || "User"}
+            name={user?.name || user?.email || user?.phone || "User"}
             size="sm"
-            src={user?.img}
+            src={user?.profileImage || undefined}
           />
         </DropdownTrigger>
         <DropdownMenu aria-label="Profile Actions" variant="flat">
@@ -113,10 +149,10 @@ const AuthButtons = () => {
             <p className="font-semibold">Signed in as</p>
             <p className="font-semibold">{user?.email || user?.phone || "User"}</p>
           </DropdownItem>
-          <DropdownItem key="dashboard" href={dashboardUrl}>
+          <DropdownItem key="dashboard" onPress={() => router.push(dashboardUrl)}>
             Dashboard
           </DropdownItem>
-          <DropdownItem key="settings" href="/profile">
+          <DropdownItem key="settings" onPress={() => router.push("/profile")}> 
             My Profile
           </DropdownItem>
           <DropdownItem key="logout" color="danger" onPress={handleLogout}>

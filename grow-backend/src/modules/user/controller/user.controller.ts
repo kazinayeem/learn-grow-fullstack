@@ -311,3 +311,180 @@ export const updateUserRoleAdmin = async (req: Request, res: Response) => {
   const result = await service.updateUserRoleAdmin(req.params.id, req.body.role);
   return res.status(result.success ? 200 : 400).json(result);
 };
+
+/**
+ * Get instructor dashboard stats
+ */
+export const getInstructorDashboardStats = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "User not authenticated" });
+    }
+
+    const result = await service.getInstructorDashboardStats(userId);
+    
+    if (result.success) {
+      return res.status(200).json(result);
+    } else {
+      return res.status(400).json(result);
+    }
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch instructor stats",
+    });
+  }
+};
+
+/**
+ * Select role for new Google OAuth user
+ */
+export const selectRoleForGoogleUser = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+
+    if (!role || !["student", "instructor", "guardian"].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid role. Must be student, instructor, or guardian",
+      });
+    }
+
+    const result = await service.selectRoleForGoogleUser(userId, role);
+
+    if (result.success) {
+      return res.status(200).json(result);
+    } else {
+      return res.status(400).json(result);
+    }
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to select role",
+    });
+  }
+};
+
+/**
+ * Forgot password - Send OTP to email
+ */
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    const result = await service.forgotPassword(email);
+
+    if (result.success) {
+      return res.status(200).json(result);
+    } else {
+      return res.status(400).json(result);
+    }
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to process forgot password",
+    });
+  }
+};
+
+/**
+ * Verify OTP for password reset
+ */
+export const verifyForgotPasswordOtp = async (req: Request, res: Response) => {
+  try {
+    const { email, otp } = req.body;
+    const result = await service.verifyForgotPasswordOtp(email, otp);
+
+    if (result.success) {
+      return res.status(200).json(result);
+    } else {
+      return res.status(400).json(result);
+    }
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to verify OTP",
+    });
+  }
+};
+
+/**
+ * Reset password with OTP
+ */
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    const result = await service.resetPassword(email, otp, newPassword);
+
+    if (result.success) {
+      return res.status(200).json(result);
+    } else {
+      return res.status(400).json(result);
+    }
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to reset password",
+    });
+  }
+};
+
+/**
+ * Update user profile
+ */
+export const updateProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    const result = await service.updateProfile(userId, req.body);
+
+    if (result.success) {
+      return res.status(200).json(result);
+    } else {
+      return res.status(400).json(result);
+    }
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to update profile",
+    });
+  }
+};
+
+/**
+ * Update profile photo
+ */
+export const updateProfilePhoto = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    const { profileImage } = req.body;
+    const result = await service.updateProfilePhoto(userId, profileImage);
+
+    if (result.success) {
+      return res.status(200).json(result);
+    } else {
+      return res.status(400).json(result);
+    }
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to update profile photo",
+    });
+  }
+};

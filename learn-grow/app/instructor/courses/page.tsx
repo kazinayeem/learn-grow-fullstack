@@ -17,6 +17,7 @@ import {
     Textarea,
     Select,
     SelectItem,
+    Switch,
 } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import { FaPlus, FaEdit, FaTrash, FaEye, FaUsers, FaChartLine } from "react-icons/fa";
@@ -115,11 +116,14 @@ export default function InstructorCoursesPage() {
         title: "",
         description: "",
         category: "",
+        type: "recorded",
         price: "",
         level: "Beginner",
         language: "English",
         duration: "",
         thumbnailUrl: "",
+        isRegistrationOpen: false,
+        registrationDeadline: "",
     });
     const [courseErrors, setCourseErrors] = useState<Record<string, string>>({});
 
@@ -181,14 +185,17 @@ export default function InstructorCoursesPage() {
                 title: newCourse.title,
                 description: newCourse.description,
                 category: newCourse.category,
+                type: newCourse.type as any,
                 price: parseInt(newCourse.price),
                 level: newCourse.level,
                 language: newCourse.language,
                 duration: parseInt(newCourse.duration),
-                thumbnailUrl: newCourse.thumbnailUrl,
+                thumbnail: newCourse.thumbnailUrl,
+                isRegistrationOpen: !!newCourse.isRegistrationOpen,
+                registrationDeadline: newCourse.registrationDeadline ? newCourse.registrationDeadline : undefined,
                 instructorId: instructorId,
             } as any).then(() => {
-                setNewCourse({ title: "", description: "", category: "", price: "", level: "Beginner", language: "English", duration: "", thumbnailUrl: "" });
+                setNewCourse({ title: "", description: "", category: "", type: "recorded", price: "", level: "Beginner", language: "English", duration: "", thumbnailUrl: "", isRegistrationOpen: false, registrationDeadline: "" });
                 setCourseErrors({});
                 onClose();
                 alert("Course created successfully!");
@@ -208,7 +215,19 @@ export default function InstructorCoursesPage() {
             });
         } else {
             setCourses([...courses, course]);
-            setNewCourse({ title: "", description: "", category: "", price: "", level: "Beginner", language: "English", duration: "", thumbnailUrl: "" });
+            setNewCourse({
+                title: "",
+                description: "",
+                category: "",
+                type: "recorded",
+                price: "",
+                level: "Beginner",
+                language: "English",
+                duration: "",
+                thumbnailUrl: "",
+                isRegistrationOpen: false,
+                registrationDeadline: "",
+            });
             setCourseErrors({});
             onClose();
             alert("Course created successfully!");
@@ -252,15 +271,8 @@ export default function InstructorCoursesPage() {
                         color="primary"
                         size="lg"
                         startContent={<FaPlus />}
-                        onPress={() => {
-                            if (!isApproved) {
-                                alert("Please wait for approval. Once we approve you, you can create courses.");
-                                return;
-                            }
-                            onOpen();
-                        }}
+                        onPress={() => router.push("/instructor/courses/create")}
                         isLoading={isLoading || isCreating}
-                        isDisabled={!isApproved}
                     >
                         Create New Course
                     </Button>
@@ -307,9 +319,9 @@ export default function InstructorCoursesPage() {
                         <p className="text-3xl font-bold text-yellow-600">
                             {(
                                 hydratedCourses
-                                    .filter((c) => c.rating)
-                                    .reduce((sum, c) => sum + (c.rating || 0), 0) /
-                                hydratedCourses.filter((c) => c.rating).length || 0
+                                    .filter((c: any) => c.rating)
+                                    .reduce((sum: number, c: any) => sum + (c.rating || 0), 0) /
+                                hydratedCourses.filter((c: any) => c.rating).length || 0
                             ).toFixed(1)} ⭐
                         </p>
                     </CardBody>
@@ -402,162 +414,7 @@ export default function InstructorCoursesPage() {
                 ))}
             </div>
 
-            {/* Create Course Modal */}
-            <Modal 
-                isOpen={isOpen} 
-                onClose={() => {
-                    onClose();
-                    setCourseErrors({});
-                }}
-                size="2xl"
-                isDismissable={false}
-            >
-                <ModalContent>
-                    {(onClose) => (
-                        <>
-                            <ModalHeader>Create New Course</ModalHeader>
-                            <ModalBody>
-                                <div className="space-y-4">
-                                    {courseErrors.general && (
-                                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                                            {courseErrors.general}
-                                        </div>
-                                    )}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <Input 
-                                            label="Course Title" 
-                                            placeholder="Enter course title (min 5 characters)"
-                                            value={newCourse.title} 
-                                            onChange={(e) => {
-                                                setNewCourse({ ...newCourse, title: e.target.value });
-                                                if (courseErrors.title) setCourseErrors({ ...courseErrors, title: "" });
-                                            }}
-                                            variant="bordered" 
-                                            isRequired 
-                                            isInvalid={!!courseErrors.title}
-                                            errorMessage={courseErrors.title}
-                                        />
-                                        <Input 
-                                            label="Category" 
-                                            placeholder="e.g., Web Development"
-                                            value={newCourse.category} 
-                                            onChange={(e) => setNewCourse({ ...newCourse, category: e.target.value })} 
-                                            variant="bordered" 
-                                        />
-                                        <Input 
-                                            label="Thumbnail URL" 
-                                            placeholder="Enter thumbnail image URL"
-                                            value={newCourse.thumbnailUrl} 
-                                            onChange={(e) => {
-                                                setNewCourse({ ...newCourse, thumbnailUrl: e.target.value });
-                                                if (courseErrors.thumbnailUrl) setCourseErrors({ ...courseErrors, thumbnailUrl: "" });
-                                            }}
-                                            variant="bordered" 
-                                            isRequired 
-                                            isInvalid={!!courseErrors.thumbnailUrl}
-                                            errorMessage={courseErrors.thumbnailUrl}
-                                        />
-                                        <Input 
-                                            label="Price (BDT)" 
-                                            type="number" 
-                                            placeholder="Enter price"
-                                            value={newCourse.price} 
-                                            onChange={(e) => {
-                                                setNewCourse({ ...newCourse, price: e.target.value });
-                                                if (courseErrors.price) setCourseErrors({ ...courseErrors, price: "" });
-                                            }}
-                                            variant="bordered" 
-                                            isRequired 
-                                            isInvalid={!!courseErrors.price}
-                                            errorMessage={courseErrors.price}
-                                        />
-                                        <Input 
-                                            label="Duration (hours)" 
-                                            type="number" 
-                                            placeholder="Enter duration in hours"
-                                            value={newCourse.duration} 
-                                            onChange={(e) => {
-                                                setNewCourse({ ...newCourse, duration: e.target.value });
-                                                if (courseErrors.duration) setCourseErrors({ ...courseErrors, duration: "" });
-                                            }}
-                                            variant="bordered" 
-                                            isRequired
-                                            isInvalid={!!courseErrors.duration}
-                                            errorMessage={courseErrors.duration}
-                                        />
-                                        <Select
-                                            label="Level"
-                                            selectedKeys={[newCourse.level]}
-                                            onSelectionChange={(keys) => {
-                                                const value = Array.from(keys)[0];
-                                                setNewCourse({ ...newCourse, level: value as string });
-                                                if (courseErrors.level) setCourseErrors({ ...courseErrors, level: "" });
-                                            }}
-                                            variant="bordered"
-                                            isRequired
-                                            isInvalid={!!courseErrors.level}
-                                            errorMessage={courseErrors.level}
-                                        >
-                                            {COURSE_LEVELS.map((level) => (
-                                                <SelectItem key={level.key} value={level.key}>
-                                                    {level.label}
-                                                </SelectItem>
-                                            ))}
-                                        </Select>
-                                        <Select
-                                            label="Language"
-                                            selectedKeys={[newCourse.language]}
-                                            onSelectionChange={(keys) => {
-                                                const value = Array.from(keys)[0];
-                                                setNewCourse({ ...newCourse, language: value as string });
-                                                if (courseErrors.language) setCourseErrors({ ...courseErrors, language: "" });
-                                            }}
-                                            variant="bordered"
-                                            isRequired
-                                            isInvalid={!!courseErrors.language}
-                                            errorMessage={courseErrors.language}
-                                        >
-                                            {COURSE_LANGUAGES.map((lang) => (
-                                                <SelectItem key={lang.key} value={lang.key}>
-                                                    {lang.label}
-                                                </SelectItem>
-                                            ))}
-                                        </Select>
-                                    </div>
-                                    <Textarea 
-                                        label="Description" 
-                                        placeholder="Enter course description (min 20 characters)"
-                                        value={newCourse.description} 
-                                        onChange={(e) => {
-                                            setNewCourse({ ...newCourse, description: e.target.value });
-                                            if (courseErrors.description) setCourseErrors({ ...courseErrors, description: "" });
-                                        }}
-                                        variant="bordered" 
-                                        minRows={4} 
-                                        isRequired 
-                                        isInvalid={!!courseErrors.description}
-                                        errorMessage={courseErrors.description}
-                                    />
-                                </div>
-                            </ModalBody>
-                            <ModalFooter>
-                                <Button 
-                                    variant="light" 
-                                    onPress={() => {
-                                        onClose();
-                                        setCourseErrors({});
-                                    }}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button color="primary" onPress={handleCreateCourse} isLoading={isCreating}>
-                                    Create
-                                </Button>
-                            </ModalFooter>
-                        </>
-                    )}
-                </ModalContent>
-            </Modal>
+            {/* Modal removed; creation now on /instructor/courses/create */}
         </div>
     );
 }

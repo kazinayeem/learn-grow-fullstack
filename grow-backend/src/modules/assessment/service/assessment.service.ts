@@ -8,10 +8,15 @@ export const createAssessment = async (data: Partial<IAssessment>, userId: strin
   return Assessment.create({ ...data, createdBy: userId });
 };
 
-export const getAssessmentsByCourse = async (courseId: string, userId: string, role: string) => {
+export const getAssessmentsByCourse = async (courseId: string, _userId?: string, _role?: string) => {
   const course = await Course.findById(courseId);
   if (!course) throw new Error("Course not found");
-  if (role !== "admin" && course.instructorId.toString() !== userId) throw new Error("Unauthorized");
+
+  // Publicly readable: return only published + approved course assessments
+  if (!course.isPublished || !course.isAdminApproved) {
+    throw new Error("Course not available");
+  }
+
   return Assessment.find({ courseId }).sort({ createdAt: -1 }).lean();
 };
 

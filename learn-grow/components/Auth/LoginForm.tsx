@@ -42,25 +42,14 @@ export default function LoginForm() {
     e.preventDefault();
     setError("");
 
-    // Validate inputs
-    if (loginMethod === "email") {
-      if (!email) {
-        setError("Email is required");
-        return;
-      }
-      if (!isValidEmail(email)) {
-        setError("Invalid email format");
-        return;
-      }
-    } else {
-      if (!phone) {
-        setError("Phone number is required");
-        return;
-      }
-      if (!isValidPhone(phone)) {
-        setError("Invalid phone number");
-        return;
-      }
+    // Validate email
+    if (!email) {
+      setError("Email is required");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError("Invalid email format");
+      return;
     }
 
     if (!password) {
@@ -71,12 +60,7 @@ export default function LoginForm() {
     setIsLoading(true);
 
     try {
-      const credentials =
-        loginMethod === "email"
-          ? { email, password }
-          : { phone, password };
-
-      const result = await login(credentials as any);
+      const result = await login({ email, password });
 
       if (result.success) {
         toast.success("Login successful!");
@@ -147,53 +131,22 @@ export default function LoginForm() {
             <Divider className="flex-1" />
           </div>
 
-          {/* Login Method Selection */}
-          <RadioGroup
-            label="Login with"
-            value={loginMethod}
-            onValueChange={(value) => {
-              setLoginMethod(value as "email" | "phone");
-              setError("");
-            }}
-            orientation="horizontal"
-            size="sm"
-          >
-            <Radio value="email">Email</Radio>
-            <Radio value="phone">Phone</Radio>
-          </RadioGroup>
-
+          {/* Login Method Selection - Email Only */}
           <form onSubmit={handleLogin} className="space-y-4">
             {/* Email Input */}
-            {loginMethod === "email" && (
-              <Input
-                label="Email Address"
-                placeholder="you@example.com"
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setError("");
-                }}
-                disabled={isLoading}
-                required
-              />
-            )}
-
-            {/* Phone Input */}
-            {loginMethod === "phone" && (
-              <Input
-                label="Phone Number"
-                placeholder="+1 (555) 000-0000"
-                type="tel"
-                value={phone}
-                onChange={(e) => {
-                  setPhone(e.target.value);
-                  setError("");
-                }}
-                disabled={isLoading}
-                required
-              />
-            )}
+            <Input
+              label="Email Address"
+              placeholder="you@example.com"
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError("");
+              }}
+              disabled={isLoading}
+              size="lg"
+              required
+            />
 
             {/* Password Input */}
             <Input

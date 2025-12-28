@@ -101,6 +101,12 @@ export const userApi = createApi({
             }),
             invalidatesTags: ["Users"],
         }),
+
+        // Get instructor dashboard stats
+        getInstructorStats: builder.query({
+            query: () => "/instructor-stats",
+            providesTags: ["Users"],
+        }),
     }),
 });
 
@@ -114,4 +120,5 @@ export const {
     useGetAllInstructorsQuery,
     useApproveInstructorMutation,
     useRejectInstructorMutation,
+    useGetInstructorStatsQuery,
 } = userApi;

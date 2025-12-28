@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import RequireAuth from "@/components/Auth/RequireAuth";
 import {
     Card,
     CardBody,
@@ -26,7 +27,7 @@ import {
     FaUserCheck
 } from "react-icons/fa";
 
-export default function GuardianDashboard() {
+function GuardianDashboardContent() {
     const router = useRouter();
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
@@ -386,5 +387,13 @@ export default function GuardianDashboard() {
                 </ModalContent>
             </Modal>
         </div>
+    );
+}
+
+export default function GuardianDashboard() {
+    return (
+        <RequireAuth allowedRoles={["guardian"]}>
+            <GuardianDashboardContent />
+        </RequireAuth>
     );
 }

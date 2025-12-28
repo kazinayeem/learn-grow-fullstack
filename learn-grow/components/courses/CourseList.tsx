@@ -1,221 +1,233 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Card, CardBody, CardFooter, Image, Button, Spinner, Chip, Pagination } from "@nextui-org/react";
+import {
+  Card,
+  CardBody,
+  CardFooter,
+  Image,
+  Button,
+  Spinner,
+  Chip,
+  Pagination,
+  Select,
+  SelectItem,
+  Input,
+} from "@nextui-org/react";
 import { useGetPublishedCoursesQuery } from "@/redux/api/courseApi";
+import { useGetAllCategoriesQuery } from "@/redux/api/categoryApi";
 import { useRouter } from "next/navigation";
+import DOMPurify from "isomorphic-dompurify";
+import { FaSearch } from "react-icons/fa";
 
 export default function CourseList() {
-    const { data, isLoading, error } = useGetPublishedCoursesQuery();
-    const router = useRouter();
-    const [language] = useState<"en" | "bn">("bn");
-    const [page, setPage] = useState(1);
-    const pageSize = 8;
+  const { data, isLoading, error } = useGetPublishedCoursesQuery(undefined);
+  const { data: categoriesData, isLoading: isCategoriesLoading } = useGetAllCategoriesQuery(undefined);
+  const router = useRouter();
+  const [language] = useState<"en" | "bn">("bn");
+  const [page, setPage] = useState(1);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const pageSize = 8;
 
-    // Placeholder data for offline mode - SAME AS HOMEPAGE to ensure consistency
-    const sampleCourses = [
-        {
-            _id: "1",
-            title: "Arduino দিয়ে রোবটিক্স",
-            title_en: "Arduino Robotics",
-            subtitle: "আমার রোবট তৈরি করুন ও ইলেকট্রনিক্স শিখুন",
-            description: "Arduino ব্যবহার করে আমার রোবট তৈরির মাধ্যমে রোবটিক্স এবং ইলেকট্রনিক্সের মূল বিষয়গুলো আয়ত্ত করুন। শিক্ষার্থীরা...",
-            description_en: "Master robotics and electronics fundamentals by building your own robot with Arduino",
-            price: 3500,
-            duration: "8 weeks",
-            ageRange: "10-16 years",
-            level: "Beginner",
-            img: "https://images.unsplash.com/photo-1535378433864-ed1c29cee23d?q=80&w=1000&auto=format&fit=crop",
-            features: [
-                "লাইভ ইন্টারঅ্যাক্টিভ লেকচারিং (সন্ধ্যা সময়)",
-                "Arduino Uno কিট র্যাসবেরি পাই",
-                "ধাপে ধাপে প্রজেক্ট গাইড"
-            ]
-        },
-        {
-            _id: "2",
-            title: "Python ও AI দিয়ে কোডিং",
-            title_en: "Python & AI Coding",
-            subtitle: "Python আয়ত্ত করুন ও AI আপ্লিকেশন তৈরি করুন",
-            description: "সুন্দা থেকে Python প্রোগ্রামিং শিখুন এবং আর্টিফিশিয়াল ইন্টেলিজেন্সে তৈরি দিন। আমার AI টুল ও লাইব্রেরির ব্যবহার করে...",
-            description_en: "Learn Python from scratch and dive into AI. Build real projects with AI tools",
-            price: 4500,
-            duration: "10 weeks",
-            ageRange: "12-18 years",
-            level: "Intermediate",
-            img: "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=1000&auto=format&fit=crop",
-            features: [
-                "লাইভ কোডিং সেশন (সন্ধ্যা সময়)",
-                "ইন্টারঅ্যাক্টিভ কোডিং চ্যালেঞ্জ",
-                "৫০+ হ্যান্ড-অন প্রজেক্ট"
-            ]
-        },
-        {
-            _id: "3",
-            title: "কোডারদের জন্য গণিত",
-            title_en: "Math for Coders",
-            subtitle: "কোডিংয়ের মাধ্যমে গণিত মজাদার করুন",
-            description: "আবিষ্কার করুন কীভাবে গণিত সব প্রযুক্তিকে চালিত করে। ইন্টার অ্যাক্টিভ কোডিং প্রজেক্টের মাধ্যমে গাণিতিক ধারণা শিখুন...",
-            description_en: "Discover how math powers all technology through interactive coding projects",
-            price: 2500,
-            duration: "6 weeks",
-            ageRange: "10-15 years",
-            level: "Beginner",
-            img: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=1000&auto=format&fit=crop",
-            features: [
-                "জিরোজেরো থেকে ইন্টারমিডিয়েট পর্যা",
-                "গেম ো আনিমেশনের মাধ্যমে শিক্ষা",
-                "সাপ্তাহিক চ্যালেঞ্জ প্রব্লেম"
-            ]
-        },
-        {
-            _id: "4",
-            title: "বাস্তব সাইয়া ল্যাব",
-            title_en: "Practical Science Lab",
-            subtitle: "হাতে-কলমে বিজ্ঞান পরীক্ষা",
-            description: "আপনার বাড়িতে একটি সাইয়া ল্যাবের পরিবেশ করুন। উত্তেজনাপূর্ণ পরীক্ষা-নিরীক্ষা করুন, বৈজ্ঞানিক পদ্ধতি শিখুন...",
-            description_en: "Turn your home into a science lab! Conduct exciting experiments and learn scientific methods",
-            price: 3000,
-            duration: "4 weeks",
-            ageRange: "8-14 years",
-            level: "Beginner",
-            img: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=1000&auto=format&fit=crop",
-            features: [
-                "পরীক্ষা কিট বাসায় ডেলিভারি",
-                "লাইভ পরীক্ষা দেখুন",
-                "ধাপে ধাপে ভিডিও গাইড"
-            ]
-        }
-    ];
+  const categories: any[] = Array.isArray(categoriesData) ? categoriesData : [];
 
-    const courses = useMemo(() => {
-        const fromApi = data?.data || [];
-        const filtered = fromApi.filter((c: any) => c.isPublished && c.isAdminApproved);
-        return filtered.length > 0 ? filtered : sampleCourses;
-    }, [data]);
-
-    const totalPages = Math.max(1, Math.ceil(courses.length / pageSize));
-    const pagedCourses = courses.slice((page - 1) * pageSize, page * pageSize);
-
-    // Shadows mapping for visual variety (cycling through based on index) - reused from homepage
-    const shadows = [
-        "hover:shadow-glow-primary",
-        "hover:shadow-glow-accent",
-        "hover:shadow-glow-secondary",
-        "hover:shadow-xl",
-    ];
-
-    if (isLoading) {
-        return (
-            <div className="flex justify-center py-12">
-                <Spinner label="Loading courses..." />
-            </div>
-        );
-    }
-
-    return (
-        <div className="space-y-6 p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                {courses.length === 0 ? (
-                    <div className="col-span-full text-center py-20">
-                        <div className="text-6xl mb-4">📚</div>
-                        <h3 className="text-2xl font-bold text-gray-700">No courses found</h3>
-                        <p className="text-gray-500">Please check back later for new programs!</p>
-                    </div>
-                ) : (
-                    pagedCourses.map((course: any, index: number) => (
-                        <Card
-                            key={course._id || index}
-                            className={`group cursor-pointer transition-all duration-300 hover:-translate-y-2 ${shadows[index % shadows.length]} shadow-card border-0`}
-                            isPressable
-                            onPress={() => router.push(`/courses/${course._id || course.id}`)}
-                        >
-                            {/* Course Image Header */}
-                            <div className="relative h-48 overflow-hidden w-full">
-                                <Image
-                                    removeWrapper
-                                    alt={course.title}
-                                    className="z-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                    src={course.img || course.thumbnail || "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=1000&auto=format&fit=crop"}
-                                />
-                                {/* Gradient Overlay - Fixed Blue Gradient */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-blue-900/50 via-blue-900/20 to-transparent z-10" />
-
-                                <div className="absolute bottom-4 left-4 z-20">
-                                    <Chip color="primary" size="sm" variant="flat" className="bg-white/90 text-primary-700 font-bold shadow-sm">
-                                        {course.level}
-                                    </Chip>
-                                </div>
-                            </div>
-
-                            <CardBody className="p-6">
-                                {/* Course Title */}
-                                <h3 className={`text-xl font-bold text-gray-900 mb-2 ${language === "bn" ? "font-siliguri" : ""}`}>
-                                    {course.title}
-                                </h3>
-
-                                {/* Subtitle */}
-                                {course.subtitle && (
-                                    <p className={`text-primary-600 text-sm font-semibold mb-3 ${language === "bn" ? "font-siliguri" : ""}`}>
-                                        {course.subtitle}
-                                    </p>
-                                )}
-
-                                {/* Description */}
-                                <p className={`text-gray-600 text-sm mb-4 line-clamp-3 ${language === "bn" ? "font-siliguri" : ""}`}>
-                                    {course.description}
-                                </p>
-
-                                {/* Duration & Age Range */}
-                                <div className="flex gap-4 mb-4">
-                                    {course.duration && (
-                                        <div className="flex items-center gap-1 text-sm text-gray-600">
-                                            <span>⏱️</span>
-                                            <span className={language === "bn" ? "font-siliguri" : ""}>{course.duration}</span>
-                                        </div>
-                                    )}
-                                    {course.ageRange && (
-                                        <div className="flex items-center gap-1 text-sm text-gray-600">
-                                            <span>👥</span>
-                                            <span className={language === "bn" ? "font-siliguri" : ""}>{course.ageRange}</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Features List */}
-                                {course.features && course.features.length > 0 && (
-                                    <ul className="space-y-2 mb-4">
-                                        {course.features.slice(0, 2).map((feature: string, idx: number) => (
-                                            <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
-                                                <span className="text-green-500 mt-0.5">✓</span>
-                                                <span className="line-clamp-1">{feature}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </CardBody>
-
-                            <CardFooter className="p-6 pt-0">
-                                <Button
-                                    className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white font-bold shadow-md hover:shadow-lg transition-shadow"
-                                    size="lg"
-                                    onPress={() => router.push(`/courses/${course._id || course.id}`)}
-                                >
-                                    <span className={language === "bn" ? "font-siliguri" : ""}>
-                                        {language === "en" ? "Enroll Now →" : "বিস্তারিত দেখুন →"}
-                                    </span>
-                                </Button>
-                            </CardFooter>
-                        </Card>
-                    ))
-                )}
-            </div>
-
-            {courses.length > pageSize && (
-                <div className="flex justify-center">
-                    <Pagination page={page} total={totalPages} onChange={setPage} color="primary" showControls />
-                </div>
-            )}
-        </div>
+  const courses = useMemo(() => {
+    const fromApi = data?.data || [];
+    let filtered = fromApi.filter(
+      (c: any) => c.isPublished && c.isAdminApproved
     );
+    
+    // Filter by category if selected
+    if (selectedCategory) {
+      filtered = filtered.filter((c: any) => {
+        const categoryId = typeof c.category === 'object' ? c.category._id : c.category;
+        return categoryId === selectedCategory;
+      });
+    }
+    
+    // Filter by search term (search in title and description)
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter((c: any) => {
+        const title = (c.title || "").toLowerCase();
+        const description = (c.description || "").toLowerCase();
+        return title.includes(searchLower) || description.includes(searchLower);
+      });
+    }
+    
+    return filtered.length > 0 ? filtered : [];
+  }, [data, selectedCategory, searchTerm]);
+
+  const totalPages = Math.max(1, Math.ceil(courses.length / pageSize));
+  const pagedCourses = courses.slice((page - 1) * pageSize, page * pageSize);
+
+  // Shadows mapping for visual variety (cycling through based on index) - reused from homepage
+  const shadows = [
+    "hover:shadow-glow-primary",
+    "hover:shadow-glow-accent",
+    "hover:shadow-glow-secondary",
+    "hover:shadow-xl",
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Spinner label="Loading courses..." />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 p-4">
+      {/* Search and Filter Section */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <Input
+          placeholder="Search courses by name..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setPage(1);
+          }}
+          startContent={<FaSearch className="text-gray-400" />}
+          className="flex-1"
+          size="lg"
+          isClearable
+          onClear={() => setSearchTerm("")}
+        />
+        <Select
+          label="Filter by Category"
+          placeholder="All Categories"
+          selectedKeys={selectedCategory ? [selectedCategory] : []}
+          onChange={(e) => {
+            setSelectedCategory(e.target.value);
+            setPage(1);
+          }}
+          className="w-full md:w-64"
+          size="lg"
+          isLoading={isCategoriesLoading}
+        >
+          <SelectItem key="" value="">All Categories</SelectItem>
+          {categories.map((cat: any) => (
+            <SelectItem key={cat._id} value={cat._id}>
+              {cat.name}
+            </SelectItem>
+          ))}
+        </Select>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {courses.length === 0 ? (
+          <div className="col-span-full text-center py-20">
+            <div className="text-6xl mb-4">📚</div>
+            <h3 className="text-2xl font-bold text-gray-700">
+              No courses found
+            </h3>
+            <p className="text-gray-500">
+              Please check back later for new programs!
+            </p>
+          </div>
+        ) : (
+          pagedCourses.map((course: any, index: number) => (
+            <Card
+              key={course._id || index}
+              className={`group cursor-pointer transition-all duration-300 hover:-translate-y-2 ${shadows[index % shadows.length]} shadow-card border-0`}
+              isPressable
+              onPress={() => router.push(`/courses/${course._id || course.id}`)}
+            >
+              {/* Course Image Header */}
+              <div className="relative h-48 overflow-hidden w-full">
+                <Image
+                  removeWrapper
+                  alt={course.title}
+                  className="z-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  src={
+                    course.img ||
+                    course.thumbnail ||
+                    "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=1000&auto=format&fit=crop"
+                  }
+                />
+                {/* Gradient Overlay - Fixed Blue Gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-blue-900/50 via-blue-900/20 to-transparent z-10" />
+
+                <div className="absolute bottom-4 left-4 z-20">
+                  <Chip
+                    color="primary"
+                    size="sm"
+                    variant="flat"
+                    className="bg-white/90 text-primary-700 font-bold shadow-sm"
+                  >
+                    {course.level}
+                  </Chip>
+                </div>
+              </div>
+
+              <CardBody className="p-4 sm:p-6">
+                {/* Course Title */}
+                <h3
+                  className={`text-lg sm:text-xl font-bold text-gray-900 mb-2 line-clamp-2 ${language === "bn" ? "font-siliguri" : ""}`}
+                >
+                  {course.title}
+                </h3>
+
+                {/* Description */}
+                <div
+                  className={`text-gray-600 text-xs sm:text-sm mb-3 line-clamp-2 prose-sm max-w-none ${language === "bn" ? "font-siliguri" : ""}`}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(String(course.description || "")) }}
+                />
+
+                {/* Price & Level */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg sm:text-xl font-bold text-primary">{course.price} BDT</span>
+                  </div>
+                  {course.enrolled !== undefined && (
+                    <div className="text-xs sm:text-sm text-gray-600">
+                      {course.enrolled} Enrolled
+                    </div>
+                  )}
+                </div>
+              </CardBody>
+
+              <CardFooter className="p-4 sm:p-6 pt-0 flex gap-2">
+                <Button
+                  variant="bordered"
+                  color="primary"
+                  size="sm"
+                  className="flex-1"
+                  onPress={() =>
+                    router.push(`/courses/${course._id || course.id}`)
+                  }
+                >
+                  View Details
+                </Button>
+                <Button
+                  color="primary"
+                  size="sm"
+                  className="flex-1"
+                  onPress={() =>
+                    router.push(`/courses/${course._id || course.id}`)
+                  }
+                >
+                  Enroll
+                </Button>
+              </CardFooter>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {courses.length > pageSize && (
+        <div className="flex justify-center">
+          <Pagination
+            page={page}
+            total={totalPages}
+            onChange={setPage}
+            color="primary"
+            showControls
+          />
+        </div>
+      )}
+    </div>
+  );
 }

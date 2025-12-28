@@ -12,12 +12,19 @@ router.post("/verify-otp", validate(schema.verifyOtpSchema), controller.verifyOt
 router.post("/register", validate(schema.registerSchema), controller.register);
 router.post("/login", validate(schema.loginSchema), controller.login);
 router.post("/refresh-token", validate(schema.refreshTokenSchema), controller.refreshToken);
+router.post("/select-role/:userId", controller.selectRoleForGoogleUser); // For new Google OAuth users
+router.post("/forgot-password", validate(schema.forgotPasswordSchema), controller.forgotPassword); // Request password reset
+router.post("/verify-forgot-password-otp", validate(schema.verifyForgotPasswordOtpSchema), controller.verifyForgotPasswordOtp); // Verify OTP for password reset
+router.post("/reset-password", validate(schema.resetPasswordSchema), controller.resetPassword); // Reset password with OTP
 // Public: approved instructors list for Team/Experts page
 router.get("/instructors/approved", controller.getApprovedInstructorsPublic);
 
 // Protected routes
 router.post("/logout", requireAuth, controller.logout);
 router.get("/profile", requireAuth, controller.getProfile);
+router.patch("/profile", requireAuth, validate(schema.updateProfileSchema), controller.updateProfile);
+router.patch("/profile/photo", requireAuth, validate(schema.updateProfilePhotoSchema), controller.updateProfilePhoto);
+router.get("/instructor-stats", requireAuth, requireRoles("instructor"), controller.getInstructorDashboardStats);
 router.post("/change-password", requireAuth, validate(schema.changePasswordSchema), controller.changePassword);
 
 // Admin routes for instructor approval

@@ -27,7 +27,18 @@ router.get(
     try {
       const user = req.user as any;
 
-      // Generate tokens
+      // Check if this is a new user
+      const isNewUser = user.isNewGoogleUser === true;
+
+      // If new user, redirect to role selection instead of generating tokens
+      if (isNewUser) {
+        // Store user ID temporarily in URL for role selection
+        const redirectUrl = `${ENV.FRONTEND_URL}/select-role?userId=${user._id}`;
+        res.redirect(redirectUrl);
+        return;
+      }
+
+      // Generate tokens for existing users
       const { accessToken, refreshToken } = generateTokens(
         user._id.toString(),
         user.role
@@ -39,7 +50,15 @@ router.get(
       });
 
       // Redirect to frontend with tokens
-      const redirectUrl = `${ENV.FRONTEND_URL}/auth-callback?accessToken=${accessToken}&refreshToken=${refreshToken}&role=${user.role}`;
+      const roleRedirects: Record<string, string> = {
+        student: "/student",
+        instructor: "/instructor",
+        guardian: "/guardian",
+        admin: "/admin",
+      };
+
+      const redirectPath = roleRedirects[user.role] || "/student";
+      const redirectUrl = `${ENV.FRONTEND_URL}/auth-callback?accessToken=${accessToken}&refreshToken=${refreshToken}&role=${user.role}&redirect=${redirectPath}`;
       res.redirect(redirectUrl);
     } catch (error) {
       console.error("Google callback error:", error);

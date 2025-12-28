@@ -2,7 +2,7 @@ import express from "express";
 import * as controller from "../controller/course.controller";
 import * as schema from "../schema/course.schema";
 import { validate } from "@/middleware/validate";
-import { requireAuth, requireRoles, requireApprovedInstructor } from "@/middleware/auth";
+import { requireAuth, requireRoles, requireApprovedInstructor, optionalAuth } from "@/middleware/auth";
 
 const router = express.Router();
 
@@ -25,6 +25,7 @@ router.get("/get-featured-courses", controller.getFeaturedCourses);
 
 router.get(
   "/get-course/:id",
+  optionalAuth,
   validate(schema.courseIdSchema),
   controller.getCourseById
 );
@@ -166,6 +167,32 @@ router.get(
   requireAuth,
   requireRoles("admin"),
   controller.getPendingApprovalCourses
+);
+
+// ===== COURSE REGISTRATION ROUTES =====
+
+router.patch(
+  "/set-registration-open/:id",
+  requireAuth,
+  requireRoles("admin", "instructor"),
+  validate(schema.setRegistrationOpenSchema),
+  controller.setRegistrationOpen
+);
+
+router.patch(
+  "/set-registration-deadline/:id",
+  requireAuth,
+  requireRoles("admin", "instructor"),
+  validate(schema.setRegistrationDeadlineSchema),
+  controller.setRegistrationDeadline
+);
+
+router.patch(
+  "/admin/set-registration/:id",
+  requireAuth,
+  requireRoles("admin"),
+  validate(schema.adminSetRegistrationSchema),
+  controller.adminSetRegistration
 );
 
 export default router;

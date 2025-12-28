@@ -6,6 +6,8 @@ import {
     CardBody,
     Button,
     Input,
+    Select,
+    SelectItem,
     Modal,
     ModalContent,
     ModalHeader,
@@ -15,33 +17,39 @@ import {
     Radio,
     RadioGroup,
     Chip,
+    Spinner,
 } from "@nextui-org/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 import { FaPlus, FaTrash, FaEdit, FaSave, FaCheck, FaImage } from "react-icons/fa";
+import { useGetInstructorCoursesQuery } from "@/redux/api/courseApi";
+import { useCreateQuizMutation } from "@/redux/api/quizApi";
 
 interface Question {
     id: string;
-    question: string;
-    image?: string; // Optional image URL or base64
-    options: string[];
-    correctAnswer: number;
+    questionText: string;
+    questionImage?: string;
+    questionType: "multiple-choice" | "short-answer" | "true-false";
+    options?: { text: string; isCorrect: boolean }[];
+    correctAnswer?: string;
     points: number;
 }
 
 interface Quiz {
-    type: "quiz" | "mid-exam" | "final-exam" | "assignment" | "project";
     title: string;
-    course: string;
-    duration?: number;
-    dueDate?: string;
-    maxPoints?: number;
+    description?: string;
+    courseId: string;
+    duration: number;
+    passingScore: number;
     questions: Question[];
-    status: "draft" | "published";
+    shuffleQuestions: boolean;
+    shuffleOptions: boolean;
+    showCorrectAnswers: boolean;
 }
 
 export default function CreateQuizPage() {
     return (
-        <React.Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading...</div>}>
+        <React.Suspense fallback={<div className="flex justify-center items-center min-h-screen"><Spinner /></div>}>
             <CreateQuizContent />
         </React.Suspense>
     );
@@ -49,40 +57,99 @@ export default function CreateQuizPage() {
 
 function CreateQuizContent() {
     const router = useRouter();
-    const searchParams = useSearchParams();
     const { isOpen, onOpen, onClose } = useDisclosure();
+    const [instructorId, setInstructorId] = useState<string | null>(null);
     const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
+    const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string[] }>({});
+    const [serverErrorQuestionIndices, setServerErrorQuestionIndices] = useState<Set<number>>(new Set());
 
     const [quiz, setQuiz] = useState<Quiz>({
-        type: "quiz",
         title: "",
-        course: "",
+        description: "",
+        courseId: "",
         duration: 30,
+        passingScore: 60,
         questions: [],
-        status: "draft",
+        shuffleQuestions: false,
+        shuffleOptions: false,
+        showCorrectAnswers: true,
     });
 
+    const [createQuiz] = useCreateQuizMutation();
+
+    const { data: coursesResp } = useGetInstructorCoursesQuery(instructorId as string, {
+        skip: !instructorId,
+    });
+
+    const courses = Array.isArray(coursesResp?.data) ? coursesResp!.data : [];
+
     useEffect(() => {
-        const courseTitle = searchParams.get("courseTitle");
-        if (courseTitle) {
-            setQuiz(prev => ({ ...prev, course: courseTitle }));
+        const userStr = localStorage.getItem("user");
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            setInstructorId(user._id || user.id || null);
         }
-    }, [searchParams]);
+    }, []);
 
     const [currentQuestion, setCurrentQuestion] = useState<Question>({
         id: "",
-        question: "",
-        image: "",
-        options: ["", "", "", ""],
-        correctAnswer: 0,
+        questionText: "",
+        questionImage: "",
+        questionType: "multiple-choice",
+        options: [{ text: "", isCorrect: false }, { text: "", isCorrect: false }, { text: "", isCorrect: false }, { text: "", isCorrect: false }],
         points: 1,
     });
 
     const handleAddQuestion = () => {
-        if (!currentQuestion.question || currentQuestion.options.some(opt => !opt)) {
-            alert("Please fill in all question fields and options");
+        const questionErrors: { [key: string]: string } = {};
+
+        // Validate question text
+        if (!currentQuestion.questionText || currentQuestion.questionText.trim().length < 5) {
+            questionErrors["questionText"] = "Question must be at least 5 characters";
+        }
+
+        // Validate by question type
+        if (currentQuestion.questionType === "multiple-choice") {
+            if (!currentQuestion.options || currentQuestion.options.length === 0) {
+                questionErrors["options"] = "At least one option is required";
+            } else {
+                // Check all options have text
+                currentQuestion.options.forEach((opt, idx) => {
+                    if (!opt.text || opt.text.trim().length === 0) {
+                        questionErrors[`option_${idx}`] = "Option text required";
+                    }
+                });
+            }
+            // Check at least one correct answer
+            if (!currentQuestion.options?.some(opt => opt.isCorrect)) {
+                questionErrors["correctAnswer"] = "Please select at least one correct answer";
+            }
+        } else if (currentQuestion.questionType === "true-false") {
+            if (!currentQuestion.correctAnswer) {
+                questionErrors["correctAnswer"] = "Please select the correct answer";
+            }
+        } else if (currentQuestion.questionType === "short-answer") {
+            if (!currentQuestion.correctAnswer || currentQuestion.correctAnswer.trim().length === 0) {
+                questionErrors["correctAnswer"] = "Please enter the correct answer";
+            }
+        }
+
+        // Check points
+        if (!currentQuestion.points || currentQuestion.points < 1) {
+            questionErrors["points"] = "Points must be at least 1";
+        }
+
+        // If there are errors, show them
+        if (Object.keys(questionErrors).length > 0) {
+            setFieldErrors(questionErrors);
+            toast.error("Please fix the errors in the question");
             return;
         }
+
+        // Clear errors if validation passed
+        setFieldErrors({});
 
         if (editingQuestion) {
             // Update existing question
@@ -92,6 +159,7 @@ function CreateQuizContent() {
                     q.id === editingQuestion.id ? { ...currentQuestion, id: editingQuestion.id } : q
                 ),
             });
+            toast.success("Question updated");
         } else {
             // Add new question
             const newQuestion = {
@@ -102,15 +170,16 @@ function CreateQuizContent() {
                 ...quiz,
                 questions: [...quiz.questions, newQuestion],
             });
+            toast.success("Question added");
         }
 
         // Reset form
         setCurrentQuestion({
             id: "",
-            question: "",
-            image: "",
-            options: ["", "", "", ""],
-            correctAnswer: 0,
+            questionText: "",
+            questionImage: "",
+            questionType: "multiple-choice",
+            options: [{ text: "", isCorrect: false }, { text: "", isCorrect: false }, { text: "", isCorrect: false }, { text: "", isCorrect: false }],
             points: 1,
         });
         setEditingQuestion(null);
@@ -129,23 +198,130 @@ function CreateQuizContent() {
                 ...quiz,
                 questions: quiz.questions.filter(q => q.id !== id),
             });
+            toast.success("Question deleted");
         }
     };
 
-    const handleSaveQuiz = (status: "draft" | "published") => {
-        if (!quiz.title || !quiz.course) {
-            alert("Please fill in quiz title and course");
+    const handleSaveQuiz = async (publish: boolean) => {
+        // Clear previous errors
+        setErrors({});
+        setFieldErrors({});
+        setServerErrorQuestionIndices(new Set());
+
+        // Client-side validation
+        const clientErrors: { [key: string]: string } = {};
+
+        if (!quiz.title || quiz.title.trim().length < 3) {
+            clientErrors["title"] = "Title must be at least 3 characters";
+        }
+
+        if (!quiz.courseId) {
+            clientErrors["courseId"] = "Please select a course";
+        }
+
+        if (quiz.duration < 0) {
+            clientErrors["duration"] = "Duration cannot be negative";
+        }
+
+        if (quiz.questions.length === 0) {
+            clientErrors["questions"] = "Please add at least one question";
+        }
+
+        if (Object.keys(clientErrors).length > 0) {
+            setErrors(clientErrors);
+            toast.error("Please fix the validation errors");
             return;
         }
 
-        if (["quiz", "mid-exam", "final-exam"].includes(quiz.type) && quiz.questions.length === 0) {
-            alert("Please add at least one question");
+        // Additional client-side validation: highlight questions with empty option text
+        const localErrorIndices = new Set<number>();
+        quiz.questions.forEach((q, idx) => {
+            if (q.questionType === "multiple-choice" && q.options) {
+                const hasEmpty = q.options.some(opt => !opt.text || opt.text.trim().length === 0);
+                if (hasEmpty) localErrorIndices.add(idx);
+            }
+        });
+        if (localErrorIndices.size > 0) {
+            setServerErrorQuestionIndices(localErrorIndices);
+            toast.error("Please fix highlighted questions: empty option text");
             return;
         }
 
-        setQuiz({ ...quiz, status });
-        alert(`Quiz ${status === "published" ? "published" : "saved as draft"} successfully!`);
-        router.push("/instructor/quizzes");
+        setIsSubmitting(true);
+        try {
+            // Transform questions to API format
+            const questionsForApi = quiz.questions.map((q, idx) => ({
+                questionText: q.questionText,
+                questionImage: q.questionImage,
+                questionType: q.questionType,
+                options: q.questionType === "multiple-choice" ? q.options : undefined,
+                correctAnswer: q.questionType === "multiple-choice" ? undefined : q.correctAnswer,
+                points: q.points,
+                order: idx,
+            }));
+
+            await createQuiz({
+                courseId: quiz.courseId,
+                title: quiz.title,
+                description: quiz.description,
+                questions: questionsForApi,
+                duration: quiz.duration,
+                passingScore: quiz.passingScore,
+                shuffleQuestions: quiz.shuffleQuestions,
+                shuffleOptions: quiz.shuffleOptions,
+                showCorrectAnswers: quiz.showCorrectAnswers,
+            }).unwrap();
+
+            toast.success(`Quiz ${publish ? "published" : "saved as draft"} successfully!`);
+            router.push("/instructor/quizzes");
+        } catch (error: any) {
+            // Handle validation errors from API
+            if (error?.data?.errors && Array.isArray(error.data.errors)) {
+                const apiErrors: { [key: string]: string[] } = {};
+                const indices = new Set<number>();
+                error.data.errors.forEach((err: any) => {
+                    const field = err.field || "general";
+                    if (!apiErrors[field]) {
+                        apiErrors[field] = [];
+                    }
+                    apiErrors[field].push(err.message);
+                    const match = String(field).match(/questions\.(\d+)/);
+                    if (match) {
+                        const idx = parseInt(match[1], 10);
+                        if (!Number.isNaN(idx)) indices.add(idx);
+                    }
+                });
+                setFieldErrors(apiErrors);
+                setServerErrorQuestionIndices(indices);
+                
+                // Show first error in toast
+                const firstError = Object.values(apiErrors)[0];
+                if (firstError && firstError.length > 0) {
+                    toast.error(firstError[0]);
+                }
+
+                // Auto-open the first problematic question for quick fixing
+                const firstErrField = error.data.errors[0]?.field as string | undefined;
+                const openMatch = String(firstErrField || "").match(/questions\.(\d+)/);
+                if (openMatch) {
+                    const idx = parseInt(openMatch[1], 10);
+                    if (!Number.isNaN(idx)) {
+                        const q = quiz.questions[idx];
+                        if (q) {
+                            setEditingQuestion(q);
+                            setCurrentQuestion(q);
+                            onOpen();
+                        }
+                    }
+                }
+            } else {
+                const errorMessage = error?.data?.message || "Failed to save quiz";
+                setErrors({ general: errorMessage });
+                toast.error(errorMessage);
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const totalPoints = quiz.questions.reduce((sum, q) => sum + q.points, 0);
@@ -153,31 +329,56 @@ function CreateQuizContent() {
     return (
         <div className="container mx-auto px-4 py-8 max-w-5xl">
             <div className="mb-8">
-                <h1 className="text-4xl font-bold mb-2">Create Assessment 📝</h1>
-                <p className="text-gray-600">Build quizzes, exams, or assignments for your course</p>
+                <h1 className="text-4xl font-bold mb-2">Create Quiz 📝</h1>
+                <p className="text-gray-600">Build interactive quizzes for your course</p>
             </div>
 
-            {/* Type Selector */}
-            <div className="flex flex-wrap gap-2 mb-6">
-                {(["quiz", "mid-exam", "final-exam", "assignment", "project"] as const).map((type) => (
-                    <button
-                        key={type}
-                        type="button"
-                        onClick={() => setQuiz({ ...quiz, type })}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${quiz.type === type
-                            ? "bg-primary text-white shadow-md scale-105"
-                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                            } capitalize`}
-                    >
-                        {type.replace("-", " ")}
-                    </button>
-                ))}
-            </div>
+            {/* Error Summary */}
+            {(Object.keys(errors).length > 0 || Object.keys(fieldErrors).length > 0) && (
+                <Card className="mb-6 border-2 border-red-500 bg-red-50">
+                    <CardBody className="p-4">
+                        <h3 className="font-bold text-red-600 mb-2">Validation Errors:</h3>
+                        <ul className="list-disc list-inside space-y-1 text-red-600">
+                            {Object.entries(errors).map(([key, value]) => (
+                                <li key={key}>{value}</li>
+                            ))}
+                            {Object.entries(fieldErrors).map(([key, messages]) => (
+                                messages.map((msg, idx) => (
+                                    <li key={`${key}-${idx}`}>{msg}</li>
+                                ))
+                            ))}
+                        </ul>
+                    </CardBody>
+                </Card>
+            )}
 
             {/* Quiz Details */}
             <Card className="mb-6">
                 <CardBody className="p-6">
                     <div className="space-y-4">
+                        {/* Course Selection */}
+                        <div>
+                            <Select
+                                label="Select Course"
+                                selectedKeys={quiz.courseId ? new Set([quiz.courseId]) : new Set()}
+                                onSelectionChange={(keys) => {
+                                    const key = Array.from(keys as Set<string>)[0];
+                                    setQuiz({ ...quiz, courseId: key || "" });
+                                }}
+                                disallowEmptySelection
+                                isRequired
+                                isDisabled={courses.length === 0 || !instructorId}
+                                isInvalid={!!errors.courseId}
+                                errorMessage={errors.courseId}
+                            >
+                                {courses.map((course: any) => (
+                                    <SelectItem key={course._id} value={course._id}>
+                                        {course.title}
+                                    </SelectItem>
+                                ))}
+                            </Select>
+                        </div>
+
                         <Input
                             label="Quiz Title"
                             placeholder="e.g., Python Basics Quiz"
@@ -185,184 +386,211 @@ function CreateQuizContent() {
                             onChange={(e) => setQuiz({ ...quiz, title: e.target.value })}
                             size="lg"
                             isRequired
+                            isInvalid={!!errors.title}
+                            errorMessage={errors.title}
                         />
 
                         <Input
-                            label="Course"
-                            placeholder="e.g., Python for Beginners"
-                            value={quiz.course}
-                            onChange={(e) => setQuiz({ ...quiz, course: e.target.value })}
+                            label="Description (Optional)"
+                            placeholder="Describe what this quiz covers"
+                            value={quiz.description || ""}
+                            onChange={(e) => setQuiz({ ...quiz, description: e.target.value })}
                             size="lg"
-                            isRequired
                         />
 
                         <div className="grid grid-cols-2 gap-4">
-                            {["quiz", "mid-exam", "final-exam"].includes(quiz.type) ? (
-                                <Input
-                                    label="Duration (minutes)"
-                                    type="number"
-                                    value={quiz.duration?.toString()}
-                                    onChange={(e) => setQuiz({ ...quiz, duration: parseInt(e.target.value) || 30 })}
-                                    size="lg"
-                                />
-                            ) : (
-                                <Input
-                                    label="Due Date"
-                                    type="datetime-local"
-                                    value={quiz.dueDate || ""}
-                                    onChange={(e) => setQuiz({ ...quiz, dueDate: e.target.value })}
-                                    size="lg"
-                                    isRequired
-                                />
-                            )}
+                            <Input
+                                label="Duration (minutes)"
+                                type="number"
+                                value={quiz.duration.toString()}
+                                onChange={(e) => {
+                                    const n = parseInt(e.target.value);
+                                    setQuiz({ ...quiz, duration: Number.isNaN(n) ? 30 : n });
+                                }}
+                                description="Set 0 for no time limit"
+                                isRequired
+                                isInvalid={!!errors.duration}
+                                errorMessage={errors.duration}
+                            />
 
-                            <div className="flex items-end">
-                                <div className="p-4 bg-blue-50 rounded-lg w-full">
-                                    <p className="text-sm text-gray-600">Total Points</p>
-                                    {["quiz", "mid-exam", "final-exam"].includes(quiz.type) ? (
-                                        <p className="text-2xl font-bold text-primary">{totalPoints}</p>
-                                    ) : (
-                                        <Input
-                                            type="number"
-                                            value={quiz.maxPoints?.toString() || "100"}
-                                            onChange={(e) => setQuiz({ ...quiz, maxPoints: parseInt(e.target.value) })}
-                                            label="Max Points"
-                                            variant="bordered"
-                                            size="sm"
-                                        />
-                                    )}
-                                </div>
-                            </div>
+                            <Input
+                                label="Passing Score (%)"
+                                type="number"
+                                value={quiz.passingScore.toString()}
+                                onChange={(e) => setQuiz({ ...quiz, passingScore: parseInt(e.target.value) || 60 })}
+                                min={0}
+                                max={100}
+                            />
+                        </div>
+
+                        <div className="flex gap-4">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={quiz.shuffleQuestions}
+                                    onChange={(e) => setQuiz({ ...quiz, shuffleQuestions: e.target.checked })}
+                                />
+                                <span className="text-sm">Shuffle Questions</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={quiz.shuffleOptions}
+                                    onChange={(e) => setQuiz({ ...quiz, shuffleOptions: e.target.checked })}
+                                />
+                                <span className="text-sm">Shuffle Options</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={quiz.showCorrectAnswers}
+                                    onChange={(e) => setQuiz({ ...quiz, showCorrectAnswers: e.target.checked })}
+                                />
+                                <span className="text-sm">Show Correct Answers</span>
+                            </label>
                         </div>
                     </div>
                 </CardBody>
             </Card>
 
-            {/* Questions List - Only for Quizzes/Exams */}
-            {["quiz", "mid-exam", "final-exam"].includes(quiz.type) && (
-                <Card className="mb-6">
-                    <CardBody className="p-6">
-                        <div className="flex justify-between items-center mb-4">
+            {/* Questions List */}
+            <Card className="mb-6">
+                <CardBody className="p-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <div>
                             <h2 className="text-2xl font-bold">Questions ({quiz.questions.length})</h2>
-                            <Button
-                                color="primary"
-                                startContent={<FaPlus />}
-                                onPress={() => {
-                                    setEditingQuestion(null);
-                                    setCurrentQuestion({
-                                        id: "",
-                                        question: "",
-                                        image: "",
-                                        options: ["", "", "", ""],
-                                        correctAnswer: 0,
-                                        points: 1,
-                                    });
-                                    onOpen();
-                                }}
-                            >
-                                Add Question
-                            </Button>
+                            <p className="text-sm text-gray-600">Total Points: {totalPoints}{totalPoints === 0 ? " — add questions to accumulate points" : ""}</p>
                         </div>
+                        <Button
+                            color="primary"
+                            startContent={<FaPlus />}
+                            onPress={() => {
+                                setEditingQuestion(null);
+                                setCurrentQuestion({
+                                    id: "",
+                                    questionText: "",
+                                    questionImage: "",
+                                    questionType: "multiple-choice",
+                                    options: [{ text: "", isCorrect: false }, { text: "", isCorrect: false }, { text: "", isCorrect: false }, { text: "", isCorrect: false }],
+                                    points: 1,
+                                });
+                                    // Clear any lingering error flags
+                                    setFieldErrors({});
+                                    setServerErrorQuestionIndices(new Set());
+                                onOpen();
+                            }}
+                        >
+                            Add Question
+                        </Button>
+                    </div>
 
-                        {quiz.questions.length === 0 ? (
-                            <div className="text-center py-12 text-gray-500">
-                                <p className="mb-4">No questions added yet</p>
-                                <Button color="primary" onPress={onOpen}>Add Your First Question</Button>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {quiz.questions.map((question, index) => (
-                                    <Card key={question.id} className="border-2 border-gray-200">
-                                        <CardBody className="p-4">
-                                            <div className="flex justify-between items-start mb-3">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <Chip size="sm" variant="flat" color="primary">
-                                                            Q{index + 1}
-                                                        </Chip>
-                                                        <Chip size="sm" variant="flat">
-                                                            {question.points} {question.points === 1 ? "point" : "points"}
-                                                        </Chip>
-                                                    </div>
-                                                    <p className="font-semibold text-lg mb-3">{question.question}</p>
-
-                                                    {question.image && (
-                                                        <div className="mb-3">
-                                                            <img
-                                                                src={question.image}
-                                                                alt="Question image"
-                                                                className="max-w-full h-auto rounded-lg border-2 border-gray-200"
-                                                                style={{ maxHeight: "200px" }}
-                                                            />
-                                                        </div>
+                    {quiz.questions.length === 0 ? (
+                        <div className="text-center py-12 text-gray-500">
+                            <p className="mb-4">No questions added yet</p>
+                            <Button color="primary" onPress={onOpen}>Add Your First Question</Button>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {quiz.questions.map((question, index) => (
+                                <Card key={question.id} className="border-2 border-gray-200">
+                                    <CardBody className="p-4">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Chip size="sm" variant="flat" color="primary">
+                                                        Q{index + 1}
+                                                    </Chip>
+                                                    <Chip size="sm" variant="flat">
+                                                        {question.points} {question.points === 1 ? "point" : "points"}
+                                                    </Chip>
+                                                    <Chip size="sm" variant="dot">
+                                                        {question.questionType.replace("-", " ")}
+                                                    </Chip>
+                                                    {serverErrorQuestionIndices.has(index) && (
+                                                        <Chip size="sm" color="danger" variant="flat">Fix required</Chip>
                                                     )}
+                                                </div>
+                                                <p className="font-semibold text-lg mb-3">{question.questionText}</p>
 
+                                                {question.questionImage && (
+                                                    <div className="mb-3">
+                                                        <img
+                                                            src={question.questionImage}
+                                                            alt="Question"
+                                                            className="max-w-full h-auto rounded-lg border-2 border-gray-200"
+                                                            style={{ maxHeight: "200px" }}
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                {question.questionType === "multiple-choice" && question.options && (
                                                     <div className="space-y-2">
                                                         {question.options.map((option, optIndex) => (
                                                             <div
                                                                 key={optIndex}
-                                                                className={`p-2 rounded-lg ${optIndex === question.correctAnswer
+                                                                className={`p-2 rounded-lg ${option.isCorrect
                                                                     ? "bg-green-100 border-2 border-green-500"
                                                                     : "bg-gray-50"
                                                                     }`}
                                                             >
                                                                 <div className="flex items-center gap-2">
-                                                                    {optIndex === question.correctAnswer && (
+                                                                    {option.isCorrect && (
                                                                         <FaCheck className="text-green-600" />
                                                                     )}
                                                                     <span className="font-semibold">{String.fromCharCode(65 + optIndex)}.</span>
-                                                                    <span>{option}</span>
+                                                                    <span>{option.text || <span className="text-red-600">(missing option text)</span>}</span>
                                                                 </div>
+                                                                {/* Inline server-side validation for option text */}
+                                                                {(() => {
+                                                                    const key = `body.questions.${index}.options.${optIndex}.text`;
+                                                                    const msgs = fieldErrors[key];
+                                                                    if (msgs && msgs.length > 0) {
+                                                                        return (
+                                                                            <p className="text-xs text-red-600 mt-1">{msgs[0]}</p>
+                                                                        );
+                                                                    }
+                                                                    return null;
+                                                                })()}
                                                             </div>
                                                         ))}
                                                     </div>
-                                                </div>
+                                                )}
 
-                                                <div className="flex gap-2 ml-4">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="bordered"
-                                                        isIconOnly
-                                                        onPress={() => handleEditQuestion(question)}
-                                                    >
-                                                        <FaEdit />
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        color="danger"
-                                                        variant="bordered"
-                                                        isIconOnly
-                                                        onPress={() => handleDeleteQuestion(question.id)}
-                                                    >
-                                                        <FaTrash />
-                                                    </Button>
-                                                </div>
+                                                {(question.questionType === "short-answer" || question.questionType === "true-false") && (
+                                                    <div className="p-3 bg-green-50 rounded-lg border-2 border-green-200">
+                                                        <p className="text-sm text-gray-600">Correct Answer:</p>
+                                                        <p className="font-semibold text-green-700">{question.correctAnswer}</p>
+                                                    </div>
+                                                )}
                                             </div>
-                                        </CardBody>
-                                    </Card>
-                                ))}
-                            </div>
-                        )}
-                    </CardBody>
-                </Card>
-            )}
 
-            {/* Assignment Details - Only for Assignments/Projects */}
-            {["assignment", "project"].includes(quiz.type) && (
-                <Card className="mb-6 bg-blue-50 border border-blue-100">
-                    <CardBody className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-white rounded-full shadow-sm">
-                                <FaCheck className="text-blue-500 text-xl" />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold text-blue-900">Submission Settings</h3>
-                                <p className="text-blue-700">Students will be able to upload files or submit text for this {quiz.type}.</p>
-                            </div>
+                                            <div className="flex gap-2 ml-4">
+                                                <Button
+                                                    size="sm"
+                                                    variant="bordered"
+                                                    isIconOnly
+                                                    onPress={() => handleEditQuestion(question)}
+                                                >
+                                                    <FaEdit />
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    color="danger"
+                                                    variant="bordered"
+                                                    isIconOnly
+                                                    onPress={() => handleDeleteQuestion(question.id)}
+                                                >
+                                                    <FaTrash />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </CardBody>
+                                </Card>
+                            ))}
                         </div>
-                    </CardBody>
-                </Card>
-            )}
+                    )}
+                </CardBody>
+            </Card>
 
             {/* Action Buttons */}
             <div className="flex gap-4 justify-end">
@@ -370,13 +598,16 @@ function CreateQuizContent() {
                     variant="bordered"
                     size="lg"
                     onPress={() => router.push("/instructor/quizzes")}
+                    isDisabled={isSubmitting}
                 >
                     Cancel
                 </Button>
                 <Button
                     variant="bordered"
                     size="lg"
-                    onPress={() => handleSaveQuiz("draft")}
+                    onPress={() => handleSaveQuiz(false)}
+                    isDisabled={isSubmitting || !quiz.title || !quiz.courseId}
+                    isLoading={isSubmitting}
                 >
                     Save as Draft
                 </Button>
@@ -384,14 +615,16 @@ function CreateQuizContent() {
                     color="primary"
                     size="lg"
                     startContent={<FaSave />}
-                    onPress={() => handleSaveQuiz("published")}
+                    onPress={() => handleSaveQuiz(true)}
+                    isDisabled={isSubmitting || !quiz.title || !quiz.courseId || quiz.questions.length === 0}
+                    isLoading={isSubmitting}
                 >
                     Publish Quiz
                 </Button>
             </div>
 
             {/* Add/Edit Question Modal */}
-            <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside">
+            <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside" isDismissable={false}>
                 <ModalContent>
                     {(onClose) => (
                         <>
@@ -400,16 +633,76 @@ function CreateQuizContent() {
                             </ModalHeader>
                             <ModalBody>
                                 <div className="space-y-4">
+                                    {/* Field Errors Display */}
+                                    {Object.keys(fieldErrors).length > 0 && (
+                                        <Card className="border-2 border-red-500 bg-red-50">
+                                            <CardBody className="p-3">
+                                                <p className="text-red-600 font-semibold text-sm mb-1">Please fix these errors:</p>
+                                                <ul className="text-red-600 text-sm list-disc list-inside space-y-1">
+                                                    {Object.values(fieldErrors).flat().map((msg, idx) => (
+                                                        <li key={idx}>{msg}</li>
+                                                    ))}
+                                                </ul>
+                                            </CardBody>
+                                        </Card>
+                                    )}
+
+                                    {/* Question Type */}
+                                    <Select
+                                        label="Question Type"
+                                        selectedKeys={new Set([currentQuestion.questionType])}
+                                        onSelectionChange={(keys) => {
+                                            const key = Array.from(keys as Set<string>)[0];
+                                            if (!key) return;
+                                            if (key === "multiple-choice") {
+                                                const opts = currentQuestion.options && currentQuestion.options.length > 0
+                                                    ? currentQuestion.options
+                                                    : [{ text: "", isCorrect: false }, { text: "", isCorrect: false }, { text: "", isCorrect: false }, { text: "", isCorrect: false }];
+                                                setCurrentQuestion({
+                                                    ...currentQuestion,
+                                                    questionType: "multiple-choice",
+                                                    options: opts,
+                                                    // clear non-MC correctAnswer
+                                                    correctAnswer: undefined,
+                                                });
+                                            } else if (key === "true-false") {
+                                                setCurrentQuestion({
+                                                    ...currentQuestion,
+                                                    questionType: "true-false",
+                                                    options: undefined,
+                                                    correctAnswer: currentQuestion.correctAnswer || "true",
+                                                });
+                                            } else {
+                                                // short-answer
+                                                setCurrentQuestion({
+                                                    ...currentQuestion,
+                                                    questionType: "short-answer",
+                                                    options: undefined,
+                                                    correctAnswer: currentQuestion.correctAnswer || "",
+                                                });
+                                            }
+                                        }}
+                                        disallowEmptySelection
+                                    >
+                                        <SelectItem key="multiple-choice">Multiple Choice</SelectItem>
+                                        <SelectItem key="true-false">True/False</SelectItem>
+                                        <SelectItem key="short-answer">Short Answer</SelectItem>
+                                    </Select>
+
+                                    {/* Question Text */}
                                     <Input
                                         label="Question"
-                                        placeholder="Enter your question"
-                                        value={currentQuestion.question}
+                                        placeholder="Enter your question (minimum 5 characters)"
+                                        value={currentQuestion.questionText}
                                         onChange={(e) =>
-                                            setCurrentQuestion({ ...currentQuestion, question: e.target.value })
+                                            setCurrentQuestion({ ...currentQuestion, questionText: e.target.value })
                                         }
                                         isRequired
+                                        isInvalid={!!fieldErrors["questionText"]}
+                                        errorMessage={fieldErrors["questionText"]?.[0]}
                                     />
 
+                                    {/* Question Image */}
                                     <div>
                                         <label className="text-sm font-semibold block mb-2">Question Image (Optional)</label>
                                         <input
@@ -422,7 +715,7 @@ function CreateQuizContent() {
                                                     reader.onloadend = () => {
                                                         setCurrentQuestion({
                                                             ...currentQuestion,
-                                                            image: reader.result as string,
+                                                            questionImage: reader.result as string,
                                                         });
                                                     };
                                                     reader.readAsDataURL(file);
@@ -430,10 +723,10 @@ function CreateQuizContent() {
                                             }}
                                             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-600 cursor-pointer"
                                         />
-                                        {currentQuestion.image && (
+                                        {currentQuestion.questionImage && (
                                             <div className="mt-3 relative">
                                                 <img
-                                                    src={currentQuestion.image}
+                                                    src={currentQuestion.questionImage}
                                                     alt="Preview"
                                                     className="max-w-full h-auto rounded-lg border-2 border-gray-200"
                                                     style={{ maxHeight: "200px" }}
@@ -443,7 +736,7 @@ function CreateQuizContent() {
                                                     color="danger"
                                                     variant="flat"
                                                     className="mt-2"
-                                                    onPress={() => setCurrentQuestion({ ...currentQuestion, image: "" })}
+                                                    onPress={() => setCurrentQuestion({ ...currentQuestion, questionImage: "" })}
                                                 >
                                                     Remove Image
                                                 </Button>
@@ -451,38 +744,72 @@ function CreateQuizContent() {
                                         )}
                                     </div>
 
-                                    <div className="space-y-3">
-                                        <label className="text-sm font-semibold">Answer Options</label>
-                                        {currentQuestion.options.map((option, index) => (
-                                            <Input
-                                                key={index}
-                                                label={`Option ${String.fromCharCode(65 + index)}`}
-                                                placeholder={`Enter option ${String.fromCharCode(65 + index)}`}
-                                                value={option}
-                                                onChange={(e) => {
-                                                    const newOptions = [...currentQuestion.options];
-                                                    newOptions[index] = e.target.value;
-                                                    setCurrentQuestion({ ...currentQuestion, options: newOptions });
-                                                }}
-                                                isRequired
-                                            />
-                                        ))}
-                                    </div>
+                                    {/* Multiple Choice Options */}
+                                    {currentQuestion.questionType === "multiple-choice" && (
+                                        <div className="space-y-3">
+                                            <label className="text-sm font-semibold">Answer Options</label>
+                                            {currentQuestion.options?.map((option, index) => (
+                                                <div key={index} className="flex gap-2 items-center">
+                                                    <Input
+                                                        label={`Option ${String.fromCharCode(65 + index)}`}
+                                                        placeholder={`Enter option ${String.fromCharCode(65 + index)}`}
+                                                        value={option.text}
+                                                        onChange={(e) => {
+                                                            const newOptions = [...(currentQuestion.options || [])];
+                                                            newOptions[index] = { ...newOptions[index], text: e.target.value };
+                                                            setCurrentQuestion({ ...currentQuestion, options: newOptions });
+                                                        }}
+                                                        className="flex-1"
+                                                        isInvalid={!!fieldErrors[`option_${index}`]}
+                                                        errorMessage={Array.isArray(fieldErrors[`option_${index}`]) ? fieldErrors[`option_${index}`][0] : (fieldErrors[`option_${index}`] as any)}
+                                                    />
+                                                    <label className="flex items-center gap-2 cursor-pointer">
+                                                        <input
+                                                            type="radio"
+                                                            name="correctAnswer"
+                                                            checked={option.isCorrect}
+                                                            onChange={() => {
+                                                                const newOptions = currentQuestion.options?.map((opt, i) => ({
+                                                                    ...opt,
+                                                                    isCorrect: i === index,
+                                                                })) || [];
+                                                                setCurrentQuestion({ ...currentQuestion, options: newOptions });
+                                                            }}
+                                                        />
+                                                        <span className="text-sm">Correct</span>
+                                                    </label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
 
-                                    <RadioGroup
-                                        label="Correct Answer"
-                                        value={currentQuestion.correctAnswer.toString()}
-                                        onValueChange={(value) =>
-                                            setCurrentQuestion({ ...currentQuestion, correctAnswer: parseInt(value) })
-                                        }
-                                    >
-                                        {currentQuestion.options.map((option, index) => (
-                                            <Radio key={index} value={index.toString()}>
-                                                Option {String.fromCharCode(65 + index)}: {option || "(empty)"}
-                                            </Radio>
-                                        ))}
-                                    </RadioGroup>
+                                    {/* True/False Option */}
+                                    {currentQuestion.questionType === "true-false" && (
+                                        <RadioGroup
+                                            label="Correct Answer"
+                                            value={currentQuestion.correctAnswer || "true"}
+                                            onValueChange={(value) =>
+                                                setCurrentQuestion({ ...currentQuestion, correctAnswer: value })
+                                            }
+                                        >
+                                            <Radio value="true">True</Radio>
+                                            <Radio value="false">False</Radio>
+                                        </RadioGroup>
+                                    )}
 
+                                    {/* Short Answer */}
+                                    {currentQuestion.questionType === "short-answer" && (
+                                        <Input
+                                            label="Correct Answer"
+                                            placeholder="Enter the correct answer"
+                                            value={currentQuestion.correctAnswer || ""}
+                                            onChange={(e) =>
+                                                setCurrentQuestion({ ...currentQuestion, correctAnswer: e.target.value })
+                                            }
+                                        />
+                                    )}
+
+                                    {/* Points */}
                                     <Input
                                         label="Points"
                                         type="number"
@@ -494,6 +821,8 @@ function CreateQuizContent() {
                                             })
                                         }
                                         min={1}
+                                        isInvalid={!!fieldErrors["points"]}
+                                        errorMessage={fieldErrors["points"]?.[0]}
                                     />
                                 </div>
                             </ModalBody>

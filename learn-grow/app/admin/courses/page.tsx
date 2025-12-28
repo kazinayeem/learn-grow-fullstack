@@ -19,8 +19,12 @@ import {
   AccordionItem,
   Tabs,
   Tab,
+  Select,
+  SelectItem,
+  Pagination,
 } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
+import DOMPurify from "isomorphic-dompurify";
 import {
   useGetAllCoursesQuery,
   useDeleteCourseMutation,
@@ -30,18 +34,41 @@ import {
   useUpdateCourseMutation,
   useGetModulesQuery,
 } from "@/redux/api/courseApi";
+import { useGetAllCategoriesQuery } from "@/redux/api/categoryApi";
 import { FaSearch, FaCheck, FaTimes, FaEye, FaVideo, FaFileAlt, FaTrash, FaEdit } from "react-icons/fa";
 import { toast } from "react-toastify";
 
 export default function ManageCoursesPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "approved">("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
-  const { data, isLoading, error } = useGetAllCoursesQuery({});
+  // Debounce search term
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(1); // Reset to first page on search
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const { data: categoriesData } = useGetAllCategoriesQuery(undefined);
+  const categories: any[] = Array.isArray(categoriesData) ? categoriesData : [];
+
+  const { data, isLoading, error, isFetching } = useGetAllCoursesQuery({
+    page,
+    limit,
+    search: debouncedSearch,
+    status: filterStatus === "all" ? undefined : filterStatus,
+    category: selectedCategory || undefined,
+  });
   const { data: selectedCourseResponse, isFetching: isFetchingSelectedCourse } = useGetCourseByIdQuery(
     selectedCourseId!,
     { skip: !selectedCourseId }
@@ -55,19 +82,18 @@ export default function ManageCoursesPage() {
   const [updateCourse, { isLoading: isUpdatingCourse }] = useUpdateCourseMutation();
 
   const courseList: any[] = data?.data?.courses || data?.data || [];
+  const totalCourses = data?.data?.total || data?.total || courseList.length;
+  const totalPages = Math.ceil(totalCourses / limit);
 
-  const filteredCourses = courseList.filter((course) => {
-    const matchesSearch =
-      course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.category?.toLowerCase().includes(searchTerm.toLowerCase());
+  // Debug: Log course data to see structure
+  React.useEffect(() => {
+    if (courseList.length > 0) {
+      console.log("Sample course data:", courseList[0]);
+    }
+  }, [courseList]);
 
-    const matchesFilter =
-      filterStatus === "all" ||
-      (filterStatus === "pending" && !course.isAdminApproved) ||
-      (filterStatus === "approved" && course.isAdminApproved);
-
-    return matchesSearch && matchesFilter;
-  });
+  // No need for client-side filtering anymore - backend handles it
+  const filteredCourses = courseList;
 
   const activeCourse = selectedCourseResponse?.data || selectedCourse;
   const activeModules = selectedModulesResponse?.data || activeCourse?.modules || [];
@@ -167,7 +193,7 @@ export default function ManageCoursesPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardBody className="text-center py-6">
-            <p className="text-3xl font-bold text-primary">{stats.total}</p>
+            <p className="text-3xl font-bold text-primary">{totalCourses}</p>
             <p className="text-gray-600 mt-1">Total Courses</p>
           </CardBody>
         </Card>
@@ -191,8 +217,8 @@ export default function ManageCoursesPage() {
         </Card>
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-6">
+      {/* Search and Limit Controls */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <Input
           placeholder="Search courses by name or category..."
           value={searchTerm}
@@ -200,13 +226,52 @@ export default function ManageCoursesPage() {
           size="lg"
           startContent={<span>🔍</span>}
           variant="bordered"
+          className="flex-1"
+          isClearable
+          onClear={() => setSearchTerm("")}
         />
+        <Select
+          label="Category"
+          placeholder="All Categories"
+          selectedKeys={selectedCategory ? [selectedCategory] : []}
+          onChange={(e) => {
+            setSelectedCategory(e.target.value);
+            setPage(1);
+          }}
+          className="w-full sm:w-48"
+          size="lg"
+        >
+          <SelectItem key="" value="">All Categories</SelectItem>
+          {categories.map((cat: any) => (
+            <SelectItem key={cat._id} value={cat._id}>
+              {cat.name}
+            </SelectItem>
+          ))}
+        </Select>
+        <Select
+          label="Items per page"
+          selectedKeys={[String(limit)]}
+          onChange={(e) => {
+            setLimit(Number(e.target.value));
+            setPage(1);
+          }}
+          className="w-full sm:w-32"
+          size="lg"
+        >
+          <SelectItem key="10" value="10">10</SelectItem>
+          <SelectItem key="20" value="20">20</SelectItem>
+          <SelectItem key="50" value="50">50</SelectItem>
+          <SelectItem key="100" value="100">100</SelectItem>
+        </Select>
       </div>
 
       {/* Filter Tabs */}
       <Tabs
         selectedKey={filterStatus}
-        onSelectionChange={(key) => setFilterStatus(key as "all" | "pending" | "approved")}
+        onSelectionChange={(key) => {
+          setFilterStatus(key as "all" | "pending" | "approved");
+          setPage(1);
+        }}
         className="mb-6"
         color="primary"
       >
@@ -214,6 +279,13 @@ export default function ManageCoursesPage() {
         <Tab key="pending" title="Pending Approval" />
         <Tab key="approved" title="Approved" />
       </Tabs>
+
+      {/* Loading Indicator */}
+      {isFetching && (
+        <div className="flex justify-center mb-4">
+          <Spinner size="sm" />
+        </div>
+      )}
 
       {/* Courses Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -240,23 +312,39 @@ export default function ManageCoursesPage() {
                     </Chip>
                   )}
                 </div>
-                <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                  {course.description}
-                </p>
+                <div 
+                  className="text-sm text-gray-600 mb-3 line-clamp-2 prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(String(course.description || "")) }}
+                />
                 <div className="flex gap-2 mb-3 flex-wrap">
                   <Chip size="sm" variant="flat" color="primary">
-                    {course.category}
+                    {String(course.category || "")}
                   </Chip>
                   <Chip size="sm" variant="flat">
-                    {course.level}
+                    {String(course.level || "")}
+                  </Chip>
+                  <Chip size="sm" variant="flat">
+                    Type: {String(course.type || "recorded")}
+                  </Chip>
+                  <Chip size="sm" variant="flat" color={course.isRegistrationOpen ? "success" : "default"}>
+                    {course.isRegistrationOpen ? "Reg. Open" : "Reg. Closed"}
                   </Chip>
                   <Chip size="sm" variant="flat" color={course.isPublished ? "success" : "default"}>
                     {course.isPublished ? "Published" : "Draft"}
                   </Chip>
                 </div>
-                <p className="text-sm text-gray-600 mb-4">
-                  <strong>BDT {course.price}</strong> • {course.modules?.length || 0} Modules
-                </p>
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600">
+                    <strong>BDT {course.price}</strong> • {course.modules?.length || 0} Modules
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Instructor: {
+                      typeof course.instructorId === 'object' && course.instructorId 
+                        ? (course.instructorId.name || course.instructorId.email || course.instructorId._id)
+                        : (course.instructorName || course.instructor?.name || String(course.instructorId || "Unknown"))
+                    }
+                  </p>
+                </div>
 
                 {/* Action Buttons */}
                 <div className="flex gap-2 flex-wrap">
@@ -268,6 +356,14 @@ export default function ManageCoursesPage() {
                     startContent={<FaEye />}
                   >
                     Details
+                  </Button>
+                  <Button
+                    size="sm"
+                    color="primary"
+                    variant="bordered"
+                    onPress={() => router.push(`/admin/courses/${course._id}/instor`)}
+                  >
+                    Open Details Page
                   </Button>
                   <Button
                     size="sm"
@@ -335,12 +431,26 @@ export default function ManageCoursesPage() {
         ))}
       </div>
 
-      {filteredCourses.length === 0 && (
+      {filteredCourses.length === 0 && !isFetching && (
         <Card>
           <CardBody className="text-center py-10">
             <p className="text-gray-500">No courses found</p>
           </CardBody>
         </Card>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-8 mb-6">
+          <Pagination
+            total={totalPages}
+            page={page}
+            onChange={setPage}
+            showControls
+            color="primary"
+            size="lg"
+          />
+        </div>
       )}
 
       {/* Course Details Modal */}
@@ -405,9 +515,10 @@ export default function ManageCoursesPage() {
               <div className="space-y-6">
                 <div>
                   <h3 className="font-bold text-lg mb-2">Description</h3>
-                  <p className="text-gray-700">
-                    {activeCourse.description}
-                  </p>
+                  <div 
+                    className="text-gray-700 prose max-w-none"
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(String(activeCourse.description || "")) }}
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

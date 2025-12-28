@@ -9,11 +9,11 @@ import { categoryRoutes } from "@/modules/category";
 import { jobRoutes } from "@/modules/job";
 import { courseRoutes } from "@/modules/course";
 import { assessmentRoutes } from "@/modules/assessment";
+import { quizRoutes } from "@/modules/quiz";
 import { siteContentRoutes } from "@/modules/siteContent";
 import { settingsRoutes } from "@/modules/settings";
 import { statusRoutes } from "@/modules/status";
-import { siteContentRoutes } from "@/modules/siteContent";
-import { settingsRoutes } from "@/modules/settings";
+import blogRoutes from "@/modules/blog/routes/blog.route";
 import googleRoutes from "@/modules/user/routes/google.routes";
 import { ENV } from "@/config/env";
 import "@/config/passport";
@@ -53,10 +53,12 @@ export const createApp = () => {
   app.use("/api/users", userRoutes);
 
   // Other routes
-  app.use("/category", categoryRoutes);
+  app.use("/api/category", categoryRoutes);
+  app.use("/api/blog", blogRoutes);
   app.use("/api/job", jobRoutes);
   app.use("/api/course", courseRoutes);
   app.use("/api/assessment", assessmentRoutes);
+  app.use("/api/quiz", quizRoutes);
   app.use("/api/status", statusRoutes);
   app.use("/api/v1/status", statusRoutes);
   // Site Content (public + admin upsert)

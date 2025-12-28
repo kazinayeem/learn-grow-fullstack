@@ -22,10 +22,16 @@ export const courseApi = baseApi.injectEndpoints({
                 }),
         // Courses
         getAllCourses: build.query({
-            query: (params) => ({
+            query: (params = {}) => ({
                 url: "/course/get-all-courses",
                 method: "GET",
-                params,
+                params: {
+                    page: params.page || 1,
+                    limit: params.limit || 10,
+                    search: params.search || undefined,
+                    status: params.status || undefined,
+                    category: params.category || undefined,
+                },
             }),
             providesTags: ["Course"],
         }),
@@ -140,6 +146,32 @@ export const courseApi = baseApi.injectEndpoints({
             query: () => ({ url: "/course/pending-approval-courses", method: "GET" }),
             providesTags: ["Course"],
         }),
+
+        // Registration controls
+        setRegistrationOpen: build.mutation({
+            query: ({ id, isRegistrationOpen }: { id: string; isRegistrationOpen: boolean }) => ({
+                url: `/course/set-registration-open/${id}`,
+                method: "PATCH",
+                body: { isRegistrationOpen },
+            }),
+            invalidatesTags: (r, e, { id }) => [{ type: "Course", id }, "Course"],
+        }),
+        setRegistrationDeadline: build.mutation({
+            query: ({ id, registrationDeadline }: { id: string; registrationDeadline?: string | null }) => ({
+                url: `/course/set-registration-deadline/${id}`,
+                method: "PATCH",
+                body: { registrationDeadline },
+            }),
+            invalidatesTags: (r, e, { id }) => [{ type: "Course", id }, "Course"],
+        }),
+        adminSetRegistration: build.mutation({
+            query: ({ id, ...body }: { id: string; isRegistrationOpen?: boolean; registrationDeadline?: string | null }) => ({
+                url: `/course/admin/set-registration/${id}`,
+                method: "PATCH",
+                body,
+            }),
+            invalidatesTags: (r, e, { id }) => [{ type: "Course", id }, "Course"],
+        }),
     }),
 });
 
@@ -178,4 +210,8 @@ export const {
     useApproveCourseMutation,
     useRejectCourseApprovalMutation,
     useGetPendingApprovalCoursesQuery,
+    // Registration
+    useSetRegistrationOpenMutation,
+    useSetRegistrationDeadlineMutation,
+    useAdminSetRegistrationMutation,
 } = courseApi;

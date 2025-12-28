@@ -141,7 +141,11 @@ export default function CreateQuizPage() {
                                     type="number"
                                     label="Time Limit (minutes)"
                                     value={formData.timeLimit.toString()}
-                                    onChange={(e) => setFormData({ ...formData, timeLimit: parseInt(e.target.value) })}
+                                    onChange={(e) => {
+                                        const n = parseInt(e.target.value);
+                                        setFormData({ ...formData, timeLimit: Number.isNaN(n) ? 30 : n });
+                                    }}
+                                    description="Set 0 for no time limit"
                                     variant="bordered"
                                 />
                             </div>

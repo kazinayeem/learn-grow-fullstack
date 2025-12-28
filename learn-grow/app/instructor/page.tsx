@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardBody, Button, Chip } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
+import RequireAuth from "@/components/Auth/RequireAuth";
 import {
     FaBook,
     FaUsers,
@@ -11,10 +12,12 @@ import {
     FaUpload,
     FaVideo,
     FaExclamationTriangle,
+    FaClipboard,
 } from "react-icons/fa";
 import { useGetInstructorCoursesQuery } from "@/redux/api/courseApi";
+import { useGetInstructorStatsQuery } from "@/redux/api/userApi";
 
-export default function InstructorDashboard() {
+function InstructorDashboardContent() {
     const router = useRouter();
     const [isApproved, setIsApproved] = useState<boolean | null>(null);
     const [userName, setUserName] = useState<string>("");
@@ -35,9 +38,29 @@ export default function InstructorDashboard() {
         skip: !instructorId,
     });
 
+    const { data: statsResp } = useGetInstructorStatsQuery(undefined, {
+        skip: !instructorId,
+    });
+
     const courses = Array.isArray(instructorCoursesResp?.data) ? instructorCoursesResp!.data : [];
 
     const stats = useMemo(() => {
+        // Use API stats if available, otherwise calculate from courses
+        if (statsResp?.success && statsResp?.data) {
+            const { studentEngagement, completionRate, totalRevenue, thisMonthRevenue, totalStudents, totalCourses } = statsResp.data;
+            return {
+                totalCourses,
+                totalStudents,
+                activeCourses: courses.filter((c: any) => c.isPublished).length,
+                totalEarnings: totalRevenue,
+                thisMonthEarnings: thisMonthRevenue,
+                completionRate,
+                avgRating: "0.0",
+                studentEngagement,
+            };
+        }
+
+        // Fallback: calculate from courses
         const totalCourses = courses.length;
         const totalStudents = courses.reduce((sum: number, c: any) => sum + (c.studentsEnrolled || c.enrolled || 0), 0);
         const totalEarnings = courses.reduce((sum: number, c: any) => sum + (c.revenue || 0), 0);
@@ -55,8 +78,9 @@ export default function InstructorDashboard() {
             avgRating: ratedCourses.length
                 ? (ratedCourses.reduce((sum, c) => sum + (c.rating || 0), 0) / ratedCourses.length).toFixed(1)
                 : "0.0",
+            studentEngagement: completionRate,
         };
-    }, [courses]);
+    }, [courses, statsResp]);
 
     const quickActions = [
         {
@@ -65,6 +89,13 @@ export default function InstructorDashboard() {
             icon: <FaBook className="text-3xl" />,
             color: "from-blue-500 to-blue-600",
             href: "/instructor/courses",
+        },
+        {
+            title: "Quizzes",
+            description: "Create and manage quizzes",
+            icon: <FaClipboard className="text-3xl" />,
+            color: "from-indigo-500 to-indigo-600",
+            href: "/instructor/quizzes",
         },
         {
             title: "Students",
@@ -296,5 +327,13 @@ export default function InstructorDashboard() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function InstructorDashboard() {
+    return (
+        <RequireAuth allowedRoles={["instructor"]}>
+            <InstructorDashboardContent />
+        </RequireAuth>
     );
 }

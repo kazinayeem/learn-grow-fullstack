@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
+import RequireAuth from "@/components/Auth/RequireAuth";
 import { Card, CardBody, Button, Spinner } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import { useGetUsersAdminQuery } from "@/redux/api/userApi";
@@ -15,7 +16,7 @@ import {
     FaBriefcase,
 } from "react-icons/fa";
 
-export default function AdminDashboard() {
+function AdminDashboardContent() {
     const router = useRouter();
 
     // Fetch real data
@@ -263,5 +264,13 @@ export default function AdminDashboard() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function AdminDashboard() {
+    return (
+        <RequireAuth allowedRoles={["admin"]}>
+            <AdminDashboardContent />
+        </RequireAuth>
     );
 }

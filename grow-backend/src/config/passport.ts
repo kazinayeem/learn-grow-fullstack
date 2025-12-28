@@ -15,18 +15,18 @@ if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
       },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        // Check if user exists
+        // Check if user exists by Google ID
         let user = await User.findOne({ googleId: profile.id });
+        let isNewUser = false;
 
         if (user) {
           return done(null, user);
         }
 
-        // Create new user from Google profile
+        // Check if email already exists
         const email = profile.emails?.[0]?.value;
         const name = profile.displayName;
 
-        // Check if email already exists
         if (email) {
           user = await User.findOne({ email });
           if (user) {
@@ -37,14 +37,18 @@ if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
           }
         }
 
-        // Create new user - default role is student
+        // Create new user as temporary (role will be selected by user)
+        // Store in session that this is a new user needing role selection
         user = await User.create({
           googleId: profile.id,
           name,
           email,
-          role: "student",
+          role: "student", // Default role, user can change during registration
           isVerified: true, // Google verified
         });
+
+        // Mark as new user so frontend knows to ask for role
+        user.isNewGoogleUser = true;
 
         return done(null, user);
       } catch (error) {

@@ -12,15 +12,21 @@ export interface IUser {
   otpExpiresAt?: Date;
   refreshToken?: string;
   googleId?: string;
+  isNewGoogleUser?: boolean;
   isVerified?: boolean;
   verificationToken?: string;
   isApproved?: boolean; // For instructor approval by super admin
+  bio?: string;
+  expertise?: string;
+  qualification?: string;
+  institution?: string;
+  yearsOfExperience?: number;
 }
 
 const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true },
-    phone: { type: String, sparse: true },
+    phone: { type: String, sparse: true, index: true }, // Index but NOT unique
     email: { type: String, unique: true, sparse: true },
     password: { type: String },
     role: {
@@ -34,7 +40,8 @@ const userSchema = new Schema<IUser>(
     otp: String,
     otpExpiresAt: Date,
     refreshToken: String,
-    googleId: String,
+    googleId: { type: String, sparse: true, index: true }, // Index but NOT unique
+    isNewGoogleUser: { type: Boolean, default: false },
     isVerified: { type: Boolean, default: false },
     verificationToken: String,
     isApproved: {
@@ -45,6 +52,11 @@ const userSchema = new Schema<IUser>(
         return role !== "instructor";
       },
     },
+    bio: String,
+    expertise: String,
+    qualification: String,
+    institution: String,
+    yearsOfExperience: Number,
   },
   { timestamps: true }
 );

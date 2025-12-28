@@ -13,9 +13,11 @@ export const getAllCourses = async (filters: any = {}) => {
   const query: any = {};
   
   if (filters.category) query.category = filters.category;
+  if (filters.type) query.type = filters.type;
   if (filters.level) query.level = filters.level;
   if (filters.isPublished !== undefined) query.isPublished = filters.isPublished === "true";
   if (filters.isFeatured !== undefined) query.isFeatured = filters.isFeatured === "true";
+  if (filters.isRegistrationOpen !== undefined) query.isRegistrationOpen = filters.isRegistrationOpen === "true";
   if (filters.instructorId) query.instructorId = filters.instructorId;
   
   const page = Math.max(1, parseInt(filters.page || "1"));
@@ -23,6 +25,7 @@ export const getAllCourses = async (filters: any = {}) => {
   const skip = (page - 1) * limit;
   
   const courses = await Course.find(query)
+    .populate("instructorId", "name email profileImage")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)
@@ -43,20 +46,36 @@ export const getAllCourses = async (filters: any = {}) => {
 
 export const getPublishedCourses = async () => {
   // Only show courses that are both published AND admin approved
-  return Course.find({ isPublished: true, isAdminApproved: true }).sort({ createdAt: -1 }).lean();
+  return Course.find({ isPublished: true, isAdminApproved: true })
+    .populate("instructorId", "name email profileImage")
+    .sort({ createdAt: -1 })
+    .lean();
 };
 
 export const getFeaturedCourses = async () => {
   // Only show courses that are both published AND admin approved
-  return Course.find({ isPublished: true, isFeatured: true, isAdminApproved: true }).lean();
+  return Course.find({ isPublished: true, isFeatured: true, isAdminApproved: true })
+    .populate("instructorId", "name email profileImage")
+    .lean();
 };
 
-export const getCourseById = async (id: string) => {
-  const course = await Course.findById(id).populate("instructorId", "name email profileImage");
+export const getCourseById = async (
+  id: string,
+  options?: { userId?: string; userRole?: string }
+) => {
+  const course = await Course.findById(id)
+    .populate("instructorId", "name email profileImage phone bio role expertise experience education");
   
   if (!course) {
     return null;
   }
+
+  const courseInstructorId =
+    (course.instructorId as any)?._id?.toString?.() ?? course.instructorId?.toString?.();
+
+  const allowFullLessons =
+    options?.userRole === "admin" ||
+    (options?.userRole === "instructor" && courseInstructorId === options.userId);
 
   // Fetch modules for this course
   const modules = await Module.find({ courseId: id }).sort({ orderIndex: 1 }).lean();
@@ -65,13 +84,25 @@ export const getCourseById = async (id: string) => {
   const modulesWithLessons = await Promise.all(
     modules.map(async (module) => {
       const lessons = await Lesson.find({ moduleId: module._id }).sort({ orderIndex: 1 }).lean();
+      
+      // Remove sensitive fields from module
+      const { resources, ...safeModule } = module as any;
+      
+      const filteredLessons = allowFullLessons
+        ? lessons
+        : lessons.filter((lesson) => lesson.isFreePreview === true);
+
       return {
-        ...module,
+        ...safeModule,
         id: module._id.toString(),
-        lessons: lessons.map(lesson => ({
-          ...lesson,
-          id: lesson._id.toString(),
-        })),
+        lessons: filteredLessons.map((lesson) => {
+          const { resources: _ignoredResources, ...safeLesson } = lesson as any;
+          return {
+            ...safeLesson,
+            id: lesson._id.toString(),
+            contentUrl: lesson.contentUrl,
+          };
+        }),
       };
     })
   );
@@ -92,11 +123,14 @@ export const deleteCourse = (id: string) => {
 };
 
 export const getCoursesByInstructor = (instructorId: string) => {
-  return Course.find({ instructorId }).sort({ createdAt: -1 });
+  return Course.find({ instructorId })
+    .sort({ createdAt: -1 });
 };
 
 export const getCoursesByCategory = (category: string) => {
-  return Course.find({ category, isPublished: true }).sort({ createdAt: -1 });
+  return Course.find({ category, isPublished: true, isAdminApproved: true })
+    .populate("instructorId", "name email profileImage")
+    .sort({ createdAt: -1 });
 };
 
 // ===== MODULE SERVICES =====
@@ -226,4 +260,62 @@ export const getPendingApprovalCourses = async () => {
   return Course.find({ isPublished: true, isAdminApproved: false })
     .populate("instructorId", "name email")
     .sort({ createdAt: -1 });
+};
+
+// ===== COURSE REGISTRATION CONTROLS =====
+
+export const setRegistrationOpen = async (
+  courseId: string,
+  userId: string,
+  userRole: string,
+  isOpen: boolean
+) => {
+  const course = await Course.findById(courseId);
+  if (!course) throw new Error("Course not found");
+
+  // Allow owner instructor or admin
+  if (userRole !== "admin" && course.instructorId.toString() !== userId) {
+    throw new Error("Unauthorized: You don't have permission to update registration status");
+  }
+
+  course.isRegistrationOpen = isOpen;
+  await course.save();
+  return course;
+};
+
+export const setRegistrationDeadline = async (
+  courseId: string,
+  userId: string,
+  userRole: string,
+  deadline: string | null | undefined
+) => {
+  const course = await Course.findById(courseId);
+  if (!course) throw new Error("Course not found");
+
+  // Allow owner instructor or admin
+  if (userRole !== "admin" && course.instructorId.toString() !== userId) {
+    throw new Error("Unauthorized: You don't have permission to update registration deadline");
+  }
+
+  course.registrationDeadline = deadline ? new Date(deadline) : null;
+  await course.save();
+  return course;
+};
+
+export const adminSetRegistration = async (
+  courseId: string,
+  isOpen?: boolean,
+  deadline?: string | null
+) => {
+  const course = await Course.findById(courseId);
+  if (!course) throw new Error("Course not found");
+
+  if (typeof isOpen === "boolean") {
+    course.isRegistrationOpen = isOpen;
+  }
+  if (deadline !== undefined) {
+    course.registrationDeadline = deadline ? new Date(deadline) : null;
+  }
+  await course.save();
+  return course;
 };

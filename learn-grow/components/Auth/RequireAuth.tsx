@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Spinner } from "@nextui-org/react";
+import Cookies from "js-cookie";
 
 interface RequireAuthProps {
     children: React.ReactNode;
@@ -15,26 +16,20 @@ export default function RequireAuth({ children, allowedRoles }: RequireAuthProps
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        const userStr = localStorage.getItem("user");
+        const token = Cookies.get("accessToken");
+        const userRole = Cookies.get("userRole");
 
-        if (!token || !userStr) {
+        // No token - redirect to login
+        if (!token) {
             router.push("/login");
             return;
         }
 
+        // Check role-based access
         if (allowedRoles && allowedRoles.length > 0) {
-            try {
-                const user = JSON.parse(userStr);
-                if (!allowedRoles.includes(user.role)) {
-                    // User is logged in but doesn't have permission
-                    alert("Access Denied: You do not have permission to view this page.");
-                    router.push("/dashboard"); // Redirect to a safe page
-                    return;
-                }
-            } catch (e) {
-                console.error("Error parsing user data", e);
-                router.push("/login");
+            if (!allowedRoles.includes(userRole || "")) {
+                // User is logged in but doesn't have permission
+                router.push("/unauthorized");
                 return;
             }
         }
@@ -52,8 +47,8 @@ export default function RequireAuth({ children, allowedRoles }: RequireAuthProps
     }
 
     if (!authorized) {
-        return null; // Don't render anything while redirecting
+        return null;
     }
 
-    return <>{children}</>;
+    return children;
 }

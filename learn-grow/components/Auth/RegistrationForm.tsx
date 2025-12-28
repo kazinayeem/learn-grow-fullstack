@@ -15,7 +15,7 @@ import {
 } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { sendOTP, verifyOTP, register } from "@/lib/auth";
+import { sendOTP, verifyOTP, register, loginWithGoogle } from "@/lib/auth";
 import { FcGoogle } from "react-icons/fc";
 
 type Step = "role" | "contact" | "otp" | "details";
@@ -225,6 +225,14 @@ export default function RegistrationForm() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
+  const handleGoogleSignup = () => {
+    try {
+      loginWithGoogle();
+    } catch (err: any) {
+      toast.error("Google sign up failed. Please try again.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 py-8">
       <Card className="w-full max-w-md">
@@ -240,6 +248,27 @@ export default function RegistrationForm() {
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               {error}
             </div>
+          )}
+
+          {/* Google Signup Button - shown on all steps */}
+          {step === "role" && (
+            <>
+              <Button
+                isDisabled={isLoading}
+                startContent={<FcGoogle size={20} />}
+                fullWidth
+                variant="bordered"
+                onClick={handleGoogleSignup}
+              >
+                Sign up with Google
+              </Button>
+
+              <div className="flex items-center gap-3">
+                <Divider className="flex-1" />
+                <span className="text-xs text-gray-500">OR</span>
+                <Divider className="flex-1" />
+              </div>
+            </>
           )}
 
           {/* Step 1: Role Selection */}

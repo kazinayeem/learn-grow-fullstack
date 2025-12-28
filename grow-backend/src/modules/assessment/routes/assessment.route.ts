@@ -16,8 +16,6 @@ router.post(
 
 router.get(
   "/by-course/:courseId",
-  requireAuth,
-  requireRoles("admin", "instructor"),
   validate(schema.courseIdParamSchema),
   controller.byCourse
 );

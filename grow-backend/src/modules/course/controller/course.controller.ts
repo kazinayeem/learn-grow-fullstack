@@ -64,6 +64,10 @@ export const createCourse = async (req: Request, res: Response) => {
     if (req.userRole === "instructor") {
       req.body.instructorId = req.userId;
     }
+    // If admin doesn't provide instructorId, default to admin's own id
+    if (req.userRole === "admin" && !req.body.instructorId) {
+      req.body.instructorId = req.userId;
+    }
 
     const course = await service.createCourse(req.body);
     res.status(201).json({
@@ -191,7 +195,10 @@ export const getFeaturedCourses = async (_: Request, res: Response) => {
 
 export const getCourseById = async (req: Request, res: Response) => {
   try {
-    const course = await service.getCourseById(req.params.id);
+    const course = await service.getCourseById(req.params.id, {
+      userId: req.userId,
+      userRole: req.userRole,
+    });
     if (!course) {
       return res.status(404).json({
         success: false,
@@ -678,6 +685,65 @@ export const getPendingApprovalCourses = async (_: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: error.message || "Failed to get pending approval courses",
+    });
+  }
+};
+
+// ===== COURSE REGISTRATION CONTROLLERS =====
+
+export const setRegistrationOpen = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { isRegistrationOpen } = req.body as { isRegistrationOpen: boolean };
+
+    const course = await service.setRegistrationOpen(id, req.userId!, req.userRole!, isRegistrationOpen);
+    res.json({
+      success: true,
+      message: "Registration status updated",
+      data: course,
+    });
+  } catch (error: any) {
+    res.status(error.message.includes("Unauthorized") ? 403 : 500).json({
+      success: false,
+      message: error.message || "Failed to update registration status",
+    });
+  }
+};
+
+export const setRegistrationDeadline = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { registrationDeadline } = req.body as { registrationDeadline?: string | null };
+
+    const course = await service.setRegistrationDeadline(id, req.userId!, req.userRole!, registrationDeadline);
+    res.json({
+      success: true,
+      message: "Registration deadline updated",
+      data: course,
+    });
+  } catch (error: any) {
+    res.status(error.message.includes("Unauthorized") ? 403 : 500).json({
+      success: false,
+      message: error.message || "Failed to update registration deadline",
+    });
+  }
+};
+
+export const adminSetRegistration = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { isRegistrationOpen, registrationDeadline } = req.body as { isRegistrationOpen?: boolean; registrationDeadline?: string | null };
+
+    const course = await service.adminSetRegistration(id, isRegistrationOpen, registrationDeadline);
+    res.json({
+      success: true,
+      message: "Registration settings updated by admin",
+      data: course,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to update registration settings",
     });
   }
 };
