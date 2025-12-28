@@ -1,16 +1,23 @@
 "use client";
 
 import React from "react";
-import { Card, CardBody, Chip, Button, Divider } from "@nextui-org/react";
+import { Card, CardBody, Chip, Button, Divider, Spinner } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import { useGetMyOrdersQuery } from "@/redux/api/orderApi";
-import { FaBoxOpen, FaClock, FaCheckCircle, FaTimes } from "react-icons/fa";
+import { FaBoxOpen, FaClock, FaCheckCircle, FaTimes, FaShoppingBag, FaCalendarAlt } from "react-icons/fa";
 
 const PLAN_NAMES = {
   single: "Single Course",
-  quarterly: "Quarterly Subscription",
+  quarterly: "All Access",
   kit: "Robotics Kit",
-  school: "School Partnership",
+  school: "School Plan",
+};
+
+const PLAN_ICONS = {
+  single: "📚",
+  quarterly: "🎓",
+  kit: "🤖",
+  school: "🏫",
 };
 
 const STATUS_COLORS = {
@@ -31,8 +38,8 @@ export default function StudentOrdersPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8">
-        <p>Loading your orders...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <Spinner size="lg" label="Loading orders..." />
       </div>
     );
   }
@@ -40,190 +47,161 @@ export default function StudentOrdersPage() {
   const orders = data?.orders || [];
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">My Orders</h1>
-        <Button color="primary" onPress={() => router.push("/pricing")}>
-          Buy New Plan
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4 max-w-5xl">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">My Orders</h1>
+            <p className="text-sm text-gray-600 mt-1">{orders.length} order{orders.length !== 1 ? 's' : ''} found</p>
+          </div>
+          <Button 
+            color="primary" 
+            size="sm"
+            onPress={() => router.push("/courses")}
+            startContent={<FaShoppingBag />}
+          >
+            Browse Courses
+          </Button>
+        </div>
 
-      {orders.length === 0 ? (
-        <Card>
-          <CardBody className="p-12 text-center">
-            <FaBoxOpen className="text-6xl text-gray-300 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2">No Orders Yet</h2>
-            <p className="text-gray-600 mb-6">
-              You haven't placed any orders. Start learning today!
-            </p>
-            <Button color="primary" size="lg" onPress={() => router.push("/pricing")}>
-              View Pricing Plans
-            </Button>
-          </CardBody>
-        </Card>
-      ) : (
-        <div className="space-y-6">
-          {orders.map((order) => {
-            const StatusIcon = STATUS_ICONS[order.paymentStatus];
-            const isActive = order.isActive && order.endDate && new Date(order.endDate) > new Date();
+        {/* Orders List */}
+        {orders.length === 0 ? (
+          <Card>
+            <CardBody className="p-10 text-center">
+              <FaBoxOpen className="text-5xl text-gray-300 mx-auto mb-3" />
+              <h2 className="text-xl font-bold mb-2">No Orders Yet</h2>
+              <p className="text-gray-600 text-sm mb-5">
+                Start your learning journey today!
+              </p>
+              <Button color="primary" onPress={() => router.push("/courses")}>
+                Browse Courses
+              </Button>
+            </CardBody>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {orders.map((order) => {
+              const StatusIcon = STATUS_ICONS[order.paymentStatus];
+              const isActive = order.isActive && order.endDate && new Date(order.endDate) > new Date();
 
-            return (
-              <Card key={order._id} className="border-2">
-                <CardBody className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-2xl font-bold mb-1">{PLAN_NAMES[order.planType]}</h3>
-                      {order.courseId && (
-                        <p className="text-gray-600">{order.courseId.title}</p>
-                      )}
-                      <p className="text-sm text-gray-500 mt-1">
-                        Order ID: <code>{order._id.slice(-8)}</code>
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-3xl font-bold text-primary">৳{order.price.toLocaleString()}</p>
-                      <Chip
-                        color={STATUS_COLORS[order.paymentStatus] as any}
-                        variant="flat"
-                        className="mt-2"
-                        startContent={<StatusIcon />}
-                      >
-                        {order.paymentStatus.toUpperCase()}
-                      </Chip>
-                    </div>
-                  </div>
-
-                  <Divider className="my-4" />
-
-                  {/* Payment Details */}
-                  <div className="grid md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <p className="text-sm text-gray-600">Payment Method</p>
-                      <p className="font-semibold">{order.paymentMethodId?.name}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Transaction ID</p>
-                      <p className="font-semibold">
-                        <code className="bg-gray-100 px-2 py-1 rounded">{order.transactionId}</code>
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Order Date</p>
-                      <p className="font-semibold">
-                        {new Date(order.createdAt).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
-                      </p>
-                    </div>
-                    {order.startDate && (
-                      <div>
-                        <p className="text-sm text-gray-600">Access Until</p>
-                        <p className="font-semibold">
-                          {new Date(order.endDate!).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Delivery Address */}
-                  {order.deliveryAddress && (
-                    <>
-                      <Divider className="my-4" />
-                      <div>
-                        <p className="text-sm text-gray-600 mb-2">Delivery Address</p>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="font-semibold">{order.deliveryAddress.name}</p>
-                          <p className="text-sm">{order.deliveryAddress.phone}</p>
-                          <p className="text-sm">{order.deliveryAddress.fullAddress}</p>
-                          <p className="text-sm">
-                            {order.deliveryAddress.city}, {order.deliveryAddress.postalCode}
+              return (
+                <Card key={order._id} className="hover:shadow-md transition-shadow">
+                  <CardBody className="p-5">
+                    {/* Header Row */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="text-3xl">{PLAN_ICONS[order.planType]}</div>
+                        <div>
+                          <h3 className="font-bold text-lg">{PLAN_NAMES[order.planType]}</h3>
+                          <p className="text-xs text-gray-500">
+                            {new Date(order.createdAt).toLocaleDateString("en-US", { 
+                              month: 'short', 
+                              day: 'numeric', 
+                              year: 'numeric' 
+                            })}
                           </p>
                         </div>
                       </div>
-                    </>
-                  )}
-
-                  {/* Status Messages */}
-                  <div className="mt-4">
-                    {order.paymentStatus === "pending" && (
-                      <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-                        <p className="text-yellow-800">
-                          ⏳ Your payment is under review. You will receive access once the admin approves your order.
-                        </p>
-                      </div>
-                    )}
-
-                    {order.paymentStatus === "approved" && isActive && (
-                      <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                        <p className="text-green-800">
-                          ✅ Your order is approved! You have full access until{" "}
-                          <strong>{new Date(order.endDate!).toLocaleDateString()}</strong>
-                        </p>
-                        <Button
-                          color="success"
-                          className="mt-3"
-                          onPress={() => {
-                            if (order.planType === "quarterly") {
-                              router.push("/courses");
-                            } else if (order.planType === "single" && order.courseId) {
-                              router.push(`/courses/${order.courseId._id}`);
-                            }
-                          }}
+                      <div className="text-right">
+                        <p className="text-xl font-bold text-primary">৳{order.price.toLocaleString()}</p>
+                        <Chip
+                          size="sm"
+                          color={STATUS_COLORS[order.paymentStatus] as any}
+                          variant="flat"
+                          startContent={<StatusIcon className="text-xs" />}
                         >
-                          Start Learning
-                        </Button>
+                          {order.paymentStatus}
+                        </Chip>
+                      </div>
+                    </div>
+
+                    {/* Course Info */}
+                    {order.courseId && (
+                      <div className="bg-blue-50 p-3 rounded-lg mb-3">
+                        <p className="text-xs text-blue-600 mb-1">Course</p>
+                        <p className="font-semibold text-sm">{order.courseId.title}</p>
                       </div>
                     )}
 
-                    {order.paymentStatus === "approved" && !isActive && order.endDate && (
-                      <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
-                        <p className="text-gray-800">
-                          ⏰ Your subscription expired on{" "}
-                          <strong>{new Date(order.endDate).toLocaleDateString()}</strong>
-                        </p>
-                        <Button
-                          color="primary"
-                          className="mt-3"
-                          onPress={() => router.push("/pricing")}
-                        >
-                          Renew Subscription
-                        </Button>
-                      </div>
-                    )}
-
-                    {order.paymentStatus === "rejected" && (
-                      <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
-                        <p className="text-red-800">
-                          ❌ Your order was rejected. Please contact support or try again with correct payment details.
-                        </p>
-                        {order.paymentNote && (
-                          <p className="text-sm text-red-700 mt-2">
-                            <strong>Reason:</strong> {order.paymentNote}
-                          </p>
+                    {/* Access Period */}
+                    {order.startDate && order.endDate && (
+                      <div className="flex items-center gap-4 text-sm mb-3">
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <FaCalendarAlt className="text-xs" />
+                          <span>
+                            {new Date(order.startDate).toLocaleDateString("en-US", { month: 'short', day: 'numeric' })}
+                            {" - "}
+                            {new Date(order.endDate).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                        </div>
+                        {isActive && (
+                          <Chip size="sm" color="success" variant="flat">
+                            {Math.ceil((new Date(order.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left
+                          </Chip>
                         )}
                       </div>
                     )}
 
-                    {order.planType === "kit" && order.paymentStatus === "approved" && (
-                      <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mt-2">
-                        <p className="text-blue-800">
-                          📦 Your Robotics Kit will be delivered to the address provided within 5-7 business days.
-                        </p>
+                    {/* Delivery Address (Compact) */}
+                    {order.deliveryAddress && (
+                      <div className="bg-gray-50 p-3 rounded-lg mb-3">
+                        <p className="text-xs text-gray-600 mb-1">📦 Delivery to:</p>
+                        <p className="font-semibold text-sm">{order.deliveryAddress.name} • {order.deliveryAddress.phone}</p>
+                        <p className="text-xs text-gray-600 mt-1">{order.deliveryAddress.city}</p>
                       </div>
                     )}
-                  </div>
-                </CardBody>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+
+                    {/* Action Buttons */}
+                    {order.paymentStatus === "approved" && isActive && (
+                      <Button
+                        size="sm"
+                        color="success"
+                        variant="flat"
+                        className="w-full"
+                        onPress={() => {
+                          if (order.planType === "quarterly") {
+                            router.push("/student");
+                          } else if (order.planType === "single" && order.courseId) {
+                            router.push(`/courses/${order.courseId._id}/learn`);
+                          }
+                        }}
+                      >
+                        {order.planType === "quarterly" ? "Go to Dashboard" : "Start Learning"}
+                      </Button>
+                    )}
+
+                    {order.paymentStatus === "pending" && (
+                      <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg text-sm text-yellow-800">
+                        ⏳ Payment under review
+                      </div>
+                    )}
+
+                    {order.paymentStatus === "rejected" && (
+                      <div className="bg-red-50 border border-red-200 p-3 rounded-lg text-sm text-red-800">
+                        ❌ Order rejected
+                        {order.paymentNote && <p className="text-xs mt-1">{order.paymentNote}</p>}
+                      </div>
+                    )}
+
+                    {order.paymentStatus === "approved" && !isActive && order.endDate && (
+                      <Button
+                        size="sm"
+                        color="primary"
+                        variant="flat"
+                        className="w-full"
+                        onPress={() => router.push("/courses")}
+                      >
+                        Renew Access
+                      </Button>
+                    )}
+                  </CardBody>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

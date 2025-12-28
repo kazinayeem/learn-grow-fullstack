@@ -1,106 +1,101 @@
 import { Request, Response } from "express";
 import { Order } from "../model/order.model";
 import mongoose from "mongoose";
+import {
+  createOrderService,
+  getUserOrdersService,
+  getAllOrdersService,
+  approveOrderService,
+  rejectOrderService,
+  getStudentEnrollmentService,
+  checkCourseAccessService,
+} from "../service/order.service";
 
 // Create new order
 export const createOrder = async (req: Request, res: Response) => {
   try {
-    const {
-      planType,
-      courseId,
-      paymentMethodId,
-      transactionId,
-      senderNumber,
-      paymentNote,
-      deliveryAddress,
-      price,
-    } = req.body;
-
     const userId = req.userId;
 
     if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ success: false, message: "Unauthorized - Please login" });
     }
 
     // Validate required fields
-    if (!planType || !paymentMethodId || !transactionId || !senderNumber || !price) {
-      return res.status(400).json({ message: "Missing required fields" });
+    const { planType, paymentMethodId, transactionId, senderNumber, price } = req.body;
+    
+    if (!planType || !paymentMethodId || !transactionId || !senderNumber) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Missing required fields: planType, paymentMethodId, transactionId, senderNumber" 
+      });
     }
 
-    // Validate courseId for single course plan
-    if (planType === "single" && !courseId) {
-      return res.status(400).json({ message: "Course ID required for single course plan" });
+    // Validate courseId for single course purchases
+    if (planType === "single" && !req.body.courseId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "courseId is required for single course purchases" 
+      });
     }
 
-    // Validate delivery address for quarterly and kit plans
-    if ((planType === "quarterly" || planType === "kit") && !deliveryAddress) {
-      return res.status(400).json({ message: "Delivery address required for this plan" });
+    // Validate delivery address for quarterly and kit
+    if ((planType === "quarterly" || planType === "kit") && !req.body.deliveryAddress) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Delivery address is required for quarterly and kit plans" 
+      });
     }
 
-    // Create order
-    const order = await Order.create({
-      userId,
-      planType,
-      courseId: planType === "single" ? courseId : undefined,
-      paymentMethodId,
-      transactionId,
-      senderNumber,
-      paymentNote,
-      deliveryAddress: (planType === "quarterly" || planType === "kit") ? deliveryAddress : undefined,
-      price,
-      paymentStatus: "pending",
-      isActive: false,
-    });
+    console.log("Creating order for user:", userId, "with data:", req.body);
 
-    await order.populate([
-      { path: "userId", select: "name email" },
-      { path: "courseId", select: "title thumbnail" },
-      { path: "paymentMethodId", select: "name accountNumber" },
-    ]);
+    const result = await createOrderService(userId, req.body);
 
-    res.status(201).json({
-      message: "Order created successfully. Waiting for admin approval.",
-      order,
+    if (!result.success) {
+      return res.status(400).json({ 
+        success: false, 
+        message: result.message 
+      });
+    }
+
+    console.log("Order created successfully:", result.data?._id);
+
+    return res.status(201).json({
+      success: true,
+      message: "অর্ডার সফলভাবে তৈরি হয়েছে! প্রশাসকের অনুমোদনের অপেক্ষায়। | Order created successfully! Waiting for admin approval.",
+      data: result.data,
     });
   } catch (error: any) {
     console.error("Create order error:", error);
-    res.status(500).json({ message: "Failed to create order", error: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to create order", 
+      error: error.message 
+    });
   }
 };
 
 // Get all orders (Admin only)
 export const getAllOrders = async (req: Request, res: Response) => {
   try {
-    const { status, planType, page = 1, limit = 20 } = req.query;
+    const { status, planType } = req.query;
 
-    const query: any = {};
-    if (status) query.paymentStatus = status;
-    if (planType) query.planType = planType;
+    const result = await getAllOrdersService({
+      status: status as string,
+      planType: planType as string,
+    });
 
-    const skip = (Number(page) - 1) * Number(limit);
+    if (!result.success) {
+      return res.status(400).json({ success: false, message: result.message });
+    }
 
-    const orders = await Order.find(query)
-      .populate("userId", "name email role")
-      .populate("courseId", "title thumbnail")
-      .populate("paymentMethodId", "name accountNumber")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(Number(limit));
-
-    const total = await Order.countDocuments(query);
-
-    res.json({
-      orders,
-      pagination: {
-        total,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(total / Number(limit)),
-      },
+    return res.json({
+      success: true,
+      orders: result.data,
+      data: result.data,
     });
   } catch (error: any) {
     console.error("Get all orders error:", error);
-    res.status(500).json({ message: "Failed to fetch orders", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to fetch orders", error: error.message });
   }
 };
 
@@ -135,18 +130,19 @@ export const getUserOrders = async (req: Request, res: Response) => {
     const userId = req.userId;
 
     if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    const orders = await Order.find({ userId })
-      .populate("courseId", "title thumbnail")
-      .populate("paymentMethodId", "name")
-      .sort({ createdAt: -1 });
+    const result = await getUserOrdersService(userId);
 
-    res.json({ orders });
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    return res.json({ success: true, orders: result.data, data: result.data });
   } catch (error: any) {
     console.error("Get user orders error:", error);
-    res.status(500).json({ message: "Failed to fetch orders", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to fetch orders", error: error.message });
   }
 };
 
@@ -156,55 +152,19 @@ export const approveOrder = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid order ID" });
+      return res.status(400).json({ success: false, message: "Invalid order ID" });
     }
 
-    const order = await Order.findById(id);
+    const result = await approveOrderService(id);
 
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
+    if (!result.success) {
+      return res.status(400).json(result);
     }
 
-    if (order.paymentStatus === "approved") {
-      return res.status(400).json({ message: "Order already approved" });
-    }
-
-    // Set approval date and calculate expiry for subscription
-    const now = new Date();
-    order.paymentStatus = "approved";
-    order.isActive = true;
-
-    if (order.planType === "quarterly") {
-      order.startDate = now;
-      // Add 3 months (90 days)
-      const endDate = new Date(now);
-      endDate.setMonth(endDate.getMonth() + 3);
-      order.endDate = endDate;
-    } else if (order.planType === "single") {
-      order.startDate = now;
-      // Add 3 months for single course access
-      const endDate = new Date(now);
-      endDate.setMonth(endDate.getMonth() + 3);
-      order.endDate = endDate;
-    }
-
-    await order.save();
-
-    await order.populate([
-      { path: "userId", select: "name email" },
-      { path: "courseId", select: "title" },
-      { path: "paymentMethodId", select: "name" },
-    ]);
-
-    // TODO: Send approval email notification
-
-    res.json({
-      message: "Order approved successfully",
-      order,
-    });
+    return res.json({ success: true, message: result.message, order: result.data, data: result.data });
   } catch (error: any) {
     console.error("Approve order error:", error);
-    res.status(500).json({ message: "Failed to approve order", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to approve order", error: error.message });
   }
 };
 
@@ -244,12 +204,14 @@ export const rejectOrder = async (req: Request, res: Response) => {
     // TODO: Send rejection email notification
 
     res.json({
+      success: true,
       message: "Order rejected",
       order,
+      data: order,
     });
   } catch (error: any) {
     console.error("Reject order error:", error);
-    res.status(500).json({ message: "Failed to reject order", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to reject order", error: error.message });
   }
 };
 

@@ -9,18 +9,18 @@ import {
     Card,
     CardBody,
     Divider,
-    useDisclosure,
     Tabs,
     Tab,
 } from "@nextui-org/react";
 import { useGetCourseByIdQuery } from "@/redux/api/courseApi";
+import { useGetMyOrdersQuery } from "@/redux/api/orderApi";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
-import PaymentModal from "@/components/payment/PaymentModal";
 import CourseModules from "@/components/course/CourseModules";
 import QuizList from "@/components/quiz/QuizList";
 import DOMPurify from "isomorphic-dompurify";
+import Cookies from "js-cookie";
 
 interface CourseDetailsProps {
     courseId: string;
@@ -28,9 +28,26 @@ interface CourseDetailsProps {
 
 export default function CourseDetails({ courseId }: CourseDetailsProps) {
     const { data, isLoading, error } = useGetCourseByIdQuery(courseId);
+    const { data: ordersData } = useGetMyOrdersQuery();
     const router = useRouter();
-    const { isOpen, onOpen, onOpenChange } = useDisclosure();
     const [selectedTab, setSelectedTab] = useState("overview");
+
+    const getAuthToken = () => Cookies.get("accessToken") || localStorage.getItem("token") || "";
+    const getUserRole = () => {
+        const roleFromCookie = Cookies.get("userRole");
+        if (roleFromCookie) return roleFromCookie;
+        const roleFromStorage = localStorage.getItem("userRole");
+        if (roleFromStorage) return roleFromStorage;
+        try {
+            const storedUser = localStorage.getItem("user");
+            if (storedUser) {
+                return (JSON.parse(storedUser).role as string) || "";
+            }
+        } catch {
+            // ignore parse errors and treat as missing role
+        }
+        return "";
+    };
 
     // Check if user is enrolled
     const enrolledCourses = useSelector(
@@ -44,16 +61,46 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
         (p) => p.courseId === courseId && p.status === "completed"
     );
 
+    // Check if user has access to this course (via purchase or all-access subscription)
+    const orders = ordersData?.orders || [];
+    const now = new Date();
+    
+    // Check for all-access subscription
+    const hasAllAccess = orders.some(
+        order =>
+            order.planType === "quarterly" &&
+            order.paymentStatus === "approved" &&
+            order.isActive &&
+            order.endDate &&
+            new Date(order.endDate) > now
+    );
+    
+    // Check for specific course purchase
+    const hasPurchasedCourse = orders.some(
+        order =>
+            order.planType === "single" &&
+            order.paymentStatus === "approved" &&
+            order.isActive &&
+            order.courseId?._id === courseId
+    );
+    
+    const hasAccess = hasAllAccess || hasPurchasedCourse || hasPaid || isEnrolled;
+
     const handleEnrollClick = () => {
-        const token = localStorage.getItem("token");
+        const token = getAuthToken();
         if (!token) {
             alert("Please login to enroll in this course");
-            router.push("/login");
+            router.push(`/login?redirect=/courses/${courseId}`);
             return;
         }
 
-        // Open payment modal
-        onOpen();
+        const role = getUserRole();
+        if (role && role !== "student") {
+            alert("Only students can purchase courses. Please switch to a student account.");
+            return;
+        }
+
+        router.push(`/checkout?plan=single&courseId=${courseId}`);
     };
 
     // sample courses for offline backup
@@ -139,12 +186,12 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
 
     return (
         <>
-            <div className="container mx-auto px-4 py-8 max-w-7xl">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="container mx-auto px-4 py-6 max-w-7xl">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Left Column: Main Content */}
-                    <div className="lg:col-span-2 space-y-6">
+                    <div className="lg:col-span-2 space-y-4">
                         {/* Hero Image */}
-                        <div className="relative w-full h-[300px] md:h-[400px] rounded-2xl overflow-hidden shadow-xl">
+                        <div className="relative w-full h-[250px] md:h-[350px] rounded-xl overflow-hidden shadow-lg">
                             <Image
                                 src={
                                     course.img ||
@@ -177,7 +224,7 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                     </Chip>
                                 )}
                             </div>
-                            <h1 className="text-3xl md:text-4xl font-bold mb-4">
+                            <h1 className="text-2xl md:text-3xl font-bold mb-3">
                                 {course.title}
                             </h1>
                         </div>
@@ -186,9 +233,9 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                         <Tabs
                             selectedKey={selectedTab}
                             onSelectionChange={(key) => setSelectedTab(key as string)}
-                            size="lg"
+                            size="md"
                             color="primary"
-                            className="mb-4"
+                            className="mb-3"
                         >
                             <Tab key="overview" title="📖 Overview">
                                 <Card>
@@ -324,11 +371,11 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
 
                     {/* Right Column: Enrollment Card */}
                     <div className="lg:col-span-1">
-                        <Card className="sticky top-24 p-4 shadow-xl">
-                            <CardBody className="gap-6">
+                        <Card className="sticky top-24 p-3 shadow-lg">
+                            <CardBody className="gap-4">
                                 <div className="text-center">
-                                    <p className="text-default-500 text-sm mb-2">Price</p>
-                                    <p className="text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                                    <p className="text-default-500 text-sm mb-1">Price</p>
+                                    <p className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                                         BDT {course.price}
                                     </p>
                                 </div>
@@ -336,8 +383,8 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                 <Divider />
 
                                 {/* Instructor Information */}
-                                <div className="space-y-3">
-                                    <p className="font-semibold text-lg">Instructor:</p>
+                                <div className="space-y-2">
+                                    <p className="font-semibold text-base">Instructor:</p>
                                     <div className="flex items-start gap-3">
                                         {course.instructorId?.profileImage ? (
                                             <img
@@ -378,7 +425,7 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                 <Divider />
 
                                 <div className="space-y-2">
-                                    <p className="font-semibold text-lg mb-3">
+                                    <p className="font-semibold text-base mb-2">
                                         Course Features:
                                     </p>
                                     <ul className="space-y-2">
@@ -408,23 +455,24 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                 <Divider />
 
                                 {/* Registration gating logic */}
-                                {isEnrolled ? (
+                                {hasAccess ? (
                                     <Button
                                         color="success"
-                                        size="lg"
-                                        className="w-full font-semibold shadow-lg"
+                                        size="md"
+                                        className="w-full font-semibold"
                                         variant="shadow"
-                                        onPress={() => router.push("/dashboard")}
+                                        onPress={() => router.push(`/courses/${courseId}/learn`)}
+                                        startContent={<span>🎓</span>}
                                     >
-                                        Go to Dashboard
+                                        Go to Course
                                     </Button>
                                 ) : (
                                     <>
                                       <RegistrationInfo course={course} />
                                       <Button
                                         color="primary"
-                                        size="lg"
-                                        className="w-full font-semibold shadow-lg"
+                                        size="md"
+                                        className="w-full font-semibold"
                                         variant="shadow"
                                         onPress={handleEnrollClick}
                                         isDisabled={!isEnrollmentOpen(course)}
@@ -447,14 +495,7 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                 </div>
             </div>
 
-            {/* Payment Modal */}
-            <PaymentModal
-                isOpen={isOpen}
-                onOpenChange={onOpenChange}
-                courseId={courseId}
-                courseTitle={course.title}
-                amount={course.price}
-            />
+
         </>
     );
 }

@@ -2,10 +2,11 @@
 
 import React, { useMemo } from "react";
 import RequireAuth from "@/components/Auth/RequireAuth";
-import { Card, CardBody, Button, Spinner } from "@nextui-org/react";
+import { Card, CardBody, Button, Spinner, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Avatar } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import { useGetUsersAdminQuery } from "@/redux/api/userApi";
 import { useGetAllCoursesQuery } from "@/redux/api/courseApi";
+import { useGetAllOrdersQuery } from "@/redux/api/orderApi";
 import {
     FaUsers,
     FaBook,
@@ -19,14 +20,18 @@ import {
     FaUserTie,
     FaClipboardList,
     FaCreditCard,
+    FaEnvelope,
+    FaPhone,
+    FaRobot,
 } from "react-icons/fa";
 
 function AdminDashboardContent() {
     const router = useRouter();
 
     // Fetch real data
-    const { data: usersData } = useGetUsersAdminQuery({ page: 1, limit: 1 });
+    const { data: usersData } = useGetUsersAdminQuery({ page: 1, limit: 100 });
     const { data: coursesData } = useGetAllCoursesQuery({ skip: 0, limit: 1 });
+    const { data: ordersData } = useGetAllOrdersQuery({ planType: "kit" });
 
     // Calculate stats from real data
     const stats = useMemo(() => {
@@ -46,6 +51,16 @@ function AdminDashboardContent() {
             pendingApprovals: 12,
         };
     }, [usersData, coursesData]);
+
+    // Get all students
+    const students = useMemo(() => {
+        return (usersData?.users || []).filter(user => user.role === "student");
+    }, [usersData]);
+
+    // Get kit orders
+    const kitOrders = useMemo(() => {
+        return ordersData?.orders || ordersData?.data || [];
+    }, [ordersData]);
 
     const quickActions = [
         {
@@ -163,6 +178,7 @@ function AdminDashboardContent() {
                     <Spinner size="lg" label="Loading statistics..." />
                 </div>
             ) : (
+            <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <Card className="bg-gradient-to-br from-blue-500 to-blue-600">
                     <CardBody className="text-white p-6">
@@ -212,6 +228,177 @@ function AdminDashboardContent() {
                     </CardBody>
                 </Card>
             </div>
+
+            {/* All Students Table */}
+            <div className="mb-8">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold">All Students ({students.length})</h2>
+                    <Button color="primary" onPress={() => router.push("/admin/users")}>
+                        View All Users
+                    </Button>
+                </div>
+                <Card>
+                    <CardBody className="p-0">
+                        <Table aria-label="Students table" removeWrapper>
+                            <TableHeader>
+                                <TableColumn>STUDENT</TableColumn>
+                                <TableColumn>EMAIL</TableColumn>
+                                <TableColumn>PHONE</TableColumn>
+                                <TableColumn>JOINED</TableColumn>
+                                <TableColumn>STATUS</TableColumn>
+                            </TableHeader>
+                            <TableBody emptyContent="No students found">
+                                {students.slice(0, 10).map((student) => (
+                                    <TableRow key={student._id}>
+                                        <TableCell>
+                                            <div className="flex items-center gap-3">
+                                                <Avatar
+                                                    src={student.profileImage}
+                                                    name={student.name}
+                                                    size="sm"
+                                                />
+                                                <div>
+                                                    <p className="font-semibold">{student.name}</p>
+                                                    <p className="text-xs text-gray-500">ID: {student._id.slice(-6)}</p>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <FaEnvelope className="text-gray-400" />
+                                                <span className="text-sm">{student.email}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <FaPhone className="text-gray-400" />
+                                                <span className="text-sm">{student.phone || "N/A"}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="text-sm">
+                                                {new Date(student.createdAt).toLocaleDateString()}
+                                            </span>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                color={student.isVerified ? "success" : "warning"}
+                                                variant="flat"
+                                                size="sm"
+                                            >
+                                                {student.isVerified ? "Verified" : "Pending"}
+                                            </Chip>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                        {students.length > 10 && (
+                            <div className="p-4 border-t text-center">
+                                <Button
+                                    variant="flat"
+                                    onPress={() => router.push("/admin/users")}
+                                >
+                                    View All {students.length} Students
+                                </Button>
+                            </div>
+                        )}
+                    </CardBody>
+                </Card>
+            </div>
+
+            {/* Kit Orders Table */}
+            <div className="mb-8">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold">Kit Orders ({kitOrders.length})</h2>
+                    <Button color="primary" onPress={() => router.push("/admin/orders")}>
+                        View All Orders
+                    </Button>
+                </div>
+                <Card>
+                    <CardBody className="p-0">
+                        <Table aria-label="Kit orders table" removeWrapper>
+                            <TableHeader>
+                                <TableColumn>CUSTOMER</TableColumn>
+                                <TableColumn>ORDER ID</TableColumn>
+                                <TableColumn>DELIVERY ADDRESS</TableColumn>
+                                <TableColumn>PRICE</TableColumn>
+                                <TableColumn>STATUS</TableColumn>
+                                <TableColumn>DATE</TableColumn>
+                            </TableHeader>
+                            <TableBody emptyContent="No kit orders found">
+                                {kitOrders.slice(0, 10).map((order) => (
+                                    <TableRow key={order._id}>
+                                        <TableCell>
+                                            <div>
+                                                <p className="font-semibold">{order.userId?.name || "N/A"}</p>
+                                                <p className="text-xs text-gray-500">{order.userId?.email}</p>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <FaRobot className="text-orange-500" />
+                                                <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                                    {order._id.slice(-8)}
+                                                </code>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            {order.deliveryAddress ? (
+                                                <div className="text-sm">
+                                                    <p className="font-medium">{order.deliveryAddress.name}</p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {order.deliveryAddress.city}, {order.deliveryAddress.postalCode}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">{order.deliveryAddress.phone}</p>
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-400">N/A</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="font-semibold text-primary">
+                                                ৳{order.price.toLocaleString()}
+                                            </span>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                color={
+                                                    order.paymentStatus === "approved"
+                                                        ? "success"
+                                                        : order.paymentStatus === "pending"
+                                                        ? "warning"
+                                                        : "danger"
+                                                }
+                                                variant="flat"
+                                                size="sm"
+                                            >
+                                                {order.paymentStatus}
+                                            </Chip>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="text-sm">
+                                                {new Date(order.createdAt).toLocaleDateString()}
+                                            </span>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                        {kitOrders.length > 10 && (
+                            <div className="p-4 border-t text-center">
+                                <Button
+                                    variant="flat"
+                                    onPress={() => router.push("/admin/orders?planType=kit")}
+                                >
+                                    View All {kitOrders.length} Kit Orders
+                                </Button>
+                            </div>
+                        )}
+                    </CardBody>
+                </Card>
+            </div>
+            </>
             )}
 
             {/* Quick Actions */}

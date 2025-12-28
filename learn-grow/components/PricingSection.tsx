@@ -9,11 +9,36 @@ import {
   Chip,
 } from "@nextui-org/react";
 
+import { useRouter } from "next/navigation";
+
 import { pricingPlans } from "@/lib/platformData";
 
 const PricingSection = () => {
+  const router = useRouter();
   const [language] = useState<'en' | 'bn'>('bn');
   const pricing = pricingPlans[language];
+
+  // Map plan IDs to their target routes
+  const getPlanRoute = (planId: string) => {
+    switch (planId) {
+      case "single-course":
+        // Single course needs course selection first
+        return "/courses";
+      case "quarterly":
+        return "/checkout?plan=quarterly";
+      case "robotics-kit":
+        return "/checkout?plan=kit";
+      case "school":
+        return "/contact";
+      default:
+        return "/checkout";
+    }
+  };
+
+  const handleCtaClick = (planId: string) => {
+    const target = getPlanRoute(planId);
+    router.push(target);
+  };
 
   return (
     <section className="pt-0 pb-10 bg-gradient-to-b from-white via-primary-50/30 to-white relative overflow-hidden">
@@ -147,6 +172,7 @@ const PricingSection = () => {
                     : "bg-gray-900 text-white hover:bg-gray-800"
                     }`}
                   size="lg"
+                  onPress={() => handleCtaClick(plan.id)}
                 >
                   <span className={language === "bn" ? "font-siliguri" : ""}>
                     {plan.cta}

@@ -2,8 +2,6 @@
 
 import React, { useState } from "react";
 import {
-  Card,
-  CardBody,
   Table,
   TableHeader,
   TableColumn,
@@ -12,400 +10,526 @@ import {
   TableCell,
   Button,
   Chip,
-  Input,
-  Select,
-  SelectItem,
   Modal,
   ModalContent,
   ModalHeader,
   ModalBody,
   ModalFooter,
   useDisclosure,
-  Pagination,
-  Textarea,
+  Spinner,
+  Select,
+  SelectItem,
+  Input,
+  Card,
+  CardBody,
 } from "@nextui-org/react";
-import {
-  useGetAllOrdersQuery,
-  useApproveOrderMutation,
-  useRejectOrderMutation,
-} from "@/redux/api/orderApi";
-import { FaSearch, FaCheckCircle, FaTimes, FaEye, FaBoxOpen } from "react-icons/fa";
-import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import { useGetAllOrdersQuery, useApproveOrderMutation, useRejectOrderMutation } from "@/redux/api/orderApi";
 
-const PLAN_NAMES = {
-  single: "Single Course",
-  quarterly: "Quarterly Subscription",
-  kit: "Robotics Kit",
-  school: "School Partnership",
+interface DeliveryAddress {
+  name: string;
+  phone: string;
+  fullAddress: string;
+  city: string;
+  postalCode: string;
+}
+
+interface Order {
+  _id: string;
+  userId: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  planType: "single" | "quarterly" | "kit";
+  courseId?: { _id: string; title: string };
+  paymentMethodId: {
+    _id: string;
+    name: string;
+    accountNumber: string;
+  };
+  transactionId: string;
+  senderNumber: string;
+  paymentStatus: "pending" | "approved" | "rejected";
+  deliveryAddress?: DeliveryAddress;
+  startDate?: string;
+  endDate?: string;
+  isActive: boolean;
+  price: number;
+  createdAt: string;
+}
+
+const PLAN_LABELS = {
+  single: "একক কোর্স | Single Course",
+  quarterly: "ত্রৈমাসিক | Quarterly",
+  kit: "শুধু কিট | Kit Only",
 };
 
-const STATUS_COLORS = {
+const STATUS_COLOR_MAP: Record<string, "default" | "primary" | "success" | "warning" | "danger"> = {
   pending: "warning",
   approved: "success",
   rejected: "danger",
 };
 
-export default function AdminOrdersPage() {
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [planTypeFilter, setPlanTypeFilter] = useState<string>("");
-  const [searchQuery, setSearchQuery] = useState("");
+export default function OrdersAdminPage() {
+  const router = useRouter();
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "approved" | "rejected">("pending");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const { data, isLoading, refetch } = useGetAllOrdersQuery({
-    status: statusFilter || undefined,
-    planType: planTypeFilter || undefined,
-    page,
-    limit,
+    status: filterStatus === "all" ? undefined : filterStatus,
   });
+  const [approveOrderMutation, { isLoading: approving }] = useApproveOrderMutation();
+  const [rejectOrderMutation, { isLoading: rejecting }] = useRejectOrderMutation();
 
-  const [approveOrder, { isLoading: isApproving }] = useApproveOrderMutation();
-  const [rejectOrder, { isLoading: isRejecting }] = useRejectOrderMutation();
+  const orders = data?.orders || [];
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  const [rejectReason, setRejectReason] = useState("");
+  const handleApprove = async () => {
+    if (!selectedOrder) return;
 
-  const handleViewDetails = (order: any) => {
+    try {
+      await approveOrderMutation(selectedOrder._id).unwrap();
+      toast.success("Order approved successfully!");
+      refetch();
+      onOpenChange();
+    } catch (error: any) {
+      console.error("Approval error:", error);
+      toast.error(error.data?.message || "Failed to approve order");
+    }
+  };
+
+  const handleReject = async () => {
+    if (!selectedOrder) return;
+
+    try {
+      await rejectOrderMutation({ id: selectedOrder._id }).unwrap();
+      toast.success("Order rejected");
+      refetch();
+      onOpenChange();
+    } catch (error: any) {
+      console.error("Rejection error:", error);
+      toast.error(error.data?.message || "Failed to reject order");
+    }
+  };
+
+  const openOrderDetails = (order: Order) => {
     setSelectedOrder(order);
     onOpen();
   };
 
-  const handleApprove = async (orderId: string) => {
-    try {
-      await approveOrder(orderId).unwrap();
-      toast.success("Order approved successfully!");
-      refetch();
-      if (selectedOrder?._id === orderId) {
-        onClose();
-      }
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Failed to approve order");
-    }
-  };
+  const filteredOrders = orders.filter((order) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      order.userId.name.toLowerCase().includes(searchLower) ||
+      order.userId.email.toLowerCase().includes(searchLower) ||
+      order.transactionId.toLowerCase().includes(searchLower)
+    );
+  });
 
-  const handleReject = async (orderId: string) => {
-    try {
-      await rejectOrder({ id: orderId, reason: rejectReason }).unwrap();
-      toast.success("Order rejected");
-      setRejectReason("");
-      refetch();
-      onClose();
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Failed to reject order");
-    }
-  };
-
-  const filteredOrders = data?.orders?.filter((order: any) =>
-    order.userId?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    order.userId?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    order.transactionId?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Spinner size="lg" label="Loading orders..." />
+      </div>
+    );
+  }
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Order Management</h1>
-        <Button color="primary" onPress={() => refetch()}>
-          Refresh
-        </Button>
+    <div className="w-full p-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">অর্ডার ম্যানেজমেন্ট | Order Management</h1>
+        <p className="text-gray-600">পেন্ডিং অর্ডার অনুমোদন করুন এবং পরিচালনা করুন</p>
       </div>
 
       {/* Filters */}
-      <Card className="mb-6">
-        <CardBody className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Input
-              placeholder="Search by name, email, transaction ID..."
-              value={searchQuery}
-              onValueChange={setSearchQuery}
-              startContent={<FaSearch />}
-              variant="bordered"
-            />
+      <div className="mb-6 flex gap-4 flex-wrap">
+        <Select
+          label="স্ট্যাটাস ফিল্টার"
+          selectedKeys={[filterStatus]}
+          onSelectionChange={(keys) => {
+            setFilterStatus((Array.from(keys)[0] as string) as any);
+          }}
+          className="max-w-xs"
+        >
+          <SelectItem key="all">সমস্ত | All</SelectItem>
+          <SelectItem key="pending">পেন্ডিং | Pending</SelectItem>
+          <SelectItem key="approved">অনুমোদিত | Approved</SelectItem>
+          <SelectItem key="rejected">প্রত্যাখ্যাত | Rejected</SelectItem>
+        </Select>
 
-            <Select
-              placeholder="Filter by status"
-              selectedKeys={statusFilter ? [statusFilter] : []}
-              onSelectionChange={(keys) => {
-                const selected = Array.from(keys)[0] as string;
-                setStatusFilter(selected || "");
-                setPage(1);
-              }}
-              variant="bordered"
-            >
-              <SelectItem key="">All Status</SelectItem>
-              <SelectItem key="pending">Pending</SelectItem>
-              <SelectItem key="approved">Approved</SelectItem>
-              <SelectItem key="rejected">Rejected</SelectItem>
-            </Select>
+        <Input
+          placeholder="নাম/ইমেইল/ট্রানজ্যাকশন আইডি দিয়ে খুঁজুন"
+          value={searchTerm}
+          onValueChange={setSearchTerm}
+          className="max-w-md"
+        />
+      </div>
 
-            <Select
-              placeholder="Filter by plan"
-              selectedKeys={planTypeFilter ? [planTypeFilter] : []}
-              onSelectionChange={(keys) => {
-                const selected = Array.from(keys)[0] as string;
-                setPlanTypeFilter(selected || "");
-                setPage(1);
-              }}
-              variant="bordered"
-            >
-              <SelectItem key="">All Plans</SelectItem>
-              <SelectItem key="single">Single Course</SelectItem>
-              <SelectItem key="quarterly">Quarterly Subscription</SelectItem>
-              <SelectItem key="kit">Robotics Kit</SelectItem>
-              <SelectItem key="school">School Partnership</SelectItem>
-            </Select>
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <Card>
+          <CardBody className="flex flex-row justify-between items-center">
+            <div>
+              <p className="text-sm text-gray-600">মোট অর্ডার</p>
+              <p className="text-2xl font-bold">{orders.length}</p>
+            </div>
+          </CardBody>
+        </Card>
 
-            <Select
-              placeholder="Items per page"
-              selectedKeys={[String(limit)]}
-              onSelectionChange={(keys) => {
-                const selected = Array.from(keys)[0] as string;
-                setLimit(Number(selected));
-                setPage(1);
-              }}
-              variant="bordered"
-            >
-              <SelectItem key="10">10</SelectItem>
-              <SelectItem key="20">20</SelectItem>
-              <SelectItem key="50">50</SelectItem>
-              <SelectItem key="100">100</SelectItem>
-            </Select>
-          </div>
-        </CardBody>
-      </Card>
+        <Card>
+          <CardBody className="flex flex-row justify-between items-center">
+            <div>
+              <p className="text-sm text-gray-600">পেন্ডিং</p>
+              <p className="text-2xl font-bold text-warning">
+                {orders.filter((o) => o.paymentStatus === "pending").length}
+              </p>
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody className="flex flex-row justify-between items-center">
+            <div>
+              <p className="text-sm text-gray-600">অনুমোদিত</p>
+              <p className="text-2xl font-bold text-success">
+                {orders.filter((o) => o.paymentStatus === "approved").length}
+              </p>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
 
       {/* Orders Table */}
-      <Card>
-        <CardBody className="p-0">
-          <Table aria-label="Orders table">
-            <TableHeader>
-              <TableColumn>ORDER ID</TableColumn>
-              <TableColumn>USER</TableColumn>
-              <TableColumn>PLAN</TableColumn>
-              <TableColumn>PRICE</TableColumn>
-              <TableColumn>PAYMENT</TableColumn>
-              <TableColumn>STATUS</TableColumn>
-              <TableColumn>DATE</TableColumn>
-              <TableColumn>ACTIONS</TableColumn>
-            </TableHeader>
-            <TableBody
-              items={filteredOrders || []}
-              isLoading={isLoading}
-              emptyContent="No orders found"
-            >
-              {(order) => (
-                <TableRow key={order._id}>
-                  <TableCell>
-                    <code className="text-xs">{order._id.slice(-8)}</code>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="font-semibold">{order.userId?.name}</p>
-                      <p className="text-xs text-gray-600">{order.userId?.email}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="font-semibold">{PLAN_NAMES[order.planType]}</p>
-                      {order.courseId && (
-                        <p className="text-xs text-gray-600">{order.courseId.title}</p>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-bold">৳{order.price.toLocaleString()}</span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-xs">
-                      <p className="font-semibold">{order.paymentMethodId?.name}</p>
-                      <p className="text-gray-600">TXN: {order.transactionId}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      color={STATUS_COLORS[order.paymentStatus] as any}
-                      variant="flat"
-                      size="sm"
-                    >
-                      {order.paymentStatus.toUpperCase()}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-xs">
-                      {new Date(order.createdAt).toLocaleDateString()}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="flat"
-                        onPress={() => handleViewDetails(order)}
-                      >
-                        View
-                      </Button>
-                      {order.paymentStatus === "pending" && (
-                        <>
-                          <Button
-                            size="sm"
-                            color="success"
-                            isLoading={isApproving}
-                            onPress={() => handleApprove(order._id)}
-                          >
-                            Approve
-                          </Button>
-                          <Button
-                            size="sm"
-                            color="danger"
-                            variant="flat"
-                            onPress={() => {
-                              setSelectedOrder(order);
-                              onOpen();
-                            }}
-                          >
-                            Reject
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-
-          {/* Pagination */}
-          {data?.pagination && data.pagination.totalPages > 1 && (
-            <div className="flex justify-center p-4">
-              <Pagination
-                total={data.pagination.totalPages}
-                page={page}
-                onChange={setPage}
-                showControls
-              />
-            </div>
-          )}
-        </CardBody>
-      </Card>
+      <Table aria-label="Orders table">
+        <TableHeader>
+          <TableColumn>ব্যবহারকারী</TableColumn>
+          <TableColumn>প্ল্যান</TableColumn>
+          <TableColumn>কোর্স/কিট</TableColumn>
+          <TableColumn>মূল্য</TableColumn>
+          <TableColumn>অ্যাক্সেস সময়</TableColumn>
+          <TableColumn>স্ট্যাটাস</TableColumn>
+          <TableColumn>অর্ডার তারিখ</TableColumn>
+          <TableColumn>অ্যাকশন</TableColumn>
+        </TableHeader>
+        <TableBody
+          emptyContent={
+            filteredOrders.length === 0 ? "কোনো অর্ডার নেই | No orders found" : undefined
+          }
+        >
+          {filteredOrders.map((order) => (
+            <TableRow key={order._id}>
+              <TableCell>
+                <div>
+                  <p className="font-semibold">{order.userId.name}</p>
+                  <p className="text-sm text-gray-600">{order.userId.email}</p>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div>
+                  <p className="font-semibold">{PLAN_LABELS[order.planType]}</p>
+                  {order.planType === "kit" && (
+                    <p className="text-xs text-gray-500">🤖 রোবোটিক্স কিট</p>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                {order.courseId ? (
+                  <div>
+                    <p className="font-semibold text-sm">{order.courseId.title}</p>
+                    <p className="text-xs text-gray-500">কোর্স ID: {order.courseId._id.slice(-6)}</p>
+                  </div>
+                ) : order.planType === "kit" ? (
+                  <p className="text-sm text-gray-600">📦 ডেলিভারি প্রয়োজন</p>
+                ) : (
+                  <p className="text-sm text-gray-500">সব কোর্স অ্যাক্সেস</p>
+                )}
+              </TableCell>
+              <TableCell>৳{order.price.toLocaleString()}</TableCell>
+              <TableCell>
+                {order.startDate && order.endDate ? (
+                  <div className="text-sm">
+                    <p className="text-xs text-gray-500">শুরু:</p>
+                    <p className="font-semibold">{new Date(order.startDate).toLocaleDateString("bn-BD")}</p>
+                    <p className="text-xs text-gray-500 mt-1">শেষ:</p>
+                    <p className="font-semibold">{new Date(order.endDate).toLocaleDateString("bn-BD")}</p>
+                    {order.isActive && new Date(order.endDate) > new Date() && (
+                      <Chip size="sm" color="success" variant="flat" className="mt-1">সক্রিয়</Chip>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">পেন্ডিং</p>
+                )}
+              </TableCell>
+              <TableCell>
+                <Chip
+                  color={STATUS_COLOR_MAP[order.paymentStatus]}
+                  variant="flat"
+                  size="sm"
+                >
+                  {order.paymentStatus === "pending" && "পেন্ডিং"}
+                  {order.paymentStatus === "approved" && "অনুমোদিত"}
+                  {order.paymentStatus === "rejected" && "প্রত্যাখ্যাত"}
+                </Chip>
+              </TableCell>
+              <TableCell>
+                <div className="text-sm">
+                  <p>{new Date(order.createdAt).toLocaleDateString("bn-BD")}</p>
+                  <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleTimeString("bn-BD", { hour: '2-digit', minute: '2-digit' })}</p>
+                </div>
+              </TableCell>
+              <TableCell>
+                <Button
+                  isIconOnly
+                  color="primary"
+                  variant="light"
+                  size="sm"
+                  onPress={() => openOrderDetails(order)}
+                >
+                  বিস্তারিত
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
 
       {/* Order Details Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside">
+      <Modal
+        size="lg"
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        backdrop="blur"
+        scrollBehavior="inside"
+      >
         <ModalContent>
-          <ModalHeader>Order Details</ModalHeader>
-          <ModalBody>
-            {selectedOrder && (
-              <div className="space-y-6">
-                {/* User Info */}
-                <div>
-                  <h3 className="font-bold text-lg mb-2">User Information</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                    <p><strong>Name:</strong> {selectedOrder.userId?.name}</p>
-                    <p><strong>Email:</strong> {selectedOrder.userId?.email}</p>
-                  </div>
-                </div>
+          {(onClose) => (
+            <>
+              <ModalHeader>অর্ডার বিস্তারিত | Order Details</ModalHeader>
+              <ModalBody>
+                {selectedOrder && (
+                  <div className="space-y-4">
+                    {/* User Info */}
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h3 className="font-semibold mb-2">ব্যবহারকারীর তথ্য</h3>
+                      <p>
+                        <span className="text-gray-600">নাম:</span> {selectedOrder.userId.name}
+                      </p>
+                      <p>
+                        <span className="text-gray-600">ইমেইল:</span> {selectedOrder.userId.email}
+                      </p>
+                    </div>
 
-                {/* Plan Info */}
-                <div>
-                  <h3 className="font-bold text-lg mb-2">Plan Information</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                    <p><strong>Plan:</strong> {PLAN_NAMES[((selectedOrder?.planType || "single") as keyof typeof PLAN_NAMES)]}</p>
+                    {/* Order Info */}
+                    <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-4 rounded-lg border-2 border-blue-200">
+                      <h3 className="font-semibold mb-3 text-lg flex items-center gap-2">
+                        📋 অর্ডার তথ্য
+                      </h3>
+                      <div className="space-y-2">
+                        <p>
+                          <span className="text-gray-600 font-medium">অর্ডার ID:</span>
+                          <code className="ml-2 bg-white px-2 py-1 rounded text-sm">{selectedOrder._id}</code>
+                        </p>
+                        <p>
+                          <span className="text-gray-600 font-medium">প্ল্যান টাইপ:</span>
+                          <Chip size="sm" color="primary" variant="flat" className="ml-2">
+                            {PLAN_LABELS[selectedOrder.planType]}
+                          </Chip>
+                        </p>
+                        <p>
+                          <span className="text-gray-600 font-medium">মূল্য:</span>
+                          <span className="ml-2 text-xl font-bold text-primary">৳{selectedOrder.price.toLocaleString()}</span>
+                        </p>
+                        <p>
+                          <span className="text-gray-600 font-medium">অর্ডার তারিখ:</span>
+                          <span className="ml-2">{new Date(selectedOrder.createdAt).toLocaleDateString("bn-BD", { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                          <span className="text-sm text-gray-500 ml-2">({new Date(selectedOrder.createdAt).toLocaleTimeString("bn-BD")})</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Course/Kit Info */}
                     {selectedOrder.courseId && (
-                      <p><strong>Course:</strong> {selectedOrder.courseId.title}</p>
+                      <div className="bg-gradient-to-br from-green-50 to-teal-50 p-4 rounded-lg border-2 border-green-200">
+                        <h3 className="font-semibold mb-3 text-lg flex items-center gap-2">
+                          📚 কোর্স তথ্য
+                        </h3>
+                        <div className="space-y-2">
+                          <p>
+                            <span className="text-gray-600 font-medium">কোর্সের নাম:</span>
+                            <span className="ml-2 font-semibold text-green-900">{selectedOrder.courseId.title}</span>
+                          </p>
+                          <p>
+                            <span className="text-gray-600 font-medium">কোর্স ID:</span>
+                            <code className="ml-2 bg-white px-2 py-1 rounded text-sm">{selectedOrder.courseId._id}</code>
+                          </p>
+                        </div>
+                      </div>
                     )}
-                    <p><strong>Price:</strong> ৳{selectedOrder.price.toLocaleString()}</p>
-                  </div>
-                </div>
 
-                {/* Payment Info */}
-                <div>
-                  <h3 className="font-bold text-lg mb-2">Payment Information</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                    <p><strong>Method:</strong> {selectedOrder.paymentMethodId?.name}</p>
-                    <p><strong>Account:</strong> {selectedOrder.paymentMethodId?.accountNumber}</p>
-                    <p><strong>Sender Number:</strong> {selectedOrder.senderNumber}</p>
-                    <p><strong>Transaction ID:</strong> <code className="bg-white px-2 py-1 rounded">{selectedOrder.transactionId}</code></p>
-                    {selectedOrder.paymentNote && (
-                      <p><strong>Note:</strong> {selectedOrder.paymentNote}</p>
+                    {selectedOrder.planType === "kit" && (
+                      <div className="bg-gradient-to-br from-orange-50 to-yellow-50 p-4 rounded-lg border-2 border-orange-200">
+                        <h3 className="font-semibold mb-3 text-lg flex items-center gap-2">
+                          🤖 রোবোটিক্স কিট তথ্য
+                        </h3>
+                        <p className="text-gray-700">
+                          এই অর্ডারে একটি রোবোটিক্স কিট রয়েছে যা ডেলিভারি করা হবে।
+                        </p>
+                        <div className="mt-2 bg-white p-3 rounded">
+                          <p className="text-sm text-gray-600">কিট কন্টেন্ট: Arduino, Sensors, Motors, Components</p>
+                        </div>
+                      </div>
                     )}
-                    <p>
-                      <strong>Status:</strong>{" "}
-                      <Chip color={STATUS_COLORS[((selectedOrder?.paymentStatus || "pending") as keyof typeof STATUS_COLORS)] as any} size="sm">
-                        {selectedOrder.paymentStatus.toUpperCase()}
-                      </Chip>
-                    </p>
-                  </div>
-                </div>
 
-                {/* Delivery Address */}
-                {selectedOrder.deliveryAddress && (
-                  <div>
-                    <h3 className="font-bold text-lg mb-2">Delivery Address</h3>
-                    <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                      <p><strong>Name:</strong> {selectedOrder.deliveryAddress.name}</p>
-                      <p><strong>Phone:</strong> {selectedOrder.deliveryAddress.phone}</p>
-                      <p><strong>Address:</strong> {selectedOrder.deliveryAddress.fullAddress}</p>
-                      <p><strong>City:</strong> {selectedOrder.deliveryAddress.city}</p>
-                      <p><strong>Postal Code:</strong> {selectedOrder.deliveryAddress.postalCode}</p>
+                    {/* Payment Info */}
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h3 className="font-semibold mb-2">পেমেন্ট তথ্য</h3>
+                      <p>
+                        <span className="text-gray-600">পেমেন্ট পদ্ধতি:</span>{" "}
+                        {selectedOrder.paymentMethodId.name}
+                      </p>
+                      <p>
+                        <span className="text-gray-600">অ্যাকাউন্ট:</span>{" "}
+                        {selectedOrder.paymentMethodId.accountNumber}
+                      </p>
+                      <p>
+                        <span className="text-gray-600">ট্রানজ্যাকশন ID:</span> {selectedOrder.transactionId}
+                      </p>
+                      <p>
+                        <span className="text-gray-600">পাঠানোর নম্বর:</span> {selectedOrder.senderNumber}
+                      </p>
+                    </div>
+
+                    {/* Delivery Address */}
+                    {selectedOrder.deliveryAddress && (
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <h3 className="font-semibold mb-2">ডেলিভারি ঠিকানা</h3>
+                        <p>
+                          <span className="text-gray-600">নাম:</span> {selectedOrder.deliveryAddress.name}
+                        </p>
+                        <p>
+                          <span className="text-gray-600">ফোন:</span> {selectedOrder.deliveryAddress.phone}
+                        </p>
+                        <p>
+                          <span className="text-gray-600">ঠিকানা:</span>{" "}
+                          {selectedOrder.deliveryAddress.fullAddress}, {selectedOrder.deliveryAddress.city}-
+                          {selectedOrder.deliveryAddress.postalCode}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Status & Access Time Info */}
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-lg border-2 border-purple-200">
+                      <h3 className="font-semibold mb-3 text-lg flex items-center gap-2">
+                        ⏰ স্ট্যাটাস ও অ্যাক্সেস সময়
+                      </h3>
+                      <div className="space-y-3">
+                        <div>
+                          <span className="text-gray-600 font-medium">পেমেন্ট স্ট্যাটাস:</span>
+                          <Chip
+                            color={STATUS_COLOR_MAP[selectedOrder.paymentStatus]}
+                            variant="solid"
+                            size="md"
+                            className="ml-2"
+                          >
+                            {selectedOrder.paymentStatus === "pending" && "⏳ পেন্ডিং"}
+                            {selectedOrder.paymentStatus === "approved" && "✅ অনুমোদিত"}
+                            {selectedOrder.paymentStatus === "rejected" && "❌ প্রত্যাখ্যাত"}
+                          </Chip>
+                        </div>
+
+                        {selectedOrder.startDate && selectedOrder.endDate && (
+                          <div className="bg-white p-4 rounded-lg space-y-2">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-xs text-gray-500">অ্যাক্সেস শুরু</p>
+                                <p className="font-semibold text-green-700">
+                                  {new Date(selectedOrder.startDate).toLocaleDateString("bn-BD", {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })}
+                                </p>
+                              </div>
+                              <div className="text-2xl">→</div>
+                              <div>
+                                <p className="text-xs text-gray-500">অ্যাক্সেস শেষ</p>
+                                <p className="font-semibold text-red-700">
+                                  {new Date(selectedOrder.endDate).toLocaleDateString("bn-BD", {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="pt-2 border-t border-gray-200">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-600">মোট সময়কাল:</span>
+                                <span className="font-semibold">৯০ দিন (৩ মাস)</span>
+                              </div>
+                              <div className="flex items-center justify-between mt-1">
+                                <span className="text-sm text-gray-600">বর্তমান স্ট্যাটাস:</span>
+                                {selectedOrder.isActive && new Date(selectedOrder.endDate) > new Date() ? (
+                                  <Chip size="sm" color="success" variant="flat">🟢 সক্রিয়</Chip>
+                                ) : (
+                                  <Chip size="sm" color="default" variant="flat">⚪ মেয়াদ শেষ</Chip>
+                                )}
+                              </div>
+                              {selectedOrder.isActive && new Date(selectedOrder.endDate) > new Date() && (
+                                <div className="flex items-center justify-between mt-1">
+                                  <span className="text-sm text-gray-600">বাকি সময়:</span>
+                                  <span className="font-semibold text-primary">
+                                    {Math.ceil((new Date(selectedOrder.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} দিন
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {!selectedOrder.startDate && selectedOrder.paymentStatus === "pending" && (
+                          <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                            <p className="text-sm text-yellow-800">
+                              ⏳ অনুমোদনের পরে অ্যাক্সেস সময় নির্ধারিত হবে
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
-
-                {/* Subscription Dates */}
-                {selectedOrder.startDate && (
-                  <div>
-                    <h3 className="font-bold text-lg mb-2">Access Period</h3>
-                    <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                      <p><strong>Start Date:</strong> {new Date(selectedOrder.startDate).toLocaleDateString()}</p>
-                      <p><strong>End Date:</strong> {new Date(selectedOrder.endDate).toLocaleDateString()}</p>
-                      <p><strong>Active:</strong> {selectedOrder.isActive ? "Yes" : "No"}</p>
-                    </div>
-                  </div>
+              </ModalBody>
+              <ModalFooter>
+                {selectedOrder?.paymentStatus === "pending" && (
+                  <>
+                    <Button
+                      color="danger"
+                      variant="light"
+                      onPress={handleReject}
+                      isLoading={rejecting}
+                    >
+                      প্রত্যাখ্যান করুন
+                    </Button>
+                    <Button
+                      color="success"
+                      onPress={handleApprove}
+                      isLoading={approving}
+                    >
+                      অনুমোদন করুন
+                    </Button>
+                  </>
                 )}
-
-                {/* Reject Reason Input */}
-                {selectedOrder.paymentStatus === "pending" && (
-                  <div>
-                    <h3 className="font-bold text-lg mb-2">Reject Order</h3>
-                    <Textarea
-                      label="Rejection Reason (Optional)"
-                      placeholder="Enter reason for rejection..."
-                      value={rejectReason}
-                      onValueChange={setRejectReason}
-                      variant="bordered"
-                      minRows={3}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            {selectedOrder?.paymentStatus === "pending" && (
-              <>
-                <Button
-                  color="success"
-                  onPress={() => handleApprove(selectedOrder._id)}
-                  isLoading={isApproving}
-                  startContent={<FaCheckCircle />}
-                >
-                  Approve Order
+                <Button color="default" onPress={onClose}>
+                  বন্ধ করুন
                 </Button>
-                <Button
-                  color="danger"
-                  variant="flat"
-                  onPress={() => handleReject(selectedOrder._id)}
-                  isLoading={isRejecting}
-                  startContent={<FaTimes />}
-                >
-                  Reject Order
-                </Button>
-              </>
-            )}
-            <Button variant="light" onPress={onClose}>
-              Close
-            </Button>
-          </ModalFooter>
+              </ModalFooter>
+            </>
+          )}
         </ModalContent>
       </Modal>
     </div>

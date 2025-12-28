@@ -190,27 +190,11 @@ export default function CourseList() {
               </CardBody>
 
               <CardFooter className="p-4 sm:p-6 pt-0 flex gap-2">
-                <Button
-                  variant="bordered"
-                  color="primary"
-                  size="sm"
-                  className="flex-1"
-                  onPress={() =>
-                    router.push(`/courses/${course._id || course.id}`)
-                  }
-                >
-                  View Details
-                </Button>
-                <Button
-                  color="primary"
-                  size="sm"
-                  className="flex-1"
-                  onPress={() =>
-                    router.push(`/courses/${course._id || course.id}`)
-                  }
-                >
-                  Enroll
-                </Button>
+                <div className="flex-1">
+                  <div className="text-xs text-gray-500">
+                    Click to view details
+                  </div>
+                </div>
               </CardFooter>
             </Card>
           ))

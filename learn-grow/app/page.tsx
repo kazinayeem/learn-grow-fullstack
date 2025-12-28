@@ -5,6 +5,7 @@ import ModernBanner from "@/components/ModernBanner";
 import CoursesSection from "@/components/CoursesSection";
 import PlatformFeaturesSection from "@/components/PlatformFeaturesSection";
 import PricingSection from "@/components/PricingSection";
+import EnrollmentSection from "@/components/EnrollmentSection";
 
 export default function Home() {
   return (
@@ -18,7 +19,8 @@ export default function Home() {
       {/* Platform Features - Moved Here */}
       <PlatformFeaturesSection />
 
-
+      {/* Enrollment Options */}
+      {/* <EnrollmentSection /> */}
 
       {/* Pricing Plans */}
       <PricingSection />

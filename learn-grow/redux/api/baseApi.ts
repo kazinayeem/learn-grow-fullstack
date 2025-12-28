@@ -4,7 +4,7 @@ import Cookies from "js-cookie";
 export const baseApi = createApi({
     reducerPath: "api",
     baseQuery: fetchBaseQuery({
-        baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1",
+        baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
         prepareHeaders: (headers) => {
             const tokenFromCookie = Cookies.get("accessToken");
             const tokenFromStorage = typeof window !== "undefined" ? localStorage.getItem("token") : null;
