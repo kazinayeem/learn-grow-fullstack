@@ -26,43 +26,40 @@ import {
   Spinner,
 } from "@nextui-org/react";
 import { useGetInstructorCoursesQuery } from "@/redux/api/courseApi";
-import { useGetQuizzesByCourseQuery, useDeleteQuizMutation, usePublishQuizMutation } from "@/redux/api/quizApi";
+import { useGetAssignmentsByCourseQuery, useDeleteAssignmentMutation } from "@/redux/api/assignmentApi";
 import { toast } from "react-toastify";
 import {
   FaPlus,
   FaEdit,
   FaTrash,
   FaEye,
-  FaCheckCircle,
-  FaClock,
-  FaQuestionCircle,
+  FaCalendar,
+  FaFileAlt,
+  FaUsers,
 } from "react-icons/fa";
 
-interface Quiz {
+interface Assignment {
   _id: string;
   title: string;
-  description?: string;
+  description: string;
   courseId: string;
-  questions: any[];
-  duration: number;
-  passingScore: number;
-  totalAttempts: number;
-  status: "draft" | "active" | "published";
+  assessmentType: "assignment" | "project";
+  dueDate: string;
+  maxScore: number;
+  status: "draft" | "published";
   submissionsCount: number;
   createdAt: string;
 }
 
-export default function InstructorQuizzesPage() {
+export default function InstructorAssignmentsPage() {
   const router = useRouter();
   const [instructorId, setInstructorId] = useState<string | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [quizToDelete, setQuizToDelete] = useState<string | null>(null);
+  const [assignmentToDelete, setAssignmentToDelete] = useState<string | null>(null);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
-  const [deleteQuiz] = useDeleteQuizMutation();
-  const [publishQuiz] = usePublishQuizMutation();
+  const [deleteAssignment] = useDeleteAssignmentMutation();
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
@@ -80,49 +77,40 @@ export default function InstructorQuizzesPage() {
 
   const courseId = selectedCourse || (courses[0]?._id as string);
 
-  const { data: quizzesResp, isLoading } = useGetQuizzesByCourseQuery(courseId, {
+  const { data: assignmentsResp, isLoading } = useGetAssignmentsByCourseQuery(courseId, {
     skip: !courseId,
   });
 
-  const allQuizzes: Quiz[] = Array.isArray(quizzesResp?.data) ? quizzesResp!.data : [];
+  const allAssignments: Assignment[] = Array.isArray(assignmentsResp?.data) ? assignmentsResp!.data : [];
 
-  const filteredQuizzes = allQuizzes.filter((quiz) => {
-    const matchesSearch = quiz.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !statusFilter || quiz.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredAssignments = allAssignments.filter((assignment) =>
+    assignment.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const handleDeleteQuiz = async () => {
-    if (!quizToDelete) return;
+  const handleDeleteAssignment = async () => {
+    if (!assignmentToDelete) return;
 
     try {
-      await deleteQuiz(quizToDelete).unwrap();
-      toast.success("Quiz deleted successfully");
-      setQuizToDelete(null);
+      await deleteAssignment(assignmentToDelete).unwrap();
+      toast.success("Assignment deleted successfully");
+      setAssignmentToDelete(null);
       onOpenChange();
     } catch (error: any) {
-      toast.error(error?.data?.message || "Failed to delete quiz");
+      toast.error(error?.data?.message || "Failed to delete assignment");
     }
   };
 
-  const handleStatusChange = async (quizId: string, newStatus: "draft" | "active" | "published") => {
-    try {
-      await publishQuiz({ id: quizId, status: newStatus }).unwrap();
-      toast.success(`Quiz status updated to ${newStatus}`);
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Failed to update quiz status");
-    }
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "published":
-        return "success";
-      case "active":
-        return "warning";
-      default:
-        return "default";
-    }
+  const isOverdue = (dueDate: string) => {
+    return new Date(dueDate) < new Date();
   };
 
   return (
@@ -131,17 +119,16 @@ export default function InstructorQuizzesPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-4xl font-bold mb-2">My Quizzes 📝</h1>
-            <p className="text-gray-600">Create and manage course quizzes</p>
+            <h1 className="text-4xl font-bold mb-2">My Assignments & Projects 📄</h1>
+            <p className="text-gray-600">Create and manage assignments and projects</p>
           </div>
           <Button
-            isIconOnly
             color="primary"
-            onPress={() => router.push("/instructor/quizzes/create")}
             size="lg"
-            className="rounded-full"
+            startContent={<FaPlus />}
+            onPress={() => router.push("/instructor/assignments/create")}
           >
-            <FaPlus size={20} />
+            Create
           </Button>
         </div>
       </div>
@@ -149,7 +136,7 @@ export default function InstructorQuizzesPage() {
       {/* Filters */}
       <Card className="mb-8">
         <CardBody className="gap-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Course Selection */}
             <Select
               label="Select Course"
@@ -170,100 +157,88 @@ export default function InstructorQuizzesPage() {
             <Input
               isClearable
               type="text"
-              placeholder="Search quizzes..."
+              placeholder="Search assignments..."
               value={searchTerm}
               onValueChange={setSearchTerm}
               onClear={() => setSearchTerm("")}
               className="w-full"
             />
-
-            {/* Status Filter */}
-            <Select
-              label="Filter by Status"
-              selectedKeys={statusFilter ? [statusFilter] : []}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full"
-              disableAnimation
-            >
-              <SelectItem key="">All</SelectItem>
-              <SelectItem key="draft">Draft</SelectItem>
-              <SelectItem key="active">Active</SelectItem>
-              <SelectItem key="published">Published</SelectItem>
-            </Select>
           </div>
         </CardBody>
       </Card>
 
-      {/* Quizzes Table */}
+      {/* Assignments Table */}
       {isLoading ? (
         <div className="flex justify-center items-center py-12">
           <Spinner size="lg" />
         </div>
-      ) : filteredQuizzes.length === 0 ? (
+      ) : filteredAssignments.length === 0 ? (
         <Card>
           <CardBody className="text-center py-12">
-            <FaQuestionCircle className="text-6xl text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 mb-4">No quizzes found</p>
+            <FaFileAlt className="text-6xl text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 mb-4">No assignments found</p>
             <Button
               color="primary"
-              onPress={() => router.push("/instructor/quizzes/create")}
+              onPress={() => router.push("/instructor/assignments/create")}
             >
-              Create Your First Quiz
+              Create Your First Assignment
             </Button>
           </CardBody>
         </Card>
       ) : (
         <Card>
           <CardHeader className="flex flex-col gap-3 bg-gray-100 p-6">
-            <h2 className="text-xl font-semibold">Quizzes ({filteredQuizzes.length})</h2>
+            <h2 className="text-xl font-semibold">Assignments ({filteredAssignments.length})</h2>
           </CardHeader>
           <CardBody>
-            <Table aria-label="Quizzes table" className="p-4">
+            <Table aria-label="Assignments table" className="p-4">
               <TableHeader>
                 <TableColumn key="title">TITLE</TableColumn>
-                <TableColumn key="questions">QUESTIONS</TableColumn>
-                <TableColumn key="duration">DURATION</TableColumn>
+                <TableColumn key="type">TYPE</TableColumn>
+                <TableColumn key="dueDate">DUE DATE</TableColumn>
+                <TableColumn key="maxScore">MAX SCORE</TableColumn>
                 <TableColumn key="submissions">SUBMISSIONS</TableColumn>
-                <TableColumn key="status">STATUS</TableColumn>
                 <TableColumn key="actions">ACTIONS</TableColumn>
               </TableHeader>
               <TableBody>
-                {filteredQuizzes.map((quiz) => (
-                  <TableRow key={quiz._id}>
+                {filteredAssignments.map((assignment) => (
+                  <TableRow key={assignment._id}>
                     <TableCell>
                       <div>
-                        <p className="font-semibold">{quiz.title}</p>
-                        {quiz.description && (
-                          <p className="text-sm text-gray-500">{quiz.description}</p>
+                        <p className="font-semibold">{assignment.title}</p>
+                        <p className="text-sm text-gray-500 line-clamp-1">
+                          {assignment.description}
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                        color={assignment.assessmentType === "project" ? "success" : "primary"}
+                      >
+                        {assignment.assessmentType === "project" ? "Project" : "Assignment"}
+                      </Chip>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <FaCalendar size={14} />
+                        <span className={isOverdue(assignment.dueDate) ? "text-red-500" : ""}>
+                          {formatDate(assignment.dueDate)}
+                        </span>
+                        {isOverdue(assignment.dueDate) && (
+                          <Chip size="sm" color="danger" variant="flat">
+                            Overdue
+                          </Chip>
                         )}
                       </div>
                     </TableCell>
+                    <TableCell>{assignment.maxScore}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <FaQuestionCircle />
-                        {quiz.questions?.length || 0}
+                        <FaUsers size={14} />
+                        {assignment.submissionsCount || 0}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <FaClock size={14} />
-                        {quiz.duration} min
-                      </div>
-                    </TableCell>
-                    <TableCell>{quiz.submissionsCount || 0}</TableCell>
-                    <TableCell>
-                      <Select
-                        selectedKeys={[quiz.status]}
-                        onChange={(e) => handleStatusChange(quiz._id, e.target.value as "draft" | "active" | "published")}
-                        className="w-32"
-                        size="sm"
-                        disableAnimation
-                        aria-label="Quiz status"
-                      >
-                        <SelectItem key="draft" value="draft">Draft</SelectItem>
-                        <SelectItem key="active" value="active">Active</SelectItem>
-                        <SelectItem key="published" value="published">Published</SelectItem>
-                      </Select>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -271,8 +246,8 @@ export default function InstructorQuizzesPage() {
                           isIconOnly
                           size="sm"
                           variant="light"
-                          onPress={() => router.push(`/instructor/quizzes/${quiz._id}`)}
-                          title="View"
+                          onPress={() => router.push(`/instructor/assignments/${assignment._id}`)}
+                          title="View Submissions"
                         >
                           <FaEye size={16} />
                         </Button>
@@ -280,7 +255,7 @@ export default function InstructorQuizzesPage() {
                           isIconOnly
                           size="sm"
                           variant="light"
-                          onPress={() => router.push(`/instructor/quizzes/${quiz._id}/edit`)}
+                          onPress={() => router.push(`/instructor/assignments/${assignment._id}/edit`)}
                           title="Edit"
                         >
                           <FaEdit size={16} />
@@ -291,7 +266,7 @@ export default function InstructorQuizzesPage() {
                           variant="light"
                           color="danger"
                           onPress={() => {
-                            setQuizToDelete(quiz._id);
+                            setAssignmentToDelete(assignment._id);
                             onOpen();
                           }}
                           title="Delete"
@@ -311,15 +286,15 @@ export default function InstructorQuizzesPage() {
       {/* Delete Confirmation Modal */}
       <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">Delete Quiz</ModalHeader>
+          <ModalHeader className="flex flex-col gap-1">Delete Assignment</ModalHeader>
           <ModalBody>
-            <p>Are you sure you want to delete this quiz? This action cannot be undone.</p>
+            <p>Are you sure you want to delete this assignment? This action cannot be undone.</p>
           </ModalBody>
           <ModalFooter>
             <Button color="default" variant="light" onPress={() => onOpenChange()}>
               Cancel
             </Button>
-            <Button color="danger" onPress={handleDeleteQuiz}>
+            <Button color="danger" onPress={handleDeleteAssignment}>
               Delete
             </Button>
           </ModalFooter>

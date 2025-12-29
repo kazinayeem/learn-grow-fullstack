@@ -9,7 +9,11 @@
     "start": "node dist/server.js",
     "db:drop-phone-index": "tsx src/scripts/dropPhoneIndex.ts",
     "db:seed-blogs": "tsx src/scripts/seedBlogsSimple.ts",
-    "db:sync-indexes": "tsx src/scripts/syncIndexes.ts"
+    "db:sync-indexes": "tsx src/scripts/syncIndexes.ts",
+    "db:create-users": "tsx src/scripts/createUsers.ts",
+    "db:create-demo-course": "tsx src/scripts/createDemoCourse.ts",
+    "db:create-payment-methods": "tsx src/scripts/createPaymentMethod.ts",
+    "db:create-admin": "tsx src/scripts/createAdmin.ts"
   },
   "author": "",
   "license": "MIT",

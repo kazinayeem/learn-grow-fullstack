@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import {
     Card,
     CardBody,
@@ -9,76 +9,46 @@ import {
     RadioGroup,
     Radio,
     Chip,
+    Spinner,
 } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import { FaClock, FaCheck, FaTimes, FaTrophy } from "react-icons/fa";
+import { useGetQuizByIdQuery } from "@/redux/api/quizApi";
 
 interface Question {
-    id: string;
-    question: string;
-    image?: string;
-    options: string[];
-    correctAnswer: number;
+    _id?: string;
+    id?: string;
+    questionText: string;
+    questionImage?: string;
+    questionType: "multiple-choice" | "short-answer" | "true-false";
+    options?: { text: string; isCorrect: boolean }[];
+    correctAnswer?: string;
     points: number;
 }
 
-export default function TakeQuizPage({ params }: { params: { id: string } }) {
+export default function TakeQuizPage({ params }: { params: Promise<{ id: string }> }) {
+    const resolvedParams = use(params);
     const router = useRouter();
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [answers, setAnswers] = useState<{ [key: number]: number }>({});
-    const [timeLeft, setTimeLeft] = useState(1800); // 30 minutes in seconds
+    const [answers, setAnswers] = useState<{ [key: number]: number | string }>({});
+    const [timeLeft, setTimeLeft] = useState(0);
     const [quizSubmitted, setQuizSubmitted] = useState(false);
     const [score, setScore] = useState(0);
 
-    // Mock quiz data - replace with actual data from API
-    const quiz = {
-        id: params.id,
-        title: "Python Basics Quiz",
-        course: "Python for Beginners",
-        duration: 30,
-        totalPoints: 10,
-        questions: [
-            {
-                id: "1",
-                question: "What is the correct file extension for Python files?",
-                options: [".python", ".py", ".pt", ".pyt"],
-                correctAnswer: 1,
-                points: 1,
-            },
-            {
-                id: "2",
-                question: "Which keyword is used to define a function in Python?",
-                options: ["function", "func", "def", "define"],
-                correctAnswer: 2,
-                points: 1,
-            },
-            {
-                id: "3",
-                question: "What is the output of print(2 ** 3)?",
-                options: ["5", "6", "8", "9"],
-                correctAnswer: 2,
-                points: 1,
-            },
-            {
-                id: "4",
-                question: "Which data type is mutable in Python?",
-                options: ["tuple", "string", "int", "list"],
-                correctAnswer: 3,
-                points: 1,
-            },
-            {
-                id: "5",
-                question: "How do you create a comment in Python?",
-                options: ["// comment", "/* comment */", "# comment", "<!-- comment -->"],
-                correctAnswer: 2,
-                points: 1,
-            },
-        ] as Question[],
-    };
+    // Fetch quiz data from API
+    const { data: quizData, isLoading, error } = useGetQuizByIdQuery(resolvedParams.id);
+    const quiz = quizData?.data;
+
+    // Initialize timer when quiz loads
+    useEffect(() => {
+        if (quiz?.duration) {
+            setTimeLeft(quiz.duration * 60); // Convert minutes to seconds
+        }
+    }, [quiz]);
 
     // Timer
     useEffect(() => {
-        if (quizSubmitted) return;
+        if (quizSubmitted || !quiz) return;
 
         const timer = setInterval(() => {
             setTimeLeft((prev) => {
@@ -91,7 +61,7 @@ export default function TakeQuizPage({ params }: { params: { id: string } }) {
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [quizSubmitted]);
+    }, [quizSubmitted, quiz]);
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
@@ -99,19 +69,32 @@ export default function TakeQuizPage({ params }: { params: { id: string } }) {
         return `${mins}:${secs.toString().padStart(2, "0")}`;
     };
 
-    const handleAnswerSelect = (questionIndex: number, answerIndex: number) => {
-        setAnswers({ ...answers, [questionIndex]: answerIndex });
+    const handleAnswerSelect = (questionIndex: number, answer: number | string) => {
+        setAnswers({ ...answers, [questionIndex]: answer });
     };
 
     const handleSubmitQuiz = () => {
+        if (!quiz?.questions) return;
+
         // Calculate score automatically
         let totalScore = 0;
         let correctCount = 0;
 
-        quiz.questions.forEach((question, index) => {
-            if (answers[index] === question.correctAnswer) {
-                totalScore += question.points;
-                correctCount++;
+        quiz.questions.forEach((question: Question, index: number) => {
+            const userAnswer = answers[index];
+            
+            if (question.questionType === "multiple-choice" && question.options) {
+                // Find correct option index
+                const correctIndex = question.options.findIndex(opt => opt.isCorrect);
+                if (userAnswer === correctIndex) {
+                    totalScore += question.points;
+                    correctCount++;
+                }
+            } else if (question.questionType === "true-false" || question.questionType === "short-answer") {
+                if (userAnswer?.toString().toLowerCase() === question.correctAnswer?.toLowerCase()) {
+                    totalScore += question.points;
+                    correctCount++;
+                }
             }
         });
 
@@ -119,16 +102,48 @@ export default function TakeQuizPage({ params }: { params: { id: string } }) {
         setQuizSubmitted(true);
     };
 
+    // Loading state
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <Spinner size="lg" label="Loading quiz..." />
+            </div>
+        );
+    }
+
+    // Error state
+    if (error || !quiz) {
+        return (
+            <div className="container mx-auto px-4 py-8 max-w-4xl">
+                <Card>
+                    <CardBody className="text-center py-12">
+                        <p className="text-danger mb-4">Failed to load quiz. Please try again.</p>
+                        <Button color="primary" onPress={() => router.back()}>
+                            Go Back
+                        </Button>
+                    </CardBody>
+                </Card>
+            </div>
+        );
+    }
+
     const currentQuestion = quiz.questions[currentQuestionIndex];
     const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
     const answeredCount = Object.keys(answers).length;
+    const totalPoints = quiz.questions.reduce((sum: number, q: Question) => sum + q.points, 0);
 
     if (quizSubmitted) {
-        const correctAnswers = quiz.questions.filter(
-            (q, i) => answers[i] === q.correctAnswer
-        ).length;
-        const percentage = (score / quiz.totalPoints) * 100;
-        const passed = percentage >= 60;
+        const correctAnswers = quiz.questions.filter((q: Question, i: number) => {
+            const userAnswer = answers[i];
+            if (q.questionType === "multiple-choice" && q.options) {
+                const correctIndex = q.options.findIndex(opt => opt.isCorrect);
+                return userAnswer === correctIndex;
+            } else {
+                return userAnswer?.toString().toLowerCase() === q.correctAnswer?.toLowerCase();
+            }
+        }).length;
+        const percentage = (score / totalPoints) * 100;
+        const passed = percentage >= (quiz.passingScore || 60);
 
         return (
             <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -147,7 +162,7 @@ export default function TakeQuizPage({ params }: { params: { id: string } }) {
                             <div className="p-6 bg-blue-50 rounded-lg">
                                 <p className="text-sm text-gray-600 mb-1">Your Score</p>
                                 <p className="text-4xl font-bold text-primary">
-                                    {score}/{quiz.totalPoints}
+                                    {score}/{totalPoints}
                                 </p>
                             </div>
 
@@ -165,73 +180,100 @@ export default function TakeQuizPage({ params }: { params: { id: string } }) {
                         </div>
 
                         {/* Review Answers */}
-                        <div className="text-left mb-8">
-                            <h2 className="text-2xl font-bold mb-4">Review Your Answers</h2>
-                            <div className="space-y-4">
-                                {quiz.questions.map((question, index) => {
-                                    const userAnswer = answers[index];
-                                    const isCorrect = userAnswer === question.correctAnswer;
+                        {quiz.showCorrectAnswers && (
+                            <div className="text-left mb-8">
+                                <h2 className="text-2xl font-bold mb-4">Review Your Answers</h2>
+                                <div className="space-y-4">
+                                    {quiz.questions.map((question: Question, index: number) => {
+                                        const userAnswer = answers[index];
+                                        let isCorrect = false;
+                                        let correctIndex = -1;
 
-                                    return (
-                                        <Card key={question.id} className={`border-2 ${isCorrect ? "border-green-500" : "border-red-500"}`}>
-                                            <CardBody className="p-4">
-                                                <div className="flex items-start gap-3 mb-3">
-                                                    <div className={`p-2 rounded-full ${isCorrect ? "bg-green-100" : "bg-red-100"}`}>
-                                                        {isCorrect ? (
-                                                            <FaCheck className="text-green-600" />
-                                                        ) : (
-                                                            <FaTimes className="text-red-600" />
-                                                        )}
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <p className="font-semibold mb-2">Q{index + 1}. {question.question}</p>
+                                        if (question.questionType === "multiple-choice" && question.options) {
+                                            correctIndex = question.options.findIndex(opt => opt.isCorrect);
+                                            isCorrect = userAnswer === correctIndex;
+                                        } else {
+                                            isCorrect = userAnswer?.toString().toLowerCase() === question.correctAnswer?.toLowerCase();
+                                        }
 
-                                                        {question.image && (
-                                                            <div className="mb-3">
-                                                                <img
-                                                                    src={question.image}
-                                                                    alt="Question image"
-                                                                    className="max-w-full h-auto rounded-lg border-2 border-gray-200"
-                                                                    style={{ maxHeight: "300px" }}
-                                                                />
-                                                            </div>
-                                                        )}
+                                        return (
+                                            <Card key={question._id || question.id || index} className={`border-2 ${isCorrect ? "border-green-500" : "border-red-500"}`}>
+                                                <CardBody className="p-4">
+                                                    <div className="flex items-start gap-3 mb-3">
+                                                        <div className={`p-2 rounded-full ${isCorrect ? "bg-green-100" : "bg-red-100"}`}>
+                                                            {isCorrect ? (
+                                                                <FaCheck className="text-green-600" />
+                                                            ) : (
+                                                                <FaTimes className="text-red-600" />
+                                                            )}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="font-semibold mb-2">Q{index + 1}. {question.questionText}</p>
 
-                                                        <div className="space-y-2">
-                                                            {question.options.map((option, optIndex) => {
-                                                                const isUserAnswer = userAnswer === optIndex;
-                                                                const isCorrectAnswer = question.correctAnswer === optIndex;
+                                                            {question.questionImage && (
+                                                                <div className="mb-3">
+                                                                    <img
+                                                                        src={question.questionImage}
+                                                                        alt="Question image"
+                                                                        className="max-w-full h-auto rounded-lg border-2 border-gray-200"
+                                                                        style={{ maxHeight: "300px" }}
+                                                                    />
+                                                                </div>
+                                                            )}
 
-                                                                return (
-                                                                    <div
-                                                                        key={optIndex}
-                                                                        className={`p-2 rounded-lg ${isCorrectAnswer
-                                                                            ? "bg-green-100 border-2 border-green-500"
-                                                                            : isUserAnswer
-                                                                                ? "bg-red-100 border-2 border-red-500"
-                                                                                : "bg-gray-50"
-                                                                            }`}
-                                                                    >
-                                                                        <div className="flex items-center gap-2">
-                                                                            {isCorrectAnswer && <FaCheck className="text-green-600" />}
-                                                                            {isUserAnswer && !isCorrectAnswer && <FaTimes className="text-red-600" />}
-                                                                            <span className="font-semibold">{String.fromCharCode(65 + optIndex)}.</span>
-                                                                            <span>{option}</span>
-                                                                            {isCorrectAnswer && <Chip size="sm" color="success">Correct</Chip>}
-                                                                            {isUserAnswer && !isCorrectAnswer && <Chip size="sm" color="danger">Your Answer</Chip>}
-                                                                        </div>
+                                                            {question.questionType === "multiple-choice" && question.options && (
+                                                                <div className="space-y-2">
+                                                                    {question.options.map((option, optIndex) => {
+                                                                        const isUserAnswer = userAnswer === optIndex;
+                                                                        const isCorrectAnswer = option.isCorrect;
+
+                                                                        return (
+                                                                            <div
+                                                                                key={optIndex}
+                                                                                className={`p-2 rounded-lg ${isCorrectAnswer
+                                                                                    ? "bg-green-100 border-2 border-green-500"
+                                                                                    : isUserAnswer
+                                                                                        ? "bg-red-100 border-2 border-red-500"
+                                                                                        : "bg-gray-50"
+                                                                                    }`}
+                                                                            >
+                                                                                <div className="flex items-center gap-2">
+                                                                                    {isCorrectAnswer && <FaCheck className="text-green-600" />}
+                                                                                    {isUserAnswer && !isCorrectAnswer && <FaTimes className="text-red-600" />}
+                                                                                    <span className="font-semibold">{String.fromCharCode(65 + optIndex)}.</span>
+                                                                                    <span>{option.text}</span>
+                                                                                    {isCorrectAnswer && <Chip size="sm" color="success">Correct</Chip>}
+                                                                                    {isUserAnswer && !isCorrectAnswer && <Chip size="sm" color="danger">Your Answer</Chip>}
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            )}
+
+                                                            {(question.questionType === "true-false" || question.questionType === "short-answer") && (
+                                                                <div className="space-y-2">
+                                                                    <div className="p-3 bg-green-50 rounded-lg border-2 border-green-200">
+                                                                        <p className="text-sm text-gray-600">Correct Answer:</p>
+                                                                        <p className="font-semibold text-green-700">{question.correctAnswer}</p>
                                                                     </div>
-                                                                );
-                                                            })}
+                                                                    {!isCorrect && (
+                                                                        <div className="p-3 bg-red-50 rounded-lg border-2 border-red-200">
+                                                                            <p className="text-sm text-gray-600">Your Answer:</p>
+                                                                            <p className="font-semibold text-red-700">{userAnswer || "Not answered"}</p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
-                                                </div>
-                                            </CardBody>
-                                        </Card>
-                                    );
-                                })}
+                                                </CardBody>
+                                            </Card>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         <div className="flex gap-4 justify-center">
                             <Button
@@ -268,13 +310,15 @@ export default function TakeQuizPage({ params }: { params: { id: string } }) {
                     <div className="flex justify-between items-center">
                         <div>
                             <h1 className="text-2xl font-bold mb-1">{quiz.title}</h1>
-                            <p className="text-gray-600">{quiz.course}</p>
+                            {quiz.description && <p className="text-gray-600">{quiz.description}</p>}
                         </div>
                         <div className="text-right">
-                            <div className="flex items-center gap-2 text-orange-600 mb-2">
-                                <FaClock />
-                                <span className="text-2xl font-bold">{formatTime(timeLeft)}</span>
-                            </div>
+                            {quiz.duration > 0 && (
+                                <div className="flex items-center gap-2 text-orange-600 mb-2">
+                                    <FaClock />
+                                    <span className="text-2xl font-bold">{formatTime(timeLeft)}</span>
+                                </div>
+                            )}
                             <p className="text-sm text-gray-600">
                                 Question {currentQuestionIndex + 1} of {quiz.questions.length}
                             </p>
@@ -292,12 +336,12 @@ export default function TakeQuizPage({ params }: { params: { id: string } }) {
                         <Chip color="primary" variant="flat" className="mb-4">
                             Question {currentQuestionIndex + 1} • {currentQuestion.points} {currentQuestion.points === 1 ? "point" : "points"}
                         </Chip>
-                        <h2 className="text-2xl font-semibold mb-4">{currentQuestion.question}</h2>
+                        <h2 className="text-2xl font-semibold mb-4">{currentQuestion.questionText}</h2>
 
-                        {currentQuestion.image && (
+                        {currentQuestion.questionImage && (
                             <div className="mb-6">
                                 <img
-                                    src={currentQuestion.image}
+                                    src={currentQuestion.questionImage}
                                     alt="Question image"
                                     className="max-w-full h-auto rounded-lg border-2 border-gray-200 mx-auto"
                                     style={{ maxHeight: "400px" }}
@@ -306,19 +350,45 @@ export default function TakeQuizPage({ params }: { params: { id: string } }) {
                         )}
                     </div>
 
-                    <RadioGroup
-                        value={answers[currentQuestionIndex]?.toString() || ""}
-                        onValueChange={(value) => handleAnswerSelect(currentQuestionIndex, parseInt(value))}
-                    >
-                        {currentQuestion.options.map((option, index) => (
-                            <Radio key={index} value={index.toString()} className="mb-3">
-                                <div className="flex items-center gap-2">
-                                    <span className="font-semibold">{String.fromCharCode(65 + index)}.</span>
-                                    <span className="text-lg">{option}</span>
-                                </div>
+                    {currentQuestion.questionType === "multiple-choice" && currentQuestion.options && (
+                        <RadioGroup
+                            value={answers[currentQuestionIndex]?.toString() || ""}
+                            onValueChange={(value) => handleAnswerSelect(currentQuestionIndex, parseInt(value))}
+                        >
+                            {currentQuestion.options.map((option: { text: string; isCorrect: boolean }, index: number) => (
+                                <Radio key={index} value={index.toString()} className="mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-semibold">{String.fromCharCode(65 + index)}.</span>
+                                        <span className="text-lg">{option.text}</span>
+                                    </div>
+                                </Radio>
+                            ))}
+                        </RadioGroup>
+                    )}
+
+                    {currentQuestion.questionType === "true-false" && (
+                        <RadioGroup
+                            value={answers[currentQuestionIndex]?.toString() || ""}
+                            onValueChange={(value) => handleAnswerSelect(currentQuestionIndex, value)}
+                        >
+                            <Radio value="true" className="mb-3">
+                                <span className="text-lg">True</span>
                             </Radio>
-                        ))}
-                    </RadioGroup>
+                            <Radio value="false" className="mb-3">
+                                <span className="text-lg">False</span>
+                            </Radio>
+                        </RadioGroup>
+                    )}
+
+                    {currentQuestion.questionType === "short-answer" && (
+                        <input
+                            type="text"
+                            className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
+                            placeholder="Type your answer here..."
+                            value={answers[currentQuestionIndex]?.toString() || ""}
+                            onChange={(e) => handleAnswerSelect(currentQuestionIndex, e.target.value)}
+                        />
+                    )}
                 </CardBody>
             </Card>
 
@@ -361,7 +431,7 @@ export default function TakeQuizPage({ params }: { params: { id: string } }) {
                 <CardBody className="p-4">
                     <p className="text-sm font-semibold mb-3">Question Navigator</p>
                     <div className="flex flex-wrap gap-2">
-                        {quiz.questions.map((_, index) => (
+                        {quiz.questions.map((_: Question, index: number) => (
                             <Button
                                 key={index}
                                 size="sm"

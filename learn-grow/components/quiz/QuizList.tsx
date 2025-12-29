@@ -1,9 +1,8 @@
 "use client";
 
 import React from "react";
-import { Card, CardBody, CardHeader, Button, Chip, Progress } from "@nextui-org/react";
-import { useSelector } from "react-redux";
-import type { RootState } from "@/redux/store";
+import { Card, CardBody, CardHeader, Button, Chip, Progress, Spinner } from "@nextui-org/react";
+import { useGetQuizzesByCourseQuery } from "@/redux/api/quizApi";
 import { useRouter } from "next/navigation";
 
 interface QuizListProps {
@@ -12,23 +11,32 @@ interface QuizListProps {
 
 export default function QuizList({ courseId }: QuizListProps) {
     const router = useRouter();
-    const quizzes = useSelector((state: RootState) =>
-        state.quizAssignment.quizzes.filter((q) => q.courseId === courseId)
-    );
-    const attempts = useSelector((state: RootState) => state.quizAssignment.quizAttempts);
+    
+    // Fetch quizzes from API
+    const { data: quizzesData, isLoading, error } = useGetQuizzesByCourseQuery(courseId);
+    const quizzes = quizzesData?.data || quizzesData?.quizzes || [];
 
-    const getQuizStats = (quizId: string) => {
-        const quizAttempts = attempts.filter((a) => a.quizId === quizId);
-        const passed = quizAttempts.filter((a) => a.passed).length > 0;
-        const bestScore = quizAttempts.length > 0
-            ? Math.max(...quizAttempts.map((a) => a.percentage))
-            : 0;
-        const attemptCount = quizAttempts.length;
+    if (isLoading) {
+        return (
+            <Card>
+                <CardBody className="text-center py-8">
+                    <Spinner size="lg" label="Loading quizzes..." />
+                </CardBody>
+            </Card>
+        );
+    }
 
-        return { passed, bestScore, attemptCount };
-    };
+    if (error) {
+        return (
+            <Card>
+                <CardBody className="text-center py-8">
+                    <p className="text-danger">Failed to load quizzes. Please try again.</p>
+                </CardBody>
+            </Card>
+        );
+    }
 
-    if (quizzes.length === 0) {
+    if (!quizzes || quizzes.length === 0) {
         return (
             <Card>
                 <CardBody className="text-center py-8">
@@ -40,11 +48,16 @@ export default function QuizList({ courseId }: QuizListProps) {
 
     return (
         <div className="space-y-4">
-            {quizzes.map((quiz) => {
-                const stats = getQuizStats(quiz.id);
-
+            {quizzes.map((quiz: any) => {
+                const quizId = quiz._id;
+                
+                if (!quizId) {
+                    console.error("Quiz without _id:", quiz);
+                    return null;
+                }
+                
                 return (
-                    <Card key={quiz.id} isPressable className="hover:shadow-lg transition-shadow">
+                    <Card key={quizId} className="hover:shadow-lg transition-shadow">
                         <CardBody>
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex-1">
@@ -52,58 +65,38 @@ export default function QuizList({ courseId }: QuizListProps) {
                                     <p className="text-sm text-default-600 mb-3">{quiz.description}</p>
                                     <div className="flex flex-wrap gap-2">
                                         <Chip size="sm" variant="flat">
-                                            📝 {quiz.questions.length} Questions
+                                            📝 {quiz.questions?.length || 0} Questions
                                         </Chip>
                                         <Chip size="sm" variant="flat">
-                                            🎯 {quiz.passingScore}% to Pass
+                                            🎯 {quiz.passingScore || 60}% to Pass
                                         </Chip>
-                                        {quiz.timeLimit && (
+                                        {quiz.duration && (
                                             <Chip size="sm" variant="flat">
-                                                ⏱️ {quiz.timeLimit} min
+                                                ⏱️ {quiz.duration} min
                                             </Chip>
                                         )}
-                                        {stats.attemptCount > 0 && (
+                                        {quiz.status && (
                                             <Chip
                                                 size="sm"
-                                                color={stats.passed ? "success" : "warning"}
+                                                color={quiz.status === "published" ? "success" : "warning"}
                                                 variant="flat"
                                             >
-                                                {stats.attemptCount} Attempt{stats.attemptCount > 1 ? "s" : ""}
+                                                {quiz.status}
                                             </Chip>
                                         )}
                                     </div>
                                 </div>
 
                                 <div className="text-right ml-4">
-                                    {stats.attemptCount > 0 && (
-                                        <div className="mb-3">
-                                            <p className="text-xs text-default-500">Best Score</p>
-                                            <p className="text-2xl font-bold text-primary">{stats.bestScore}%</p>
-                                            {stats.passed && (
-                                                <Chip color="success" size="sm" variant="flat" className="mt-1">
-                                                    ✓ Passed
-                                                </Chip>
-                                            )}
-                                        </div>
-                                    )}
                                     <Button
                                         color="primary"
                                         size="sm"
-                                        onPress={() => router.push(`/quiz/${quiz.id}`)}
+                                        onPress={() => router.push(`/quiz/${quizId}`)}
                                     >
-                                        {stats.attemptCount > 0 ? "Retake Quiz" : "Take Quiz"}
+                                        Take Quiz
                                     </Button>
                                 </div>
                             </div>
-
-                            {stats.bestScore > 0 && (
-                                <Progress
-                                    value={stats.bestScore}
-                                    color={stats.passed ? "success" : "warning"}
-                                    size="sm"
-                                    className="mt-2"
-                                />
-                            )}
                         </CardBody>
                     </Card>
                 );

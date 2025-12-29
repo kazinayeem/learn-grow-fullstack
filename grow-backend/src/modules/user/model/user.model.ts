@@ -16,7 +16,7 @@ export interface IUser {
   verificationToken?: string;
   isApproved?: boolean; // For instructor approval by super admin
   bio?: string;
-  expertise?: string;
+  expertise?: string[];
   qualification?: string;
   institution?: string;
   yearsOfExperience?: number;
@@ -51,7 +51,7 @@ const userSchema = new Schema<IUser>(
       },
     },
     bio: String,
-    expertise: String,
+    expertise: [String],
     qualification: String,
     institution: String,
     yearsOfExperience: Number,

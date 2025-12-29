@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
 import CourseModules from "@/components/course/CourseModules";
-import QuizList from "@/components/quiz/QuizList";
+import UnifiedAssessmentView from "@/components/assessment/UnifiedAssessmentView";
 import DOMPurify from "isomorphic-dompurify";
 import Cookies from "js-cookie";
 
@@ -363,9 +363,10 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                 </Card>
                             </Tab>
 
-                            <Tab key="quizzes" title="📝 Quizzes">
-                                <QuizList courseId={courseId} />
+                            <Tab key="assessments" title="📚 Assessments">
+                                <UnifiedAssessmentView courseId={courseId} />
                             </Tab>
+                           
                         </Tabs>
                     </div>
 

@@ -806,7 +806,7 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                     </Card>
                 </Tab>
 
-                {/* ASSESSMENTS TAB - The user's request */}
+                {/* ASSESSMENTS TAB - Unified view of all assessment types */}
                 <Tab
                     key="assessments"
                     title={
@@ -820,17 +820,56 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                         <div className="flex justify-between items-center mb-6">
                             <div>
                                 <h2 className="text-2xl font-bold">Course Assessments</h2>
-                                <p className="text-gray-600">Manage quizzes, exams, and assignments for this course.</p>
+                                <p className="text-gray-600">Manage quizzes, exams, assignments, and projects for this course.</p>
                             </div>
-                            {/* Auto-select this course when creating */}
-                            <Button
-                                color="primary"
-                                size="lg"
-                                startContent={<FaPlus />}
-                                onPress={() => router.push(`/instructor/quizzes/create?courseId=${courseId}&courseTitle=${encodeURIComponent(courseData?.title || '')}`)}
-                            >
-                                Create Assessment
-                            </Button>
+                            <Dropdown>
+                                <DropdownTrigger>
+                                    <Button
+                                        color="primary"
+                                        size="lg"
+                                        startContent={<FaPlus />}
+                                    >
+                                        Create Assessment
+                                    </Button>
+                                </DropdownTrigger>
+                                <DropdownMenu aria-label="Assessment types">
+                                    <DropdownItem
+                                        key="quiz"
+                                        startContent={<FaClipboardList />}
+                                        onPress={() => router.push(`/instructor/quizzes/create?courseId=${courseId}&type=quiz`)}
+                                    >
+                                        Quiz
+                                    </DropdownItem>
+                                    <DropdownItem
+                                        key="mid-exam"
+                                        startContent={<FaGraduationCap />}
+                                        onPress={() => router.push(`/instructor/quizzes/create?courseId=${courseId}&type=mid-exam`)}
+                                    >
+                                        Mid Exam
+                                    </DropdownItem>
+                                    <DropdownItem
+                                        key="final-exam"
+                                        startContent={<FaGraduationCap />}
+                                        onPress={() => router.push(`/instructor/quizzes/create?courseId=${courseId}&type=final-exam`)}
+                                    >
+                                        Final Exam
+                                    </DropdownItem>
+                                    <DropdownItem
+                                        key="assignment"
+                                        startContent={<FaFileAlt />}
+                                        onPress={() => router.push(`/instructor/assignments/create?courseId=${courseId}&type=assignment`)}
+                                    >
+                                        Assignment
+                                    </DropdownItem>
+                                    <DropdownItem
+                                        key="project"
+                                        startContent={<FaFileAlt />}
+                                        onPress={() => router.push(`/instructor/assignments/create?courseId=${courseId}&type=project`)}
+                                    >
+                                        Project
+                                    </DropdownItem>
+                                </DropdownMenu>
+                            </Dropdown>
                         </div>
 
                         <div className="grid grid-cols-1 gap-4">
@@ -868,12 +907,18 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
-                                            {/* Submission Button for capable types */}
-                                            {(['assignment', 'project', 'mid-exam', 'final-exam'].includes(assessment.type)) && (
-                                                <Button size="sm" variant="flat" color="primary">
-                                                    View Submissions
-                                                </Button>
-                                            )}
+                                            <Button 
+                                                size="sm" 
+                                                variant="flat" 
+                                                color="primary"
+                                                startContent={<FaEye />}
+                                                onPress={() => {
+                                                    // Navigate to unified assessments page
+                                                    router.push(`/instructor/assessments?courseId=${courseId}`);
+                                                }}
+                                            >
+                                                View All
+                                            </Button>
                                             <Button isIconOnly variant="light" onPress={() => router.push(`/instructor/quizzes/${assessment.id}/edit`)}>
                                                 <FaEdit className="text-gray-500" />
                                             </Button>
@@ -886,12 +931,14 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                                 <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
                                     <FaClipboardList className="text-4xl text-gray-300 mx-auto mb-3" />
                                     <p className="text-gray-500 mb-4">No assessments created for this course yet.</p>
+                                    <p className="text-sm text-gray-400 mb-4">Create quizzes, exams, assignments, or projects to assess student learning.</p>
                                     <Button
                                         color="primary"
                                         variant="flat"
-                                        onPress={() => router.push(`/instructor/quizzes/create?courseId=${courseId}&courseTitle=${encodeURIComponent(courseData?.title || '')}`)}
+                                        startContent={<FaPlus />}
+                                        onPress={() => router.push(`/instructor/assessments?courseId=${courseId}`)}
                                     >
-                                        Create Your First Assessment
+                                        Go to Assessments
                                     </Button>
                                 </div>
                             )}

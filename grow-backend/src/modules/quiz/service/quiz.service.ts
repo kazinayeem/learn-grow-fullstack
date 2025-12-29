@@ -1,10 +1,12 @@
 import { Types } from "mongoose";
 import { Quiz, IQuiz } from "../model/quiz.model";
 import { Assessment } from "@/modules/assessment/model/assessment.model";
+import { User } from "@/modules/user/model/user.model";
 
 interface CreateQuizInput {
   courseId: string;
   createdBy: string;
+  assessmentType?: "quiz" | "mid-exam" | "final-exam";
   title: string;
   description?: string;
   questions: any[];
@@ -22,11 +24,11 @@ export const createQuiz = async (input: CreateQuizInput) => {
     const assessment = await Assessment.create({
       courseId: input.courseId,
       createdBy: input.createdBy,
-      type: "quiz",
+      type: input.assessmentType || "quiz",
       title: input.title,
       description: input.description,
       questions: input.questions.length,
-      status: "draft",
+      status: "published",
       submissionsCount: 0,
     });
 
@@ -38,6 +40,7 @@ export const createQuiz = async (input: CreateQuizInput) => {
       assessmentId: assessment._id,
       courseId: input.courseId,
       createdBy: input.createdBy,
+      assessmentType: input.assessmentType || "quiz",
       title: input.title,
       description: input.description,
       questions: input.questions.map((q, idx) => ({
@@ -51,7 +54,7 @@ export const createQuiz = async (input: CreateQuizInput) => {
       shuffleOptions: input.shuffleOptions || false,
       showCorrectAnswers: input.showCorrectAnswers !== false,
       totalAttempts: input.totalAttempts || 0,
-      status: "draft",
+      status: "published",
     });
 
     return {
@@ -69,13 +72,25 @@ export const createQuiz = async (input: CreateQuizInput) => {
 
 export const getQuizzes = async (
   courseId: string,
-  createdBy: string,
+  userId: string,
   filters?: { status?: string }
 ) => {
   try {
-    const query: any = { courseId, createdBy };
+    // Build query - convert courseId to ObjectId for proper matching
+    const query: any = { courseId: new Types.ObjectId(courseId) };
+    
+    // Get user to check role
+    const user = await User.findById(userId);
+    
+    // If status filter is provided, use it
     if (filters?.status) {
       query.status = filters.status;
+    } else if (user && (user.role === "instructor" || user.role === "admin")) {
+      // Instructor/Admin: show their own quizzes (all statuses)
+      query.createdBy = new Types.ObjectId(userId);
+    } else {
+      // Student: only show published quizzes
+      query.status = "published";
     }
 
     const quizzes = await Quiz.find(query).sort({ createdAt: -1 });
@@ -86,6 +101,7 @@ export const getQuizzes = async (
       data: quizzes,
     };
   } catch (error: any) {
+    console.error("Get quizzes error:", error);
     return {
       success: false,
       message: error.message || "Failed to fetch quizzes",

@@ -32,6 +32,7 @@ function AdminDashboardContent() {
     const { data: usersData } = useGetUsersAdminQuery({ page: 1, limit: 100 });
     const { data: coursesData } = useGetAllCoursesQuery({ skip: 0, limit: 1 });
     const { data: ordersData } = useGetAllOrdersQuery({ planType: "kit" });
+    const { data: allOrdersData } = useGetAllOrdersQuery({ status: "pending" });
 
     // Calculate stats from real data
     const stats = useMemo(() => {
@@ -39,6 +40,7 @@ function AdminDashboardContent() {
         const totalStudents = usersData?.counts?.students ?? 0;
         const totalInstructors = usersData?.counts?.instructors ?? 0;
         const totalCourses = coursesData?.meta?.total ?? 0;
+        const pendingOrders = (allOrdersData?.orders || []).length;
 
         return {
             totalUsers,
@@ -49,17 +51,18 @@ function AdminDashboardContent() {
             totalRevenue: totalCourses * 5000,
             thisMonthRevenue: Math.floor(totalCourses * 5000 * 0.4),
             pendingApprovals: 12,
+            pendingOrders,
         };
-    }, [usersData, coursesData]);
+    }, [usersData, coursesData, allOrdersData]);
 
     // Get all students
     const students = useMemo(() => {
-        return (usersData?.users || []).filter(user => user.role === "student");
+        return (usersData?.users || []).filter((user: any) => user.role === "student");
     }, [usersData]);
 
     // Get kit orders
     const kitOrders = useMemo(() => {
-        return ordersData?.orders || ordersData?.data || [];
+        return ordersData?.orders || [];
     }, [ordersData]);
 
     const quickActions = [
@@ -90,6 +93,13 @@ function AdminDashboardContent() {
             icon: <FaChartLine className="text-3xl" />,
             color: "from-purple-500 to-purple-600",
             href: "/admin/analytics",
+        },
+        {
+            title: "Manage Orders",
+            description: "Approve payment requests",
+            icon: <FaClipboardList className="text-3xl" />,
+            color: "from-red-500 to-red-600",
+            href: "/admin/orders",
         },
         {
             title: "Settings",
@@ -248,7 +258,7 @@ function AdminDashboardContent() {
                                 <TableColumn>STATUS</TableColumn>
                             </TableHeader>
                             <TableBody emptyContent="No students found">
-                                {students.slice(0, 10).map((student) => (
+                                {students.slice(0, 10).map((student: any) => (
                                     <TableRow key={student._id}>
                                         <TableCell>
                                             <div className="flex items-center gap-3">
@@ -327,7 +337,7 @@ function AdminDashboardContent() {
                                 <TableColumn>DATE</TableColumn>
                             </TableHeader>
                             <TableBody emptyContent="No kit orders found">
-                                {kitOrders.slice(0, 10).map((order) => (
+                                {kitOrders.slice(0, 10).map((order: any) => (
                                     <TableRow key={order._id}>
                                         <TableCell>
                                             <div>
@@ -479,6 +489,10 @@ function AdminDashboardContent() {
                                             <span className="font-semibold text-orange-600">{stats.pendingApprovals}</span>
                                         </div>
                                         <div className="flex justify-between text-sm">
+                                            <span>Payment Requests</span>
+                                            <span className="font-semibold text-red-600">{stats.pendingOrders}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
                                             <span>Support Tickets</span>
                                             <span className="font-semibold text-orange-600">8</span>
                                         </div>
@@ -486,11 +500,12 @@ function AdminDashboardContent() {
                                 </div>
 
                                 <Button
-                                    color="primary"
+                                    color="danger"
                                     className="w-full mt-4"
-                                    startContent={<FaShieldAlt />}
+                                    startContent={<FaClipboardList />}
+                                    onPress={() => router.push("/admin/orders")}
                                 >
-                                    View All Alerts
+                                    View Pending Orders ({stats.pendingOrders})
                                 </Button>
                             </div>
                         </CardBody>

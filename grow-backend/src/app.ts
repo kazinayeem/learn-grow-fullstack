@@ -10,6 +10,7 @@ import { jobRoutes } from "@/modules/job";
 import { courseRoutes } from "@/modules/course";
 import { assessmentRoutes } from "@/modules/assessment";
 import { quizRoutes } from "@/modules/quiz";
+import { assignmentRoutes } from "@/modules/assignment";
 import { siteContentRoutes } from "@/modules/siteContent";
 import { settingsRoutes } from "@/modules/settings";
 import { statusRoutes } from "@/modules/status";
@@ -65,6 +66,7 @@ export const createApp = () => {
   app.use("/api/course", courseRoutes);
   app.use("/api/assessment", assessmentRoutes);
   app.use("/api/quiz", quizRoutes);
+  app.use("/api/assignment", assignmentRoutes);
   app.use("/api/status", statusRoutes);
   app.use("/api/v1/status", statusRoutes);
   // Site Content (public + admin upsert)

@@ -57,6 +57,12 @@ export const quizIdSchema = z.object({
   }),
 });
 
+export const courseIdSchema = z.object({
+  params: z.object({
+    courseId: z.string(),
+  }),
+});
+
 export const publishQuizSchema = z.object({
   params: z.object({
     id: z.string(),

@@ -42,7 +42,7 @@ interface Order {
     name: string;
     email: string;
   };
-  planType: "single" | "quarterly" | "kit";
+  planType: "single" | "quarterly" | "kit" | "school";
   courseId?: { _id: string; title: string };
   paymentMethodId: {
     _id: string;
@@ -64,6 +64,7 @@ const PLAN_LABELS = {
   single: "একক কোর্স | Single Course",
   quarterly: "ত্রৈমাসিক | Quarterly",
   kit: "শুধু কিট | Kit Only",
+  school: "স্কুল প্ল্যান | School Plan",
 };
 
 const STATUS_COLOR_MAP: Record<string, "default" | "primary" | "success" | "warning" | "danger"> = {
@@ -329,25 +330,25 @@ export default function OrdersAdminPage() {
                         📋 অর্ডার তথ্য
                       </h3>
                       <div className="space-y-2">
-                        <p>
+                        <div>
                           <span className="text-gray-600 font-medium">অর্ডার ID:</span>
                           <code className="ml-2 bg-white px-2 py-1 rounded text-sm">{selectedOrder._id}</code>
-                        </p>
-                        <p>
+                        </div>
+                        <div>
                           <span className="text-gray-600 font-medium">প্ল্যান টাইপ:</span>
                           <Chip size="sm" color="primary" variant="flat" className="ml-2">
                             {PLAN_LABELS[selectedOrder.planType]}
                           </Chip>
-                        </p>
-                        <p>
+                        </div>
+                        <div>
                           <span className="text-gray-600 font-medium">মূল্য:</span>
                           <span className="ml-2 text-xl font-bold text-primary">৳{selectedOrder.price.toLocaleString()}</span>
-                        </p>
-                        <p>
+                        </div>
+                        <div>
                           <span className="text-gray-600 font-medium">অর্ডার তারিখ:</span>
                           <span className="ml-2">{new Date(selectedOrder.createdAt).toLocaleDateString("bn-BD", { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                           <span className="text-sm text-gray-500 ml-2">({new Date(selectedOrder.createdAt).toLocaleTimeString("bn-BD")})</span>
-                        </p>
+                        </div>
                       </div>
                     </div>
 

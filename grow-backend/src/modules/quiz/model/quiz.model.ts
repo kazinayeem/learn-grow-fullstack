@@ -20,6 +20,7 @@ export interface IQuiz extends Document {
   assessmentId: Types.ObjectId;
   courseId: Types.ObjectId;
   createdBy: Types.ObjectId;
+  assessmentType: "quiz" | "mid-exam" | "final-exam"; // Added assessment type
   title: string;
   description?: string;
   questions: IQuizQuestion[];
@@ -66,6 +67,7 @@ const quizSchema = new Schema<IQuiz>(
     assessmentId: { type: Schema.Types.ObjectId, ref: "Assessment", required: true, index: true },
     courseId: { type: Schema.Types.ObjectId, ref: "Course", required: true, index: true },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    assessmentType: { type: String, enum: ["quiz", "mid-exam", "final-exam"], default: "quiz" },
     title: { type: String, required: true, trim: true },
     description: { type: String },
     questions: [quizQuestionSchema],
@@ -75,7 +77,7 @@ const quizSchema = new Schema<IQuiz>(
     shuffleQuestions: { type: Boolean, default: false },
     shuffleOptions: { type: Boolean, default: false },
     showCorrectAnswers: { type: Boolean, default: true },
-    status: { type: String, enum: ["draft", "active", "published"], default: "draft" },
+    status: { type: String, enum: ["draft", "active", "published"], default: "published" },
     totalAttempts: { type: Number, default: 0 }, // 0 = unlimited
     attemptCount: { type: Number, default: 0 },
     submissionsCount: { type: Number, default: 0 },

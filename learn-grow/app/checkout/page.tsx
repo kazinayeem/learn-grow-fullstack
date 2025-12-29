@@ -233,7 +233,16 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) return;
+    console.log("=== FORM SUBMISSION STARTED ===");
+    console.log("Form data:", formData);
+    console.log("Plan:", plan);
+    console.log("Course ID:", courseId);
+    console.log("Plan details:", planDetails);
+
+    if (!validateForm()) {
+      console.log("Form validation failed");
+      return;
+    }
 
     setSubmitting(true);
 
@@ -246,10 +255,12 @@ export default function CheckoutPage() {
         price: planDetails.price,
       };
 
-      console.log("Submitting order with payload:", payload);
+      console.log("=== PREPARING PAYLOAD ===");
+      console.log("Initial payload:", payload);
 
       if (plan === "single" && courseId) {
         payload.courseId = courseId;
+        console.log("Added courseId to payload:", courseId);
       }
 
       if (planDetails.requiresDelivery) {
@@ -260,14 +271,21 @@ export default function CheckoutPage() {
           city: formData.city,
           postalCode: formData.postalCode,
         };
+        console.log("Added delivery address to payload");
       }
 
       const token = getAuthToken();
       if (!token) {
+        console.error("No auth token found");
         toast.error("Please login to continue");
         router.push("/login?redirect=/checkout");
         return;
       }
+
+      console.log("=== SENDING API REQUEST ===");
+      console.log("URL: http://localhost:5000/api/orders");
+      console.log("Payload:", JSON.stringify(payload, null, 2));
+      console.log("Token:", token.substring(0, 20) + "...");
 
       const response = await axios.post("http://localhost:5000/api/orders", payload, {
         headers: {
@@ -275,6 +293,9 @@ export default function CheckoutPage() {
           "Content-Type": "application/json",
         },
       });
+
+      console.log("=== API RESPONSE ===");
+      console.log("Response:", response.data);
 
       if (response.data?.success) {
         toast.success(response.data.message || "Order placed successfully!");
@@ -294,22 +315,30 @@ export default function CheckoutPage() {
           router.push("/student/orders");
         }, 1500);
       } else {
+        console.error("API returned success: false");
         toast.error(response.data?.message || "Failed to create order");
       }
     } catch (error: any) {
-      console.error("Order submission error:", error);
+      console.error("=== ORDER SUBMISSION ERROR ===");
+      console.error("Error object:", error);
+      
       if (error.response) {
+        console.error("Response status:", error.response.status);
+        console.error("Response data:", error.response.data);
         toast.error(error.response.data?.message || "Failed to place order");
         if (error.response.status === 401) {
           router.push("/login");
         }
       } else if (error.request) {
+        console.error("No response received:", error.request);
         toast.error("Cannot connect to server. Please check your internet connection.");
       } else {
+        console.error("Error message:", error.message);
         toast.error("An unexpected error occurred. Please try again.");
       }
     } finally {
       setSubmitting(false);
+      console.log("=== FORM SUBMISSION ENDED ===");
     }
   };
 
@@ -471,14 +500,16 @@ export default function CheckoutPage() {
                       <Select
                         label="পেমেন্ট পদ্ধতি | Payment Method"
                         placeholder="একটি পদ্ধতি বেছে নিন"
-                        selectedKeys={formData.paymentMethodId ? [formData.paymentMethodId] : []}
+                        selectedKeys={formData.paymentMethodId ? new Set([formData.paymentMethodId]) : new Set()}
                         onSelectionChange={(keys) => {
                           const id = Array.from(keys)[0] as string;
                           console.log("Selected payment method ID:", id);
-                          setFormData((prev) => ({
-                            ...prev,
-                            paymentMethodId: id,
-                          }));
+                          if (id) {
+                            setFormData((prev) => ({
+                              ...prev,
+                              paymentMethodId: id,
+                            }));
+                          }
                         }}
                         variant="bordered"
                         isRequired

@@ -49,7 +49,6 @@
 		"lexical": "^0.16.1",
 		"next": "^16.0.7",
 		"next-auth": "^5.0.0-beta.20",
-		"next-router-events": "^1.0.1",
 		"next-themes": "^0.2.1",
 		"popd": "^0.0.3",
 		"react": "^18.3.1",

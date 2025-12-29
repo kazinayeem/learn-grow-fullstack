@@ -344,14 +344,10 @@ export default function CourseLearnPage() {
                                                                                         </div>
                                                                                     </div>
                                                                                     {!isLocked && (
-                                                                                        <Button
-                                                                                            color="primary"
-                                                                                            size="sm"
-                                                                                            variant="flat"
-                                                                                            startContent={<FaPlay />}
-                                                                                        >
-                                                                                            {isCompleted ? "Review" : "Start"}
-                                                                                        </Button>
+                                                                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-50 text-primary rounded-lg text-sm font-medium">
+                                                                                            <FaPlay className="text-xs" />
+                                                                                            <span>{isCompleted ? "Review" : "Start"}</span>
+                                                                                        </div>
                                                                                     )}
                                                                                 </div>
                                                                             </CardBody>

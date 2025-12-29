@@ -19,7 +19,7 @@ router.post(
 router.get(
   "/course/:courseId",
   requireAuth,
-  validate(schema.quizIdSchema),
+  validate(schema.courseIdSchema),
   controller.listByCourse
 );
 

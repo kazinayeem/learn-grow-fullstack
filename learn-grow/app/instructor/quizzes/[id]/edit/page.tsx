@@ -19,11 +19,11 @@ import {
     Chip,
     Spinner,
 } from "@nextui-org/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { toast } from "react-toastify";
-import { FaPlus, FaTrash, FaEdit, FaSave, FaCheck, FaImage } from "react-icons/fa";
+import { FaPlus, FaTrash, FaEdit, FaSave, FaCheck } from "react-icons/fa";
 import { useGetInstructorCoursesQuery } from "@/redux/api/courseApi";
-import { useCreateQuizMutation } from "@/redux/api/quizApi";
+import { useGetQuizByIdQuery, useUpdateQuizMutation } from "@/redux/api/quizApi";
 
 interface Question {
     id: string;
@@ -47,16 +47,18 @@ interface Quiz {
     showCorrectAnswers: boolean;
 }
 
-export default function CreateQuizPage() {
+export default function EditQuizPage() {
     return (
         <React.Suspense fallback={<div className="flex justify-center items-center min-h-screen"><Spinner /></div>}>
-            <CreateQuizContent />
+            <EditQuizContent />
         </React.Suspense>
     );
 }
 
-function CreateQuizContent() {
+function EditQuizContent() {
     const router = useRouter();
+    const params = useParams();
+    const quizId = params.id as string;
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [instructorId, setInstructorId] = useState<string | null>(null);
     const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
@@ -77,7 +79,10 @@ function CreateQuizContent() {
         showCorrectAnswers: true,
     });
 
-    const [createQuiz] = useCreateQuizMutation();
+    const [updateQuiz] = useUpdateQuizMutation();
+
+    // Fetch quiz data
+    const { data: quizData, isLoading: isLoadingQuiz } = useGetQuizByIdQuery(quizId);
 
     const { data: coursesResp } = useGetInstructorCoursesQuery(instructorId as string, {
         skip: !instructorId,
@@ -92,6 +97,32 @@ function CreateQuizContent() {
             setInstructorId(user._id || user.id || null);
         }
     }, []);
+
+    // Load quiz data when fetched
+    useEffect(() => {
+        if (quizData?.data) {
+            const loadedQuiz = quizData.data;
+            setQuiz({
+                title: loadedQuiz.title || "",
+                description: loadedQuiz.description || "",
+                courseId: loadedQuiz.courseId || "",
+                duration: loadedQuiz.duration || 30,
+                passingScore: loadedQuiz.passingScore || 60,
+                questions: (loadedQuiz.questions || []).map((q: any, idx: number) => ({
+                    id: q._id || `q-${idx}`,
+                    questionText: q.questionText || "",
+                    questionImage: q.questionImage || "",
+                    questionType: q.questionType || "multiple-choice",
+                    options: q.options || [],
+                    correctAnswer: q.correctAnswer || "",
+                    points: q.points || 1,
+                })),
+                shuffleQuestions: loadedQuiz.shuffleQuestions || false,
+                shuffleOptions: loadedQuiz.shuffleOptions || false,
+                showCorrectAnswers: loadedQuiz.showCorrectAnswers !== false,
+            });
+        }
+    }, [quizData]);
 
     const [currentQuestion, setCurrentQuestion] = useState<Question>({
         id: "",
@@ -207,7 +238,7 @@ function CreateQuizContent() {
         }
     };
 
-    const handleSaveQuiz = async (publish: boolean) => {
+    const handleSaveQuiz = async () => {
         // Clear previous errors
         setErrors({});
         setFieldErrors({});
@@ -265,7 +296,8 @@ function CreateQuizContent() {
                 order: idx,
             }));
 
-            await createQuiz({
+            await updateQuiz({
+                id: quizId,
                 courseId: quiz.courseId,
                 title: quiz.title,
                 description: quiz.description,
@@ -277,7 +309,7 @@ function CreateQuizContent() {
                 showCorrectAnswers: quiz.showCorrectAnswers,
             }).unwrap();
 
-            toast.success(`Quiz ${publish ? "published" : "saved as draft"} successfully!`);
+            toast.success("Quiz updated successfully!");
             router.push("/instructor/quizzes");
         } catch (error: any) {
             // Handle validation errors from API
@@ -304,23 +336,8 @@ function CreateQuizContent() {
                 if (firstError && firstError.length > 0) {
                     toast.error(firstError[0]);
                 }
-
-                // Auto-open the first problematic question for quick fixing
-                const firstErrField = error.data.errors[0]?.field as string | undefined;
-                const openMatch = String(firstErrField || "").match(/questions\.(\d+)/);
-                if (openMatch) {
-                    const idx = parseInt(openMatch[1], 10);
-                    if (!Number.isNaN(idx)) {
-                        const q = quiz.questions[idx];
-                        if (q) {
-                            setEditingQuestion(q);
-                            setCurrentQuestion(q);
-                            onOpen();
-                        }
-                    }
-                }
             } else {
-                const errorMessage = error?.data?.message || "Failed to save quiz";
+                const errorMessage = error?.data?.message || "Failed to update quiz";
                 setErrors({ general: errorMessage });
                 toast.error(errorMessage);
             }
@@ -329,13 +346,21 @@ function CreateQuizContent() {
         }
     };
 
+    if (isLoadingQuiz) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <Spinner size="lg" label="Loading quiz..." />
+            </div>
+        );
+    }
+
     const totalPoints = quiz.questions.reduce((sum, q) => sum + q.points, 0);
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-5xl">
             <div className="mb-8">
-                <h1 className="text-4xl font-bold mb-2">Create Quiz 📝</h1>
-                <p className="text-gray-600">Build interactive quizzes for your course</p>
+                <h1 className="text-4xl font-bold mb-2">Edit Quiz 📝</h1>
+                <p className="text-gray-600">Update your quiz content</p>
             </div>
 
             {/* Error Summary */}
@@ -481,9 +506,9 @@ function CreateQuizContent() {
                                     options: [{ text: "", isCorrect: false }, { text: "", isCorrect: false }, { text: "", isCorrect: false }, { text: "", isCorrect: false }],
                                     points: 1,
                                 });
-                                    // Clear any lingering error flags
-                                    setFieldErrors({});
-                                    setServerErrorQuestionIndices(new Set());
+                                // Clear any lingering error flags
+                                setFieldErrors({});
+                                setServerErrorQuestionIndices(new Set());
                                 onOpen();
                             }}
                         >
@@ -610,23 +635,14 @@ function CreateQuizContent() {
                     Cancel
                 </Button>
                 <Button
-                    variant="bordered"
-                    size="lg"
-                    onPress={() => handleSaveQuiz(false)}
-                    isDisabled={isSubmitting || !quiz.title || !quiz.courseId}
-                    isLoading={isSubmitting}
-                >
-                    Save as Draft
-                </Button>
-                <Button
                     color="primary"
                     size="lg"
                     startContent={<FaSave />}
-                    onPress={() => handleSaveQuiz(true)}
+                    onPress={handleSaveQuiz}
                     isDisabled={isSubmitting || !quiz.title || !quiz.courseId || quiz.questions.length === 0}
                     isLoading={isSubmitting}
                 >
-                    Publish Quiz
+                    Update Quiz
                 </Button>
             </div>
 
@@ -669,7 +685,6 @@ function CreateQuizContent() {
                                                     ...currentQuestion,
                                                     questionType: "multiple-choice",
                                                     options: opts,
-                                                    // clear non-MC correctAnswer
                                                     correctAnswer: undefined,
                                                 });
                                             } else if (key === "true-false") {
@@ -680,7 +695,6 @@ function CreateQuizContent() {
                                                     correctAnswer: currentQuestion.correctAnswer || "true",
                                                 });
                                             } else {
-                                                // short-answer
                                                 setCurrentQuestion({
                                                     ...currentQuestion,
                                                     questionType: "short-answer",
