@@ -70,11 +70,11 @@ router.get(
   controller.getEventRegistrations
 );
 
-router.get(
-  "/admin/registrations",
+router.post(
+  "/:id/registrations/send-email",
   requireAuth,
   requireRoles("admin"),
-  controller.getAllRegistrations
+  controller.sendRegistrationEmail
 );
 
 router.delete(

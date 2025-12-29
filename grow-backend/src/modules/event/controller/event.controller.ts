@@ -387,3 +387,34 @@ export const deleteRegistration = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const sendRegistrationEmail = async (req: Request, res: Response) => {
+  try {
+    const { subject, content, registrationIds } = req.body;
+
+    if (!subject || !content) {
+      return res.status(400).json({
+        success: false,
+        message: "Subject and content are required",
+      });
+    }
+
+    const { sent } = await notificationService.sendCustomEmailToRegistrations({
+      eventId: req.params.id,
+      subject,
+      content,
+      registrationIds,
+    });
+
+    res.json({
+      success: true,
+      message: "Emails sent successfully",
+      data: { sent },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to send emails",
+    });
+  }
+};

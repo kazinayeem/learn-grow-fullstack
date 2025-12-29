@@ -57,17 +57,21 @@ export default function UserProfile() {
                 const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-                setUser(response.data.data);
-                setProfilePhoto(response.data.data.profileImage || "");
+                const userData = response.data.data.user;
+                setUser(userData);
+                setProfilePhoto(userData.profileImage || "");
+                const expertise = Array.isArray(userData.expertise)
+                    ? userData.expertise.join(", ")
+                    : userData.expertise || "";
                 setFormData({
-                    name: response.data.data.name || "",
-                    email: response.data.data.email || "",
-                    phone: response.data.data.phone || "",
-                    bio: response.data.data.bio || "",
-                    expertise: response.data.data.expertise || "",
-                    qualification: response.data.data.qualification || "",
-                    institution: response.data.data.institution || "",
-                    yearsOfExperience: response.data.data.yearsOfExperience?.toString() || "",
+                    name: userData.name || "",
+                    email: userData.email || "",
+                    phone: userData.phone || "",
+                    bio: userData.bio || "",
+                    expertise: expertise,
+                    qualification: userData.qualification || "",
+                    institution: userData.institution || "",
+                    yearsOfExperience: userData.yearsOfExperience?.toString() || "",
                 });
             } catch (error) {
                 console.error("Failed to fetch profile:", error);
@@ -195,13 +199,18 @@ export default function UserProfile() {
         try {
             setIsSaving(true);
             const token = Cookies.get("accessToken");
+            const updateData = {
+                ...formData,
+                yearsOfExperience: formData.yearsOfExperience ? parseInt(formData.yearsOfExperience, 10) : undefined,
+            };
             await axios.patch(
                 `${process.env.NEXT_PUBLIC_API_URL}/users/profile`,
-                formData,
+                updateData,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             toast.success("Profile updated successfully");
             setIsEditing(false);
+            setUser({ ...user, ...updateData });
         } catch (error) {
             console.error("Failed to update profile:", error);
             toast.error("Failed to update profile");
@@ -307,12 +316,15 @@ export default function UserProfile() {
                                     isIconOnly
                                     onPress={() => {
                                         setIsEditing(false);
+                                        const expertise = Array.isArray(user?.expertise)
+                                            ? user.expertise.join(", ")
+                                            : user?.expertise || "";
                                         setFormData({
                                             name: user?.name || "",
                                             email: user?.email || "",
                                             phone: user?.phone || "",
                                             bio: user?.bio || "",
-                                            expertise: user?.expertise || "",
+                                            expertise: expertise,
                                             qualification: user?.qualification || "",
                                             institution: user?.institution || "",
                                             yearsOfExperience: user?.yearsOfExperience?.toString() || "",

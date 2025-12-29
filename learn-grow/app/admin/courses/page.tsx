@@ -242,11 +242,11 @@ export default function ManageCoursesPage() {
           size="lg"
         >
           <SelectItem key="" value="">All Categories</SelectItem>
-          {categories.map((cat: any) => (
-            <SelectItem key={cat._id} value={cat._id}>
-              {cat.name}
+          {categories?.map((cat: any) => (
+            <SelectItem key={cat._id} value={cat._id} textValue={cat.name}>
+              {cat?.name}
             </SelectItem>
-          ))}
+          )) as any}
         </Select>
         <Select
           label="Items per page"
@@ -312,10 +312,6 @@ export default function ManageCoursesPage() {
                     </Chip>
                   )}
                 </div>
-                <div 
-                  className="text-sm text-gray-600 mb-3 line-clamp-2 prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(String(course.description || "")) }}
-                />
                 <div className="flex gap-2 mb-3 flex-wrap">
                   <Chip size="sm" variant="flat" color="primary">
                     {String(course.category || "")}

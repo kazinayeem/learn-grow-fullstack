@@ -234,3 +234,39 @@ export const sendMeetingLinkToAllAttendees = async (eventId: string) => {
   
   return { sent: registrations.length, message: "Meeting links sent successfully" };
 };
+
+export const sendCustomEmailToRegistrations = async ({
+  eventId,
+  subject,
+  content,
+  registrationIds,
+}: {
+  eventId: string;
+  subject: string;
+  content: string;
+  registrationIds?: string[];
+}) => {
+  const query: any = { event: eventId };
+  if (Array.isArray(registrationIds) && registrationIds.length > 0) {
+    query._id = { $in: registrationIds };
+  }
+
+  const registrations = await EventRegistration.find(query);
+
+  if (registrations.length === 0) {
+    return { sent: 0, message: "No registrations found" };
+  }
+
+  const emailPromises = registrations.map((registration) =>
+    transporter.sendMail({
+      from: process.env.EMAIL_FROM || '"Learn & Grow" <noreply@learngrow.com>',
+      to: registration.email,
+      subject,
+      html: content,
+    })
+  );
+
+  await Promise.all(emailPromises);
+
+  return { sent: registrations.length, message: "Emails sent successfully" };
+};

@@ -16,6 +16,7 @@ import { useRouter, useParams } from "next/navigation";
 import {
   useGetEventByIdQuery,
   useUpdateEventMutation,
+  useGetAllGuestsQuery,
 } from "@/redux/api/eventApi";
 import { FaArrowLeft } from "react-icons/fa";
 import toast from "react-hot-toast";
@@ -28,6 +29,15 @@ export default function EditEventPage() {
   const { data: response, isLoading: loading } = useGetEventByIdQuery(eventId, {
     skip: !eventId,
   });
+  const { data: guestsResponse, isLoading: loadingGuests } = useGetAllGuestsQuery({ limit: 1000 });
+  const guests: any[] = guestsResponse?.data || [];
+  const allowedPlatformTypes = ["Zoom", "Google Meet", "Microsoft Teams", "Custom"];
+  const guestsMap = React.useMemo(() => {
+    return guests.reduce((acc: Record<string, any>, g: any) => {
+      acc[g._id] = g;
+      return acc;
+    }, {});
+  }, [guests]);
   const [updateEvent, { isLoading: updating }] = useUpdateEventMutation();
 
   const [formData, setFormData] = useState({
@@ -49,6 +59,7 @@ export default function EditEventPage() {
     maxSeats: 50,
     isRegistrationOpen: true,
     status: "Upcoming",
+    hosts: [""],
   });
 
   const event = response?.data;
@@ -68,12 +79,13 @@ export default function EditEventPage() {
         venueName: event.venueName || "",
         venueAddress: event.venueAddress || "",
         googleMapLink: event.googleMapLink || "",
-        platformType: event.platformType || "Zoom",
+        platformType: allowedPlatformTypes.includes(event.platformType) ? event.platformType : "Zoom",
         meetingLink: event.meetingLink || "",
         platformInstructions: event.platformInstructions || "",
         maxSeats: event.maxSeats || 50,
         isRegistrationOpen: event.isRegistrationOpen ?? true,
         status: event.status || "Upcoming",
+        hosts: (event.guests || event.hosts || []).map((g: any) => g?._id || g).filter(Boolean),
       });
     }
   }, [event]);
@@ -91,8 +103,20 @@ export default function EditEventPage() {
       return;
     }
 
+    const selectedHosts = formData.hosts.filter((h) => !!h);
+
     try {
-      await updateEvent({ id: eventId, ...formData }).unwrap();
+      const safePlatformType = allowedPlatformTypes.includes(formData.platformType)
+        ? formData.platformType
+        : "Zoom";
+
+      await updateEvent({
+        id: eventId,
+        ...formData,
+        platformType: safePlatformType,
+        hosts: selectedHosts,
+        guests: selectedHosts,
+      }).unwrap();
       toast.success("Event updated successfully");
       router.push("/admin/events");
     } catch (error: any) {
@@ -199,6 +223,74 @@ export default function EditEventPage() {
                 />
               </div>
 
+                {/* Event Hosts */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold">Event Hosts</h2>
+                    <Button
+                      size="sm"
+                      variant="light"
+                      color="primary"
+                      onPress={() => setFormData({ ...formData, hosts: [...formData.hosts, ""] })}
+                    >
+                      + Add Host
+                    </Button>
+                  </div>
+
+                  {loadingGuests ? (
+                    <Spinner size="sm" label="Loading hosts..." />
+                  ) : (
+                    formData.hosts.map((hostId, index) => (
+                      <div key={index} className="flex gap-2 items-end">
+                        <Select
+                          label={`Host ${index + 1}`}
+                          placeholder="Select a host"
+                          selectedKeys={hostId ? new Set([hostId]) : new Set()}
+                          onSelectionChange={(keys) => {
+                            const newHosts = [...formData.hosts];
+                            const selected = Array.from(keys)[0] as string | undefined;
+                            newHosts[index] = selected || "";
+                            setFormData({ ...formData, hosts: newHosts });
+                          }}
+                          variant="bordered"
+                          className="flex-1"
+                        >
+                          {guests.map((guest: any) => (
+                            <SelectItem key={guest._id} value={guest._id}>
+                              {guest.fullName} ({guest.role})
+                            </SelectItem>
+                          ))}
+                        </Select>
+                        {formData.hosts.length > 1 && (
+                          <Button
+                            isIconOnly
+                            color="danger"
+                            variant="light"
+                            onPress={() => {
+                              const newHosts = formData.hosts.filter((_, i) => i !== index);
+                              setFormData({ ...formData, hosts: newHosts });
+                            }}
+                          >
+                            ✕
+                          </Button>
+                        )}
+                      </div>
+                    ))
+                  )}
+
+                  {formData.hosts.some((h) => h) && (
+                    <div className="flex flex-wrap gap-2 text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                      {formData.hosts
+                        .filter((h) => h)
+                        .map((h, idx) => (
+                          <span key={`${h}-${idx}`} className="px-3 py-1 rounded-full bg-primary-50 text-primary-700 border border-primary-200">
+                            {guestsMap[h]?.fullName || "Selected host"} ({guestsMap[h]?.role || "Host"})
+                          </span>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
               {/* Date & Time */}
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold mb-4">Date & Time</h2>
@@ -279,16 +371,22 @@ export default function EditEventPage() {
                   <>
                     <Select
                       label="Platform Type"
-                      selectedKeys={[formData.platformType]}
-                      onSelectionChange={(keys) =>
-                        setFormData({ ...formData, platformType: Array.from(keys)[0] as string })
-                      }
+                      selectedKeys={formData.platformType ? new Set([formData.platformType]) : new Set()}
+                      onSelectionChange={(keys) => {
+                        const selected = Array.from(keys)[0] as string | undefined;
+                        setFormData({
+                          ...formData,
+                          platformType: selected && allowedPlatformTypes.includes(selected)
+                            ? selected
+                            : "Zoom",
+                        });
+                      }}
                       variant="bordered"
                     >
                       <SelectItem key="Zoom">Zoom</SelectItem>
                       <SelectItem key="Google Meet">Google Meet</SelectItem>
                       <SelectItem key="Microsoft Teams">Microsoft Teams</SelectItem>
-                      <SelectItem key="Custom">Custom Platform</SelectItem>
+                      <SelectItem key="Custom">Custom</SelectItem>
                     </Select>
                     <Input
                       label="Meeting Link"
@@ -336,7 +434,6 @@ export default function EditEventPage() {
                   <SelectItem key="Upcoming">Upcoming</SelectItem>
                   <SelectItem key="Ongoing">Ongoing</SelectItem>
                   <SelectItem key="Completed">Completed</SelectItem>
-                  <SelectItem key="Cancelled">Cancelled</SelectItem>
                 </Select>
 
                 <div className="flex items-center gap-4">

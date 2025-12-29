@@ -22,7 +22,7 @@ import {
   useGetAllBlogsQuery,
   useGetAllBlogCategoriesQuery,
 } from "@/redux/api/blogApi";
-import { FaPlus, FaSearch } from "react-icons/fa";
+import { FaPlus, FaSearch, FaImage } from "react-icons/fa";
 
 // Helper function to decode HTML entities
 const decodeHtmlEntities = (html: string): string => {
@@ -183,16 +183,33 @@ export default function BlogPage() {
                   className="hover:shadow-lg transition-shadow"
                   onPress={() => router.push(`/blog/${blog.slug}`)}
                 >
-                  {blog.image && (
-                    <CardHeader className="p-0">
+                  <CardHeader className="p-0">
+                    {blog.image ? (
                       <Image
                         src={blog.image}
                         alt={blog.title}
                         className="w-full h-48 object-cover"
                         removeWrapper
+                        fallbackSrc="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='400'%3E%3Crect fill='%23e5e7eb' width='800' height='400'/%3E%3C/svg%3E"
+                        onError={(e: any) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent && !parent.querySelector('.image-placeholder')) {
+                            const placeholder = document.createElement('div');
+                            placeholder.className = 'image-placeholder w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center';
+                            placeholder.innerHTML = '<svg class="w-16 h-16 text-gray-400 mb-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/></svg><span class="text-sm text-gray-500 font-medium">No Image Available</span>';
+                            parent.appendChild(placeholder);
+                          }
+                        }}
                       />
-                    </CardHeader>
-                  )}
+                    ) : (
+                      <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center">
+                        <FaImage className="w-16 h-16 text-gray-400 mb-2" />
+                        <span className="text-sm text-gray-500 font-medium">No Image Available</span>
+                      </div>
+                    )}
+                  </CardHeader>
                   <CardBody className="p-6">
                     {blog.category && (
                       <Chip

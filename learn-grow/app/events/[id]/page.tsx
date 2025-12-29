@@ -191,7 +191,7 @@ export default function EventDetailPage() {
                       )}
                     </div>
                   </div>
-                ) : (
+                ) : canRegister ? (
                   <div className="flex items-start gap-3 mb-6">
                     <FaVideo className="text-primary text-xl mt-1" />
                     <div>
@@ -213,7 +213,7 @@ export default function EventDetailPage() {
                       )}
                     </div>
                   </div>
-                )}
+                ) : null}
               </CardBody>
             </Card>
 
@@ -258,18 +258,22 @@ export default function EventDetailPage() {
           <div className="lg:col-span-1">
             <Card className="sticky top-8">
               <CardBody className="p-6">
-                <div className="text-center mb-6">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <FaUsers className="text-2xl text-primary" />
-                    <span className="text-3xl font-bold">{seatsAvailable}</span>
-                  </div>
-                  <p className="text-gray-600">seats available</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {event.registeredCount} / {event.maxSeats} registered
-                  </p>
-                </div>
+                {canRegister && (
+                  <>
+                    <div className="text-center mb-6">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <FaUsers className="text-2xl text-primary" />
+                        <span className="text-3xl font-bold">{seatsAvailable}</span>
+                      </div>
+                      <p className="text-gray-600">seats available</p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {event.registeredCount} / {event.maxSeats} registered
+                      </p>
+                    </div>
 
-                <Divider className="my-6" />
+                    <Divider className="my-6" />
+                  </>
+                )}
 
                 {canRegister ? (
                   <>

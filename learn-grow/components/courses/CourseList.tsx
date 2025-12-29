@@ -17,7 +17,6 @@ import {
 import { useGetPublishedCoursesQuery } from "@/redux/api/courseApi";
 import { useGetAllCategoriesQuery } from "@/redux/api/categoryApi";
 import { useRouter } from "next/navigation";
-import DOMPurify from "isomorphic-dompurify";
 import { FaSearch } from "react-icons/fa";
 
 export default function CourseList() {
@@ -128,7 +127,9 @@ export default function CourseList() {
             </p>
           </div>
         ) : (
-          pagedCourses.map((course: any, index: number) => (
+          pagedCourses.map((course: any, index: number) => {
+            const categoryName = typeof course.category === "object" ? course.category?.name : course.category;
+            return (
             <Card
               key={course._id || index}
               className={`group cursor-pointer transition-all duration-300 hover:-translate-y-2 ${shadows[index % shadows.length]} shadow-card border-0`}
@@ -170,11 +171,20 @@ export default function CourseList() {
                   {course.title}
                 </h3>
 
-                {/* Description */}
-                <div
-                  className={`text-gray-600 text-xs sm:text-sm mb-3 line-clamp-2 prose-sm max-w-none ${language === "bn" ? "font-siliguri" : ""}`}
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(String(course.description || "")) }}
-                />
+                {/* Meta row */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <Chip size="sm" variant="flat" color="primary">
+                    {course.level || "Level"}
+                  </Chip>
+                  {categoryName && (
+                    <Chip size="sm" variant="flat" color="secondary">
+                      {categoryName}
+                    </Chip>
+                  )}
+                  <Chip size="sm" variant="flat">
+                    {course.type || "Recorded"}
+                  </Chip>
+                </div>
 
                 {/* Price & Level */}
                 <div className="flex items-center justify-between mb-3">
@@ -197,7 +207,8 @@ export default function CourseList() {
                 </div>
               </CardFooter>
             </Card>
-          ))
+            );
+          })
         )}
       </div>
 

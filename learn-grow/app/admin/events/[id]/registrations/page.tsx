@@ -30,6 +30,7 @@ export default function EventRegistrationsPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [search, setSearch] = useState("");
+  const [exporting, setExporting] = useState<boolean>(false);
 
   const { data: eventResponse } = useGetEventByIdQuery(eventId, { skip: !eventId });
   const { data: response, isLoading } = useGetEventRegistrationsQuery(
@@ -38,8 +39,14 @@ export default function EventRegistrationsPage() {
   );
 
   const event = eventResponse?.data;
-  const registrations = response?.data?.registrations || [];
-  const pagination = response?.data?.pagination;
+  const registrations = response?.data || [];
+  const pagination = response?.pagination || response?.data?.pagination;
+
+  const handleExportCsv = () => {
+    setExporting(true);
+    exportToCSV();
+    setExporting(false);
+  };
 
   const exportToCSV = () => {
     if (registrations.length === 0) return;
@@ -116,14 +123,26 @@ export default function EventRegistrationsPage() {
 
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">Registrations</h2>
-        <Button
-          color="success"
-          startContent={<FaDownload />}
-          onPress={exportToCSV}
-          isDisabled={registrations.length === 0}
-        >
-          Export to CSV
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          <Button
+            variant="flat"
+            color="primary"
+            startContent={<FaEnvelope />}
+            onPress={() => router.push(`/admin/events/${eventId}/registrations/email`)}
+            isDisabled={registrations.length === 0}
+          >
+            Send Email
+          </Button>
+          <Button
+            color="success"
+            startContent={<FaDownload />}
+            onPress={handleExportCsv}
+            isDisabled={registrations.length === 0 || exporting}
+            isLoading={exporting}
+          >
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}

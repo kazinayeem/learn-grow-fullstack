@@ -11,9 +11,11 @@ import {
   Button,
   Switch,
   DatePicker,
+  Spinner,
 } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import { useCreateEventMutation } from "@/redux/api/eventApi";
+import { useGetAllGuestsQuery } from "@/redux/api/eventApi";
 import { FaArrowLeft } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { parseDate } from "@internationalized/date";
@@ -21,6 +23,15 @@ import { parseDate } from "@internationalized/date";
 export default function CreateEventPage() {
   const router = useRouter();
   const [createEvent, { isLoading }] = useCreateEventMutation();
+  const { data: guestsResponse, isLoading: loadingGuests } = useGetAllGuestsQuery({ limit: 1000 });
+  const guests: any[] = guestsResponse?.data || [];
+  const allowedPlatformTypes = ["Zoom", "Google Meet", "Microsoft Teams", "Custom"];
+  const guestsMap = React.useMemo(() => {
+    return guests.reduce((acc: Record<string, any>, g: any) => {
+      acc[g._id] = g;
+      return acc;
+    }, {});
+  }, [guests]);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -39,7 +50,7 @@ export default function CreateEventPage() {
     maxSeats: 50,
     isRegistrationOpen: true,
     status: "Upcoming",
-    hosts: [""], // Multi-host field
+    hosts: [""], // Start with one empty host select; filtered on submit
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,8 +66,24 @@ export default function CreateEventPage() {
       return;
     }
 
+    const selectedHosts = formData.hosts.filter((h) => !!h);
+
+    if (selectedHosts.length === 0) {
+      toast.error("Please select at least one host");
+      return;
+    }
+
     try {
-      await createEvent(formData).unwrap();
+      const safePlatformType = allowedPlatformTypes.includes(formData.platformType)
+        ? formData.platformType
+        : "Zoom";
+
+      await createEvent({
+        ...formData,
+        platformType: safePlatformType,
+        hosts: selectedHosts,
+        guests: selectedHosts,
+      }).unwrap();
       toast.success("Event created successfully");
       router.push("/admin/events");
     } catch (error: any) {
@@ -154,36 +181,59 @@ export default function CreateEventPage() {
                   </Button>
                 </div>
 
-                {formData.hosts.map((host, index) => (
-                  <div key={index} className="flex gap-2">
-                    <Input
-                      label={`Host ${index + 1}`}
-                      placeholder="Enter host name or email"
-                      value={host}
-                      onValueChange={(val) => {
-                        const newHosts = [...formData.hosts];
-                        newHosts[index] = val;
-                        setFormData({ ...formData, hosts: newHosts });
-                      }}
-                      variant="bordered"
-                      className="flex-1"
-                    />
-                    {formData.hosts.length > 1 && (
-                      <Button
-                        isIconOnly
-                        color="danger"
-                        variant="light"
-                        onPress={() => {
-                          const newHosts = formData.hosts.filter((_, i) => i !== index);
+                {loadingGuests ? (
+                  <Spinner size="sm" label="Loading hosts..." />
+                ) : (
+                  formData.hosts.map((hostId, index) => (
+                    <div key={index} className="flex gap-2 items-end">
+                      <Select
+                        label={`Host ${index + 1}`}
+                        placeholder="Select a host"
+                        selectedKeys={hostId ? new Set([hostId]) : new Set()}
+                        onSelectionChange={(keys) => {
+                          const newHosts = [...formData.hosts];
+                          const selected = Array.from(keys)[0] as string | undefined;
+                          newHosts[index] = selected || "";
                           setFormData({ ...formData, hosts: newHosts });
                         }}
-                        className="mt-1"
+                        variant="bordered"
+                        className="flex-1"
                       >
-                        ✕
-                      </Button>
-                    )}
+                        {(guestsResponse?.data || []).map((guest: any) => (
+                          <SelectItem key={guest._id} value={guest._id}>
+                            {guest.fullName} ({guest.role})
+                          </SelectItem>
+                        ))}
+                      </Select>
+                      {formData.hosts.length > 1 && (
+                        <Button
+                          isIconOnly
+                          color="danger"
+                          variant="light"
+                          onPress={() => {
+                            const newHosts = formData.hosts.filter((_, i) => i !== index);
+                            setFormData({ ...formData, hosts: newHosts });
+                          }}
+                        >
+                          ✕
+                        </Button>
+                      )}
+                    </div>
+                  ))
+                )}
+
+                {/* Selected hosts preview */}
+                {formData.hosts.some((h) => h) && (
+                  <div className="flex flex-wrap gap-2 text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    {formData.hosts
+                      .filter((h) => h)
+                      .map((h, idx) => (
+                        <span key={`${h}-${idx}`} className="px-3 py-1 rounded-full bg-primary-50 text-primary-700 border border-primary-200">
+                          {guestsMap[h]?.fullName || "Selected host"} ({guestsMap[h]?.role || "Host"})
+                        </span>
+                      ))}
                   </div>
-                ))}
+                )}
               </div>
 
               {/* Date & Time */}
@@ -265,16 +315,22 @@ export default function CreateEventPage() {
                 ) : (
                   <Select
                     label="Platform Type"
-                    selectedKeys={[formData.platformType]}
-                    onSelectionChange={(keys) =>
-                      setFormData({ ...formData, platformType: Array.from(keys)[0] as string })
-                    }
+                    selectedKeys={formData.platformType ? new Set([formData.platformType]) : new Set()}
+                    onSelectionChange={(keys) => {
+                      const selected = Array.from(keys)[0] as string | undefined;
+                      setFormData({
+                        ...formData,
+                        platformType: selected && allowedPlatformTypes.includes(selected)
+                          ? selected
+                          : "Zoom",
+                      });
+                    }}
                     variant="bordered"
                   >
                     <SelectItem key="Zoom">Zoom</SelectItem>
                     <SelectItem key="Google Meet">Google Meet</SelectItem>
                     <SelectItem key="Microsoft Teams">Microsoft Teams</SelectItem>
-                    <SelectItem key="Custom">Custom Platform</SelectItem>
+                    <SelectItem key="Custom">Custom</SelectItem>
                   </Select>
                 )}
               </div>
@@ -304,7 +360,6 @@ export default function CreateEventPage() {
                   <SelectItem key="Upcoming">Upcoming</SelectItem>
                   <SelectItem key="Ongoing">Ongoing</SelectItem>
                   <SelectItem key="Completed">Completed</SelectItem>
-                  <SelectItem key="Cancelled">Cancelled</SelectItem>
                 </Select>
 
                 <div className="flex items-center gap-4">

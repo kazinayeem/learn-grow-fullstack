@@ -24,7 +24,7 @@ export default function EventsPage() {
   const [search, setSearch] = useState("");
   const [type, setType] = useState("");
   const [mode, setMode] = useState("");
-  const [status, setStatus] = useState("Upcoming");
+  const [status, setStatus] = useState("");
 
   const { data: response, isLoading } = useGetAllEventsQuery({
     page,
@@ -35,8 +35,12 @@ export default function EventsPage() {
     status: status || undefined,
   });
 
-  const events = response?.data || [];
-  const pagination = response?.pagination || {};
+  // Normalize API response
+  const events = Array.isArray(response?.data)
+    ? response?.data
+    : (response as any)?.data?.events || [];
+  const pagination = (response as any)?.pagination || (response as any)?.data?.pagination || {};
+  const totalPages = pagination?.totalPages || Math.max(1, Math.ceil((pagination?.total || events.length) / 9));
 
   if (isLoading) {
     return (
@@ -106,11 +110,12 @@ export default function EventsPage() {
           
           <Select
             label="Status"
-            placeholder="Upcoming"
+            placeholder="All Status"
             variant="bordered"
             selectedKeys={status ? [status] : []}
-            onSelectionChange={(keys) => setStatus(Array.from(keys)[0] as string)}
+            onSelectionChange={(keys) => setStatus(Array.from(keys)[0] as string || "")}
           >
+            <SelectItem key="">All Status</SelectItem>
             <SelectItem key="Upcoming">Upcoming</SelectItem>
             <SelectItem key="Ongoing">Ongoing</SelectItem>
             <SelectItem key="Completed">Completed</SelectItem>
@@ -138,9 +143,9 @@ export default function EventsPage() {
                 return (
                   <Card
                     key={event._id}
-                    isPressable
-                    className="hover:shadow-lg transition-shadow"
-                    onPress={() => router.push(`/events/${event._id}`)}
+                    isPressable={false}
+                    className="hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => router.push(`/events/${event._id}`)}
                   >
                     {event.bannerImage && (
                       <CardHeader className="p-0">
@@ -153,7 +158,7 @@ export default function EventsPage() {
                       </CardHeader>
                     )}
                     <CardBody className="p-6">
-                      <div className="flex gap-2 mb-3">
+                      <div className="flex flex-wrap gap-2 mb-3">
                         <Chip color="primary" size="sm" variant="flat">
                           {event.type}
                         </Chip>
@@ -164,6 +169,23 @@ export default function EventsPage() {
                           startContent={event.mode === "Online" ? <FaVideo /> : <FaMapMarkerAlt />}
                         >
                           {event.mode}
+                        </Chip>
+                        <Chip
+                          color={
+                            event.status === "Upcoming" ? "primary" :
+                            event.status === "Ongoing" ? "success" : "default"
+                          }
+                          size="sm"
+                          variant="flat"
+                        >
+                          {event.status}
+                        </Chip>
+                        <Chip
+                          color={event.isRegistrationOpen ? "success" : "danger"}
+                          size="sm"
+                          variant="flat"
+                        >
+                          {event.isRegistrationOpen ? "Registration Open" : "Registration Closed"}
                         </Chip>
                       </div>
 
@@ -192,18 +214,14 @@ export default function EventsPage() {
                       )}
 
                       <div className="flex justify-between items-center">
-                        <Chip
-                          color={isFull ? "danger" : seatsAvailable < 10 ? "warning" : "success"}
-                          size="sm"
-                          variant="flat"
-                        >
-                          {isFull ? "Full" : `${seatsAvailable} seats left`}
-                        </Chip>
-                        
                         <Button
                           color="primary"
                           size="sm"
-                          isDisabled={isFull || !event.isRegistrationOpen}
+                          isDisabled={isFull}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/events/${event._id}`);
+                          }}
                         >
                           {isFull ? "Sold Out" : "View Details"}
                         </Button>
@@ -215,12 +233,12 @@ export default function EventsPage() {
             </div>
 
             {/* Pagination */}
-            {(pagination as any)?.totalPages > 1 && (
+            {totalPages > 1 && (
               <div className="flex justify-center">
                 <Pagination
                   color="primary"
                   page={page}
-                  total={(pagination as any)?.totalPages || 1}
+                  total={totalPages}
                   onChange={setPage}
                 />
               </div>

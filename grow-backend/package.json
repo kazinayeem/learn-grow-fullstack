@@ -13,7 +13,11 @@
     "db:create-users": "tsx src/scripts/createUsers.ts",
     "db:create-demo-course": "tsx src/scripts/createDemoCourse.ts",
     "db:create-payment-methods": "tsx src/scripts/createPaymentMethod.ts",
-    "db:create-admin": "tsx src/scripts/createAdmin.ts"
+    "db:create-admin": "tsx src/scripts/createAdmin.ts",
+    "db:seed-events": "tsx src/scripts/seedEvents.ts",
+    "db:seed-blogs-500": "tsx src/scripts/seedBlogs500.ts",
+    "db:seed-blogs-advanced": "tsx src/scripts/seedBlogsAdvanced.ts",
+    "db:seed-blogs": "tsx src/scripts/seedBlogsWithImages.ts"
   },
   "author": "",
   "license": "MIT",

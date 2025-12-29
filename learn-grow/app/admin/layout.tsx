@@ -51,7 +51,7 @@ export default function AdminLayout({
       {/* Main Container */}
       <div className="flex pt-20">
         {/* Sidebar */}
-        <AdminSidebar userRole={userRole} />
+        <AdminSidebar />
 
         {/* Main Content */}
         <main className="flex-1 overflow-x-hidden">

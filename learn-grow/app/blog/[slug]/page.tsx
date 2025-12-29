@@ -13,7 +13,7 @@ import {
 import { useRouter, useParams } from "next/navigation";
 import DOMPurify from "isomorphic-dompurify";
 import { useGetBlogBySlugQuery } from "@/redux/api/blogApi";
-import { FaArrowLeft, FaEdit, FaTrash } from "react-icons/fa";
+import { FaArrowLeft, FaEdit, FaTrash, FaImage } from "react-icons/fa";
 
 // Helper function to decode HTML entities
 const decodeHtmlEntities = (html: string): string => {
@@ -106,15 +106,32 @@ export default function BlogDetailPage() {
 
         <article>
           {/* Featured Image */}
-          {blog.image && (
-            <div className="mb-8 rounded-lg overflow-hidden">
+          <div className="mb-8 rounded-lg overflow-hidden">
+            {blog.image ? (
               <Image
                 src={blog.image}
                 alt={blog.title}
                 className="w-full h-96 object-cover"
+                fallbackSrc="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='400'%3E%3Crect fill='%23e5e7eb' width='800' height='400'/%3E%3C/svg%3E"
+                onError={(e: any) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent && !parent.querySelector('.image-placeholder')) {
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'image-placeholder w-full h-96 bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center';
+                    placeholder.innerHTML = '<svg class="w-20 h-20 text-gray-400 mb-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/></svg><span class="text-base text-gray-500 font-medium">No Image Available</span>';
+                    parent.appendChild(placeholder);
+                  }
+                }}
               />
-            </div>
-          )}
+            ) : (
+              <div className="w-full h-96 bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center rounded-lg">
+                <FaImage className="w-20 h-20 text-gray-400 mb-3" />
+                <span className="text-base text-gray-500 font-medium">No Image Available</span>
+              </div>
+            )}
+          </div>
 
           {/* Header */}
           <Card className="mb-8">
