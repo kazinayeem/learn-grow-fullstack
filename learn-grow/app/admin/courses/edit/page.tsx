@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
+import dynamic from "next/dynamic";
+import "react-quill-new/dist/quill.snow.css";
 
 import {
   Card,
@@ -21,7 +23,7 @@ import {
   useDisclosure,
 } from "@nextui-org/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import RichTextEditor from "@/components/RichTextEditor";
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import {
   useGetCourseByIdQuery,
   useUpdateCourseMutation,
@@ -173,9 +175,22 @@ function EditCourseContent() {
 
             <div>
               <label className="block text-sm font-medium mb-2">Description (Rich Text)</label>
-              <RichTextEditor 
-                value={formData.description} 
-                onChange={(html) => setFormData({ ...formData, description: html })} 
+              <ReactQuill
+                value={formData.description}
+                onChange={(value) => setFormData({ ...formData, description: value })}
+                modules={{
+                  toolbar: [
+                    [{ header: [1, 2, 3, false] }],
+                    ["bold", "italic", "underline", "strike"],
+                    ["blockquote", "code-block"],
+                    [{ list: "ordered" }, { list: "bullet" }],
+                    [{ indent: "-1" }, { indent: "+1" }],
+                    ["link", "image", "video"],
+                    ["clean"],
+                  ],
+                }}
+                theme="snow"
+                className="bg-white rounded-lg"
               />
             </div>
 
