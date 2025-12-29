@@ -12,12 +12,15 @@
     "db:sync-indexes": "tsx src/scripts/syncIndexes.ts",
     "db:create-users": "tsx src/scripts/createUsers.ts",
     "db:create-demo-course": "tsx src/scripts/createDemoCourse.ts",
+    "db:create-robotics-course": "tsx src/scripts/createRoboticsCourse.ts",
+    "db:create-python-course": "tsx src/scripts/createPythonCourse.ts",
     "db:create-payment-methods": "tsx src/scripts/createPaymentMethod.ts",
     "db:create-admin": "tsx src/scripts/createAdmin.ts",
     "db:seed-events": "tsx src/scripts/seedEvents.ts",
     "db:seed-blogs-500": "tsx src/scripts/seedBlogs500.ts",
     "db:seed-blogs-advanced": "tsx src/scripts/seedBlogsAdvanced.ts",
-    "db:seed-blogs": "tsx src/scripts/seedBlogsWithImages.ts"
+    "db:seed-blogs": "tsx src/scripts/seedBlogsWithImages.ts",
+    "db:seed-all-courses": "npm run db:create-demo-course && npm run db:create-robotics-course && npm run db:create-python-course"
   },
   "author": "",
   "license": "MIT",

@@ -18,6 +18,7 @@ import { useGetPublishedCoursesQuery } from "@/redux/api/courseApi";
 import { useGetAllCategoriesQuery } from "@/redux/api/categoryApi";
 import { useRouter } from "next/navigation";
 import { FaSearch } from "react-icons/fa";
+import "@/styles/prose.css";
 
 export default function CourseList() {
   const { data, isLoading, error } = useGetPublishedCoursesQuery(undefined);
@@ -106,12 +107,14 @@ export default function CourseList() {
           size="lg"
           isLoading={isCategoriesLoading}
         >
-          <SelectItem key="" value="">All Categories</SelectItem>
-          {categories.map((cat: any) => (
-            <SelectItem key={cat._id} value={cat._id}>
-              {cat.name}
-            </SelectItem>
-          ))}
+          {[
+            <SelectItem key="" value="">All Categories</SelectItem>,
+            ...categories.map((cat: any) => (
+              <SelectItem key={cat._id} value={cat._id}>
+                {cat.name}
+              </SelectItem>
+            ))
+          ]}
         </Select>
       </div>
       
@@ -133,11 +136,12 @@ export default function CourseList() {
             <Card
               key={course._id || index}
               className={`group cursor-pointer transition-all duration-300 hover:-translate-y-2 ${shadows[index % shadows.length]} shadow-card border-0`}
-              isPressable
-              onPress={() => router.push(`/courses/${course._id || course.id}`)}
             >
               {/* Course Image Header */}
-              <div className="relative h-48 overflow-hidden w-full">
+              <div 
+                className="relative h-48 overflow-hidden w-full"
+                onClick={() => router.push(`/courses/${course._id || course.id}`)}
+              >
                 <Image
                   removeWrapper
                   alt={course.title}
@@ -163,16 +167,29 @@ export default function CourseList() {
                 </div>
               </div>
 
-              <CardBody className="p-4 sm:p-6">
+              <CardBody className="p-4">
+                {/* Category Badge */}
+                {course.category && (
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    color="secondary"
+                    className="mb-2"
+                  >
+                    {typeof course.category === 'object' ? course.category.name : 'Course'}
+                  </Chip>
+                )}
+
                 {/* Course Title */}
-                <h3
-                  className={`text-lg sm:text-xl font-bold text-gray-900 mb-2 line-clamp-2 ${language === "bn" ? "font-siliguri" : ""}`}
+                <h3 
+                  className="text-base font-bold text-gray-900 mb-2 line-clamp-2 leading-tight cursor-pointer hover:text-primary"
+                  onClick={() => router.push(`/courses/${course._id || course.id}`)}
                 >
                   {course.title}
                 </h3>
 
                 {/* Meta row */}
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="flex flex-wrap gap-2 mb-3">
                   <Chip size="sm" variant="flat" color="primary">
                     {course.level || "Level"}
                   </Chip>
@@ -186,26 +203,61 @@ export default function CourseList() {
                   </Chip>
                 </div>
 
-                {/* Price & Level */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg sm:text-xl font-bold text-primary">{course.price} BDT</span>
+                {/* Description */}
+                <div
+                  className="text-gray-600 text-xs mb-3 line-clamp-2 prose-sm max-w-none course-card-description"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(String(course.description || "")) }}
+                />
+
+                {/* Course Info Grid */}
+                <div className="space-y-2 mb-3">
+                  {/* Duration & Lessons */}
+                  <div className="flex items-center gap-3 text-xs text-gray-600">
+                    {course.duration && (
+                      <div className="flex items-center gap-1">
+                        <span>⏱️</span>
+                        <span>{course.duration}h</span>
+                      </div>
+                    )}
+                    {course.modules && course.modules.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        <span>📚</span>
+                        <span>{course.modules.length} Modules</span>
+                      </div>
+                    )}
                   </div>
-                  {course.enrolled !== undefined && (
-                    <div className="text-xs sm:text-sm text-gray-600">
-                      {course.enrolled} Enrolled
-                    </div>
-                  )}
+
+                  {/* Enrolled & Rating */}
+                  <div className="flex items-center gap-3 text-xs text-gray-600">
+                    {course.enrolled !== undefined && (
+                      <div className="flex items-center gap-1">
+                        <span>👥</span>
+                        <span>{course.enrolled} Students</span>
+                      </div>
+                    )}
+                    {course.rating && (
+                      <div className="flex items-center gap-1">
+                        <span>⭐</span>
+                        <span>{course.rating}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Price */}
+                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                  <span className="text-xl font-bold text-primary">{course.price} BDT</span>
+                  <div
+                    className="px-3 py-1.5 rounded-lg text-sm font-medium bg-primary text-white cursor-pointer hover:bg-primary-600 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(`/courses/${course._id || course.id}`);
+                    }}
+                  >
+                    View Details
+                  </div>
                 </div>
               </CardBody>
-
-              <CardFooter className="p-4 sm:p-6 pt-0 flex gap-2">
-                <div className="flex-1">
-                  <div className="text-xs text-gray-500">
-                    Click to view details
-                  </div>
-                </div>
-              </CardFooter>
             </Card>
             );
           })

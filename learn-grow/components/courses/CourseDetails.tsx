@@ -21,6 +21,7 @@ import CourseModules from "@/components/course/CourseModules";
 import UnifiedAssessmentView from "@/components/assessment/UnifiedAssessmentView";
 import DOMPurify from "isomorphic-dompurify";
 import Cookies from "js-cookie";
+import "@/styles/prose.css";
 
 interface CourseDetailsProps {
     courseId: string;
@@ -32,41 +33,59 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
     const router = useRouter();
     const [selectedTab, setSelectedTab] = useState("overview");
 
-    const getAuthToken = () => Cookies.get("accessToken") || localStorage.getItem("token") || "";
-    const getUserRole = () => {
-        const roleFromCookie = Cookies.get("userRole");
-        if (roleFromCookie) return roleFromCookie;
-        const roleFromStorage = localStorage.getItem("userRole");
-        if (roleFromStorage) return roleFromStorage;
-        try {
-            const storedUser = localStorage.getItem("user");
-            if (storedUser) {
-                return (JSON.parse(storedUser).role as string) || "";
-            }
-        } catch {
-            // ignore parse errors and treat as missing role
+    const getAuthToken = () => {
+        const cookieToken = Cookies.get("accessToken");
+        if (cookieToken) return cookieToken;
+
+        // Only access localStorage in browser
+        if (typeof window !== "undefined") {
+            return localStorage.getItem("token") || "";
         }
         return "";
     };
+
+    const getUserRole = () => {
+        const roleFromCookie = Cookies.get("userRole");
+        if (roleFromCookie) return roleFromCookie;
+
+        // Only access localStorage in browser
+        if (typeof window !== "undefined") {
+            const roleFromStorage = localStorage.getItem("userRole");
+            if (roleFromStorage) return roleFromStorage;
+            try {
+                const storedUser = localStorage.getItem("user");
+                if (storedUser) {
+                    return (JSON.parse(storedUser).role as string) || "";
+                }
+            } catch {
+                // ignore parse errors and treat as missing role
+            }
+        }
+        return "";
+    };
+
+    // Check if user is logged in
+    const token = getAuthToken();
+    const isLoggedIn = !!token;
 
     // Check if user is enrolled
     const enrolledCourses = useSelector(
         (state: RootState) => state.enrollment.enrolledCourses
     );
-    const isEnrolled = enrolledCourses.some((e) => e.courseId === courseId);
+    const isEnrolled = isLoggedIn && enrolledCourses.some((e) => e.courseId === courseId);
 
     // Check if user has paid for this course
     const payments = useSelector((state: RootState) => state.payment.payments);
-    const hasPaid = payments.some(
+    const hasPaid = isLoggedIn && payments.some(
         (p) => p.courseId === courseId && p.status === "completed"
     );
 
     // Check if user has access to this course (via purchase or all-access subscription)
     const orders = ordersData?.orders || [];
     const now = new Date();
-    
+
     // Check for all-access subscription
-    const hasAllAccess = orders.some(
+    const hasAllAccess = isLoggedIn && orders.some(
         order =>
             order.planType === "quarterly" &&
             order.paymentStatus === "approved" &&
@@ -74,17 +93,17 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
             order.endDate &&
             new Date(order.endDate) > now
     );
-    
+
     // Check for specific course purchase
-    const hasPurchasedCourse = orders.some(
+    const hasPurchasedCourse = isLoggedIn && orders.some(
         order =>
             order.planType === "single" &&
             order.paymentStatus === "approved" &&
             order.isActive &&
             order.courseId?._id === courseId
     );
-    
-    const hasAccess = hasAllAccess || hasPurchasedCourse || hasPaid || isEnrolled;
+
+    const hasAccess = isLoggedIn && (hasAllAccess || hasPurchasedCourse || hasPaid || isEnrolled);
 
     const handleEnrollClick = () => {
         const token = getAuthToken();
@@ -242,8 +261,8 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                     <CardBody>
                                         <h3 className="text-xl font-semibold mb-3">Description</h3>
                                         <div
-                                          className="prose max-w-none text-default-600"
-                                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(String(course.description || "")) }}
+                                            className="prose max-w-none text-default-600"
+                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(String(course.description || "")) }}
                                         />
                                     </CardBody>
                                 </Card>
@@ -254,6 +273,7 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                     courseId={courseId}
                                     isEnrolled={isEnrolled}
                                     modulesFromApi={course.modules}
+                                    hasAccess={hasAccess}
                                 />
                             </Tab>
 
@@ -364,9 +384,9 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                             </Tab>
 
                             <Tab key="assessments" title="📚 Assessments">
-                                <UnifiedAssessmentView courseId={courseId} />
+                                <UnifiedAssessmentView courseId={courseId} hasAccess={hasAccess} />
                             </Tab>
-                           
+
                         </Tabs>
                     </div>
 
@@ -469,17 +489,17 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                     </Button>
                                 ) : (
                                     <>
-                                      <RegistrationInfo course={course} />
-                                      <Button
-                                        color="primary"
-                                        size="md"
-                                        className="w-full font-semibold"
-                                        variant="shadow"
-                                        onPress={handleEnrollClick}
-                                        isDisabled={!isEnrollmentOpen(course)}
-                                      >
-                                        {isEnrollmentOpen(course) ? (course.price > 0 ? "💳 Buy Now" : "🎓 Enroll Free") : "Enrollment Closed"}
-                                      </Button>
+                                        <RegistrationInfo course={course} />
+                                        <Button
+                                            color="primary"
+                                            size="md"
+                                            className="w-full font-semibold"
+                                            variant="shadow"
+                                            onPress={handleEnrollClick}
+                                            isDisabled={!isEnrollmentOpen(course)}
+                                        >
+                                            {isEnrollmentOpen(course) ? (course.price > 0 ? "💳 Buy Now" : "🎓 Enroll Free") : "Enrollment Closed"}
+                                        </Button>
                                     </>
                                 )}
 
