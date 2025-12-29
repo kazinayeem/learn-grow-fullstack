@@ -1,144 +1,119 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import {
   Card,
   CardBody,
-  CardHeader,
   Button,
-  Input,
+  Chip,
   Select,
   SelectItem,
-  Chip,
+  Input,
   Table,
   TableHeader,
   TableColumn,
   TableBody,
   TableRow,
   TableCell,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Spinner,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
+  Textarea,
 } from "@nextui-org/react";
-import { useGetInstructorCoursesQuery } from "@/redux/api/courseApi";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FaEye, FaEdit, FaSearch, FaFilter } from "react-icons/fa";
+import { useGetAllCoursesQuery } from "@/redux/api/courseApi";
 import { useGetQuizzesByCourseQuery } from "@/redux/api/quizApi";
-import { useGetAssignmentsByCourseQuery } from "@/redux/api/assignmentApi";
-import { toast } from "react-toastify";
 import {
-  FaPlus,
-  FaEdit,
-  FaEye,
-  FaCheckCircle,
-  FaClock,
-  FaCalendar,
-  FaQuestionCircle,
-  FaFileAlt,
-  FaGraduationCap,
-  FaProjectDiagram,
-} from "react-icons/fa";
+  useGetAssignmentsByCourseQuery,
+  useGetAssignmentSubmissionsQuery,
+  useGradeSubmissionMutation,
+} from "@/redux/api/assignmentApi";
+import { toast } from "react-toastify";
 
-interface Assessment {
-  _id: string;
-  title: string;
-  description?: string;
-  courseId: string;
-  type: "quiz" | "assignment" | "mid-exam" | "final-exam" | "project";
-  status?: string;
-  submissionsCount: number;
-  createdAt: string;
-  // Quiz/Exam specific
-  questions?: any[];
-  duration?: number;
-  assessmentType?: string;
-  // Assignment/Project specific
-  dueDate?: string;
-  maxScore?: number;
-}
-
-export default function UnifiedAssessmentsPage() {
+export default function InstructorAssessmentsPage() {
   const router = useRouter();
-  const [instructorId, setInstructorId] = useState<string | null>(null);
-  const [selectedCourse, setSelectedCourse] = useState<string>("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [typeFilter, setTypeFilter] = useState<string>("");
+  const searchParams = useSearchParams();
+  const courseIdFromUrl = searchParams.get("courseId");
 
-  useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      setInstructorId(user._id || user.id || null);
-    }
-  }, []);
+  const [selectedCourse, setSelectedCourse] = useState(courseIdFromUrl || "");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState("all");
+  const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
+  const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
+  const [score, setScore] = useState("");
+  const [feedback, setFeedback] = useState("");
 
-  const { data: coursesResp } = useGetInstructorCoursesQuery(instructorId as string, {
-    skip: !instructorId,
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
+  // Fetch instructor's courses
+  const { data: coursesResp } = useGetAllCoursesQuery({});
+  const courses = coursesResp?.data || [];
+
+  // Fetch quizzes for selected course
+  const { data: quizzesResp } = useGetQuizzesByCourseQuery(selectedCourse, {
+    skip: !selectedCourse,
   });
+  const quizzes = quizzesResp?.data || [];
 
-  const courses = Array.isArray(coursesResp?.data) ? coursesResp!.data : [];
-  const courseId = selectedCourse || (courses[0]?._id as string);
+  // Fetch assignments for selected course
+  const { data: assignmentsResp } = useGetAssignmentsByCourseQuery(
+    selectedCourse,
+    { skip: !selectedCourse }
+  );
+  const assignments = assignmentsResp?.data || [];
 
-  const { data: quizzesResp, isLoading: isLoadingQuizzes } = useGetQuizzesByCourseQuery(courseId, {
-    skip: !courseId,
-  });
-
-  const { data: assignmentsResp, isLoading: isLoadingAssignments } = useGetAssignmentsByCourseQuery(courseId, {
-    skip: !courseId,
-  });
-
-  const quizzes = Array.isArray(quizzesResp?.data) ? quizzesResp!.data : [];
-  const assignments = Array.isArray(assignmentsResp?.data) ? assignmentsResp!.data : [];
+  // Grade submission mutation
+  const [gradeSubmission, { isLoading: grading }] =
+    useGradeSubmissionMutation();
 
   // Combine all assessments
-  const allAssessments: Assessment[] = [
-    ...quizzes.map((q: any) => ({
-      ...q,
-      type: q.assessmentType || "quiz",
+  const allAssessments = [
+    ...quizzes.map((quiz: any) => ({
+      _id: quiz._id,
+      title: quiz.title,
+      type: quiz.assessmentType || "quiz",
+      details: `${quiz.questions?.length || 0} questions • ${quiz.duration || 30} min`,
+      submissions: 0, // TODO: fetch quiz attempts
+      typeLabel: "Quiz",
     })),
-    ...assignments.map((a: any) => ({
-      ...a,
-      type: a.assessmentType || "assignment",
+    ...assignments.map((assignment: any) => ({
+      _id: assignment._id,
+      title: assignment.title,
+      type: assignment.assessmentType || "assignment",
+      details: assignment.dueDate
+        ? `Due: ${new Date(assignment.dueDate).toLocaleDateString()}`
+        : "No deadline",
+      submissions: assignment.submissionsCount || 0,
+      typeLabel:
+        assignment.assessmentType === "project" ? "Project" : "Assignment",
+      hasSubmissions: true,
     })),
   ];
 
   // Filter assessments
   const filteredAssessments = allAssessments.filter((assessment) => {
-    const matchesSearch = assessment.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = !typeFilter || assessment.type === typeFilter;
+    const matchesSearch = assessment.title
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesType =
+      filterType === "all" || assessment.type === filterType;
     return matchesSearch && matchesType;
   });
-
-  const isLoading = isLoadingQuizzes || isLoadingAssignments;
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "quiz":
-        return <FaQuestionCircle />;
-      case "assignment":
-        return <FaFileAlt />;
-      case "mid-exam":
-        return <FaGraduationCap />;
-      case "final-exam":
-        return <FaGraduationCap />;
-      case "project":
-        return <FaProjectDiagram />;
-      default:
-        return <FaQuestionCircle />;
-    }
-  };
 
   const getTypeColor = (type: string) => {
     switch (type) {
       case "quiz":
         return "primary";
-      case "assignment":
-        return "secondary";
       case "mid-exam":
         return "warning";
       case "final-exam":
         return "danger";
+      case "assignment":
+        return "secondary";
       case "project":
         return "success";
       default:
@@ -146,108 +121,74 @@ export default function UnifiedAssessmentsPage() {
     }
   };
 
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case "quiz":
-        return "Quiz";
-      case "assignment":
-        return "Assignment";
-      case "mid-exam":
-        return "Mid Exam";
-      case "final-exam":
-        return "Final Exam";
-      case "project":
-        return "Project";
-      default:
-        return type;
-    }
-  };
-
-  const handleCreate = (type: string) => {
-    if (type === "quiz" || type === "mid-exam" || type === "final-exam") {
-      router.push(`/instructor/quizzes/create?type=${type}`);
-    } else if (type === "assignment" || type === "project") {
-      router.push(`/instructor/assignments/create?type=${type}`);
-    }
-  };
-
-  const handleView = (assessment: Assessment) => {
-    if (assessment.type === "quiz" || assessment.type === "mid-exam" || assessment.type === "final-exam") {
-      router.push(`/instructor/quizzes/${assessment._id}`);
+  const handleViewSubmissions = async (assessment: any) => {
+    if (assessment.type === "quiz" || assessment.type.includes("exam")) {
+      // Navigate to quiz attempts page (to be created)
+      router.push(`/instructor/quizzes/${assessment._id}/attempts`);
     } else {
-      router.push(`/instructor/assignments/${assessment._id}`);
+      // Navigate to assignment submissions page
+      router.push(`/instructor/assignments/${assessment._id}/submissions`);
     }
   };
 
-  const handleEdit = (assessment: Assessment) => {
-    if (assessment.type === "quiz" || assessment.type === "mid-exam" || assessment.type === "final-exam") {
-      router.push(`/instructor/quizzes/${assessment._id}/edit`);
-    } else {
-      router.push(`/instructor/assignments/${assessment._id}/edit`);
-    }
+  const handleGradeSubmission = (assignment: any, submission: any) => {
+    setSelectedAssignment(assignment);
+    setSelectedSubmission(submission);
+    setScore(submission.score?.toString() || "");
+    setFeedback(submission.feedback || "");
+    onOpen();
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+  const handleSaveGrade = async () => {
+    if (!selectedSubmission || !score) {
+      toast.error("Please enter a score");
+      return;
+    }
+
+    const scoreNum = parseFloat(score);
+    if (isNaN(scoreNum) || scoreNum < 0) {
+      toast.error("Please enter a valid score");
+      return;
+    }
+
+    try {
+      await gradeSubmission({
+        id: selectedSubmission._id,
+        score: scoreNum,
+        feedback: feedback.trim(),
+      }).unwrap();
+
+      toast.success("Grade saved successfully!");
+      onClose();
+      setScore("");
+      setFeedback("");
+      setSelectedSubmission(null);
+      setSelectedAssignment(null);
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to save grade");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 container mx-auto px-4 py-8 max-w-7xl">
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">All Assessments 📚</h1>
-            <p className="text-gray-600">Manage quizzes, assignments, exams, and projects</p>
-          </div>
-          <Dropdown>
-            <DropdownTrigger>
-              <Button
-                color="primary"
-                size="lg"
-                className="rounded-full"
-                startContent={<FaPlus />}
-              >
-                Create
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu aria-label="Assessment types" onAction={(key) => handleCreate(key as string)}>
-              <DropdownItem key="quiz" startContent={<FaQuestionCircle />}>
-                Quiz
-              </DropdownItem>
-              <DropdownItem key="assignment" startContent={<FaFileAlt />}>
-                Assignment
-              </DropdownItem>
-              <DropdownItem key="mid-exam" startContent={<FaGraduationCap />}>
-                Mid Exam
-              </DropdownItem>
-              <DropdownItem key="final-exam" startContent={<FaGraduationCap />}>
-                Final Exam
-              </DropdownItem>
-              <DropdownItem key="project" startContent={<FaProjectDiagram />}>
-                Project
-              </DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
-        </div>
+        <h1 className="text-3xl font-bold mb-2">All Assessments 📚</h1>
+        <p className="text-gray-600">
+          Manage quizzes, assignments, exams, and projects for this course.
+        </p>
       </div>
 
       {/* Filters */}
-      <Card className="mb-8">
-        <CardBody className="gap-4">
+      <Card className="mb-6">
+        <CardBody className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Course Selection */}
             <Select
               label="Select Course"
+              placeholder="Choose a course"
               selectedKeys={selectedCourse ? [selectedCourse] : []}
               onChange={(e) => setSelectedCourse(e.target.value)}
-              className="w-full"
-              isDisabled={courses.length === 0}
               disableAnimation
             >
               {courses.map((course: any) => (
@@ -259,60 +200,82 @@ export default function UnifiedAssessmentsPage() {
 
             {/* Search */}
             <Input
-              isClearable
-              type="text"
-              placeholder="Search assessments..."
-              value={searchTerm}
-              onValueChange={setSearchTerm}
-              onClear={() => setSearchTerm("")}
-              className="w-full"
+              label="Search assessments..."
+              placeholder="Type to search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              startContent={<FaSearch className="text-gray-400" />}
             />
 
-            {/* Type Filter */}
+            {/* Filter by Type */}
             <Select
               label="Filter by Type"
-              selectedKeys={typeFilter ? [typeFilter] : []}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="w-full"
+              placeholder="All types"
+              selectedKeys={filterType ? [filterType] : []}
+              onChange={(e) => setFilterType(e.target.value)}
+              startContent={<FaFilter className="text-gray-400" />}
               disableAnimation
             >
-              <SelectItem key="">All Types</SelectItem>
-              <SelectItem key="quiz">Quiz</SelectItem>
-              <SelectItem key="assignment">Assignment</SelectItem>
-              <SelectItem key="mid-exam">Mid Exam</SelectItem>
-              <SelectItem key="final-exam">Final Exam</SelectItem>
-              <SelectItem key="project">Project</SelectItem>
+              <SelectItem key="all" value="all">
+                All Types
+              </SelectItem>
+              <SelectItem key="quiz" value="quiz">
+                Quiz
+              </SelectItem>
+              <SelectItem key="mid-exam" value="mid-exam">
+                Mid Exam
+              </SelectItem>
+              <SelectItem key="final-exam" value="final-exam">
+                Final Exam
+              </SelectItem>
+              <SelectItem key="assignment" value="assignment">
+                Assignment
+              </SelectItem>
+              <SelectItem key="project" value="project">
+                Project
+              </SelectItem>
             </Select>
           </div>
         </CardBody>
       </Card>
 
-      {/* Assessments Table */}
-      {isLoading ? (
-        <div className="flex justify-center items-center py-12">
-          <Spinner size="lg" />
+      {/* Assessments Count */}
+      {selectedCourse && (
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold">
+            Assessments ({filteredAssessments.length})
+          </h2>
         </div>
+      )}
+
+      {/* Assessments Table */}
+      {!selectedCourse ? (
+        <Card>
+          <CardBody className="p-12 text-center">
+            <p className="text-gray-500 text-lg">
+              Please select a course to view assessments
+            </p>
+          </CardBody>
+        </Card>
       ) : filteredAssessments.length === 0 ? (
         <Card>
-          <CardBody className="text-center py-12">
-            <FaQuestionCircle className="text-6xl text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 mb-4">No assessments found</p>
-            <p className="text-sm text-gray-400 mb-4">Create your first assessment using the button above</p>
+          <CardBody className="p-12 text-center">
+            <p className="text-gray-500 text-lg">No assessments found</p>
+            <p className="text-sm text-gray-400 mt-2">
+              Try adjusting your filters or create a new assessment
+            </p>
           </CardBody>
         </Card>
       ) : (
         <Card>
-          <CardHeader className="flex flex-col gap-3 bg-gray-100 p-6">
-            <h2 className="text-xl font-semibold">Assessments ({filteredAssessments.length})</h2>
-          </CardHeader>
-          <CardBody>
-            <Table aria-label="Assessments table" className="p-4">
+          <CardBody className="p-0">
+            <Table aria-label="Assessments table">
               <TableHeader>
-                <TableColumn key="title">TITLE</TableColumn>
-                <TableColumn key="type">TYPE</TableColumn>
-                <TableColumn key="details">DETAILS</TableColumn>
-                <TableColumn key="submissions">SUBMISSIONS</TableColumn>
-                <TableColumn key="actions">ACTIONS</TableColumn>
+                <TableColumn>TITLE</TableColumn>
+                <TableColumn>TYPE</TableColumn>
+                <TableColumn>DETAILS</TableColumn>
+                <TableColumn>SUBMISSIONS</TableColumn>
+                <TableColumn>ACTIONS</TableColumn>
               </TableHeader>
               <TableBody>
                 {filteredAssessments.map((assessment) => (
@@ -320,55 +283,62 @@ export default function UnifiedAssessmentsPage() {
                     <TableCell>
                       <div>
                         <p className="font-semibold">{assessment.title}</p>
-                        {assessment.description && (
-                          <p className="text-sm text-gray-500 line-clamp-1">{assessment.description}</p>
-                        )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <Chip
-                        startContent={getTypeIcon(assessment.type)}
+                        size="sm"
                         variant="flat"
                         color={getTypeColor(assessment.type) as any}
                       >
-                        {getTypeLabel(assessment.type)}
+                        {assessment.typeLabel}
                       </Chip>
                     </TableCell>
                     <TableCell>
-                      {assessment.questions ? (
-                        <div className="flex items-center gap-2 text-sm">
-                          <FaQuestionCircle />
-                          {assessment.questions.length} questions
-                          <FaClock />
-                          {assessment.duration} min
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-sm">
-                          <FaCalendar />
-                          Due: {formatDate(assessment.dueDate!)}
-                        </div>
-                      )}
+                      <p className="text-sm text-gray-600">
+                        {assessment.details}
+                      </p>
                     </TableCell>
-                    <TableCell>{assessment.submissionsCount || 0}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <Chip size="sm" variant="flat">
+                        {assessment.submissions}
+                      </Chip>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
                         <Button
-                          isIconOnly
                           size="sm"
-                          variant="light"
-                          onPress={() => handleView(assessment)}
-                          title="View"
+                          variant="flat"
+                          color="primary"
+                          startContent={<FaEye />}
+                          onPress={() => handleViewSubmissions(assessment)}
+                          isDisabled={
+                            !assessment.hasSubmissions &&
+                            assessment.submissions === 0
+                          }
                         >
-                          <FaEye size={16} />
+                          View
                         </Button>
                         <Button
-                          isIconOnly
                           size="sm"
-                          variant="light"
-                          onPress={() => handleEdit(assessment)}
-                          title="Edit"
+                          variant="flat"
+                          startContent={<FaEdit />}
+                          onPress={() => {
+                            if (
+                              assessment.type === "quiz" ||
+                              assessment.type.includes("exam")
+                            ) {
+                              router.push(
+                                `/instructor/quizzes/${assessment._id}/edit`
+                              );
+                            } else {
+                              router.push(
+                                `/instructor/assignments/${assessment._id}/edit`
+                              );
+                            }
+                          }}
                         >
-                          <FaEdit size={16} />
+                          Edit
                         </Button>
                       </div>
                     </TableCell>
@@ -379,6 +349,64 @@ export default function UnifiedAssessmentsPage() {
           </CardBody>
         </Card>
       )}
+
+      {/* Grade Submission Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} size="2xl">
+        <ModalContent>
+          <ModalHeader>Grade Submission</ModalHeader>
+          <ModalBody>
+            {selectedSubmission && (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Student:</p>
+                  <p className="font-semibold">
+                    {selectedSubmission.studentId?.name || "Unknown"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Submission Link:</p>
+                  <a
+                    href={selectedSubmission.submissionLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline break-all"
+                  >
+                    {selectedSubmission.submissionLink}
+                  </a>
+                </div>
+                <Input
+                  label="Score"
+                  type="number"
+                  placeholder="Enter score"
+                  value={score}
+                  onChange={(e) => setScore(e.target.value)}
+                  description={`Max score: ${selectedAssignment?.maxScore || 100}`}
+                  isRequired
+                />
+                <Textarea
+                  label="Feedback (Optional)"
+                  placeholder="Provide feedback to the student"
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  minRows={3}
+                />
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button color="danger" variant="light" onPress={onClose}>
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onPress={handleSaveGrade}
+              isLoading={grading}
+            >
+              Save Grade
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

@@ -22,13 +22,14 @@ import {
 import { useRouter, useParams } from "next/navigation";
 import { useGetCourseByIdQuery } from "@/redux/api/courseApi";
 import { useGetMyOrdersQuery } from "@/redux/api/orderApi";
-import { 
-    FaVideo, 
-    FaFilePdf, 
-    FaCheckCircle, 
-    FaLock, 
-    FaPlay, 
-    FaDownload, 
+import Cookies from "js-cookie";
+import {
+    FaVideo,
+    FaFilePdf,
+    FaCheckCircle,
+    FaLock,
+    FaPlay,
+    FaDownload,
     FaBook,
     FaClock,
     FaChevronLeft,
@@ -60,10 +61,10 @@ export default function CourseLearnPage() {
     const params = useParams();
     const courseId = params?.id as string;
     const router = useRouter();
-    
+
     const { data: courseData, isLoading: courseLoading } = useGetCourseByIdQuery(courseId);
     const { data: ordersData } = useGetMyOrdersQuery();
-    
+
     const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
     const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
     const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
@@ -73,9 +74,23 @@ export default function CourseLearnPage() {
     const modules: Module[] = course?.modules || [];
     const orders = ordersData?.orders || [];
 
-    // Check if user has access to this course
+    // Check if user is logged in first
+    const getAuthToken = () => {
+        const cookieToken = Cookies.get("accessToken");
+        if (cookieToken) return cookieToken;
+
+        // Only access localStorage in browser
+        if (typeof window !== "undefined") {
+            return localStorage.getItem("token") || "";
+        }
+        return "";
+    };
+    const token = getAuthToken();
+    const isLoggedIn = !!token;
+
+    // Check if user has access to this course (requires login)
     const now = new Date();
-    const hasAllAccess = orders.some(
+    const hasAllAccess = isLoggedIn && orders.some(
         order =>
             order.planType === "quarterly" &&
             order.paymentStatus === "approved" &&
@@ -84,7 +99,7 @@ export default function CourseLearnPage() {
             new Date(order.endDate) > now
     );
 
-    const hasPurchasedCourse = orders.some(
+    const hasPurchasedCourse = isLoggedIn && orders.some(
         order =>
             order.planType === "single" &&
             order.paymentStatus === "approved" &&
@@ -92,7 +107,7 @@ export default function CourseLearnPage() {
             order.courseId?._id === courseId
     );
 
-    const hasAccess = hasAllAccess || hasPurchasedCourse;
+    const hasAccess = isLoggedIn && (hasAllAccess || hasPurchasedCourse);
 
     // Load completed lessons from localStorage
     useEffect(() => {
@@ -162,20 +177,234 @@ export default function CourseLearnPage() {
     }
 
     if (!hasAccess) {
+        // Show preview mode with locked content
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
-                <FaLock className="text-6xl text-gray-300" />
-                <h1 className="text-2xl font-bold">Course Access Required</h1>
-                <p className="text-gray-600 text-center max-w-md">
-                    You need to purchase this course or have an active subscription to access the learning materials.
-                </p>
-                <div className="flex gap-3">
-                    <Button color="primary" onPress={() => router.push(`/checkout?plan=single&courseId=${courseId}`)}>
-                        Buy This Course
-                    </Button>
-                    <Button variant="bordered" onPress={() => router.push("/pricing")}>
-                        View All Plans
-                    </Button>
+            <div className="min-h-screen bg-gray-50">
+                {/* Header */}
+                <div className="bg-white border-b sticky top-0 z-10">
+                    <div className="container mx-auto px-4 py-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <Button
+                                    isIconOnly
+                                    variant="light"
+                                    onPress={() => router.push(`/courses/${courseId}`)}
+                                >
+                                    <FaChevronLeft />
+                                </Button>
+                                <div>
+                                    <h1 className="text-xl font-bold">{course.title}</h1>
+                                    <Chip color="warning" variant="flat" startContent={<FaLock />}>
+                                        Preview Mode - Enroll to Access
+                                    </Chip>
+                                </div>
+                            </div>
+                            <Button
+                                color="primary"
+                                size="lg"
+                                onPress={() => router.push(`/checkout?plan=single&courseId=${courseId}`)}
+                            >
+                                Enroll Now
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Main Content - Preview */}
+                <div className="container mx-auto px-4 py-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Course Content Preview */}
+                        <div className="lg:col-span-2">
+                            <Card>
+                                <CardHeader>
+                                    <div className="flex items-center justify-between w-full">
+                                        <h2 className="text-2xl font-bold">Course Content</h2>
+                                        <Chip color="warning" variant="flat">
+                                            🔒 Locked
+                                        </Chip>
+                                    </div>
+                                </CardHeader>
+                                <CardBody>
+                                    {modules.length === 0 ? (
+                                        <div className="text-center py-12 text-gray-500">
+                                            <FaBook className="text-6xl mx-auto mb-4 text-gray-300" />
+                                            <p>No modules available yet</p>
+                                        </div>
+                                    ) : (
+                                        <Accordion defaultExpandedKeys={["0"]}>
+                                            {[...modules]
+                                                .sort((a, b) => a.orderIndex - b.orderIndex)
+                                                .map((module, moduleIdx) => {
+                                                    const moduleLessons = module.lessons || [];
+
+                                                    return (
+                                                        <AccordionItem
+                                                            key={moduleIdx.toString()}
+                                                            title={
+                                                                <div className="flex items-center justify-between w-full pr-4">
+                                                                    <div className="flex-1">
+                                                                        <h3 className="font-semibold text-lg">
+                                                                            {module.title}
+                                                                        </h3>
+                                                                        {module.description && (
+                                                                            <p className="text-sm text-gray-600 mt-1">
+                                                                                {module.description}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <Chip size="sm" variant="flat">
+                                                                            {moduleLessons.length} lessons
+                                                                        </Chip>
+                                                                        <FaLock className="text-gray-400" />
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        >
+                                                            <div className="space-y-2 pt-2">
+                                                                {[...moduleLessons]
+                                                                    .sort((a, b) => a.orderIndex - b.orderIndex)
+                                                                    .map((lesson, lessonIdx) => {
+                                                                        const isPublished = lesson.isPublished !== false;
+                                                                        if (!isPublished) return null;
+
+                                                                        return (
+                                                                            <Card
+                                                                                key={lesson._id}
+                                                                                className="opacity-70 bg-gray-50"
+                                                                            >
+                                                                                <CardBody className="p-4">
+                                                                                    <div className="flex items-center gap-4">
+                                                                                        <div className="text-2xl">
+                                                                                            <FaLock className="text-gray-400" />
+                                                                                        </div>
+                                                                                        <div className="flex-1">
+                                                                                            <div className="flex items-center gap-2">
+                                                                                                <p className="font-medium text-gray-700">
+                                                                                                    {lessonIdx + 1}. {lesson.title}
+                                                                                                </p>
+                                                                                            </div>
+                                                                                            {lesson.description && (
+                                                                                                <p className="text-sm text-gray-600 mt-1">
+                                                                                                    {lesson.description}
+                                                                                                </p>
+                                                                                            )}
+                                                                                            <div className="flex items-center gap-3 mt-2">
+                                                                                                <Chip size="sm" variant="flat" className="capitalize">
+                                                                                                    {lesson.type}
+                                                                                                </Chip>
+                                                                                                {lesson.duration && (
+                                                                                                    <Chip
+                                                                                                        size="sm"
+                                                                                                        variant="flat"
+                                                                                                        startContent={<FaClock />}
+                                                                                                    >
+                                                                                                        {lesson.duration} min
+                                                                                                    </Chip>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <Chip color="warning" variant="flat" size="sm">
+                                                                                            Locked
+                                                                                        </Chip>
+                                                                                    </div>
+                                                                                </CardBody>
+                                                                            </Card>
+                                                                        );
+                                                                    })}
+                                                            </div>
+                                                        </AccordionItem>
+                                                    );
+                                                })}
+                                        </Accordion>
+                                    )}
+                                </CardBody>
+                            </Card>
+
+                            {/* Assessments Preview */}
+                            <Card className="mt-6">
+                                <CardHeader>
+                                    <div className="flex items-center justify-between w-full">
+                                        <h2 className="text-2xl font-bold">Assessments</h2>
+                                        <Chip color="warning" variant="flat">
+                                            🔒 Locked
+                                        </Chip>
+                                    </div>
+                                </CardHeader>
+                                <CardBody>
+                                    <div className="text-center py-8 text-gray-500">
+                                        <FaLock className="text-5xl mx-auto mb-4 text-gray-300" />
+                                        <p className="font-semibold mb-2">Quizzes & Assignments Locked</p>
+                                        <p className="text-sm">Enroll in this course to access all assessments</p>
+                                    </div>
+                                </CardBody>
+                            </Card>
+                        </div>
+
+                        {/* Sidebar - Enrollment CTA */}
+                        <div className="space-y-6">
+                            <Card className="border-2 border-primary">
+                                <CardHeader className="bg-primary-50">
+                                    <h3 className="font-bold text-lg">🎓 Enroll to Unlock</h3>
+                                </CardHeader>
+                                <CardBody className="space-y-4">
+                                    <div className="space-y-3">
+                                        <div className="flex items-start gap-2">
+                                            <FaCheckCircle className="text-green-500 mt-1" />
+                                            <p className="text-sm">Access all {totalLessons} lessons</p>
+                                        </div>
+                                        <div className="flex items-start gap-2">
+                                            <FaCheckCircle className="text-green-500 mt-1" />
+                                            <p className="text-sm">Complete quizzes & assignments</p>
+                                        </div>
+                                        <div className="flex items-start gap-2">
+                                            <FaCheckCircle className="text-green-500 mt-1" />
+                                            <p className="text-sm">Track your progress</p>
+                                        </div>
+                                        <div className="flex items-start gap-2">
+                                            <FaCheckCircle className="text-green-500 mt-1" />
+                                            <p className="text-sm">Earn certificate of completion</p>
+                                        </div>
+                                    </div>
+                                    <Divider />
+                                    <div className="text-center">
+                                        <p className="text-2xl font-bold text-primary mb-2">
+                                            {course.price} BDT
+                                        </p>
+                                        <Button
+                                            color="primary"
+                                            size="lg"
+                                            className="w-full"
+                                            onPress={() => router.push(`/checkout?plan=single&courseId=${courseId}`)}
+                                        >
+                                            Enroll Now
+                                        </Button>
+                                    </div>
+                                </CardBody>
+                            </Card>
+
+                            {/* Course Stats */}
+                            <Card>
+                                <CardHeader>
+                                    <h3 className="font-bold">Course Overview</h3>
+                                </CardHeader>
+                                <CardBody className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600">Total Modules</span>
+                                        <span className="font-semibold">{modules.length}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600">Total Lessons</span>
+                                        <span className="font-semibold">{totalLessons}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600">Level</span>
+                                        <span className="font-semibold">{course.level || "All Levels"}</span>
+                                    </div>
+                                </CardBody>
+                            </Card>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -208,9 +437,9 @@ export default function CourseLearnPage() {
                             </Chip>
                         </div>
                     </div>
-                    <Progress 
-                        value={progressPercentage} 
-                        color="success" 
+                    <Progress
+                        value={progressPercentage}
+                        color="success"
                         className="mt-3"
                         size="sm"
                     />
@@ -233,7 +462,7 @@ export default function CourseLearnPage() {
                                         <p>No modules available yet</p>
                                     </div>
                                 ) : (
-                                    <Accordion 
+                                    <Accordion
                                         selectedKeys={[currentModuleIndex.toString()]}
                                         onSelectionChange={(keys) => {
                                             const selected = Array.from(keys)[0];
@@ -246,11 +475,11 @@ export default function CourseLearnPage() {
                                             .sort((a, b) => a.orderIndex - b.orderIndex)
                                             .map((module, moduleIdx) => {
                                                 const moduleLessons = module.lessons || [];
-                                                const moduleCompleted = moduleLessons.filter(l => 
+                                                const moduleCompleted = moduleLessons.filter(l =>
                                                     completedLessons.has(l._id)
                                                 ).length;
-                                                const moduleProgress = moduleLessons.length > 0 
-                                                    ? (moduleCompleted / moduleLessons.length) * 100 
+                                                const moduleProgress = moduleLessons.length > 0
+                                                    ? (moduleCompleted / moduleLessons.length) * 100
                                                     : 0;
 
                                                 return (
@@ -277,9 +506,9 @@ export default function CourseLearnPage() {
                                                         }
                                                     >
                                                         <div className="space-y-2 pt-2">
-                                                            <Progress 
-                                                                value={moduleProgress} 
-                                                                color="success" 
+                                                            <Progress
+                                                                value={moduleProgress}
+                                                                color="success"
                                                                 size="sm"
                                                                 className="mb-4"
                                                             />
@@ -297,9 +526,8 @@ export default function CourseLearnPage() {
                                                                             key={lesson._id}
                                                                             isPressable={!isLocked}
                                                                             onPress={() => !isLocked && handleLessonClick(lesson)}
-                                                                            className={`${
-                                                                                isCompleted ? 'bg-green-50 border-green-200' : ''
-                                                                            } ${isLocked ? 'opacity-60' : ''}`}
+                                                                            className={`${isCompleted ? 'bg-green-50 border-green-200' : ''
+                                                                                } ${isLocked ? 'opacity-60' : ''}`}
                                                                         >
                                                                             <CardBody className="p-4">
                                                                                 <div className="flex items-center gap-4">
@@ -333,9 +561,9 @@ export default function CourseLearnPage() {
                                                                                                 {lesson.type}
                                                                                             </Chip>
                                                                                             {lesson.duration && (
-                                                                                                <Chip 
-                                                                                                    size="sm" 
-                                                                                                    variant="flat" 
+                                                                                                <Chip
+                                                                                                    size="sm"
+                                                                                                    variant="flat"
                                                                                                     startContent={<FaClock />}
                                                                                                 >
                                                                                                     {lesson.duration} min
@@ -366,6 +594,36 @@ export default function CourseLearnPage() {
 
                     {/* Sidebar */}
                     <div className="space-y-6">
+                        {/* Certificate Card - Show when 100% complete */}
+                        {progressPercentage === 100 && (
+                            <Card className="border-2 border-success bg-gradient-to-br from-success-50 to-success-100">
+                                <CardHeader className="flex-col items-start">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <FaTrophy className="text-2xl text-success" />
+                                        <h3 className="font-bold text-lg">Congratulations! 🎉</h3>
+                                    </div>
+                                    <p className="text-sm text-gray-700">
+                                        You've completed all course content!
+                                    </p>
+                                </CardHeader>
+                                <CardBody>
+                                    <Button
+                                        color="success"
+                                        size="lg"
+                                        className="w-full"
+                                        startContent={<FaDownload />}
+                                        onPress={() => {
+                                            // Generate and download certificate
+                                            const certificateUrl = `/api/certificate/generate?courseId=${courseId}&courseName=${encodeURIComponent(course.title)}`;
+                                            window.open(certificateUrl, '_blank');
+                                        }}
+                                    >
+                                        Download Certificate
+                                    </Button>
+                                </CardBody>
+                            </Card>
+                        )}
+
                         {/* Course Info */}
                         <Card>
                             <CardHeader>
@@ -374,9 +632,9 @@ export default function CourseLearnPage() {
                             <CardBody className="space-y-4">
                                 <div>
                                     <p className="text-sm text-gray-600">Progress</p>
-                                    <Progress 
-                                        value={progressPercentage} 
-                                        color="success" 
+                                    <Progress
+                                        value={progressPercentage}
+                                        color="success"
                                         className="mt-2"
                                     />
                                     <p className="text-sm text-gray-600 mt-1">
@@ -415,24 +673,24 @@ export default function CourseLearnPage() {
                                 <h3 className="font-bold">Quick Actions</h3>
                             </CardHeader>
                             <CardBody className="space-y-2">
-                                <Button 
-                                    color="primary" 
+                                <Button
+                                    color="primary"
                                     variant="flat"
                                     className="w-full justify-start"
                                     onPress={() => router.push(`/courses/${courseId}`)}
                                 >
                                     Course Details
                                 </Button>
-                                <Button 
-                                    color="secondary" 
+                                <Button
+                                    color="secondary"
                                     variant="flat"
                                     className="w-full justify-start"
                                     onPress={() => router.push("/student")}
                                 >
                                     My Dashboard
                                 </Button>
-                                <Button 
-                                    color="default" 
+                                <Button
+                                    color="default"
                                     variant="flat"
                                     className="w-full justify-start"
                                     onPress={() => router.push("/courses")}
@@ -446,9 +704,9 @@ export default function CourseLearnPage() {
             </div>
 
             {/* Lesson Viewer Modal */}
-            <Modal 
-                isOpen={isOpen} 
-                onClose={onClose} 
+            <Modal
+                isOpen={isOpen}
+                onClose={onClose}
                 size="5xl"
                 scrollBehavior="inside"
             >
@@ -565,8 +823,8 @@ export default function CourseLearnPage() {
                             Close
                         </Button>
                         {selectedLesson && !completedLessons.has(selectedLesson._id) && (
-                            <Button 
-                                color="success" 
+                            <Button
+                                color="success"
                                 onPress={() => {
                                     handleMarkComplete();
                                     onClose();

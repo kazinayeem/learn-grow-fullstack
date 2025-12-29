@@ -90,19 +90,33 @@ export default function CheckoutPage() {
     transactionId: "",
   });
 
-  const getAuthToken = () => Cookies.get("accessToken") || localStorage.getItem("token") || "";
+  const getAuthToken = () => {
+    const cookieToken = Cookies.get("accessToken");
+    if (cookieToken) return cookieToken;
+
+    // Only access localStorage in browser
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("token") || "";
+    }
+    return "";
+  };
+
   const getUserRole = () => {
     const roleFromCookie = Cookies.get("userRole");
     if (roleFromCookie) return roleFromCookie;
-    const roleFromStorage = localStorage.getItem("userRole");
-    if (roleFromStorage) return roleFromStorage;
-    try {
-      const user = localStorage.getItem("user");
-      if (user) {
-        return (JSON.parse(user).role as string) || "";
+
+    // Only access localStorage in browser
+    if (typeof window !== "undefined") {
+      const roleFromStorage = localStorage.getItem("userRole");
+      if (roleFromStorage) return roleFromStorage;
+      try {
+        const user = localStorage.getItem("user");
+        if (user) {
+          return (JSON.parse(user).role as string) || "";
+        }
+      } catch {
+        // ignore parse errors and treat as missing role
       }
-    } catch {
-      // ignore parse errors and treat as missing role
     }
     return "";
   };
@@ -128,10 +142,10 @@ export default function CheckoutPage() {
         const active = Array.isArray(methods)
           ? methods.filter((m: PaymentMethod) => m.isActive !== false)
           : [];
-        
+
         console.log("Fetched payment methods:", active);
         setPaymentMethods(active);
-        
+
         if (active[0]?._id) {
           console.log("Setting default payment method ID:", active[0]._id);
           setFormData((prev) => ({
@@ -178,10 +192,10 @@ export default function CheckoutPage() {
   const planDetails =
     plan === "single" && courseData
       ? {
-          title: courseData.title || "একক কোর্স",
-          price: courseData.price || PLAN_DETAILS.single.price,
-          requiresDelivery: false,
-        }
+        title: courseData.title || "একক কোর্স",
+        price: courseData.price || PLAN_DETAILS.single.price,
+        requiresDelivery: false,
+      }
       : PLAN_DETAILS[plan];
 
   const handleInputChange = (field: keyof FormData, value: string) => {
@@ -321,7 +335,7 @@ export default function CheckoutPage() {
     } catch (error: any) {
       console.error("=== ORDER SUBMISSION ERROR ===");
       console.error("Error object:", error);
-      
+
       if (error.response) {
         console.error("Response status:", error.response.status);
         console.error("Response data:", error.response.data);
