@@ -4,14 +4,16 @@ import React from "react";
 import { Card, CardBody, CardHeader, Button, Chip, Progress, Spinner } from "@nextui-org/react";
 import { useGetQuizzesByCourseQuery } from "@/redux/api/quizApi";
 import { useRouter } from "next/navigation";
+import { FaLock } from "react-icons/fa";
 
 interface QuizListProps {
     courseId: string;
+    hasAccess?: boolean;
 }
 
-export default function QuizList({ courseId }: QuizListProps) {
+export default function QuizList({ courseId, hasAccess = false }: QuizListProps) {
     const router = useRouter();
-    
+
     // Fetch quizzes from API
     const { data: quizzesData, isLoading, error } = useGetQuizzesByCourseQuery(courseId);
     const quizzes = quizzesData?.data || quizzesData?.quizzes || [];
@@ -50,18 +52,22 @@ export default function QuizList({ courseId }: QuizListProps) {
         <div className="space-y-4">
             {quizzes.map((quiz: any) => {
                 const quizId = quiz._id;
-                
+                const isLocked = !hasAccess;
+
                 if (!quizId) {
                     console.error("Quiz without _id:", quiz);
                     return null;
                 }
-                
+
                 return (
-                    <Card key={quizId} className="hover:shadow-lg transition-shadow">
+                    <Card key={quizId} className={`hover:shadow-lg transition-shadow ${isLocked ? 'opacity-70 bg-gray-50' : ''}`}>
                         <CardBody>
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex-1">
-                                    <h3 className="text-xl font-bold mb-2">{quiz.title}</h3>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        {isLocked && <FaLock className="text-gray-500" />}
+                                        <h3 className="text-xl font-bold">{quiz.title}</h3>
+                                    </div>
                                     <p className="text-sm text-default-600 mb-3">{quiz.description}</p>
                                     <div className="flex flex-wrap gap-2">
                                         <Chip size="sm" variant="flat">
@@ -75,7 +81,12 @@ export default function QuizList({ courseId }: QuizListProps) {
                                                 ⏱️ {quiz.duration} min
                                             </Chip>
                                         )}
-                                        {quiz.status && (
+                                        {isLocked && (
+                                            <Chip size="sm" color="warning" variant="flat">
+                                                Locked
+                                            </Chip>
+                                        )}
+                                        {!isLocked && quiz.status && (
                                             <Chip
                                                 size="sm"
                                                 color={quiz.status === "published" ? "success" : "warning"}
@@ -87,15 +98,17 @@ export default function QuizList({ courseId }: QuizListProps) {
                                     </div>
                                 </div>
 
-                                <div className="text-right ml-4">
-                                    <Button
-                                        color="primary"
-                                        size="sm"
-                                        onPress={() => router.push(`/quiz/${quizId}`)}
-                                    >
-                                        Take Quiz
-                                    </Button>
-                                </div>
+                                {!isLocked && (
+                                    <div className="text-right ml-4">
+                                        <Button
+                                            color="primary"
+                                            size="sm"
+                                            onPress={() => router.push(`/quiz/${quizId}`)}
+                                        >
+                                            Take Quiz
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         </CardBody>
                     </Card>

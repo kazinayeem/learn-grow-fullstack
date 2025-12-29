@@ -76,10 +76,24 @@ export const getAssignments = async (
 
     const assignments = await Assignment.find(query).sort({ createdAt: -1 });
 
+    // Count submissions for each assignment
+    const assignmentsWithCounts = await Promise.all(
+      assignments.map(async (assignment) => {
+        const submissionCount = await AssignmentSubmission.countDocuments({
+          assignmentId: assignment._id,
+        });
+        
+        return {
+          ...assignment.toObject(),
+          submissionsCount: submissionCount,
+        };
+      })
+    );
+
     return {
       success: true,
       message: "Assignments retrieved",
-      data: assignments,
+      data: assignmentsWithCounts,
     };
   } catch (error: any) {
     console.error("Get assignments error:", error);

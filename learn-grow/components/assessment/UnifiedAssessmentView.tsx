@@ -4,17 +4,18 @@ import React, { useState } from "react";
 import { Card, CardBody, Tabs, Tab, Button, Chip } from "@nextui-org/react";
 import QuizList from "@/components/quiz/QuizList";
 import { useGetAssignmentsByCourseQuery } from "@/redux/api/assignmentApi";
-import { FaFileAlt, FaCalendarAlt, FaClock } from "react-icons/fa";
+import { FaFileAlt, FaCalendarAlt, FaClock, FaLock } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 
 interface UnifiedAssessmentViewProps {
   courseId: string;
+  hasAccess?: boolean;
 }
 
-export default function UnifiedAssessmentView({ courseId }: UnifiedAssessmentViewProps) {
+export default function UnifiedAssessmentView({ courseId, hasAccess = false }: UnifiedAssessmentViewProps) {
   const [selectedTab, setSelectedTab] = useState("all");
   const router = useRouter();
-  
+
   // Fetch assignments for this course
   const { data: assignmentsResp, isLoading: assignmentsLoading } = useGetAssignmentsByCourseQuery(courseId);
   const assignments = assignmentsResp?.data || [];
@@ -81,70 +82,87 @@ export default function UnifiedAssessmentView({ courseId }: UnifiedAssessmentVie
 
     return (
       <div className="space-y-4">
-        {assignments.map((assignment: any) => (
-          <Card 
-            key={assignment._id} 
-            className="hover:shadow-lg transition-shadow"
-          >
-            <CardBody className="p-4">
-              <div className="flex items-start justify-between">
-                <div 
-                  className="flex items-start gap-4 flex-1 cursor-pointer"
-                  onClick={() => router.push(`/assignment/${assignment._id}`)}
-                >
-                  <div className="p-3 bg-blue-100 rounded-lg">
-                    <FaFileAlt className="text-2xl text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-bold text-lg">{assignment.title}</h4>
-                      <Chip 
-                        size="sm" 
-                        variant="flat" 
-                        color={getAssignmentTypeColor(assignment.assessmentType) as any}
-                      >
-                        {getAssignmentTypeLabel(assignment.assessmentType)}
-                      </Chip>
-                      <Chip 
-                        size="sm" 
-                        variant="dot" 
-                        color={assignment.status === "published" ? "success" : "warning"}
-                      >
-                        {assignment.status}
-                      </Chip>
-                    </div>
-                    {assignment.description && (
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                        {assignment.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                      {assignment.dueDate && (
-                        <div className="flex items-center gap-1">
-                          <FaCalendarAlt />
-                          <span>Due: {formatDate(assignment.dueDate)}</span>
-                        </div>
-                      )}
-                      {assignment.maxScore && (
-                        <div className="flex items-center gap-1">
-                          <span>📊</span>
-                          <span>Max Score: {assignment.maxScore}</span>
-                        </div>
+        {assignments.map((assignment: any) => {
+          const isLocked = !hasAccess;
+
+          return (
+            <Card
+              key={assignment._id}
+              className={`hover:shadow-lg transition-shadow ${isLocked ? 'opacity-70 bg-gray-50' : ''}`}
+            >
+              <CardBody className="p-4">
+                <div className="flex items-start justify-between">
+                  <div
+                    className={`flex items-start gap-4 flex-1 ${!isLocked ? 'cursor-pointer' : ''}`}
+                    onClick={() => !isLocked && router.push(`/assignment/${assignment._id}`)}
+                  >
+                    <div className={`p-3 rounded-lg ${isLocked ? 'bg-gray-200' : 'bg-blue-100'}`}>
+                      {isLocked ? (
+                        <FaLock className="text-2xl text-gray-500" />
+                      ) : (
+                        <FaFileAlt className="text-2xl text-blue-600" />
                       )}
                     </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="font-bold text-lg">{assignment.title}</h4>
+                        <Chip
+                          size="sm"
+                          variant="flat"
+                          color={getAssignmentTypeColor(assignment.assessmentType) as any}
+                        >
+                          {getAssignmentTypeLabel(assignment.assessmentType)}
+                        </Chip>
+                        {isLocked && (
+                          <Chip size="sm" color="warning" variant="flat">
+                            Locked
+                          </Chip>
+                        )}
+                        {!isLocked && (
+                          <Chip
+                            size="sm"
+                            variant="dot"
+                            color={assignment.status === "published" ? "success" : "warning"}
+                          >
+                            {assignment.status}
+                          </Chip>
+                        )}
+                      </div>
+                      {assignment.description && (
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                          {assignment.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        {assignment.dueDate && (
+                          <div className="flex items-center gap-1">
+                            <FaCalendarAlt />
+                            <span>Due: {formatDate(assignment.dueDate)}</span>
+                          </div>
+                        )}
+                        {assignment.maxScore && (
+                          <div className="flex items-center gap-1">
+                            <span>📊</span>
+                            <span>Max Score: {assignment.maxScore}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
+                  {!isLocked && (
+                    <Button
+                      color="primary"
+                      size="sm"
+                      onPress={() => router.push(`/assignment/${assignment._id}`)}
+                    >
+                      View Details
+                    </Button>
+                  )}
                 </div>
-                <Button 
-                  color="primary" 
-                  size="sm"
-                  onPress={() => router.push(`/assignment/${assignment._id}`)}
-                >
-                  View Details
-                </Button>
-              </div>
-            </CardBody>
-          </Card>
-        ))}
+              </CardBody>
+            </Card>
+          );
+        })}
       </div>
     );
   };
@@ -164,9 +182,9 @@ export default function UnifiedAssessmentView({ courseId }: UnifiedAssessmentVie
               <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                 <span>📝</span> Quizzes & Exams
               </h3>
-              <QuizList courseId={courseId} />
+              <QuizList courseId={courseId} hasAccess={hasAccess} />
             </div>
-            
+
             <div>
               <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                 <span>📄</span> Assignments & Projects
@@ -177,7 +195,7 @@ export default function UnifiedAssessmentView({ courseId }: UnifiedAssessmentVie
         </Tab>
 
         <Tab key="quizzes" title="📝 Quizzes & Exams">
-          <QuizList courseId={courseId} />
+          <QuizList courseId={courseId} hasAccess={hasAccess} />
         </Tab>
 
         <Tab key="assignments" title="📄 Assignments & Projects">
