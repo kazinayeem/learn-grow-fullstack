@@ -53,8 +53,10 @@ import {
     useDeleteLessonMutation,
     usePublishCourseMutation,
     useUnpublishCourseMutation,
-    useGetAssessmentsByCourseQuery,
 } from "@/redux/api/courseApi";
+import { useGetEnrolledStudentsQuery } from "@/redux/api/orderApi";
+import { useGetQuizzesByCourseQuery } from "@/redux/api/quizApi";
+import { useGetAssignmentsByCourseQuery } from "@/redux/api/assignmentApi";
 import { toast } from "react-toastify";
 import DOMPurify from "isomorphic-dompurify";
 
@@ -167,9 +169,34 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
     const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
     const [lessonErrors, setLessonErrors] = useState<Record<string, string>>({});
 
-    // Assessments (from backend)
-    const { data: assessmentsResp } = useGetAssessmentsByCourseQuery(courseId, { skip: !courseId });
-    const assessments: any[] = assessmentsResp?.data || [];
+    // Fetch quizzes and assignments for this course
+    const { data: quizzesResp } = useGetQuizzesByCourseQuery(courseId, { skip: !courseId });
+    const { data: assignmentsResp } = useGetAssignmentsByCourseQuery(courseId, { skip: !courseId });
+
+    // Combine quizzes and assignments into unified assessments list
+    const quizzes = quizzesResp?.data || [];
+    const assignments = assignmentsResp?.data || [];
+    
+    const assessments = [
+        ...quizzes.map((quiz: any) => ({
+            _id: quiz._id,
+            id: quiz._id,
+            title: quiz.title,
+            type: quiz.assessmentType || 'quiz',
+            status: quiz.status,
+            questions: quiz.questions?.length || 0,
+            submissionsCount: 0, // TODO: fetch from submissions
+        })),
+        ...assignments.map((assignment: any) => ({
+            _id: assignment._id,
+            id: assignment._id,
+            title: assignment.title,
+            type: assignment.assessmentType || 'assignment',
+            status: assignment.status || 'draft',
+            dueDate: assignment.dueDate,
+            submissionsCount: assignment.submissions?.length || 0,
+        })),
+    ];
 
     const getStatusColor = (status: string) => status === "published" || status === "active" ? "success" : "warning";
 
@@ -787,7 +814,7 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                     </div>
                 </Tab>
 
-                {/* Students Tab (Placeholder) */}
+                {/* Students Tab */}
                 <Tab
                     key="students"
                     title={
@@ -797,13 +824,7 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                         </div>
                     }
                 >
-                    <Card className="mt-6">
-                        <CardBody className="p-8 text-center text-gray-500">
-                            <FaGraduationCap className="text-6xl mx-auto mb-4 text-gray-300" />
-                            <h3 className="text-xl font-bold mb-2">Enrolled Students</h3>
-                            <p>View and manage the {courseData.enrolled} students enrolled in this course.</p>
-                        </CardBody>
-                    </Card>
+                    <EnrolledStudentsList courseId={courseId} />
                 </Tab>
 
                 {/* ASSESSMENTS TAB - Unified view of all assessment types */}
@@ -1117,5 +1138,165 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                 </ModalContent>
             </Modal>
         </div >
+    );
+}
+
+
+// Enrolled Students List Component
+function EnrolledStudentsList({ courseId }: { courseId: string }) {
+    const { data: studentsResp, isLoading, error } = useGetEnrolledStudentsQuery(courseId);
+
+    const students = studentsResp?.data?.students || [];
+    const totalCount = studentsResp?.data?.totalCount || 0;
+    const singlePurchaseCount = studentsResp?.data?.singlePurchaseCount || 0;
+    const quarterlyCount = studentsResp?.data?.quarterlySubscriptionCount || 0;
+
+    if (isLoading) {
+        return (
+            <Card className="mt-6">
+                <CardBody className="p-8 text-center">
+                    <div className="flex justify-center items-center py-8">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    </div>
+                    <p className="text-gray-500 mt-4">Loading enrolled students...</p>
+                </CardBody>
+            </Card>
+        );
+    }
+
+    if (error) {
+        return (
+            <Card className="mt-6 border-2 border-red-200">
+                <CardBody className="p-8 text-center">
+                    <p className="text-red-500">Failed to load enrolled students</p>
+                    <p className="text-sm text-gray-500 mt-2">{(error as any)?.data?.message || "Unknown error"}</p>
+                </CardBody>
+            </Card>
+        );
+    }
+
+    if (students.length === 0) {
+        return (
+            <Card className="mt-6">
+                <CardBody className="p-8 text-center text-gray-500">
+                    <FaGraduationCap className="text-6xl mx-auto mb-4 text-gray-300" />
+                    <h3 className="text-xl font-bold mb-2">No Students Enrolled Yet</h3>
+                    <p>Students who purchase this course will appear here.</p>
+                </CardBody>
+            </Card>
+        );
+    }
+
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+        });
+    };
+
+    return (
+        <div className="mt-6 space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                    <CardBody className="p-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-primary/10 rounded-lg">
+                                <FaUsers className="text-2xl text-primary" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500">Total Students</p>
+                                <p className="text-2xl font-bold">{totalCount}</p>
+                            </div>
+                        </div>
+                    </CardBody>
+                </Card>
+
+                <Card>
+                    <CardBody className="p-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-blue-100 rounded-lg">
+                                <FaBookOpen className="text-2xl text-blue-600" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500">Single Purchase</p>
+                                <p className="text-2xl font-bold">{singlePurchaseCount}</p>
+                            </div>
+                        </div>
+                    </CardBody>
+                </Card>
+
+                <Card>
+                    <CardBody className="p-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-green-100 rounded-lg">
+                                <FaGraduationCap className="text-2xl text-green-600" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500">Quarterly Access</p>
+                                <p className="text-2xl font-bold">{quarterlyCount}</p>
+                            </div>
+                        </div>
+                    </CardBody>
+                </Card>
+            </div>
+
+            {/* Students List */}
+            <Card>
+                <CardBody className="p-6">
+                    <h3 className="text-xl font-bold mb-4">Enrolled Students</h3>
+                    <div className="space-y-3">
+                        {students.map((student) => (
+                            <div
+                                key={student._id}
+                                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                            >
+                                <div className="flex items-center gap-4">
+                                    {student.profileImage ? (
+                                        <img
+                                            src={student.profileImage}
+                                            alt={student.name}
+                                            className="w-12 h-12 rounded-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-lg">
+                                            {student.name[0]?.toUpperCase()}
+                                        </div>
+                                    )}
+                                    <div>
+                                        <p className="font-semibold text-lg">{student.name}</p>
+                                        <p className="text-sm text-gray-500">{student.email}</p>
+                                        {student.phone && (
+                                            <p className="text-sm text-gray-400">📱 {student.phone}</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="text-right">
+                                    <Chip
+                                        size="sm"
+                                        variant="flat"
+                                        color={student.accessType === "quarterly" ? "success" : "primary"}
+                                        className="mb-2"
+                                    >
+                                        {student.accessType === "quarterly" ? "All Courses" : "Single Course"}
+                                    </Chip>
+                                    <p className="text-xs text-gray-500">
+                                        Enrolled: {formatDate(student.enrolledAt)}
+                                    </p>
+                                    {student.expiresAt && (
+                                        <p className="text-xs text-gray-500">
+                                            Expires: {formatDate(student.expiresAt)}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </CardBody>
+            </Card>
+        </div>
     );
 }

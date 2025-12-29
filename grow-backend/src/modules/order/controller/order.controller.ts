@@ -9,6 +9,7 @@ import {
   rejectOrderService,
   getStudentEnrollmentService,
   checkCourseAccessService,
+  getEnrolledStudentsService,
 } from "../service/order.service";
 
 // Create new order
@@ -306,5 +307,36 @@ export const getUserPurchasedCourses = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error("Get purchased courses error:", error);
     res.status(500).json({ message: "Failed to fetch purchased courses", error: error.message });
+  }
+};
+
+// Get enrolled students for a course (Instructor only)
+export const getEnrolledStudents = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+    const { courseId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(courseId)) {
+      return res.status(400).json({ success: false, message: "Invalid course ID" });
+    }
+
+    const result = await getEnrolledStudentsService(courseId, userId);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    return res.json(result);
+  } catch (error: any) {
+    console.error("Get enrolled students error:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to fetch enrolled students", 
+      error: error.message 
+    });
   }
 };

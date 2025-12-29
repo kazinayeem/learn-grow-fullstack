@@ -8,6 +8,7 @@ import {
   rejectOrder,
   checkActiveSubscription,
   getUserPurchasedCourses,
+  getEnrolledStudents,
 } from "../controller/order.controller";
 import { requireAuth, requireRoles } from "../../../middleware/auth";
 
@@ -18,6 +19,7 @@ router.post("/", requireAuth, createOrder);
 router.get("/my", requireAuth, getUserOrders);
 router.get("/subscription/check", requireAuth, checkActiveSubscription);
 router.get("/purchased-courses", requireAuth, getUserPurchasedCourses);
+router.get("/course/:courseId/students", requireAuth, getEnrolledStudents);
 
 // Admin routes
 router.get("/", requireAuth, requireRoles("admin"), getAllOrders);

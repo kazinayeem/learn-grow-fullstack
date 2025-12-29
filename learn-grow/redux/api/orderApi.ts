@@ -142,6 +142,34 @@ export const orderApi = baseApi.injectEndpoints({
       query: () => "/orders/purchased-courses",
       providesTags: ["Order"],
     }),
+
+    // Get enrolled students for a course (instructor)
+    getEnrolledStudents: builder.query<
+      {
+        success: boolean;
+        message: string;
+        data: {
+          students: Array<{
+            _id: string;
+            name: string;
+            email: string;
+            phone?: string;
+            profileImage?: string;
+            enrolledAt: string;
+            accessType: "single" | "quarterly";
+            expiresAt?: string;
+            orderId: string;
+          }>;
+          totalCount: number;
+          singlePurchaseCount: number;
+          quarterlySubscriptionCount: number;
+        };
+      },
+      string
+    >({
+      query: (courseId) => `/orders/course/${courseId}/students`,
+      providesTags: ["Order"],
+    }),
   }),
 });
 
@@ -154,4 +182,5 @@ export const {
   useRejectOrderMutation,
   useCheckActiveSubscriptionQuery,
   useGetUserPurchasedCoursesQuery,
+  useGetEnrolledStudentsQuery,
 } = orderApi;
