@@ -421,3 +421,113 @@ export const getStudentEnrollmentService = async (userId: string) => {
     return { success: false, message: error.message };
   }
 };
+
+/**
+ * Get enrolled students for a course (instructor view)
+ */
+export const getEnrolledStudentsService = async (courseId: string, instructorId: string) => {
+  try {
+    // Verify instructor owns the course
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return { success: false, message: "Course not found" };
+    }
+
+    if (course.instructorId.toString() !== instructorId) {
+      return { success: false, message: "You don't have permission to view students for this course" };
+    }
+
+    const now = new Date();
+
+    // Find all approved orders for this course (single purchase)
+    const singleCourseOrders = await Order.find({
+      courseId: new mongoose.Types.ObjectId(courseId),
+      planType: "single",
+      paymentStatus: "approved",
+      isActive: true,
+      $or: [
+        { endDate: { $gt: now } }, // Not expired
+        { endDate: null },
+      ],
+    })
+      .populate("userId", "name email phone profileImage createdAt")
+      .sort({ createdAt: -1 });
+
+    // Find all quarterly subscription orders (access to all courses)
+    const quarterlyOrders = await Order.find({
+      planType: "quarterly",
+      paymentStatus: "approved",
+      isActive: true,
+      $or: [
+        { endDate: { $gt: now } }, // Not expired
+        { endDate: null },
+      ],
+    })
+      .populate("userId", "name email phone profileImage createdAt")
+      .sort({ createdAt: -1 });
+
+    // Combine and deduplicate students
+    const studentMap = new Map();
+
+    // Add single course students
+    singleCourseOrders.forEach((order) => {
+      if (order.userId) {
+        const student = order.userId as any;
+        studentMap.set(student._id.toString(), {
+          _id: student._id,
+          name: student.name,
+          email: student.email,
+          phone: student.phone,
+          profileImage: student.profileImage,
+          enrolledAt: order.createdAt,
+          accessType: "single",
+          expiresAt: order.endDate,
+          orderId: order._id,
+        });
+      }
+    });
+
+    // Add quarterly subscription students
+    quarterlyOrders.forEach((order) => {
+      if (order.userId) {
+        const student = order.userId as any;
+        const studentId = student._id.toString();
+        
+        // If student already exists with single purchase, update to quarterly
+        if (studentMap.has(studentId)) {
+          const existing = studentMap.get(studentId);
+          existing.accessType = "quarterly";
+          existing.expiresAt = order.endDate;
+        } else {
+          studentMap.set(studentId, {
+            _id: student._id,
+            name: student.name,
+            email: student.email,
+            phone: student.phone,
+            profileImage: student.profileImage,
+            enrolledAt: order.createdAt,
+            accessType: "quarterly",
+            expiresAt: order.endDate,
+            orderId: order._id,
+          });
+        }
+      }
+    });
+
+    const students = Array.from(studentMap.values());
+
+    return {
+      success: true,
+      message: "Enrolled students retrieved",
+      data: {
+        students,
+        totalCount: students.length,
+        singlePurchaseCount: singleCourseOrders.length,
+        quarterlySubscriptionCount: quarterlyOrders.length,
+      },
+    };
+  } catch (error: any) {
+    console.error("Get enrolled students error:", error);
+    return { success: false, message: error.message || "Failed to fetch enrolled students" };
+  }
+};
