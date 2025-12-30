@@ -41,11 +41,11 @@ const AuthButtons = () => {
   React.useEffect(() => {
     const syncAuth = () => {
       console.log("🔄 Navbar: Auth sync triggered");
-      
+
       // 🚨 logout চললে কিছুই করো না
       const loggingOut = sessionStorage.getItem("loggingOut");
       console.log("🔄 Navbar: loggingOut flag =", loggingOut);
-      
+
       if (loggingOut === "1") {
         console.log("🔄 Navbar: Logout in progress, stopping auth sync");
         setIsAuthenticated(false);
@@ -88,13 +88,13 @@ const AuthButtons = () => {
 
   const handleLogout = async () => {
     console.log("🚪 Navbar: Logout initiated");
-    
+
     // Set logout flag FIRST
     sessionStorage.setItem("loggingOut", "1");
     console.log("🚪 Navbar: Set loggingOut flag");
 
     // Call API logout (don't wait for it)
-    try { 
+    try {
       await apiLogout();
       console.log("🚪 Navbar: API logout successful");
     } catch (e) {
