@@ -26,6 +26,7 @@ import {
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useGetAllOrdersQuery, useApproveOrderMutation, useRejectOrderMutation } from "@/redux/api/orderApi";
+import { FaArrowLeft } from "react-icons/fa";
 
 interface DeliveryAddress {
   name: string;
@@ -142,7 +143,16 @@ export default function OrdersAdminPage() {
   return (
     <div className="w-full p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">অর্ডার ম্যানেজমেন্ট | Order Management</h1>
+        <div className="flex items-center gap-3 mb-4">
+          <Button 
+            variant="light" 
+            startContent={<FaArrowLeft />}
+            onPress={() => router.back()}
+          >
+            Back
+          </Button>
+          <h1 className="text-3xl font-bold text-gray-900">অর্ডার ম্যানেজমেন্ট | Order Management</h1>
+        </div>
         <p className="text-gray-600">পেন্ডিং অর্ডার অনুমোদন করুন এবং পরিচালনা করুন</p>
       </div>
 

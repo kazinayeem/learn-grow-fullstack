@@ -35,7 +35,7 @@ import {
   useGetModulesQuery,
 } from "@/redux/api/courseApi";
 import { useGetAllCategoriesQuery } from "@/redux/api/categoryApi";
-import { FaSearch, FaCheck, FaTimes, FaEye, FaVideo, FaFileAlt, FaTrash, FaEdit } from "react-icons/fa";
+import { FaSearch, FaCheck, FaTimes, FaEye, FaVideo, FaFileAlt, FaTrash, FaEdit, FaArrowLeft } from "react-icons/fa";
 import { toast } from "react-toastify";
 
 export default function ManageCoursesPage() {
@@ -176,17 +176,18 @@ export default function ManageCoursesPage() {
 
   return (
     <div className="container mx-auto px-6 py-8 max-w-7xl">
-      <Button
-        variant="light"
-        onPress={() => router.push("/admin")}
-        className="mb-6"
-      >
-        ← Back to Admin Dashboard
-      </Button>
-
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Course Management</h1>
-        <p className="text-gray-600">Manage all courses, approve or reject submissions</p>
+      <div className="flex items-center gap-3 mb-6">
+        <Button
+          variant="light"
+          startContent={<FaArrowLeft />}
+          onPress={() => router.back()}
+        >
+          Back
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold">Course Management</h1>
+          <p className="text-gray-600">Manage all courses, approve or reject submissions</p>
+        </div>
       </div>
 
       {/* Stats Cards */}

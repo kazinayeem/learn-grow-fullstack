@@ -19,6 +19,7 @@
     "db:seed-events": "tsx src/scripts/seedEvents.ts",
     "db:seed-blogs-500": "tsx src/scripts/seedBlogs500.ts",
     "db:seed-blogs-advanced": "tsx src/scripts/seedBlogsAdvanced.ts",
+    "db:seed-jobs": "tsx src/modules/job/seed/seedJobs.ts",
     "db:seed-all-courses": "npm run db:create-demo-course && npm run db:create-robotics-course && npm run db:create-python-course"
   },
   "author": "",

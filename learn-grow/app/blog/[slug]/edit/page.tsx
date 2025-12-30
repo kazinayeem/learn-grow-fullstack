@@ -36,8 +36,11 @@ const modules = {
   toolbar: [
     [{ header: [1, 2, 3, false] }],
     ["bold", "italic", "underline", "strike"],
+    [{ color: [] }, { background: [] }],
     ["blockquote", "code-block"],
     [{ list: "ordered" }, { list: "bullet" }],
+    [{ script: "sub" }, { script: "super" }],
+    [{ indent: "-1" }, { indent: "+1" }],
     ["link", "image", "video"],
     ["clean"],
   ],

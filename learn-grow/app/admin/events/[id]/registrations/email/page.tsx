@@ -30,7 +30,7 @@ import {
   useGetEventByIdQuery,
   useGetEventRegistrationsQuery,
   useSendRegistrationEmailsMutation,
-  useGetEmailHistoryQuery,
+  useGetEventEmailHistoryQuery,
 } from "@/redux/api/eventApi";
 import { FaArrowLeft, FaEnvelope, FaHistory, FaCheckCircle, FaTimesCircle, FaClock } from "react-icons/fa";
 import toast from "react-hot-toast";
@@ -64,7 +64,7 @@ export default function SendRegistrationEmailPage() {
     { eventId, page: 1, limit: 1000 },
     { skip: !eventId }
   );
-  const { data: historyResponse, isLoading: loadingHistory } = useGetEmailHistoryQuery(
+  const { data: historyResponse, isLoading: loadingHistory } = useGetEventEmailHistoryQuery(
     { eventId, page: historyPage, limit: 10, search: historySearch || undefined },
     { skip: !eventId }
   );
@@ -329,7 +329,24 @@ export default function SendRegistrationEmailPage() {
               ) : (
                 <div className="space-y-2">
                   <label className="text-sm text-gray-600">Message</label>
-                  <ReactQuill theme="snow" value={content} onChange={setContent} />
+                  <ReactQuill 
+                    theme="snow" 
+                    value={content} 
+                    onChange={setContent}
+                    modules={{
+                      toolbar: [
+                        [{ header: [1, 2, 3, false] }],
+                        ["bold", "italic", "underline", "strike"],
+                        [{ color: [] }, { background: [] }],
+                        ["blockquote", "code-block"],
+                        [{ list: "ordered" }, { list: "bullet" }],
+                        [{ script: "sub" }, { script: "super" }],
+                        [{ indent: "-1" }, { indent: "+1" }],
+                        ["link", "image", "video"],
+                        ["clean"],
+                      ],
+                    }}
+                  />
                 </div>
               )}
 

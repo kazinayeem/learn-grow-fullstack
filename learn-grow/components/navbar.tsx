@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import clsx from "clsx";
 import { IoPersonAddSharp } from "react-icons/io5";
 import {
   Navbar as NextUINavbar,
@@ -31,7 +32,7 @@ import { useRouter } from "next/navigation";
 import { getDashboardUrl } from "@/lib/utils/dashboard";
 import { logout as apiLogout } from "@/lib/auth";
 
-const AuthButtons = () => {
+const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -172,8 +173,12 @@ const AuthButtons = () => {
     <div className="flex gap-3 items-center">
       <Button
         as={Link}
-        className="text-sm font-bold text-white border-2 border-white/40 hover:bg-white/10 px-6"
-        style={{ backgroundColor: 'transparent' }}
+        className={clsx(
+          "text-sm font-bold border-2 px-6 bg-transparent",
+          isScrolled
+            ? "text-white border-white/40 hover:bg-white/10"
+            : "text-[#121064] border-[#121064]/40 hover:bg-[#121064]/5"
+        )}
         href="/login"
         size="md"
         variant="bordered"
@@ -183,7 +188,12 @@ const AuthButtons = () => {
       </Button>
       <Button
         as={Link}
-        className="text-sm font-bold text-[#121064] bg-white hover:bg-white/90 px-6"
+        className={clsx(
+          "text-sm font-bold px-6",
+          isScrolled
+            ? "text-[#121064] bg-white hover:bg-white/90"
+            : "text-white bg-[#121064] hover:bg-[#121064]/90"
+        )}
         href="/register"
         size="md"
         variant="solid"
@@ -197,13 +207,29 @@ const AuthButtons = () => {
 
 export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [isScrolled, setIsScrolled] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <NextUINavbar
-      className="py-3"
-      style={{
-        background: 'linear-gradient(135deg, #121064 0%, #1e1b8f 50%, #2d1ba8 100%)',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+      isBlurred={false}
+      classNames={{
+        base: clsx(
+          "py-3 transition-all duration-300",
+          isScrolled
+            ? "bg-[#121064]/95 backdrop-blur-xl border-b border-white/20 shadow-lg"
+            : "bg-transparent"
+        ),
+        wrapper: "bg-transparent",
       }}
       height="70px"
       maxWidth="xl"
@@ -222,7 +248,12 @@ export const Navbar = () => {
               width={44}
               height={44}
             />
-            <p className="font-bold text-white text-base sm:text-lg tracking-wide">
+            <p
+              className={clsx(
+                "font-bold text-base sm:text-lg tracking-wide",
+                isScrolled ? "text-white" : "text-[#121064]"
+              )}
+            >
               {siteConfig.name}
             </p>
           </NextLink>
@@ -231,7 +262,12 @@ export const Navbar = () => {
           {siteConfig.navItems.map((item) => (
             <NavbarItem key={item.href}>
               <NextLink
-                className="text-white text-[15px] font-semibold hover:text-white/90 transition-all duration-200 px-1"
+                className={clsx(
+                  "text-[15px] font-semibold transition-all duration-200 px-1",
+                  isScrolled
+                    ? "text-white hover:text-white/90"
+                    : "text-[#121064] hover:text-[#121064]/80"
+                )}
                 href={item.href}
               >
                 {item.label}
@@ -246,15 +282,24 @@ export const Navbar = () => {
         justify="end"
       >
         <NavbarItem>
-          <AuthButtons />
+          <AuthButtons isScrolled={isScrolled} />
         </NavbarItem>
       </NavbarContent>
 
       <NavbarContent className="sm:hidden" justify="end">
-        <NavbarMenuToggle className="text-white ml-2" />
+        <NavbarMenuToggle
+          className={clsx("ml-2", isScrolled ? "text-white" : "text-[#121064]")}
+        />
       </NavbarContent>
 
-      <NavbarMenu className="pt-6 bg-gradient-to-br from-[#121064] via-[#1e1b8f] to-[#2d1ba8]">
+      <NavbarMenu 
+        className="pt-6" 
+        style={{
+          background: 'rgba(255, 255, 255, 0.15)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)'
+        }}
+      >
         {siteConfig.navItems.map((item, index) => (
           <NavbarMenuItem key={`${item.label}-${index}`}>
             <NextLink
@@ -270,8 +315,12 @@ export const Navbar = () => {
           <div className="flex flex-col gap-3 mt-4 w-full">
             <Button
               as={NextLink}
-              className="text-sm font-bold text-white border-2 border-white/40 hover:bg-white/10"
-              style={{ backgroundColor: 'transparent' }}
+              className={clsx(
+                "text-sm font-bold border-2 bg-transparent",
+                isScrolled
+                  ? "text-white border-white/40 hover:bg-white/10"
+                  : "text-[#121064] border-[#121064]/40 hover:bg-[#121064]/5"
+              )}
               href="/login"
               size="lg"
               variant="bordered"
@@ -283,7 +332,12 @@ export const Navbar = () => {
             </Button>
             <Button
               as={Link}
-              className="text-sm font-bold text-[#121064] bg-white hover:bg-white/90"
+              className={clsx(
+                "text-sm font-bold",
+                isScrolled
+                  ? "text-[#121064] bg-white hover:bg-white/90"
+                  : "text-white bg-[#121064] hover:bg-[#121064]/90"
+              )}
               href="/register"
               size="lg"
               variant="solid"

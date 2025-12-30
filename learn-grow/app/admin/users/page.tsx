@@ -153,24 +153,20 @@ export default function UserManagementPage() {
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-7xl">
-            {/* Back Button */}
-            <div className="mb-6">
-                <Button
-                    isIconOnly
-                    variant="light"
-                    size="lg"
-                    onPress={() => router.push("/admin")}
-                    startContent={<FaArrowLeft />}
-                >
-                    Back to Dashboard
-                </Button>
-            </div>
-
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="text-3xl font-bold">User Management</h1>
-                    <p className="text-gray-600 mt-1">Manage all platform users</p>
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="light"
+                        startContent={<FaArrowLeft />}
+                        onPress={() => router.back()}
+                    >
+                        Back
+                    </Button>
+                    <div>
+                        <h1 className="text-3xl font-bold">User Management</h1>
+                        <p className="text-gray-600 mt-1">Manage all platform users</p>
+                    </div>
                 </div>
                 <Button
                     color="primary"

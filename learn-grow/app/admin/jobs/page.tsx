@@ -18,8 +18,11 @@ import {
 } from "@/redux/api/jobApi";
 import JobsTable from "@/components/admin/JobsTable";
 import CreateJobModal from "@/components/admin/CreateJobModal";
+import { useRouter } from "next/navigation";
+import { FaArrowLeft } from "react-icons/fa";
 
 export default function JobsPage() {
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
@@ -54,37 +57,74 @@ export default function JobsPage() {
         <Card className="bg-white shadow-lg border border-gray-200 mb-4 md:mb-6">
           <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 md:p-6">
             <div className="w-full sm:w-auto">
-              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Job Management
-              </h1>
+              <div className="flex items-center gap-3 mb-2">
+                <Button 
+                  variant="light" 
+                  startContent={<FaArrowLeft />}
+                  onPress={() => router.back()}
+                  size="sm"
+                >
+                  Back
+                </Button>
+                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Job Management
+                </h1>
+              </div>
               <p className="text-gray-600 mt-1 text-sm md:text-base">
                 Manage job postings and applications
               </p>
             </div>
-            <Button
-              color="primary"
-              size="md"
-              onPress={() => setIsModalOpen(true)}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 font-semibold w-full sm:w-auto"
-              startContent={
-                <svg
-                  className="w-4 h-4 sm:w-5 sm:h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-              }
-            >
-              <span className="hidden sm:inline">Create New Job</span>
-              <span className="sm:hidden">New Job</span>
-            </Button>
+            <div className="flex gap-2 w-full sm:w-auto flex-col sm:flex-row">
+              <Button
+                as="a"
+                href="/admin/jobs/applications"
+                color="secondary"
+                size="md"
+                className="font-semibold"
+                startContent={
+                  <svg
+                    className="w-4 h-4 sm:w-5 sm:h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                }
+              >
+                <span className="hidden sm:inline">View Applications</span>
+                <span className="sm:hidden">Applications</span>
+              </Button>
+              <Button
+                color="primary"
+                size="md"
+                onPress={() => setIsModalOpen(true)}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 font-semibold w-full sm:w-auto"
+                startContent={
+                  <svg
+                    className="w-4 h-4 sm:w-5 sm:h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                }
+              >
+                <span className="hidden sm:inline">Create New Job</span>
+                <span className="sm:hidden">New Job</span>
+              </Button>
+            </div>
           </CardHeader>
         </Card>
 

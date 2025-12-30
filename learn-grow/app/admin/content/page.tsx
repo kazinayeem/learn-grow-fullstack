@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Button, Card, CardBody, Spinner, Tabs, Tab } from "@nextui-org/react";
+import { useRouter } from "next/navigation";
+import { FaArrowLeft } from "react-icons/fa";
 import { defaultTeamData } from "@/lib/teamData";
 import { defaultBlogData } from "@/lib/blogData";
 import { defaultEventsData } from "@/lib/eventsData";
@@ -54,6 +56,7 @@ const SECTIONS = {
 };
 
 export default function ContentManagerPage() {
+    const router = useRouter();
     const [selectedSection, setSelectedSection] = useState("About Page");
     const [richValue, setRichValue] = useState<string>("");
     const [status, setStatus] = useState("");
@@ -129,7 +132,16 @@ export default function ContentManagerPage() {
     return (
         <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-7xl mx-auto">
-                <h1 className="text-3xl font-bold mb-2">Site Content Manager (CMS)</h1>
+                <div className="flex items-center gap-3 mb-2">
+                    <Button 
+                        variant="light" 
+                        startContent={<FaArrowLeft />}
+                        onPress={() => router.back()}
+                    >
+                        Back
+                    </Button>
+                    <h1 className="text-3xl font-bold">Site Content Manager (CMS)</h1>
+                </div>
                 <p className="mb-6 text-gray-600">
                     Manage team members, pages, and rich text content for your website.
                 </p>
@@ -215,8 +227,10 @@ export default function ContentManagerPage() {
                                                                 ['bold', 'italic', 'underline', 'strike'],
                                                                 [{ color: [] }, { background: [] }],
                                                                 [{ list: 'ordered' }, { list: 'bullet' }],
+                                                                [{ script: 'sub' }, { script: 'super' }],
+                                                                [{ indent: '-1' }, { indent: '+1' }],
                                                                 ['blockquote', 'code-block'],
-                                                                ['link', 'image'],
+                                                                ['link', 'image', 'video'],
                                                                 ['clean']
                                                             ]
                                                         }}

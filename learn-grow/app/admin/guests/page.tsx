@@ -28,7 +28,7 @@ import {
   useGetAllGuestsQuery,
   useDeleteGuestMutation,
 } from "@/redux/api/eventApi";
-import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
+import { FaPlus, FaEdit, FaTrash, FaSearch, FaArrowLeft } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -76,8 +76,12 @@ export default function AdminGuestsPage() {
     <div className="p-8">
       <div className="flex justify-between items-center mb-8 gap-3 flex-wrap">
         <div className="flex items-center gap-3 flex-wrap">
-          <Button variant="light" onPress={() => router.push("/admin")}>
-            ← Back to Admin
+          <Button 
+            variant="light" 
+            startContent={<FaArrowLeft />}
+            onPress={() => router.back()}
+          >
+            Back
           </Button>
           <h1 className="text-3xl font-bold">Guest Management</h1>
         </div>

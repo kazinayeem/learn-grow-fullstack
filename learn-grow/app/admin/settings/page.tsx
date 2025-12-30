@@ -26,20 +26,16 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      {/* Back Button */}
-      <div className="mb-6">
+      <div className="flex items-center gap-3 mb-6">
         <Button
-          isIconOnly
           variant="light"
-          size="lg"
-          onPress={() => router.push("/admin")}
           startContent={<FaArrowLeft />}
+          onPress={() => router.back()}
         >
-          Back to Dashboard
+          Back
         </Button>
+        <h1 className="text-3xl font-bold">Platform Settings</h1>
       </div>
-
-      <h1 className="text-3xl font-bold mb-6">Platform Settings</h1>
       <Card>
         <CardBody className="space-y-4">
           <h2 className="text-xl font-semibold">Commission</h2>

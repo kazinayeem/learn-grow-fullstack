@@ -2,12 +2,14 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import "react-quill-new/dist/quill.snow.css";
 import { Button, Card, CardBody, Chip, Input, Spinner, Tabs, Tab } from "@nextui-org/react";
 import { useGetSiteContentQuery, useUpdateSiteContentMutation } from "@/redux/api/siteContentApi";
+import { useRouter } from "next/navigation";
+import { FaArrowLeft } from "react-icons/fa";
 import { apiRequest } from "@/lib/api";
 
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
-// Minimal styles expectation: user should install `react-quill` CSS in globals if needed
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
 type PolicyKey = "privacy-policy" | "terms-of-use" | "refund-policy";
 
@@ -18,6 +20,7 @@ const POLICY_TABS: { key: PolicyKey; label: string }[] = [
 ];
 
 export default function PoliciesAdminPage() {
+  const router = useRouter();
   const [active, setActive] = useState<PolicyKey>("privacy-policy");
   const { data, isLoading, refetch } = useGetSiteContentQuery(active);
   const [updateContent, { isLoading: isSaving }] = useUpdateSiteContentMutation();
@@ -65,7 +68,16 @@ export default function PoliciesAdminPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold">Legal & Settings</h1>
+        <div className="flex items-center gap-3 mb-4">
+          <Button 
+            variant="light" 
+            startContent={<FaArrowLeft />}
+            onPress={() => router.back()}
+          >
+            Back
+          </Button>
+          <h1 className="text-3xl font-bold">Legal & Settings</h1>
+        </div>
         <p className="text-gray-600">Manage Legal Policies with a rich text editor and platform commission.</p>
 
         <Card>
@@ -77,7 +89,24 @@ export default function PoliciesAdminPage() {
                     <div className="h-80 flex items-center justify-center"><Spinner label={`Loading ${label}...`} /></div>
                   ) : (
                     <div className="space-y-4">
-                      <ReactQuill theme="snow" value={html} onChange={setHtml} />
+                      <ReactQuill 
+                        theme="snow" 
+                        value={html} 
+                        onChange={setHtml}
+                        modules={{
+                          toolbar: [
+                            [{ header: [1, 2, 3, false] }],
+                            ["bold", "italic", "underline", "strike"],
+                            [{ color: [] }, { background: [] }],
+                            ["blockquote", "code-block"],
+                            [{ list: "ordered" }, { list: "bullet" }],
+                            [{ script: "sub" }, { script: "super" }],
+                            [{ indent: "-1" }, { indent: "+1" }],
+                            ["link", "image", "video"],
+                            ["clean"],
+                          ],
+                        }}
+                      />
                       <div className="flex gap-2 justify-end">
                         <Button color="primary" isLoading={isSaving} onPress={handleSave}>Save</Button>
                         <Chip variant="flat" color="secondary">SSR pages render from DB</Chip>

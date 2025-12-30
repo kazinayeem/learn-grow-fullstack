@@ -29,7 +29,7 @@ import {
   useDeletePaymentMethodMutation,
   useTogglePaymentMethodMutation,
 } from "@/redux/api/paymentApi";
-import { FaPlus, FaEdit, FaTrash, FaSearch, FaToggleOn, FaToggleOff } from "react-icons/fa";
+import { FaPlus, FaEdit, FaTrash, FaSearch, FaToggleOn, FaToggleOff, FaArrowLeft } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -83,6 +83,16 @@ export default function AdminPaymentMethodsPage() {
 
   return (
     <div className="p-8">
+      {/* Back Button */}
+      <Button
+        variant="light"
+        startContent={<FaArrowLeft />}
+        onPress={() => router.back()}
+        className="mb-4"
+      >
+        Back
+      </Button>
+
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Payment Methods</h1>

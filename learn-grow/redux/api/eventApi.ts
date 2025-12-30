@@ -151,7 +151,7 @@ export const eventApi = baseApi.injectEndpoints({
       invalidatesTags: ["EventRegistration"],
     }),
 
-    getEmailHistory: build.query({
+    getEventEmailHistory: build.query({
       query: ({ eventId, ...params }) => ({
         url: `/events/${eventId}/registrations/email-history`,
         method: "GET",
@@ -182,5 +182,5 @@ export const {
   useDeleteRegistrationMutation,
   useUpdateRegistrationMutation,
   useSendRegistrationEmailsMutation,
-  useGetEmailHistoryQuery,
+  useGetEventEmailHistoryQuery,
 } = eventApi;

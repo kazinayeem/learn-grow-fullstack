@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useEffect, useState, Suspense } from "react";
+import dynamic from "next/dynamic";
+import "react-quill-new/dist/quill.snow.css";
 import { Card, CardBody, CardHeader, Input, Textarea, Button, Select, SelectItem, Switch, Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@nextui-org/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useGetCourseByIdQuery, useUpdateCourseMutation } from "@/redux/api/courseApi";
 import { useGetAllCategoriesQuery, useCreateCategoryMutation } from "@/redux/api/categoryApi";
-import RichTextEditor from "@/components/RichTextEditor";
 import { FaPlus } from "react-icons/fa";
+
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
 function EditInstructorCourseContent() {
   const router = useRouter();
@@ -125,9 +128,23 @@ function EditInstructorCourseContent() {
             <Input label="Course Title" name="title" value={formData.title} onChange={handleChange} isRequired variant="bordered" />
             <div>
               <label className="block text-sm font-medium mb-2">Description (Rich Text)</label>
-              <RichTextEditor 
+              <ReactQuill 
                 value={formData.description} 
-                onChange={(html) => setFormData({ ...formData, description: html })} 
+                onChange={(html) => setFormData({ ...formData, description: html })}
+                modules={{
+                  toolbar: [
+                    [{ header: [1, 2, 3, false] }],
+                    ["bold", "italic", "underline", "strike"],
+                    [{ color: [] }, { background: [] }],
+                    ["blockquote", "code-block"],
+                    [{ list: "ordered" }, { list: "bullet" }],
+                    [{ script: "sub" }, { script: "super" }],
+                    [{ indent: "-1" }, { indent: "+1" }],
+                    ["link", "image", "video"],
+                    ["clean"],
+                  ],
+                }}
+                theme="snow"
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

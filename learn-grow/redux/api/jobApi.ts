@@ -94,6 +94,105 @@ export const jobApi = baseApi.injectEndpoints({
             }),
             invalidatesTags: ["Job"],
         }),
+
+        // ========== JOB APPLICATION ENDPOINTS ==========
+
+        // Apply for a job
+        applyForJob: build.mutation({
+            query: (data) => ({
+                url: "/job/apply",
+                method: "POST",
+                body: data,
+            }),
+            invalidatesTags: ["JobApplication"],
+        }),
+
+        // Get all applications with filters
+        getApplications: build.query({
+            query: (params) => ({
+                url: "/job/applications",
+                method: "GET",
+                params,
+            }),
+            providesTags: ["JobApplication"],
+        }),
+
+        // Get applications for a specific job
+        getApplicationsByJobId: build.query({
+            query: (jobId) => ({
+                url: `/job/applications/by-job/${jobId}`,
+                method: "GET",
+            }),
+            providesTags: (result, error, jobId) => [{ type: "JobApplication", id: jobId }],
+        }),
+
+        // Get single application by ID
+        getApplicationById: build.query({
+            query: (id) => ({
+                url: `/job/applications/${id}`,
+                method: "GET",
+            }),
+            providesTags: (result, error, id) => [{ type: "JobApplication", id }],
+        }),
+
+        // Update application status
+        updateApplicationStatus: build.mutation({
+            query: ({ id, status }) => ({
+                url: `/job/applications/${id}/status`,
+                method: "PATCH",
+                body: { status },
+            }),
+            invalidatesTags: (result, error, { id }) => [{ type: "JobApplication", id }, "JobApplication"],
+        }),
+
+        // Delete application
+        deleteApplication: build.mutation({
+            query: (id) => ({
+                url: `/job/applications/${id}`,
+                method: "DELETE",
+            }),
+            invalidatesTags: ["JobApplication"],
+        }),
+
+        // Get application statistics
+        getApplicationStats: build.query({
+            query: () => ({
+                url: "/job/applications/stats/overview",
+                method: "GET",
+            }),
+            providesTags: ["JobApplication"],
+        }),
+
+        // Send email to applicant
+        sendApplicationEmail: build.mutation({
+            query: (data) => ({
+                url: "/job/send-email",
+                method: "POST",
+                body: data,
+            }),
+            invalidatesTags: (result, error, { applicationId }) => [
+                { type: "JobApplication", id: applicationId },
+                "JobApplication"
+            ],
+        }),
+
+        // Get email history for an application
+        getEmailHistory: build.query({
+            query: (applicationId) => ({
+                url: `/job/email-history/${applicationId}`,
+                method: "GET",
+            }),
+            providesTags: (result, error, applicationId) => [{ type: "EmailHistory", id: applicationId }],
+        }),
+
+        // Get latest email for an application
+        getLatestEmail: build.query({
+            query: (applicationId) => ({
+                url: `/job/email-latest/${applicationId}`,
+                method: "GET",
+            }),
+            providesTags: (result, error, applicationId) => [{ type: "LatestEmail", id: applicationId }],
+        }),
     }),
 });
 
@@ -108,4 +207,14 @@ export const {
     usePublishJobMutation,
     useUnpublishJobMutation,
     useDeleteJobMutation,
+    useApplyForJobMutation,
+    useGetApplicationsQuery,
+    useGetApplicationsByJobIdQuery,
+    useGetApplicationByIdQuery,
+    useUpdateApplicationStatusMutation,
+    useDeleteApplicationMutation,
+    useGetApplicationStatsQuery,
+    useSendApplicationEmailMutation,
+    useGetEmailHistoryQuery,
+    useGetLatestEmailQuery,
 } = jobApi;

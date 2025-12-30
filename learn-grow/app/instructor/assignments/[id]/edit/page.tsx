@@ -20,9 +20,9 @@ import {
 import { toast } from "react-toastify";
 import dynamic from "next/dynamic";
 import "@/styles/prose.css";
+import "react-quill-new/dist/quill.snow.css";
 
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
-import "react-quill/dist/quill.snow.css";
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
 export default function EditAssignmentPage({
   params,
@@ -259,6 +259,19 @@ export default function EditAssignmentPage({
                 onChange={setDescription}
                 placeholder="Enter assignment description..."
                 className="h-40 mb-12"
+                modules={{
+                  toolbar: [
+                    [{ header: [1, 2, 3, false] }],
+                    ["bold", "italic", "underline", "strike"],
+                    [{ color: [] }, { background: [] }],
+                    ["blockquote", "code-block"],
+                    [{ list: "ordered" }, { list: "bullet" }],
+                    [{ script: "sub" }, { script: "super" }],
+                    [{ indent: "-1" }, { indent: "+1" }],
+                    ["link", "image", "video"],
+                    ["clean"],
+                  ],
+                }}
               />
             </div>
           </CardBody>
@@ -277,6 +290,19 @@ export default function EditAssignmentPage({
                 onChange={setInstructions}
                 placeholder="Enter detailed instructions for students..."
                 className="h-40 mb-12"
+                modules={{
+                  toolbar: [
+                    [{ header: [1, 2, 3, false] }],
+                    ["bold", "italic", "underline", "strike"],
+                    [{ color: [] }, { background: [] }],
+                    ["blockquote", "code-block"],
+                    [{ list: "ordered" }, { list: "bullet" }],
+                    [{ script: "sub" }, { script: "super" }],
+                    [{ indent: "-1" }, { indent: "+1" }],
+                    ["link", "image", "video"],
+                    ["clean"],
+                  ],
+                }}
               />
             </div>
           </CardBody>

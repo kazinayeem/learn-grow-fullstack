@@ -8,12 +8,17 @@ import {
   Divider,
   Spinner,
   Button,
+  useDisclosure,
 } from "@nextui-org/react";
 import { useGetJobByIdQuery } from "@/redux/api/jobApi";
 import Link from "next/link";
+import JobApplicationForm from "@/components/JobApplicationForm";
+import { useState } from "react";
 
 export default function JobDetailsPage() {
   const { id } = useParams();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const { data, isLoading, isError } = useGetJobByIdQuery(id);
 
@@ -105,6 +110,16 @@ export default function JobDetailsPage() {
             </div>
           )}
 
+          {/* SUCCESS MESSAGE */}
+          {submitSuccess && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+              <p className="font-medium">Application Submitted!</p>
+              <p className="text-sm">
+                Thank you for applying. We'll review your application shortly.
+              </p>
+            </div>
+          )}
+
           {/* APPLY */}
           <Divider />
 
@@ -114,16 +129,28 @@ export default function JobDetailsPage() {
             </p>
 
             <Button
-              as="a"
-              href={`mailto:careers@learnandgrow.io?subject=Application for ${job.title}`}
               color="primary"
               radius="full"
+              onPress={onOpen}
+              disabled={!job.isPublished}
             >
               Apply Now
             </Button>
           </div>
         </CardBody>
       </Card>
+
+      {/* Application Form Modal */}
+      <JobApplicationForm
+        jobId={job._id}
+        jobTitle={job.title}
+        isOpen={isOpen}
+        onClose={onClose}
+        onSuccess={() => {
+          setSubmitSuccess(true);
+          setTimeout(() => setSubmitSuccess(false), 5000);
+        }}
+      />
     </div>
   );
 }

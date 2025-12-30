@@ -17,9 +17,11 @@ import {
     Select,
     SelectItem,
 } from "@nextui-org/react";
-import { FaPlus, FaEdit, FaTrash, FaEye, FaClock, FaQuestionCircle } from "react-icons/fa";
+import { FaPlus, FaEdit, FaTrash, FaEye, FaClock, FaQuestionCircle, FaArrowLeft } from "react-icons/fa";
+import { useRouter } from "next/navigation";
 
 export default function AdminQuizzesPage() {
+    const router = useRouter();
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -78,9 +80,18 @@ export default function AdminQuizzesPage() {
     return (
         <div className="container mx-auto px-4 py-8 max-w-7xl">
             <div className="flex justify-between items-center mb-8">
-                <div>
+                <div className="flex items-center gap-3">
+                    <Button 
+                        variant="light" 
+                        startContent={<FaArrowLeft />}
+                        onPress={() => router.back()}
+                    >
+                        Back
+                    </Button>
+                    <div>
                     <h1 className="text-4xl font-bold mb-2">Quiz Management 📝</h1>
                     <p className="text-gray-600">Manage and review all platform quizzes</p>
+                    </div>
                 </div>
             </div>
 

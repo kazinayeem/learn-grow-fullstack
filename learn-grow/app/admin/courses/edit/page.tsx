@@ -29,7 +29,7 @@ import {
   useUpdateCourseMutation,
 } from "@/redux/api/courseApi";
 import { useGetAllCategoriesQuery, useCreateCategoryMutation } from "@/redux/api/categoryApi";
-import { FaPlus } from "react-icons/fa";
+import { FaPlus, FaArrowLeft } from "react-icons/fa";
 
 function EditCourseContent() {
   const router = useRouter();
@@ -153,8 +153,13 @@ function EditCourseContent() {
 
   return (
     <div className="container mx-auto px-6 py-8 max-w-4xl">
-      <Button variant="light" onPress={() => router.back()} className="mb-6">
-        ← Back to Course List
+      <Button 
+        variant="light" 
+        startContent={<FaArrowLeft />}
+        onPress={() => router.back()} 
+        className="mb-6"
+      >
+        Back
       </Button>
 
       <Card>
@@ -182,8 +187,10 @@ function EditCourseContent() {
                   toolbar: [
                     [{ header: [1, 2, 3, false] }],
                     ["bold", "italic", "underline", "strike"],
+                    [{ color: [] }, { background: [] }],
                     ["blockquote", "code-block"],
                     [{ list: "ordered" }, { list: "bullet" }],
+                    [{ script: "sub" }, { script: "super" }],
                     [{ indent: "-1" }, { indent: "+1" }],
                     ["link", "image", "video"],
                     ["clean"],

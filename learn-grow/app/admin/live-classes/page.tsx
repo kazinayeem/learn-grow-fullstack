@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Card, CardBody, Button, Input, Chip } from "@nextui-org/react";
-import { FaVideo, FaClock, FaCalendar, FaUsers, FaCheckCircle, FaBan, FaPlus } from "react-icons/fa";
+import { FaVideo, FaClock, FaCalendar, FaUsers, FaCheckCircle, FaBan, FaPlus, FaArrowLeft } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 
 export default function AdminLiveClassesPage() {
@@ -92,7 +92,16 @@ export default function AdminLiveClassesPage() {
         <div className="container mx-auto px-4 py-8 max-w-7xl">
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-4xl font-bold mb-2">Live Classes Management 🎥</h1>
+                    <div className="flex items-center gap-3 mb-2">
+                        <Button 
+                            variant="light" 
+                            startContent={<FaArrowLeft />}
+                            onPress={() => router.back()}
+                        >
+                            Back
+                        </Button>
+                        <h1 className="text-4xl font-bold">Live Classes Management 🎥</h1>
+                    </div>
                     <p className="text-gray-600">Monitor and manage all platform live classes</p>
                 </div>
                 <Button

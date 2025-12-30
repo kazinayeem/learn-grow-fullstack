@@ -2,11 +2,14 @@
 "use client";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+import "react-quill-new/dist/quill.snow.css";
 import { Button, Card, CardBody, Input, Select, SelectItem, Switch, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@nextui-org/react";
-import RichTextEditor from "@/components/RichTextEditor";
 import { useCreateCourseMutation } from "@/redux/api/courseApi";
 import { useGetAllCategoriesQuery, useCreateCategoryMutation } from "@/redux/api/categoryApi";
 import { FaPlus } from "react-icons/fa";
+
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
 const COURSE_LEVELS = ["Beginner", "Intermediate", "Advanced", "Expert"];
 const COURSE_LANGUAGES = ["English", "Bangla", "Spanish", "French", "German", "Chinese", "Japanese", "Arabic", "Hindi", "Portuguese"];
@@ -163,7 +166,24 @@ export default function InstructorCreateCoursePage() {
 
           <div>
             <label className="block text-sm font-medium mb-1">Description (Rich Text)</label>
-            <RichTextEditor value={form.descriptionHtml} onChange={(html) => setForm({ ...form, descriptionHtml: html })} />
+            <ReactQuill 
+              value={form.descriptionHtml} 
+              onChange={(html) => setForm({ ...form, descriptionHtml: html })}
+              modules={{
+                toolbar: [
+                  [{ header: [1, 2, 3, false] }],
+                  ["bold", "italic", "underline", "strike"],
+                  [{ color: [] }, { background: [] }],
+                  ["blockquote", "code-block"],
+                  [{ list: "ordered" }, { list: "bullet" }],
+                  [{ script: "sub" }, { script: "super" }],
+                  [{ indent: "-1" }, { indent: "+1" }],
+                  ["link", "image", "video"],
+                  ["clean"],
+                ],
+              }}
+              theme="snow"
+            />
             {errors.descriptionHtml && <p className="text-red-600 text-sm mt-1">{errors.descriptionHtml}</p>}
           </div>
 

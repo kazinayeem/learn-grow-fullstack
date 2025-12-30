@@ -21,6 +21,7 @@ import {
   useDisclosure,
   Select,
   SelectItem,
+  Pagination,
 } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import {
@@ -38,6 +39,8 @@ export default function AdminBlogPage() {
   const [selectedBlog, setSelectedBlog] = useState<any>(null);
   const [approvalFilter, setApprovalFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(10);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
   const { data: blogsResponse, isLoading } = useGetAllBlogsQuery({
@@ -63,6 +66,19 @@ export default function AdminBlogPage() {
 
     return matchesApproval && matchesRole;
   });
+
+  const totalPages = Math.max(1, Math.ceil(blogs.length / rowsPerPage));
+  const startIndex = (page - 1) * rowsPerPage;
+  const endIndexExclusive = startIndex + rowsPerPage;
+  const paginatedBlogs = blogs.slice(startIndex, endIndexExclusive);
+
+  useEffect(() => {
+    setPage(1);
+  }, [approvalFilter, roleFilter, rowsPerPage]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   // Check authorization
   useEffect(() => {
@@ -176,9 +192,20 @@ export default function AdminBlogPage() {
               </Select>
 
               <div className="flex items-end">
-                <Chip size="lg" variant="flat" color="primary">
-                  Total: {blogs.length} blogs
-                </Chip>
+                <div className="flex items-end gap-3 w-full">
+                  <Select
+                    label="Limit"
+                    selectedKeys={[String(rowsPerPage)]}
+                    onChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
+                  >
+                    <SelectItem key="10" value="10">10</SelectItem>
+                    <SelectItem key="50" value="50">50</SelectItem>
+                    <SelectItem key="100" value="100">100</SelectItem>
+                  </Select>
+                  <Chip size="lg" variant="flat" color="primary">
+                    Total: {blogs.length} blogs
+                  </Chip>
+                </div>
               </div>
             </div>
 
@@ -189,7 +216,8 @@ export default function AdminBlogPage() {
                 </CardBody>
               </Card>
             ) : (
-              <Table aria-label="All blogs">
+              <div className="space-y-4">
+                <Table aria-label="All blogs">
                 <TableHeader>
                   <TableColumn>Title</TableColumn>
                   <TableColumn>Author</TableColumn>
@@ -200,7 +228,7 @@ export default function AdminBlogPage() {
                   <TableColumn>Actions</TableColumn>
                 </TableHeader>
                 <TableBody>
-                  {blogs.map((blog: any) => (
+                  {paginatedBlogs.map((blog: any) => (
                     <TableRow key={blog._id}>
                       <TableCell>
                         <button
@@ -278,7 +306,17 @@ export default function AdminBlogPage() {
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
+                </Table>
+
+                <div className="flex justify-center">
+                  <Pagination
+                    page={page}
+                    total={totalPages}
+                    onChange={setPage}
+                    showControls
+                  />
+                </div>
+              </div>
             )}
           </CardBody>
         </Card>
