@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc && tsc-alias",
-    "start": "node dist/server.js",
+    "start": "tsx watch src/server.ts",
     "db:drop-phone-index": "tsx src/scripts/dropPhoneIndex.ts",
     "db:seed-blogs": "tsx src/scripts/seedBlogsWithImages.ts",
     "db:sync-indexes": "tsx src/scripts/syncIndexes.ts",
