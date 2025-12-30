@@ -45,7 +45,7 @@ export default function StudentDashboard() {
         console.log('Has All Access:', hasAllAccess);
         console.log('All Courses:', allCourses);
         console.log('Orders:', orders);
-        
+
         if (hasAllAccess) {
             // If has all access, return all published courses
             const filtered = allCourses.filter(course => course.isPublished && course.isAdminApproved);
@@ -60,34 +60,34 @@ export default function StudentDashboard() {
                     order.isActive &&
                     order.courseId
             );
-            
+
             console.log('Single Purchase Orders:', approvedOrders);
-            
+
             if (approvedOrders.length === 0) {
                 console.log('No approved single purchase orders');
                 return [];
             }
-            
+
             const courseIds = approvedOrders.map(order => {
                 // Handle both object and string courseId
                 const id = typeof order.courseId === 'object' ? order.courseId._id : order.courseId;
                 console.log('Extracted course ID:', id);
                 return id;
             });
-            
+
             console.log('Looking for course IDs:', courseIds);
-            
+
             // Only return courses that match the purchased course IDs
             const matched = allCourses.filter(course => {
-                const matches = courseIds.includes(course._id) && 
-                    course.isPublished && 
+                const matches = courseIds.includes(course._id) &&
+                    course.isPublished &&
                     course.isAdminApproved;
                 if (matches) {
                     console.log('Matched course:', course.title, course._id);
                 }
                 return matches;
             });
-            
+
             console.log('Final matched courses:', matched.length);
             return matched;
         }
@@ -96,20 +96,20 @@ export default function StudentDashboard() {
     // Get active subscription info
     const activeSubscription = useMemo(() => {
         if (!hasAllAccess) return null;
-        
+
         const quarterlyOrder = orders.find(
             order =>
                 order.planType === "quarterly" &&
                 order.paymentStatus === "approved" &&
                 order.isActive
         );
-        
+
         if (!quarterlyOrder || !quarterlyOrder.endDate) return null;
-        
+
         const now = new Date();
         const end = new Date(quarterlyOrder.endDate);
         const daysRemaining = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        
+
         return {
             startDate: quarterlyOrder.startDate,
             endDate: quarterlyOrder.endDate,
@@ -175,8 +175,8 @@ export default function StudentDashboard() {
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     {stats.map((stat, index) => (
-                        <Card 
-                            key={index} 
+                        <Card
+                            key={index}
                             className={`shadow-md ${stat.clickable ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
                             isPressable={stat.clickable}
                             onPress={stat.onClick}
@@ -276,74 +276,74 @@ export default function StudentDashboard() {
                                     </div>
                                 ) : (
                                     <>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                                        {displayedCourses.map((course) => (
-                                            <Card
-                                                key={course._id}
-                                                isPressable
-                                                onPress={() => router.push(`/courses/${course._id}/learn`)}
-                                                className="hover:scale-[1.02] transition-all border border-divider hover:border-primary"
-                                            >
-                                                <CardBody className="p-4">
-                                                    <div className="flex items-center justify-between gap-3">
-                                                        <div className="flex-1 min-w-0">
-                                                            <h3 className="font-semibold text-base truncate mb-1">
-                                                                {course.title}
-                                                            </h3>
-                                                            <div className="flex items-center gap-2 text-xs text-default-500">
-                                                                <span>📚 {course.level || "Beginner"}</span>
-                                                                <span>•</span>
-                                                                <span className="truncate">
-                                                                    {course.instructorId?.name || "Instructor"}
-                                                                </span>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                                            {displayedCourses.map((course) => (
+                                                <Card
+                                                    key={course._id}
+                                                    isPressable
+                                                    onPress={() => router.push(`/courses/${course._id}`)}
+                                                    className="hover:scale-[1.02] transition-all border border-divider hover:border-primary"
+                                                >
+                                                    <CardBody className="p-4">
+                                                        <div className="flex items-center justify-between gap-3">
+                                                            <div className="flex-1 min-w-0">
+                                                                <h3 className="font-semibold text-base truncate mb-1">
+                                                                    {course.title}
+                                                                </h3>
+                                                                <div className="flex items-center gap-2 text-xs text-default-500">
+                                                                    <span>📚 {course.level || "Beginner"}</span>
+                                                                    <span>•</span>
+                                                                    <span className="truncate">
+                                                                        {course.instructorId?.name || "Instructor"}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-primary text-xl">
+                                                                <FaRocket />
                                                             </div>
                                                         </div>
-                                                        <div className="text-primary text-xl">
-                                                            <FaRocket />
-                                                        </div>
-                                                    </div>
-                                                </CardBody>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                    {totalPages > 1 && (
-                                        <div className="flex items-center justify-between pt-4 border-t">
-                                            <p className="text-sm text-gray-600">
-                                                Showing {startIndex + 1}-{Math.min(endIndex, purchasedCourses.length)} of {purchasedCourses.length}
-                                            </p>
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    size="sm"
-                                                    variant="flat"
-                                                    isDisabled={currentPage === 1}
-                                                    onPress={() => setCurrentPage(currentPage - 1)}
-                                                >
-                                                    Previous
-                                                </Button>
-                                                <div className="flex gap-1">
-                                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                                        <Button
-                                                            key={page}
-                                                            size="sm"
-                                                            variant={currentPage === page ? "solid" : "flat"}
-                                                            color={currentPage === page ? "primary" : "default"}
-                                                            onPress={() => setCurrentPage(page)}
-                                                        >
-                                                            {page}
-                                                        </Button>
-                                                    ))}
-                                                </div>
-                                                <Button
-                                                    size="sm"
-                                                    variant="flat"
-                                                    isDisabled={currentPage === totalPages}
-                                                    onPress={() => setCurrentPage(currentPage + 1)}
-                                                >
-                                                    Next
-                                                </Button>
-                                            </div>
+                                                    </CardBody>
+                                                </Card>
+                                            ))}
                                         </div>
-                                    )}
+                                        {totalPages > 1 && (
+                                            <div className="flex items-center justify-between pt-4 border-t">
+                                                <p className="text-sm text-gray-600">
+                                                    Showing {startIndex + 1}-{Math.min(endIndex, purchasedCourses.length)} of {purchasedCourses.length}
+                                                </p>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="flat"
+                                                        isDisabled={currentPage === 1}
+                                                        onPress={() => setCurrentPage(currentPage - 1)}
+                                                    >
+                                                        Previous
+                                                    </Button>
+                                                    <div className="flex gap-1">
+                                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                                            <Button
+                                                                key={page}
+                                                                size="sm"
+                                                                variant={currentPage === page ? "solid" : "flat"}
+                                                                color={currentPage === page ? "primary" : "default"}
+                                                                onPress={() => setCurrentPage(page)}
+                                                            >
+                                                                {page}
+                                                            </Button>
+                                                        ))}
+                                                    </div>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="flat"
+                                                        isDisabled={currentPage === totalPages}
+                                                        onPress={() => setCurrentPage(currentPage + 1)}
+                                                    >
+                                                        Next
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </>
                                 )}
                             </CardBody>
@@ -443,8 +443,8 @@ export default function StudentDashboard() {
                                                             {order.planType === "single" && order.courseId
                                                                 ? order.courseId.title
                                                                 : order.planType === "quarterly"
-                                                                ? "Quarterly All Access"
-                                                                : "Robotics Kit"}
+                                                                    ? "Quarterly All Access"
+                                                                    : "Robotics Kit"}
                                                         </p>
                                                         <p className="text-xs text-gray-500">
                                                             {new Date(order.createdAt).toLocaleDateString()}
@@ -456,8 +456,8 @@ export default function StudentDashboard() {
                                                             order.paymentStatus === "approved"
                                                                 ? "success"
                                                                 : order.paymentStatus === "pending"
-                                                                ? "warning"
-                                                                : "danger"
+                                                                    ? "warning"
+                                                                    : "danger"
                                                         }
                                                         variant="flat"
                                                     >

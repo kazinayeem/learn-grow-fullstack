@@ -3,23 +3,23 @@ import { baseApi } from "./baseApi";
 // Matches backend /api/course endpoints (courses, modules, lessons)
 export const courseApi = baseApi.injectEndpoints({
     endpoints: (build) => ({
-                // Assessments
-                getAssessmentsByCourse: build.query({
-                    query: (courseId: string) => ({ url: `/assessment/by-course/${courseId}`, method: "GET" }),
-                    providesTags: (r, e, courseId) => [{ type: "Course", id: courseId }],
-                }),
-                createAssessment: build.mutation({
-                    query: (data) => ({ url: "/assessment/create", method: "POST", body: data }),
-                    invalidatesTags: (r, e, arg) => [{ type: "Course", id: arg.courseId }, "Course"],
-                }),
-                updateAssessment: build.mutation({
-                    query: ({ id, ...data }) => ({ url: `/assessment/${id}`, method: "PATCH", body: data }),
-                    invalidatesTags: ["Course"],
-                }),
-                deleteAssessment: build.mutation({
-                    query: (id: string) => ({ url: `/assessment/${id}`, method: "DELETE" }),
-                    invalidatesTags: ["Course"],
-                }),
+        // Assessments
+        getAssessmentsByCourse: build.query({
+            query: (courseId: string) => ({ url: `/assessment/by-course/${courseId}`, method: "GET" }),
+            providesTags: (r, e, courseId) => [{ type: "Course", id: courseId }],
+        }),
+        createAssessment: build.mutation({
+            query: (data) => ({ url: "/assessment/create", method: "POST", body: data }),
+            invalidatesTags: (r, e, arg) => [{ type: "Course", id: arg.courseId }, "Course"],
+        }),
+        updateAssessment: build.mutation({
+            query: ({ id, ...data }) => ({ url: `/assessment/${id}`, method: "PATCH", body: data }),
+            invalidatesTags: ["Course"],
+        }),
+        deleteAssessment: build.mutation({
+            query: (id: string) => ({ url: `/assessment/${id}`, method: "DELETE" }),
+            invalidatesTags: ["Course"],
+        }),
         // Courses
         getAllCourses: build.query({
             query: (params = {}) => ({
@@ -72,7 +72,7 @@ export const courseApi = baseApi.injectEndpoints({
         createModule: build.mutation({
             query: (data) => ({ url: "/course/create-module", method: "POST", body: data }),
             invalidatesTags: (result, error, arg) => [
-                "Module", 
+                "Module",
                 "Course",
                 { type: "Course", id: arg.courseId }
             ],
@@ -88,7 +88,7 @@ export const courseApi = baseApi.injectEndpoints({
         updateModule: build.mutation({
             query: ({ id, ...data }) => ({ url: `/course/update-module/${id}`, method: "PATCH", body: data }),
             invalidatesTags: (r, e, { id, courseId }) => [
-                { type: "Module", id }, 
+                { type: "Module", id },
                 "Module",
                 "Course",
                 { type: "Course", id: courseId }
@@ -123,6 +123,10 @@ export const courseApi = baseApi.injectEndpoints({
         getFreeLessons: build.query({
             query: () => ({ url: "/course/get-free-lessons", method: "GET" }),
             providesTags: ["Lesson"],
+        }),
+        completeLesson: build.mutation({
+            query: (id: string) => ({ url: `/course/complete-lesson/${id}`, method: "POST" }),
+            invalidatesTags: (r, e, id) => ["Course", { type: "Course", id }], // Invalidate Course to refresh locked states
         }),
 
         // Course Publishing & Approval
@@ -199,6 +203,7 @@ export const {
     useUpdateLessonMutation,
     useDeleteLessonMutation,
     useGetFreeLessonsQuery,
+    useCompleteLessonMutation,
     // Assessments
     useGetAssessmentsByCourseQuery,
     useCreateAssessmentMutation,

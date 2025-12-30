@@ -39,95 +39,90 @@ const AuthButtons = () => {
   const [dashboardUrl, setDashboardUrl] = React.useState("/dashboard");
 
   React.useEffect(() => {
-    const syncAuth = async () => {
-      const tokenFromCookie = Cookies.get("accessToken");
-      const tokenFromStorage = localStorage.getItem("token");
-      const token = tokenFromCookie || tokenFromStorage;
-
-      const userData = localStorage.getItem("user");
-      let userRole = Cookies.get("userRole") || localStorage.getItem("userRole");
-
-      if (token) {
-        setIsAuthenticated(true);
-        if (userData) {
-          try {
-            const parsedUser = JSON.parse(userData);
-            setUser(parsedUser);
-            if (!userRole && parsedUser.role) {
-              userRole = parsedUser.role;
-            }
-          } catch (e) {
-            console.error("Navbar: Error parsing user data", e);
-          }
-        } else {
-          // Fetch profile if token exists but user data is missing
-          try {
-            const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            if (resp.ok) {
-              const json = await resp.json();
-              const u = json?.data;
-              if (u) {
-                setUser(u);
-                userRole = u.role || userRole;
-                // Cache for subsequent renders
-                try {
-                  localStorage.setItem("user", JSON.stringify(u));
-                  if (u.role) localStorage.setItem("userRole", u.role);
-                } catch {}
-              }
-            }
-          } catch (err) {
-            console.warn("Navbar: failed to fetch profile", err);
-          }
-        }
-
-        const url = getDashboardUrl(userRole || undefined);
-        setDashboardUrl(url);
-      } else {
+    const syncAuth = () => {
+      console.log("🔄 Navbar: Auth sync triggered");
+      
+      // 🚨 logout চললে কিছুই করো না
+      const loggingOut = sessionStorage.getItem("loggingOut");
+      console.log("🔄 Navbar: loggingOut flag =", loggingOut);
+      
+      if (loggingOut === "1") {
+        console.log("🔄 Navbar: Logout in progress, stopping auth sync");
         setIsAuthenticated(false);
         setUser(null);
+        setIsLoading(false);
+        return;
       }
+
+      const token = Cookies.get("accessToken");
+      const user = localStorage.getItem("user");
+      console.log("🔄 Navbar: token =", token ? "EXISTS" : "MISSING");
+      console.log("🔄 Navbar: user =", user ? "EXISTS" : "MISSING");
+
+      if (!token || !user) {
+        console.log("🔄 Navbar: No auth data, setting unauthenticated");
+        setIsAuthenticated(false);
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("🔄 Navbar: Auth data found, setting authenticated");
+      setIsAuthenticated(true);
+      setUser(JSON.parse(user));
       setIsLoading(false);
     };
 
+
     syncAuth();
-    const onStorage = () => syncAuth();
-    const onFocus = () => syncAuth();
-    const onAuthChange = () => syncAuth();
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("focus", onFocus);
+    // Listen for custom auth change event
+    const onAuthChange = () => {
+      console.log("🔄 Navbar: Auth change event received");
+      syncAuth();
+    };
     window.addEventListener("auth-change", onAuthChange);
     return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("focus", onFocus);
       window.removeEventListener("auth-change", onAuthChange);
     };
   }, []);
 
   const handleLogout = async () => {
-    try {
+    console.log("🚪 Navbar: Logout initiated");
+    
+    // Set logout flag FIRST
+    sessionStorage.setItem("loggingOut", "1");
+    console.log("🚪 Navbar: Set loggingOut flag");
+
+    // Call API logout (don't wait for it)
+    try { 
       await apiLogout();
-    } catch (err) {
-      // Swallow logout errors; we still clear client state below.
-      console.warn("Navbar: logout request failed, clearing client state anyway", err);
+      console.log("🚪 Navbar: API logout successful");
+    } catch (e) {
+      console.log("🚪 Navbar: API logout failed (ignored):", e);
     }
 
-    Cookies.remove("accessToken");
-    Cookies.remove("refreshToken");
-    Cookies.remove("userRole");
-    try {
-      localStorage.clear();
-      sessionStorage.clear();
-    } catch (storageErr) {
-      console.warn("Navbar: storage clear failed", storageErr);
-    }
+    // Clear cookies
+    Cookies.remove("accessToken", { path: "/" });
+    Cookies.remove("refreshToken", { path: "/" });
+    Cookies.remove("userRole", { path: "/" });
+    console.log("🚪 Navbar: Cleared cookies");
 
+    // Clear localStorage (minimal)
+    localStorage.removeItem("user");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("token");
+    console.log("🚪 Navbar: Cleared localStorage");
+
+    // Update local state
     setIsAuthenticated(false);
     setUser(null);
-    window.location.href = "/login";
+    console.log("🚪 Navbar: Updated local state");
+
+    // Single redirect using router.replace (NO window.location.href)
+    console.log("🚪 Navbar: Redirecting to /login");
+    router.replace("/login");
   };
+
 
   if (isLoading) {
     return <Skeleton className="rounded-full w-10 h-10" />;
@@ -155,7 +150,7 @@ const AuthButtons = () => {
           <DropdownItem key="dashboard" onPress={() => router.push(dashboardUrl)}>
             Dashboard
           </DropdownItem>
-          <DropdownItem key="settings" onPress={() => router.push("/profile")}> 
+          <DropdownItem key="settings" onPress={() => router.push("/profile")}>
             My Profile
           </DropdownItem>
           <DropdownItem key="logout" color="danger" onPress={handleLogout}>
