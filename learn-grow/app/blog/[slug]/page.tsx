@@ -172,7 +172,12 @@ export default function BlogDetailPage() {
                     )}
                   </div>
                   <div>
-                    <p className="font-medium">{blog.author?.name || "Anonymous"}</p>
+                    <p 
+                      className="font-medium text-primary cursor-pointer hover:underline"
+                      onClick={() => router.push(`/blog/author/${blog.author?._id || blog.author?.id}`)}
+                    >
+                      {blog.author?.name || "Anonymous"}
+                    </p>
                     <p className="text-sm">
                       {new Date(blog.createdAt).toLocaleDateString(undefined, {
                         year: "numeric",

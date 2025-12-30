@@ -19,6 +19,7 @@ import { useGetAllCategoriesQuery } from "@/redux/api/categoryApi";
 import { useRouter } from "next/navigation";
 import { FaSearch } from "react-icons/fa";
 import "@/styles/prose.css";
+import DOMPurify from "dompurify";
 
 export default function CourseList() {
   const { data, isLoading, error } = useGetPublishedCoursesQuery(undefined);

@@ -77,11 +77,25 @@ router.post(
   controller.sendRegistrationEmail
 );
 
+router.get(
+  "/:id/registrations/email-history",
+  requireAuth,
+  requireRoles("admin"),
+  controller.getEmailHistory
+);
+
 router.delete(
   "/registrations/:id",
   requireAuth,
   requireRoles("admin"),
   controller.deleteRegistration
+);
+
+router.patch(
+  "/registrations/:id",
+  requireAuth,
+  requireRoles("admin"),
+  controller.updateRegistration
 );
 
 // ===== GUEST ROUTES =====

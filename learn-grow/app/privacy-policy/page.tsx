@@ -15,9 +15,9 @@ export default async function PrivacyPolicyPage() {
     const html = await fetchPolicyHtml();
     const fallback = "<p>Content will appear here once added by admin.</p>";
     return (
-        <div className="container mx-auto px-6 py-12 max-w-4xl">
-            <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
-            <div className="prose prose-lg max-w-none text-gray-700" dangerouslySetInnerHTML={{ __html: html || fallback }} />
+        <div className="container mx-auto px-4 sm:px-6 py-12 max-w-4xl">
+            <h1 className="text-3xl sm:text-4xl font-bold mb-8">Privacy Policy</h1>
+            <div className="prose prose-sm sm:prose-base lg:prose-lg max-w-none text-gray-700 break-words overflow-hidden" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }} dangerouslySetInnerHTML={{ __html: html || fallback }} />
         </div>
     );
 }

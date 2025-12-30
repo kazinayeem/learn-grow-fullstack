@@ -19,6 +19,14 @@ export const blogApi = baseApi.injectEndpoints({
       query: (slug: string) => ({ url: `/blog/slug/${slug}`, method: "GET" }),
       providesTags: (result, error, slug) => [{ type: "Blog", id: slug }],
     }),
+    getBlogsByAuthor: build.query({
+      query: ({ authorId, page = 1, limit = 10 }) => ({
+        url: "/blog",
+        method: "GET",
+        params: { authorId, page, limit },
+      }),
+      providesTags: ["Blog"],
+    }),
     createBlog: build.mutation({
       query: (data) => ({ url: "/blog/create", method: "POST", body: data }),
       invalidatesTags: ["Blog"],
@@ -68,6 +76,7 @@ export const {
   useGetAllBlogsQuery,
   useGetBlogByIdQuery,
   useGetBlogBySlugQuery,
+  useGetBlogsByAuthorQuery,
   useCreateBlogMutation,
   useUpdateBlogMutation,
   useDeleteBlogMutation,

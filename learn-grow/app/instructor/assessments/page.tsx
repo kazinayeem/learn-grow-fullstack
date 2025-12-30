@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import {
   Card,
   CardBody,
@@ -22,6 +22,7 @@ import {
   ModalFooter,
   useDisclosure,
   Textarea,
+  Spinner,
 } from "@nextui-org/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FaEye, FaEdit, FaSearch, FaFilter } from "react-icons/fa";
@@ -34,7 +35,7 @@ import {
 } from "@/redux/api/assignmentApi";
 import { toast } from "react-toastify";
 
-export default function InstructorAssessmentsPage() {
+function InstructorAssessmentsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const courseIdFromUrl = searchParams.get("courseId");
@@ -408,5 +409,17 @@ export default function InstructorAssessmentsPage() {
         </ModalContent>
       </Modal>
     </div>
+  );
+}
+
+export default function InstructorAssessmentsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen w-full items-center justify-center">
+        <Spinner size="lg" color="primary" />
+      </div>
+    }>
+      <InstructorAssessmentsContent />
+    </Suspense>
   );
 }

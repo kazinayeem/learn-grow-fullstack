@@ -41,6 +41,7 @@ interface AuthResponse {
     user: any;
     accessToken: string;
     refreshToken: string;
+    relations?: any; // Guardian/student relationships
   };
   error?: string;
 }
@@ -560,6 +561,142 @@ export const changePassword = async (
 };
 
 /**
+ * Send OTP for password change
+ */
+export const sendPasswordChangeOtp = async (
+  userId: string,
+  email?: string,
+  phone?: string
+): Promise<{ success: boolean; message: string; otp?: string }> => {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return { success: false, message: "User not found" };
+    }
+
+    const otp = generateOTP();
+    const otpExpiresAt = getOTPExpirationTime();
+
+    user.otp = otp;
+    user.otpExpiresAt = otpExpiresAt;
+    await user.save();
+
+    if (email || user.email) {
+      const emailSent = await sendOTPEmail(email || user.email!, otp);
+      if (!emailSent) {
+        return {
+          success: false,
+          message: "Failed to send OTP via email. Please try again.",
+        };
+      }
+      return {
+        success: true,
+        message: "OTP sent to email successfully",
+        otp: process.env.NODE_ENV === "development" ? otp : undefined,
+      };
+    }
+
+    if (phone || user.phone) {
+      const smsSent = await sendOTPSMS(phone || user.phone!, otp);
+      if (!smsSent) {
+        return {
+          success: false,
+          message: "Failed to send OTP via SMS. Please try again.",
+        };
+      }
+      return {
+        success: true,
+        message: "OTP sent to phone successfully",
+        otp: process.env.NODE_ENV === "development" ? otp : undefined,
+      };
+    }
+
+    return { success: false, message: "No email or phone found for user" };
+  } catch (error: any) {
+    console.error("Send password change OTP error:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to send OTP",
+    };
+  }
+};
+
+/**
+ * Verify OTP and change password
+ */
+export const verifyPasswordChangeOtp = async (
+  userId: string,
+  email: string | undefined,
+  phone: string | undefined,
+  otp: string,
+  newPassword: string
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return { success: false, message: "User not found" };
+    }
+
+    if (!user.otp || !user.otpExpiresAt) {
+      return { success: false, message: "No OTP found. Please request a new OTP" };
+    }
+
+    if (isOTPExpired(user.otpExpiresAt)) {
+      return { success: false, message: "OTP has expired. Please request a new OTP" };
+    }
+
+    if (user.otp !== otp) {
+      return { success: false, message: "Invalid OTP" };
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    user.otp = undefined;
+    user.otpExpiresAt = undefined;
+    await user.save();
+
+    return { success: true, message: "Password changed successfully" };
+  } catch (error: any) {
+    console.error("Verify password change OTP error:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to change password",
+    };
+  }
+};
+
+/**
+ * Update phone number
+ */
+export const updatePhoneNumber = async (
+  userId: string,
+  newPhone: string
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const existingUser = await User.findOne({ phone: newPhone, _id: { $ne: userId } });
+    if (existingUser) {
+      return { success: false, message: "Phone number already in use by another account" };
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return { success: false, message: "User not found" };
+    }
+
+    user.phone = newPhone;
+    await user.save();
+
+    return { success: true, message: "Phone number updated successfully" };
+  } catch (error: any) {
+    console.error("Update phone number error:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to update phone number",
+    };
+  }
+};
+
+/**
  * Get all instructors with their approval status
  */
 export const getAllInstructors = async (): Promise<{
@@ -996,7 +1133,7 @@ export const getInstructorDashboardStats = async (instructorId: string) => {
     const totalRevenue = courses.reduce((sum, course) => sum + (course.price || 0) * enrollments.filter(e => e.courseId.toString() === course._id.toString()).length, 0);
     
     // Calculate completion rate (students who completed all modules)
-    const completedStudents = enrollments.filter(e => e.completionPercentage >= 100).length;
+    const completedStudents = enrollments.filter(e => (e.completionPercentage ?? 0) >= 100).length;
     const completionRate = totalStudents > 0 ? Math.round((completedStudents / totalStudents) * 100) : 0;
     
     // Calculate student engagement (based on course interactions)
@@ -1007,7 +1144,7 @@ export const getInstructorDashboardStats = async (instructorId: string) => {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const thisMonthRevenue = courses.reduce((sum, course) => {
       const courseEnrollments = enrollments.filter(e => {
-        const enrollDate = new Date(e.createdAt);
+        const enrollDate = e.createdAt ? new Date(e.createdAt) : new Date();
         return e.courseId.toString() === course._id.toString() && enrollDate >= monthStart;
       });
       return sum + (course.price || 0) * courseEnrollments.length;
@@ -1275,7 +1412,7 @@ export const updateProfile = async (
     // Update allowed fields
     if (profileData.name) user.name = profileData.name;
     if (profileData.bio) user.bio = profileData.bio;
-    if (profileData.expertise) user.expertise = profileData.expertise;
+    if (profileData.expertise && Array.isArray(profileData.expertise)) user.expertise = profileData.expertise;
     if (profileData.qualification) user.qualification = profileData.qualification;
     if (profileData.institution) user.institution = profileData.institution;
     if (profileData.yearsOfExperience !== undefined) {
@@ -1327,5 +1464,61 @@ export const updateProfilePhoto = async (
       success: false,
       message: error.message || "Failed to update profile photo",
     };
+  }
+};
+
+// Aliases for compatibility
+export const guardianConnectChild = async (
+  guardianId: string,
+  studentEmail?: string,
+  studentPhone?: string
+) => {
+  return connectChildAsGuardian(guardianId, { studentEmail, studentPhone });
+};
+
+export const studentAcceptGuardian = async (studentId: string, guardianId: string) => {
+  try {
+    const student = await User.findById(studentId);
+    const guardian = await User.findById(guardianId);
+
+    if (!student || student.role !== "student") {
+      return { success: false, message: "Student not found" };
+    }
+
+    if (!guardian || guardian.role !== "guardian") {
+      return { success: false, message: "Guardian not found" };
+    }
+
+    // Link guardian to student (both directions)
+    const guardianChildren = (guardian.children || []).map(id => id.toString());
+    if (!guardianChildren.includes(student._id.toString())) {
+      guardian.children = [...(guardian.children || []), student._id] as any;
+    }
+
+    const studentGuardians = (student.guardians || []).map(id => id.toString());
+    if (!studentGuardians.includes(guardian._id.toString())) {
+      student.guardians = [...(student.guardians || []), guardian._id] as any;
+    }
+
+    await Promise.all([guardian.save(), student.save()]);
+
+    return {
+      success: true,
+      message: "Guardian accepted",
+      data: {
+        guardian: {
+          id: guardian._id,
+          name: guardian.name,
+          email: guardian.email,
+        },
+        student: {
+          id: student._id,
+          name: student.name,
+          email: student.email,
+        },
+      },
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message || "Failed to accept guardian" };
   }
 };

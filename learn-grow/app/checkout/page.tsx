@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import {
   Card,
   CardBody,
@@ -67,7 +67,7 @@ const PLAN_DETAILS: Record<PlanType, { title: string; price: number; requiresDel
   },
 };
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -668,5 +668,17 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen w-full items-center justify-center">
+        <Spinner size="lg" color="primary" />
+      </div>
+    }>
+      <CheckoutContent />
+    </Suspense>
   );
 }

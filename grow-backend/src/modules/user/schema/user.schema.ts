@@ -6,9 +6,10 @@ export const createUserSchema = z.object({
     phone: z.string().min(10, "Phone must be at least 10 characters"),
     email: z.string().email("Invalid email address").optional().or(z.literal("")),
     password: z.string().min(6, "Password must be at least 6 characters"),
-    role: z.enum(["student", "instructor", "guardian"], {
-      errorMap: () => ({ message: "Role must be student, instructor, or guardian" }),
-    }),
+    role: z.enum(["student", "instructor", "guardian"]).refine(
+      (val) => ["student", "instructor", "guardian"].includes(val),
+      { message: "Role must be student, instructor, or guardian" }
+    ),
   }),
 });
 
@@ -82,6 +83,32 @@ export const resetPasswordSchema = z.object({
 export const refreshTokenSchema = z.object({
   body: z.object({
     refreshToken: z.string(),
+  }),
+});
+
+export const sendPasswordChangeOtpSchema = z.object({
+  body: z.object({
+    email: z.string().email("Invalid email address").optional(),
+    phone: z.string().min(10, "Phone must be at least 10 characters").optional(),
+  }).refine((data) => data.email || data.phone, {
+    message: "Either email or phone is required",
+  }),
+});
+
+export const verifyPasswordChangeOtpSchema = z.object({
+  body: z.object({
+    email: z.string().email().optional(),
+    phone: z.string().optional(),
+    otp: z.string().length(6, "OTP must be 6 digits"),
+    newPassword: z.string().min(6, "Password must be at least 6 characters"),
+  }).refine((data) => data.email || data.phone, {
+    message: "Either email or phone is required",
+  }),
+});
+
+export const updatePhoneNumberSchema = z.object({
+  body: z.object({
+    newPhone: z.string().min(10, "Phone must be at least 10 characters"),
   }),
 });
 

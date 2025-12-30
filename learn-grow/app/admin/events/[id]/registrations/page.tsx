@@ -17,10 +17,18 @@ import {
   Chip,
   Card,
   CardBody,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
 } from "@nextui-org/react";
-import { useGetEventRegistrationsQuery, useGetEventByIdQuery } from "@/redux/api/eventApi";
-import { FaArrowLeft, FaSearch, FaDownload, FaEnvelope, FaPhone } from "react-icons/fa";
+import { useGetEventRegistrationsQuery, useGetEventByIdQuery, useDeleteRegistrationMutation, useUpdateRegistrationMutation } from "@/redux/api/eventApi";
+import { FaArrowLeft, FaSearch, FaDownload, FaEnvelope, FaPhone, FaEdit, FaTrash, FaCheckCircle, FaClock, FaTimesCircle } from "react-icons/fa";
 import { useRouter, useParams } from "next/navigation";
+import toast from "react-hot-toast";
+import Swal from "sweetalert2";
 
 export default function EventRegistrationsPage() {
   const router = useRouter();
@@ -31,12 +39,20 @@ export default function EventRegistrationsPage() {
   const [limit, setLimit] = useState(20);
   const [search, setSearch] = useState("");
   const [exporting, setExporting] = useState<boolean>(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFormData, setEditFormData] = useState({ fullName: "", email: "", phoneNumber: "" });
+  const [selectedEmailHistory, setSelectedEmailHistory] = useState<any>(null);
+
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: historyIsOpen, onOpen: historyOnOpen, onClose: historyOnClose } = useDisclosure();
 
   const { data: eventResponse } = useGetEventByIdQuery(eventId, { skip: !eventId });
   const { data: response, isLoading } = useGetEventRegistrationsQuery(
     { eventId, page, limit, search: search || undefined },
     { skip: !eventId }
   );
+  const [deleteRegistration] = useDeleteRegistrationMutation();
+  const [updateRegistration, { isLoading: updating }] = useUpdateRegistrationMutation();
 
   const event = eventResponse?.data;
   const registrations = response?.data || [];
@@ -46,6 +62,62 @@ export default function EventRegistrationsPage() {
     setExporting(true);
     exportToCSV();
     setExporting(false);
+  };
+
+  const handleDelete = async (registrationId: string) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You will not be able to recover this registration!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteRegistration(registrationId).unwrap();
+        toast.success("Registration deleted successfully");
+      } catch (error: any) {
+        toast.error(error?.data?.message || "Failed to delete registration");
+      }
+    }
+  };
+
+  const handleEditClick = (registration: any) => {
+    setEditingId(registration._id);
+    setEditFormData({
+      fullName: registration.fullName,
+      email: registration.email,
+      phoneNumber: registration.phoneNumber,
+    });
+    onOpen();
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId || !editFormData.fullName || !editFormData.email || !editFormData.phoneNumber) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    try {
+      await updateRegistration({
+        id: editingId,
+        ...editFormData,
+      }).unwrap();
+      toast.success("Registration updated successfully");
+      onClose();
+      setEditingId(null);
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to update registration");
+    }
+  };
+
+  const handleViewEmailHistory = (registration: any) => {
+    setSelectedEmailHistory(registration);
+    historyOnOpen();
   };
 
   const exportToCSV = () => {
@@ -191,6 +263,7 @@ export default function EventRegistrationsPage() {
               <TableColumn>PHONE NUMBER</TableColumn>
               <TableColumn>REGISTERED ON</TableColumn>
               <TableColumn>NOTIFICATION</TableColumn>
+              <TableColumn>ACTIONS</TableColumn>
             </TableHeader>
             <TableBody>
               {registrations.map((registration: any) => (
@@ -219,13 +292,39 @@ export default function EventRegistrationsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      size="sm"
-                      variant="flat"
-                      color={registration.notificationSent ? "success" : "warning"}
+                    <button
+                      onClick={() => handleViewEmailHistory(registration)}
+                      className="cursor-pointer"
                     >
-                      {registration.notificationSent ? "Sent" : "Pending"}
-                    </Chip>
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                        color={registration.notificationSent ? "success" : "warning"}
+                        className="cursor-pointer hover:opacity-80"
+                      >
+                        {registration.notificationSent ? "Sent" : "Pending"}
+                      </Chip>
+                    </button>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        color="primary"
+                        onPress={() => handleEditClick(registration)}
+                        startContent={<FaEdit />}
+                      />
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        color="danger"
+                        onPress={() => handleDelete(registration._id)}
+                        startContent={<FaTrash />}
+                      />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -245,6 +344,186 @@ export default function EventRegistrationsPage() {
           )}
         </>
       )}
+
+      {/* Email History Modal */}
+      <Modal isOpen={historyIsOpen} onClose={historyOnClose} size="lg" scrollBehavior="inside">
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            Email History - {selectedEmailHistory?.fullName}
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-2">
+                <span className="text-sm text-gray-600">Email Address</span>
+                <span className="font-semibold">{selectedEmailHistory?.email}</span>
+              </div>
+
+              <div className="border-t pt-4">
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <FaEnvelope /> Email History
+                </h3>
+                
+                {selectedEmailHistory?.emailHistory && selectedEmailHistory.emailHistory.length > 0 ? (
+                  <div className="space-y-3">
+                    {selectedEmailHistory.emailHistory.map((email: any, index: number) => {
+                      const isSuccess = email.status === "success";
+                      return (
+                        <div
+                          key={index}
+                          className={`p-3 rounded-lg border ${
+                            isSuccess
+                              ? "bg-green-50 border-green-200"
+                              : "bg-red-50 border-red-200"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            {isSuccess ? (
+                              <FaCheckCircle className="text-green-500 mt-1 flex-shrink-0" />
+                            ) : (
+                              <FaTimesCircle className="text-red-500 mt-1 flex-shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className={`font-semibold text-sm ${
+                                isSuccess ? "text-green-700" : "text-red-700"
+                              }`}>
+                                {isSuccess ? "✅" : "❌"} Email {index + 1} - {isSuccess ? "Sent" : "Failed"}
+                              </p>
+                              <p className="text-xs text-gray-600 mt-1">
+                                <strong>Subject:</strong> {email.subject}
+                              </p>
+                              <p className="text-xs text-gray-600 mt-1">
+                                <strong>Sent At:</strong> {new Date(email.sentAt).toLocaleString()}
+                              </p>
+                              {email.failureReason && (
+                                <p className="text-xs text-red-600 mt-1 bg-red-100 px-2 py-1 rounded">
+                                  <strong>Error:</strong> {email.failureReason}
+                                </p>
+                              )}
+                              {isSuccess && (
+                                <details className="mt-2">
+                                  <summary className="text-xs text-blue-600 cursor-pointer hover:text-blue-800">
+                                    View Content
+                                  </summary>
+                                  <div className="mt-2 p-2 bg-white rounded border border-gray-200 text-xs max-h-40 overflow-auto">
+                                    <div dangerouslySetInnerHTML={{ __html: email.content }} />
+                                  </div>
+                                </details>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <FaClock className="text-yellow-600" />
+                    <span className="text-sm text-yellow-800">No emails sent to this registrant yet</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t pt-4">
+                <h3 className="font-semibold mb-3">Summary</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex items-center gap-2">
+                      <FaCheckCircle className="text-green-600" />
+                      <div>
+                        <p className="text-xs text-gray-600">Successful</p>
+                        <p className="text-lg font-bold text-green-600">
+                          {selectedEmailHistory?.emailHistory?.filter((e: any) => e.status === "success").length || 0}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                    <div className="flex items-center gap-2">
+                      <FaTimesCircle className="text-red-600" />
+                      <div>
+                        <p className="text-xs text-gray-600">Failed</p>
+                        <p className="text-lg font-bold text-red-600">
+                          {selectedEmailHistory?.emailHistory?.filter((e: any) => e.status === "failed").length || 0}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <div
+                    className={`w-3 h-3 rounded-full ${
+                      selectedEmailHistory?.notificationSent ? "bg-green-500" : "bg-yellow-500"
+                    }`}
+                  />
+                  <span className="text-sm font-semibold">
+                    Status: {selectedEmailHistory?.notificationSent ? "At Least One Email Sent" : "Pending"}
+                  </span>
+                </div>
+                {selectedEmailHistory?.emailHistory && selectedEmailHistory.emailHistory.length > 0 && (
+                  <p className="text-xs text-gray-600 mt-2">
+                    Total emails sent: {selectedEmailHistory.emailHistory.length}
+                  </p>
+                )}
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button color="default" variant="light" onPress={historyOnClose}>
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} size="md">
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">Edit Registration</ModalHeader>
+          <ModalBody>
+            <Input
+              label="Full Name"
+              placeholder="Enter full name"
+              value={editFormData.fullName}
+              onValueChange={(value) =>
+                setEditFormData({ ...editFormData, fullName: value })
+              }
+              variant="bordered"
+            />
+            <Input
+              label="Email"
+              type="email"
+              placeholder="Enter email"
+              value={editFormData.email}
+              onValueChange={(value) =>
+                setEditFormData({ ...editFormData, email: value })
+              }
+              variant="bordered"
+            />
+            <Input
+              label="Phone Number"
+              placeholder="Enter phone number"
+              value={editFormData.phoneNumber}
+              onValueChange={(value) =>
+                setEditFormData({ ...editFormData, phoneNumber: value })
+              }
+              variant="bordered"
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button color="danger" variant="light" onPress={onClose}>
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onPress={handleSaveEdit}
+              isLoading={updating}
+              disabled={updating}
+            >
+              Save Changes
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

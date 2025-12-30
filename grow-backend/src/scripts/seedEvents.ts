@@ -103,7 +103,7 @@ async function seedEventGuestsAndEvents() {
       const eventDate = new Date(baseDate);
       eventDate.setDate(eventDate.getDate() + Math.floor(Math.random() * 90)); // Random date in next 90 days
       
-      const selectedGuests = [];
+      const selectedGuests: any[] = [];
       const guestCount = Math.floor(Math.random() * 5) + 1; // 1-5 guests per event
       for (let j = 0; j < guestCount; j++) {
         const randomGuest = getRandomItem(createdGuests);

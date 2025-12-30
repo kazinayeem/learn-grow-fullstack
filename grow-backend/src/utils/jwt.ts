@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+import jwt, { SignOptions, VerifyOptions } from "jsonwebtoken";
 import { ENV } from "@/config/env";
 
 export interface TokenPayload {
@@ -12,10 +12,13 @@ export interface TokenPayload {
  * Generate Access Token (short-lived)
  */
 export const generateAccessToken = (userId: string, role: string): string => {
+  const options = {
+    expiresIn: String(ENV.JWT_EXPIRES_IN),
+  };
   return jwt.sign(
     { id: userId, role },
-    ENV.JWT_SECRET,
-    { expiresIn: ENV.JWT_EXPIRES_IN }
+    String(ENV.JWT_SECRET),
+    options as SignOptions
   );
 };
 
@@ -23,10 +26,13 @@ export const generateAccessToken = (userId: string, role: string): string => {
  * Generate Refresh Token (long-lived)
  */
 export const generateRefreshToken = (userId: string): string => {
+  const options = {
+    expiresIn: String(ENV.JWT_REFRESH_EXPIRES_IN),
+  };
   return jwt.sign(
     { id: userId },
-    ENV.JWT_REFRESH_SECRET,
-    { expiresIn: ENV.JWT_REFRESH_EXPIRES_IN }
+    String(ENV.JWT_REFRESH_SECRET),
+    options as SignOptions
   );
 };
 

@@ -13,6 +13,17 @@ export const getByPage = async (req: Request, res: Response) => {
 
 export const upsert = async (req: Request, res: Response) => {
   try {
+    const { page } = req.params;
+    const { content } = req.body as { content: any };
+    const result = await service.upsertSiteContent(page, content);
+    return res.status(result.success ? 200 : 400).json(result);
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message || "Failed to save content" });
+  }
+};
+
+export const upsertFromBody = async (req: Request, res: Response) => {
+  try {
     const { page, content } = req.body as { page: string; content: any };
     const result = await service.upsertSiteContent(page, content);
     return res.status(result.success ? 200 : 400).json(result);

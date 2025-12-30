@@ -254,19 +254,92 @@ export const sendCustomEmailToRegistrations = async ({
   const registrations = await EventRegistration.find(query);
 
   if (registrations.length === 0) {
-    return { sent: 0, message: "No registrations found" };
+    return { sent: 0, failed: 0, message: "No registrations found", details: [] };
   }
 
-  const emailPromises = registrations.map((registration) =>
-    transporter.sendMail({
-      from: process.env.EMAIL_FROM || '"Learn & Grow" <noreply@learngrow.com>',
-      to: registration.email,
-      subject,
-      html: content,
-    })
+  // Send emails individually to track success/failure per registrant
+  const emailResults = await Promise.allSettled(
+    registrations.map((registration) =>
+      transporter.sendMail({
+        from: process.env.EMAIL_FROM || '"Learn & Grow" <noreply@learngrow.com>',
+        to: registration.email,
+        subject,
+        html: content,
+      }).then(() => ({
+        registrationId: registration._id,
+        email: registration.email,
+        status: "success",
+        error: null,
+      })).catch((error: any) => ({
+        registrationId: registration._id,
+        email: registration.email,
+        status: "failed",
+        error: error.message,
+      }))
+    )
   );
 
-  await Promise.all(emailPromises);
+  // Process results and update email history
+  let successCount = 0;
+  let failedCount = 0;
+  const updateOperations = [];
 
-  return { sent: registrations.length, message: "Emails sent successfully" };
+  for (let i = 0; i < emailResults.length; i++) {
+    const result = emailResults[i];
+    const registration = registrations[i];
+    
+    let status = "failed";
+    let failureReason = null;
+
+    if (result.status === "fulfilled") {
+      const data = result.value;
+      status = data.status;
+      failureReason = data.error;
+      
+      if (status === "success") {
+        successCount++;
+      } else {
+        failedCount++;
+      }
+    } else {
+      failedCount++;
+      status = "failed";
+      failureReason = result.reason?.message || "Unknown error";
+    }
+
+    // Push email history entry for this specific registrant
+    updateOperations.push(
+      EventRegistration.findByIdAndUpdate(
+        registration._id,
+        {
+          $push: {
+            emailHistory: {
+              subject,
+              content,
+              sentAt: new Date(),
+              status,
+              failureReason: status === "failed" ? failureReason : undefined,
+            },
+          },
+          // Set notificationSent to true if at least one email succeeded for this user
+          ...(status === "success" && { notificationSent: true }),
+        },
+        { new: true }
+      )
+    );
+  }
+
+  // Execute all updates
+  if (updateOperations.length > 0) {
+    await Promise.all(updateOperations);
+  }
+
+  return {
+    sent: successCount,
+    failed: failedCount,
+    message: `Emails sent successfully to ${successCount} registrants. ${failedCount} failed.`,
+    details: emailResults.map((result) => ({
+      ...(result.status === "fulfilled" ? result.value : { status: "failed", error: result.reason?.message }),
+    })),
+  };
 };

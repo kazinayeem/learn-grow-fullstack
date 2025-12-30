@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Spinner } from "@nextui-org/react";
 import { handleOAuthCallback } from "@/lib/auth";
 import { toast } from "react-toastify";
 
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isProcessing, setIsProcessing] = useState(true);
@@ -46,5 +46,17 @@ export default function AuthCallbackPage() {
         <p className="mt-4 text-gray-600">Completing authentication...</p>
       </div>
     </div>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen w-full items-center justify-center">
+        <Spinner size="lg" color="primary" />
+      </div>
+    }>
+      <AuthCallbackContent />
+    </Suspense>
   );
 }

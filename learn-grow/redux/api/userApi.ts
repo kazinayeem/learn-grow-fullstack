@@ -107,6 +107,33 @@ export const userApi = createApi({
             query: () => "/instructor-stats",
             providesTags: ["Users"],
         }),
+
+        // Send OTP for password change
+        sendPasswordChangeOtp: builder.mutation({
+            query: (data) => ({
+                url: "/send-password-change-otp",
+                method: "POST",
+                body: data,
+            }),
+        }),
+
+        // Verify OTP and change password
+        verifyPasswordChangeOtp: builder.mutation({
+            query: (data) => ({
+                url: "/verify-password-change-otp",
+                method: "POST",
+                body: data,
+            }),
+        }),
+
+        // Update phone number
+        updatePhoneNumber: builder.mutation({
+            query: (data) => ({
+                url: "/update-phone",
+                method: "PATCH",
+                body: data,
+            }),
+        }),
     }),
 });
 
@@ -121,4 +148,7 @@ export const {
     useApproveInstructorMutation,
     useRejectInstructorMutation,
     useGetInstructorStatsQuery,
+    useSendPasswordChangeOtpMutation,
+    useVerifyPasswordChangeOtpMutation,
+    useUpdatePhoneNumberMutation,
 } = userApi;

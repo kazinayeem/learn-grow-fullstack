@@ -7,6 +7,13 @@ export interface IEventRegistration {
   phoneNumber: string;
   registeredAt: Date;
   notificationSent: boolean;
+  emailHistory: Array<{
+    subject: string;
+    content: string;
+    sentAt: Date;
+    status: "success" | "failed";
+    failureReason?: string;
+  }>;
 }
 
 const eventRegistrationSchema = new Schema<IEventRegistration>(
@@ -40,6 +47,31 @@ const eventRegistrationSchema = new Schema<IEventRegistration>(
       type: Boolean,
       default: false,
     },
+    emailHistory: [
+      {
+        subject: {
+          type: String,
+          required: true,
+        },
+        content: {
+          type: String,
+          required: true,
+        },
+        sentAt: {
+          type: Date,
+          default: Date.now,
+        },
+        status: {
+          type: String,
+          enum: ["success", "failed"],
+          default: "success",
+        },
+        failureReason: {
+          type: String,
+          default: null,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );

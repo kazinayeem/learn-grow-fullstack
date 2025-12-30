@@ -199,6 +199,87 @@ export const changePassword = async (req: Request, res: Response) => {
   }
 };
 
+export const sendPasswordChangeOtp = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+    const { email, phone } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    const result = await service.sendPasswordChangeOtp(userId, email, phone);
+
+    if (result.success) {
+      return res.status(200).json(result);
+    } else {
+      return res.status(400).json(result);
+    }
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to send OTP",
+    });
+  }
+};
+
+export const verifyPasswordChangeOtp = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+    const { email, phone, otp, newPassword } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    const result = await service.verifyPasswordChangeOtp(userId, email, phone, otp, newPassword);
+
+    if (result.success) {
+      return res.status(200).json(result);
+    } else {
+      return res.status(400).json(result);
+    }
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to change password",
+    });
+  }
+};
+
+export const updatePhoneNumber = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+    const { newPhone } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    const result = await service.updatePhoneNumber(userId, newPhone);
+
+    if (result.success) {
+      return res.status(200).json(result);
+    } else {
+      return res.status(400).json(result);
+    }
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to update phone number",
+    });
+  }
+};
+
 /**
  * Get all instructors (for admin to view and approve)
  */

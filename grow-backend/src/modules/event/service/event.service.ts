@@ -304,6 +304,13 @@ export const getRegistrationsByEmail = async (email: string) => {
   return EventRegistration.find({ email }).populate("event");
 };
 
+export const updateRegistration = async (id: string, data: { fullName?: string; email?: string; phoneNumber?: string }) => {
+  return EventRegistration.findByIdAndUpdate(id, data, {
+    new: true,
+    runValidators: true,
+  });
+};
+
 export const deleteRegistration = async (id: string) => {
   const registration = await EventRegistration.findById(id);
   if (registration) {
@@ -319,4 +326,44 @@ export const markNotificationSent = async (registrationIds: string[]) => {
     { _id: { $in: registrationIds } },
     { notificationSent: true }
   );
+};
+export const getEmailHistory = async (eventId: string, filters: any = {}) => {
+  const query: any = { event: eventId };
+
+  // Search by name or email
+  if (filters.search) {
+    query.$or = [
+      { fullName: { $regex: filters.search, $options: "i" } },
+      { email: { $regex: filters.search, $options: "i" } },
+    ];
+  }
+
+  const page = Math.max(1, parseInt(filters.page || "1"));
+  const limit = Math.max(1, Math.min(100, parseInt(filters.limit || "10")));
+  const skip = (page - 1) * limit;
+
+  // Get registrations with email history (only those with emails sent)
+  const registrationsWithHistory = await EventRegistration.find({
+    ...query,
+    emailHistory: { $exists: true, $ne: [] },
+  })
+    .sort({ "emailHistory.0.sentAt": -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean();
+
+  const total = await EventRegistration.countDocuments({
+    ...query,
+    emailHistory: { $exists: true, $ne: [] },
+  });
+
+  return {
+    history: registrationsWithHistory,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 };

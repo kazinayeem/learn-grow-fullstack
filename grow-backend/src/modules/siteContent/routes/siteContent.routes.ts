@@ -9,7 +9,9 @@ const router = express.Router();
 // Public: read content by page key
 router.get("/:page", controller.getByPage);
 
-// Admin: upsert content
-router.post("/", requireAuth, requireRoles("admin"), validate(upsertSiteContentSchema), controller.upsert);
+// Admin: upsert content by page key
+router.post("/:page", requireAuth, requireRoles("admin"), validate(upsertSiteContentSchema), controller.upsert);
+// Also support body-based page (for backward compatibility)
+router.post("/", requireAuth, requireRoles("admin"), validate(upsertSiteContentSchema), controller.upsertFromBody);
 
 export default router;

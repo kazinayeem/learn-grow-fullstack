@@ -26,6 +26,9 @@ router.patch("/profile", requireAuth, validate(schema.updateProfileSchema), cont
 router.patch("/profile/photo", requireAuth, validate(schema.updateProfilePhotoSchema), controller.updateProfilePhoto);
 router.get("/instructor-stats", requireAuth, requireRoles("instructor"), controller.getInstructorDashboardStats);
 router.post("/change-password", requireAuth, validate(schema.changePasswordSchema), controller.changePassword);
+router.post("/send-password-change-otp", requireAuth, validate(schema.sendPasswordChangeOtpSchema), controller.sendPasswordChangeOtp);
+router.post("/verify-password-change-otp", requireAuth, validate(schema.verifyPasswordChangeOtpSchema), controller.verifyPasswordChangeOtp);
+router.patch("/update-phone", requireAuth, validate(schema.updatePhoneNumberSchema), controller.updatePhoneNumber);
 
 // Admin routes for instructor approval
 router.get("/instructors", requireAuth, requireRoles("admin"), controller.getAllInstructors);

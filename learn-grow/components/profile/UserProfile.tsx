@@ -20,20 +20,41 @@ import {
     ModalFooter,
     useDisclosure,
 } from "@nextui-org/react";
-import { FiCamera, FiEdit2, FiCheck, FiX } from "react-icons/fi";
+import { FiCamera, FiEdit2, FiCheck, FiX, FiLock, FiPhone } from "react-icons/fi";
 import axios from "axios";
 import { toast } from "react-toastify";
 import Cookies from "js-cookie";
+import { 
+    useSendPasswordChangeOtpMutation, 
+    useVerifyPasswordChangeOtpMutation,
+    useUpdatePhoneNumberMutation 
+} from "@/redux/api/userApi";
 
 export default function UserProfile() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
+    const { isOpen: isPasswordModalOpen, onOpen: onPasswordModalOpen, onOpenChange: onPasswordModalOpenChange } = useDisclosure();
+    const { isOpen: isPhoneModalOpen, onOpen: onPhoneModalOpen, onOpenChange: onPhoneModalOpenChange } = useDisclosure();
+    
     const [isEditing, setIsEditing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [profilePhoto, setProfilePhoto] = useState<string>("");
+
+    // Password change states
+    const [passwordOtpSent, setPasswordOtpSent] = useState(false);
+    const [passwordOtp, setPasswordOtp] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+
+    // Phone update states
+    const [newPhone, setNewPhone] = useState("");
+
+    const [sendPasswordOtp, { isLoading: sendingOtp }] = useSendPasswordChangeOtpMutation();
+    const [verifyPasswordOtp, { isLoading: verifyingPassword }] = useVerifyPasswordChangeOtpMutation();
+    const [updatePhone, { isLoading: updatingPhone }] = useUpdatePhoneNumberMutation();
 
     const userRole = user?.role || "student";
 
@@ -477,8 +498,220 @@ export default function UserProfile() {
                             </div>
                         </>
                     )}
+
+                    <Divider />
+
+                    {/* Security Settings */}
+                    <div>
+                        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                            🔐 Security Settings
+                        </h2>
+                        <div className="flex flex-wrap gap-3">
+                            <Button
+                                color="warning"
+                                variant="flat"
+                                startContent={<FiLock />}
+                                onPress={onPasswordModalOpen}
+                            >
+                                Change Password
+                            </Button>
+                            <Button
+                                color="primary"
+                                variant="flat"
+                                startContent={<FiPhone />}
+                                onPress={onPhoneModalOpen}
+                            >
+                                Update Phone Number
+                            </Button>
+                        </div>
+                    </div>
                 </CardBody>
             </Card>
+
+            {/* Password Change Modal */}
+            <Modal isOpen={isPasswordModalOpen} onOpenChange={onPasswordModalOpenChange} size="md">
+                <ModalContent>
+                    {(onClose) => (
+                        <>
+                            <ModalHeader>Change Password</ModalHeader>
+                            <ModalBody>
+                                {!passwordOtpSent ? (
+                                    <div className="space-y-4">
+                                        <p className="text-sm text-gray-600">
+                                            We'll send an OTP to your {user?.email ? "email" : "phone"} to verify it's you.
+                                        </p>
+                                        <div className="bg-blue-50 p-3 rounded-lg">
+                                            <p className="text-sm font-semibold text-blue-800">
+                                                {user?.email ? `📧 ${user.email}` : `📱 ${user?.phone}`}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <Input
+                                            label="Enter OTP"
+                                            placeholder="6-digit OTP"
+                                            value={passwordOtp}
+                                            onChange={(e) => setPasswordOtp(e.target.value)}
+                                            maxLength={6}
+                                            variant="bordered"
+                                        />
+                                        <Input
+                                            label="New Password"
+                                            type="password"
+                                            placeholder="Enter new password"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            variant="bordered"
+                                        />
+                                        <Input
+                                            label="Confirm Password"
+                                            type="password"
+                                            placeholder="Re-enter new password"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            variant="bordered"
+                                        />
+                                    </div>
+                                )}
+                            </ModalBody>
+                            <ModalFooter>
+                                <Button
+                                    variant="light"
+                                    onPress={() => {
+                                        onClose();
+                                        setPasswordOtpSent(false);
+                                        setPasswordOtp("");
+                                        setNewPassword("");
+                                        setConfirmPassword("");
+                                    }}
+                                >
+                                    Cancel
+                                </Button>
+                                {!passwordOtpSent ? (
+                                    <Button
+                                        color="primary"
+                                        onPress={async () => {
+                                            try {
+                                                const data: any = {};
+                                                if (user.email) data.email = user.email;
+                                                if (user.phone) data.phone = user.phone;
+
+                                                const result = await sendPasswordOtp(data).unwrap();
+                                                toast.success(result.message || "OTP sent successfully");
+                                                setPasswordOtpSent(true);
+                                            } catch (error: any) {
+                                                toast.error(error?.data?.message || "Failed to send OTP");
+                                            }
+                                        }}
+                                        isLoading={sendingOtp}
+                                    >
+                                        Send OTP
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        color="success"
+                                        onPress={async () => {
+                                            if (newPassword !== confirmPassword) {
+                                                toast.error("Passwords do not match");
+                                                return;
+                                            }
+
+                                            if (newPassword.length < 6) {
+                                                toast.error("Password must be at least 6 characters");
+                                                return;
+                                            }
+
+                                            try {
+                                                const data: any = {
+                                                    otp: passwordOtp,
+                                                    newPassword,
+                                                };
+                                                if (user.email) data.email = user.email;
+                                                if (user.phone) data.phone = user.phone;
+
+                                                const result = await verifyPasswordOtp(data).unwrap();
+                                                toast.success(result.message || "Password changed successfully");
+                                                onClose();
+                                                setPasswordOtpSent(false);
+                                                setPasswordOtp("");
+                                                setNewPassword("");
+                                                setConfirmPassword("");
+                                            } catch (error: any) {
+                                                toast.error(error?.data?.message || "Failed to change password");
+                                            }
+                                        }}
+                                        isLoading={verifyingPassword}
+                                    >
+                                        Change Password
+                                    </Button>
+                                )}
+                            </ModalFooter>
+                        </>
+                    )}
+                </ModalContent>
+            </Modal>
+
+            {/* Phone Update Modal */}
+            <Modal isOpen={isPhoneModalOpen} onOpenChange={onPhoneModalOpenChange} size="md">
+                <ModalContent>
+                    {(onClose) => (
+                        <>
+                            <ModalHeader>Update Phone Number</ModalHeader>
+                            <ModalBody>
+                                <div className="space-y-4">
+                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                        <p className="text-sm text-gray-600">Current Phone:</p>
+                                        <p className="font-semibold">{user?.phone || "Not set"}</p>
+                                    </div>
+                                    <Input
+                                        label="New Phone Number"
+                                        placeholder="e.g., +8801712345678"
+                                        value={newPhone}
+                                        onChange={(e) => setNewPhone(e.target.value)}
+                                        variant="bordered"
+                                        description="Enter your new phone number with country code"
+                                    />
+                                </div>
+                            </ModalBody>
+                            <ModalFooter>
+                                <Button
+                                    variant="light"
+                                    onPress={() => {
+                                        onClose();
+                                        setNewPhone("");
+                                    }}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    color="primary"
+                                    onPress={async () => {
+                                        if (!newPhone || newPhone.length < 10) {
+                                            toast.error("Please enter a valid phone number");
+                                            return;
+                                        }
+
+                                        try {
+                                            const result = await updatePhone({ newPhone }).unwrap();
+                                            toast.success(result.message || "Phone number updated successfully");
+                                            setUser({ ...user, phone: newPhone });
+                                            setFormData({ ...formData, phone: newPhone });
+                                            onClose();
+                                            setNewPhone("");
+                                        } catch (error: any) {
+                                            toast.error(error?.data?.message || "Failed to update phone number");
+                                        }
+                                    }}
+                                    isLoading={updatingPhone}
+                                >
+                                    Update Phone
+                                </Button>
+                            </ModalFooter>
+                        </>
+                    )}
+                </ModalContent>
+            </Modal>
         </div>
     );
 }

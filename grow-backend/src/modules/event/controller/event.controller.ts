@@ -388,6 +388,45 @@ export const deleteRegistration = async (req: Request, res: Response) => {
   }
 };
 
+export const updateRegistration = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { fullName, email, phoneNumber } = req.body;
+
+    if (!fullName && !email && !phoneNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one field is required for update",
+      });
+    }
+
+    const registration = await service.updateRegistration(id, {
+      fullName,
+      email,
+      phoneNumber,
+    });
+
+    if (!registration) {
+      return res.status(404).json({
+        success: false,
+        message: "Registration not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Registration updated successfully",
+      data: registration,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to update registration",
+      error: error.message,
+    });
+  }
+};
+
 export const sendRegistrationEmail = async (req: Request, res: Response) => {
   try {
     const { subject, content, registrationIds } = req.body;
@@ -415,6 +454,31 @@ export const sendRegistrationEmail = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: error.message || "Failed to send emails",
+    });
+  }
+};
+export const getEmailHistory = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { page, limit, search } = req.query;
+
+    const result = await service.getEmailHistory(id, {
+      page: page as string,
+      limit: limit as string,
+      search: search as string,
+    });
+
+    res.json({
+      success: true,
+      message: "Email history retrieved successfully",
+      data: result.history,
+      pagination: result.pagination,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve email history",
+      error: error.message,
     });
   }
 };

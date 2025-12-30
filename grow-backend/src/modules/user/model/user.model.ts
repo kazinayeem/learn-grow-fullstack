@@ -20,6 +20,8 @@ export interface IUser {
   qualification?: string;
   institution?: string;
   yearsOfExperience?: number;
+  children?: Types.ObjectId[]; // Guardian's students
+  guardians?: Types.ObjectId[]; // Student's guardians
 }
 
 const userSchema = new Schema<IUser>(
@@ -55,6 +57,8 @@ const userSchema = new Schema<IUser>(
     qualification: String,
     institution: String,
     yearsOfExperience: Number,
+    children: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    guardians: [{ type: Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true }
 );

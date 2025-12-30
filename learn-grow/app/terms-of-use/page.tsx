@@ -14,15 +14,15 @@ export default async function TermsOfUsePage() {
     const html = await fetchTermsHtml();
     if (html) {
         return (
-            <div className="container mx-auto px-6 py-12 max-w-4xl">
-                <h1 className="text-4xl font-bold mb-8">Terms of Service</h1>
-                <div className="prose prose-lg max-w-none text-gray-700" dangerouslySetInnerHTML={{ __html: html }} />
+            <div className="container mx-auto px-4 sm:px-6 py-12 max-w-4xl">
+                <h1 className="text-3xl sm:text-4xl font-bold mb-8">Terms of Service</h1>
+                <div className="prose prose-sm sm:prose-base lg:prose-lg max-w-none text-gray-700 break-words overflow-hidden" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }} dangerouslySetInnerHTML={{ __html: html }} />
             </div>
         );
     }
     return (
-        <div className="container mx-auto px-6 py-12 max-w-4xl">
-            <h1 className="text-4xl font-bold mb-8">Terms of Service</h1>
+        <div className="container mx-auto px-4 sm:px-6 py-12 max-w-4xl">
+            <h1 className="text-3xl sm:text-4xl font-bold mb-8">Terms of Service</h1>
             <div className="prose prose-lg max-w-none text-gray-700">
                 <p className="text-sm text-gray-500 mb-8">Last updated: December 9, 2025</p>
 

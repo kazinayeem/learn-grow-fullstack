@@ -133,6 +133,15 @@ export const eventApi = baseApi.injectEndpoints({
       invalidatesTags: ["EventRegistration", "Event"],
     }),
 
+    updateRegistration: build.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/events/registrations/${id}`,
+        method: "PATCH",
+        body: data,
+      }),
+      invalidatesTags: ["EventRegistration", "Event"],
+    }),
+
     sendRegistrationEmails: build.mutation({
       query: ({ eventId, subject, content, registrationIds }) => ({
         url: `/events/${eventId}/registrations/send-email`,
@@ -140,6 +149,15 @@ export const eventApi = baseApi.injectEndpoints({
         body: { subject, content, registrationIds },
       }),
       invalidatesTags: ["EventRegistration"],
+    }),
+
+    getEmailHistory: build.query({
+      query: ({ eventId, ...params }) => ({
+        url: `/events/${eventId}/registrations/email-history`,
+        method: "GET",
+        params,
+      }),
+      providesTags: ["EventRegistration"],
     }),
   }),
 });
@@ -162,5 +180,7 @@ export const {
   useGetEventRegistrationsQuery,
   useGetAllRegistrationsQuery,
   useDeleteRegistrationMutation,
+  useUpdateRegistrationMutation,
   useSendRegistrationEmailsMutation,
+  useGetEmailHistoryQuery,
 } = eventApi;

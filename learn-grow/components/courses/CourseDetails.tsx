@@ -211,15 +211,17 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                     <div className="lg:col-span-2 space-y-4">
                         {/* Hero Image */}
                         <div className="relative w-full h-[250px] md:h-[350px] rounded-xl overflow-hidden shadow-lg">
-                            <Image
+                            <img
                                 src={
-                                    course.img ||
                                     course.thumbnail ||
+                                    course.img ||
                                     "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=1000&auto=format&fit=crop"
                                 }
                                 alt={course.title}
                                 className="object-cover w-full h-full"
-                                removeWrapper
+                                onError={(e) => {
+                                    e.currentTarget.src = "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=1000&auto=format&fit=crop";
+                                }}
                             />
                         </div>
 

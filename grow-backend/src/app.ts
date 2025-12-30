@@ -18,6 +18,7 @@ import blogRoutes from "@/modules/blog/routes/blog.route";
 import eventRoutes from "@/modules/event/routes/event.route";
 import paymentMethodRoutes from "@/modules/payment/routes/payment-method.route";
 import orderRoutes from "@/modules/order/routes/order.route";
+import teamRoutes from "@/modules/team/routes/team.routes";
 import googleRoutes from "@/modules/user/routes/google.routes";
 import { ENV } from "@/config/env";
 import "@/config/passport";
@@ -35,8 +36,8 @@ export const createApp = () => {
 
   app.use(helmet());
   app.use(morgan("dev"));
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json({ limit: "2mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "2mb" }));
   app.use(cookieParser());
 
   // Passport configuration
@@ -62,6 +63,7 @@ export const createApp = () => {
   app.use("/api/events", eventRoutes);
   app.use("/api/payment-methods", paymentMethodRoutes);
   app.use("/api/orders", orderRoutes);
+  app.use("/api/team", teamRoutes);
   app.use("/api/job", jobRoutes);
   app.use("/api/course", courseRoutes);
   app.use("/api/assessment", assessmentRoutes);

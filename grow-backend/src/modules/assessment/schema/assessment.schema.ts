@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const createAssessmentSchema = {
+export const createAssessmentSchema = z.object({
   body: z.object({
     courseId: z.string(),
     type: z.enum(["quiz", "assignment", "mid-exam", "final-exam", "project"]),
@@ -10,9 +10,9 @@ export const createAssessmentSchema = {
     dueDate: z.string().datetime().optional(),
     status: z.enum(["draft", "active", "published"]).optional(),
   }),
-};
+});
 
-export const updateAssessmentSchema = {
+export const updateAssessmentSchema = z.object({
   params: z.object({ id: z.string() }),
   body: z.object({
     title: z.string().min(3).optional(),
@@ -21,12 +21,12 @@ export const updateAssessmentSchema = {
     dueDate: z.string().datetime().optional(),
     status: z.enum(["draft", "active", "published"]).optional(),
   }),
-};
+});
 
-export const assessmentIdSchema = {
+export const assessmentIdSchema = z.object({
   params: z.object({ id: z.string() }),
-};
+});
 
-export const courseIdParamSchema = {
+export const courseIdParamSchema = z.object({
   params: z.object({ courseId: z.string() }),
-};
+});

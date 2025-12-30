@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { Spinner, Card, CardBody, Button } from "@nextui-org/react";
 import { completePayment } from "@/redux/slices/paymentSlice";
 import type { RootState } from "@/redux/store";
 
-export default function NagadCallbackPage() {
+function NagadCallbackContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const dispatch = useDispatch();
@@ -97,5 +97,17 @@ export default function NagadCallbackPage() {
                 </CardBody>
             </Card>
         </div>
+    );
+}
+
+export default function NagadCallbackPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex h-screen w-full items-center justify-center bg-gray-50 dark:bg-gray-900">
+                <Spinner size="lg" color="primary" />
+            </div>
+        }>
+            <NagadCallbackContent />
+        </Suspense>
     );
 }

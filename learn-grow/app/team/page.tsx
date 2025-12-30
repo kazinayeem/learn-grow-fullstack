@@ -52,26 +52,26 @@ export default function TeamPage() {
         <div className="min-h-screen bg-gray-50 pb-20">
             {/* Hero */}
             <div
-                className="text-white py-20 px-6"
+                className="text-white py-20 px-4 sm:px-6"
                 style={{
                     background: 'linear-gradient(135deg, #121064 0%, #1e1b8f 50%, #2d1ba8 100%)'
                 }}
             >
                 <div className="container mx-auto max-w-7xl text-center">
                     <Chip className="mb-4 bg-white/10 text-white border border-white/20" variant="flat">{hero.tag}</Chip>
-                    <h1 className="text-4xl md:text-5xl font-bold mb-6">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 break-words overflow-hidden" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                         {hero.title}
                     </h1>
-                    <p className="text-xl text-blue-100 max-w-3xl mx-auto">
+                    <p className="text-lg sm:text-xl text-blue-100 max-w-3xl mx-auto break-words overflow-hidden" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                         {hero.subtitle}
                     </p>
                 </div>
             </div>
 
-            <div className="container mx-auto max-w-7xl px-6 py-12">
+            <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-12">
                 {/* Leadership */}
                 <div className="mb-16">
-                    <h2 className="text-3xl font-bold mb-8 text-center">Leadership</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center">Leadership</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
                         {leadership.map((member, index) => (
                             <Card key={index} className="shadow-lg h-full">
@@ -105,7 +105,7 @@ export default function TeamPage() {
 
                 {/* Instructors */}
                 <div className="mb-16">
-                    <h2 className="text-3xl font-bold mb-8 text-center">Our Instructors</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center">Our Instructors</h2>
                     {loadingInstructors ? (
                         <div className="flex justify-center"><Spinner size="md" label="Loading instructors..." /></div>
                     ) : (

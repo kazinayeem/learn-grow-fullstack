@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
@@ -18,7 +18,7 @@ import { useCreateAssignmentMutation } from "@/redux/api/assignmentApi";
 import { toast } from "react-toastify";
 import { FaSave, FaArrowLeft } from "react-icons/fa";
 
-export default function CreateAssignmentPage() {
+function CreateAssignmentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const courseIdParam = searchParams.get("courseId");
@@ -243,5 +243,17 @@ export default function CreateAssignmentPage() {
         </Card>
       </form>
     </div>
+  );
+}
+
+export default function CreateAssignmentPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen w-full items-center justify-center">
+        <Spinner size="lg" color="primary" />
+      </div>
+    }>
+      <CreateAssignmentContent />
+    </Suspense>
   );
 }

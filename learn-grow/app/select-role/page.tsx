@@ -1,12 +1,12 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import axios from "axios";
 import { Button, Card, CardBody, CardHeader, Input, Spinner } from "@nextui-org/react";
 import { toast } from "react-toastify";
 
-export default function SelectRolePage() {
+function SelectRoleContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const userId = searchParams.get("userId");
@@ -121,5 +121,17 @@ export default function SelectRolePage() {
         </CardBody>
       </Card>
     </div>
+  );
+}
+
+export default function SelectRolePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen w-full items-center justify-center">
+        <Spinner size="lg" color="primary" />
+      </div>
+    }>
+      <SelectRoleContent />
+    </Suspense>
   );
 }
