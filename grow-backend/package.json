@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "start": "node dist/server.js",
     "db:drop-phone-index": "tsx src/scripts/dropPhoneIndex.ts",
     "db:seed-blogs": "tsx src/scripts/seedBlogsWithImages.ts",
@@ -60,6 +60,7 @@
     "@types/nodemailer": "^6.4.14",
     "@types/passport-google-oauth20": "^2.0.14",
     "ts-node-dev": "^2.0.0",
+    "tsc-alias": "^1.8.10",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
