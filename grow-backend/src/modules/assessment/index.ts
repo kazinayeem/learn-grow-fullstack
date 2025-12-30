@@ -1,1 +1,1 @@
-export { default as assessmentRoutes } from "./routes/assessment.route";
+export { default as assessmentRoutes } from "./routes/assessment.route.js";

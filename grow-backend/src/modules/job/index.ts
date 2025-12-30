@@ -1,2 +1,2 @@
-export { default as jobRoutes } from "./routes/job.route";
-export * from "./model/jobPost.model";
+export { default as jobRoutes } from "./routes/job.route.js";
+export * from "./model/jobPost.model.js";

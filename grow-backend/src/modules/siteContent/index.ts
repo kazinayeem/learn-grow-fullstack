@@ -1,1 +1,1 @@
-export { default as siteContentRoutes } from "./routes/siteContent.routes";
+export { default as siteContentRoutes } from "./routes/siteContent.routes.js";

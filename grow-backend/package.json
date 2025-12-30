@@ -23,7 +23,7 @@
   },
   "author": "",
   "license": "MIT",
-  "type": "module",
+  "type": "commonjs",
   "engines": {
     "node": ">=18"
   },
