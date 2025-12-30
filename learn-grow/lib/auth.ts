@@ -38,17 +38,21 @@ authApi.interceptors.response.use(
         const { accessToken, refreshToken: newRefreshToken } = response.data.data;
 
         // Update tokens
-        Cookies.set("accessToken", accessToken);
-        Cookies.set("refreshToken", newRefreshToken);
+        Cookies.set("accessToken", accessToken, { path: "/" });
+        Cookies.set("refreshToken", newRefreshToken, { path: "/" });
 
         // Retry original request
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return authApi(originalRequest);
       } catch (refreshError) {
-        // Refresh failed, redirect to login
-        Cookies.remove("accessToken");
-        Cookies.remove("refreshToken");
-        window.location.href = "/login";
+        // Refresh failed - set logout flag and redirect
+        sessionStorage.setItem("loggingOut", "1");
+        Cookies.remove("accessToken", { path: "/" });
+        Cookies.remove("refreshToken", { path: "/" });
+        Cookies.remove("userRole", { path: "/" });
+        
+        // Use router instead of window.location.href
+        // This will be handled by RequireAuth guard
         return Promise.reject(refreshError);
       }
     }
@@ -162,19 +166,21 @@ export const register = async (userData: {
       expires: 7,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
+      path: "/",
     });
     Cookies.set("refreshToken", refreshToken, {
       expires: 30,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
+      path: "/",
     });
-    Cookies.set("userRole", response.data.data.user.role);
+    Cookies.set("userRole", response.data.data.user.role, { path: "/" });
 
     // Store full user object in localStorage
     if (typeof window !== "undefined") {
       localStorage.setItem("user", JSON.stringify(response.data.data.user));
       localStorage.setItem("token", accessToken);
-      
+
       // Trigger custom event for navbar to update
       window.dispatchEvent(new Event("auth-change"));
     }
@@ -205,19 +211,21 @@ export const login = async (credentials: {
       expires: 7,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
+      path: "/",
     });
     Cookies.set("refreshToken", refreshToken, {
       expires: 30,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
+      path: "/",
     });
-    Cookies.set("userRole", response.data.data.user.role);
+    Cookies.set("userRole", response.data.data.user.role, { path: "/" });
 
     // Store full user object in localStorage (includes isApproved status)
     if (typeof window !== "undefined") {
       localStorage.setItem("user", JSON.stringify(response.data.data.user));
       localStorage.setItem("token", accessToken);
-      
+
       // Trigger custom event for navbar to update
       window.dispatchEvent(new Event("auth-change"));
     }
@@ -237,18 +245,18 @@ export const login = async (credentials: {
 export const logout = async (): Promise<{ success: boolean; message: string }> => {
   try {
     await authApi.post("/users/logout", {});
-    
+
     // Clear tokens
-    Cookies.remove("accessToken");
-    Cookies.remove("refreshToken");
-    Cookies.remove("userRole");
-    
+    Cookies.remove("accessToken", { path: "/" });
+    Cookies.remove("refreshToken", { path: "/" });
+    Cookies.remove("userRole", { path: "/" });
+
     // Clear localStorage
     if (typeof window !== "undefined") {
       localStorage.removeItem("user");
       localStorage.removeItem("token");
       localStorage.removeItem("userRole");
-      
+
       // Trigger custom event for navbar to update
       window.dispatchEvent(new Event("auth-change"));
     }
@@ -315,14 +323,16 @@ export const handleOAuthCallback = (params: URLSearchParams) => {
       expires: 7,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
+      path: "/",
     });
     Cookies.set("refreshToken", refreshToken, {
       expires: 30,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
+      path: "/",
     });
     if (role) {
-      Cookies.set("userRole", role);
+      Cookies.set("userRole", role, { path: "/" });
     }
     return true;
   }

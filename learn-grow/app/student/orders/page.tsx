@@ -55,8 +55,8 @@ export default function StudentOrdersPage() {
             <h1 className="text-2xl font-bold text-gray-800">My Orders</h1>
             <p className="text-sm text-gray-600 mt-1">{orders.length} order{orders.length !== 1 ? 's' : ''} found</p>
           </div>
-          <Button 
-            color="primary" 
+          <Button
+            color="primary"
             size="sm"
             onPress={() => router.push("/courses")}
             startContent={<FaShoppingBag />}
@@ -95,10 +95,10 @@ export default function StudentOrdersPage() {
                         <div>
                           <h3 className="font-bold text-lg">{PLAN_NAMES[order.planType]}</h3>
                           <p className="text-xs text-gray-500">
-                            {new Date(order.createdAt).toLocaleDateString("en-US", { 
-                              month: 'short', 
-                              day: 'numeric', 
-                              year: 'numeric' 
+                            {new Date(order.createdAt).toLocaleDateString("en-US", {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
                             })}
                           </p>
                         </div>
@@ -163,7 +163,7 @@ export default function StudentOrdersPage() {
                           if (order.planType === "quarterly") {
                             router.push("/student");
                           } else if (order.planType === "single" && order.courseId) {
-                            router.push(`/courses/${order.courseId._id}/learn`);
+                            router.push(`/courses/${order.courseId._id}`);
                           }
                         }}
                       >

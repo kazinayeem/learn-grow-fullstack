@@ -4,7 +4,8 @@ import AboutClient from "@/components/AboutClient";
 
 async function getAboutContent() {
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/site-content/about`, {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+        const res = await fetch(`${baseUrl}/site-content/about`, {
             cache: 'no-store', // SSR with fresh data
         });
         if (!res.ok) return defaultAboutData;

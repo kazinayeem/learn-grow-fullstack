@@ -12,6 +12,7 @@ import {
   Button 
 } from "@nextui-org/react";
 import { FaHome, FaUser, FaSignOutAlt, FaBars } from "react-icons/fa";
+import Cookies from "js-cookie";
 
 export default function AdminLayout({
   children,
@@ -47,12 +48,30 @@ export default function AdminLayout({
     setChecking(false);
   }, [router]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    console.log("🚪 Admin Layout: Logout initiated");
+    
+    // Set logout flag FIRST
+    sessionStorage.setItem("loggingOut", "1");
+    console.log("🚪 Admin Layout: Set loggingOut flag");
+
+    // Clear cookies
+    Cookies.remove("accessToken", { path: "/" });
+    Cookies.remove("refreshToken", { path: "/" });
+    Cookies.remove("userRole", { path: "/" });
+    console.log("🚪 Admin Layout: Cleared cookies");
+
+    // Clear localStorage (minimal)
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      localStorage.removeItem("userRole");
+      console.log("🚪 Admin Layout: Cleared localStorage");
     }
-    router.push("/login");
+
+    // Single redirect using router.replace (NO window.location.href, NO router.push)
+    console.log("🚪 Admin Layout: Redirecting to /login");
+    router.replace("/login");
   };
 
   if (checking) {

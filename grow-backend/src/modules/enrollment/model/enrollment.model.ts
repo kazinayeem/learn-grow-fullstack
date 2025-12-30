@@ -6,6 +6,11 @@ export interface IEnrollment {
   progress: number;
   completionPercentage?: number;
   isCompleted: boolean;
+  completedLessons: Types.ObjectId[];
+  completedModules: Types.ObjectId[];
+  completedAssignments: Types.ObjectId[];
+  completedQuizzes: Types.ObjectId[];
+  completedProjects: Types.ObjectId[];
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -17,6 +22,13 @@ const enrollmentSchema = new Schema<IEnrollment>(
     progress: { type: Number, default: 0 },
     completionPercentage: { type: Number, default: 0 },
     isCompleted: { type: Boolean, default: false },
+
+    // Detailed Progress Tracking
+    completedLessons: [{ type: Schema.Types.ObjectId, ref: "Lesson" }],
+    completedModules: [{ type: Schema.Types.ObjectId, ref: "Module" }],
+    completedAssignments: [{ type: Schema.Types.ObjectId, ref: "Assignment" }],
+    completedQuizzes: [{ type: Schema.Types.ObjectId, ref: "Quiz" }],
+    completedProjects: [{ type: Schema.Types.ObjectId, ref: "Assignment" }],
   },
   { timestamps: true }
 );
