@@ -1,6 +1,9 @@
 import { Course, ICourse } from "../model/course.model";
 import { Module, IModule } from "../model/module.model";
 import { Lesson, ILesson } from "../model/lesson.model";
+import { Enrollment } from "../../enrollment/model/enrollment.model";
+import { Assignment } from "../../assignment/model/assignment.model";
+import { Quiz } from "../../quiz/model/quiz.model";
 import { sendCourseApprovalEmail } from "@/utils/otp";
 
 // ===== COURSE SERVICES =====
@@ -11,7 +14,7 @@ export const createCourse = async (data: Partial<ICourse>) => {
 
 export const getAllCourses = async (filters: any = {}) => {
   const query: any = {};
-  
+
   if (filters.category) query.category = filters.category;
   if (filters.type) query.type = filters.type;
   if (filters.level) query.level = filters.level;
@@ -19,20 +22,20 @@ export const getAllCourses = async (filters: any = {}) => {
   if (filters.isFeatured !== undefined) query.isFeatured = filters.isFeatured === "true";
   if (filters.isRegistrationOpen !== undefined) query.isRegistrationOpen = filters.isRegistrationOpen === "true";
   if (filters.instructorId) query.instructorId = filters.instructorId;
-  
+
   const page = Math.max(1, parseInt(filters.page || "1"));
   const limit = Math.max(1, Math.min(100, parseInt(filters.limit || "10")));
   const skip = (page - 1) * limit;
-  
+
   const courses = await Course.find(query)
     .populate("instructorId", "name email profileImage")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)
     .lean();
-    
+
   const total = await Course.countDocuments(query);
-  
+
   return {
     courses,
     pagination: {
@@ -63,54 +66,196 @@ export const getCourseById = async (
   id: string,
   options?: { userId?: string; userRole?: string }
 ) => {
-  const course = await Course.findById(id)
-    .populate("instructorId", "name email profileImage phone bio role expertise experience education");
-  
+  const course = await Course.findById(id).populate(
+    "instructorId",
+    "name email profileImage phone bio role expertise experience education"
+  );
+
   if (!course) {
     return null;
   }
 
+  // 1. Fetch Enrollment & Progress
+  let isEnrolled = false;
+  let completedLessonIds: string[] = [];
+  let completedModuleIds: string[] = [];
+
+  if (options?.userId) {
+    const enrollment = await Enrollment.findOne({
+      courseId: id,
+      studentId: options.userId,
+    }).lean();
+
+    if (enrollment) {
+      isEnrolled = true;
+      completedLessonIds = enrollment.completedLessons?.map(id => id.toString()) || [];
+      completedModuleIds = enrollment.completedModules?.map(id => id.toString()) || [];
+    }
+  }
+
   const courseInstructorId =
-    (course.instructorId as any)?._id?.toString?.() ?? course.instructorId?.toString?.();
+    (course.instructorId as any)?._id?.toString?.() ??
+    course.instructorId?.toString?.();
 
-  const allowFullLessons =
+  const isPrivileged =
     options?.userRole === "admin" ||
-    (options?.userRole === "instructor" && courseInstructorId === options.userId);
+    (options?.userRole === "instructor" &&
+      courseInstructorId === options.userId);
 
-  // Fetch modules for this course
-  const modules = await Module.find({ courseId: id }).sort({ orderIndex: 1 }).lean();
+  // 2. Fetch Modules & Lessons
+  const modules = await Module.find({ courseId: id })
+    .sort({ orderIndex: 1 })
+    .lean();
 
-  // Fetch lessons for each module
   const modulesWithLessons = await Promise.all(
     modules.map(async (module) => {
-      const lessons = await Lesson.find({ moduleId: module._id }).sort({ orderIndex: 1 }).lean();
-      
-      // Remove sensitive fields from module
+      const lessons = await Lesson.find({ moduleId: module._id })
+        .sort({ orderIndex: 1 })
+        .lean();
+
       const { resources, ...safeModule } = module as any;
-      
-      const filteredLessons = allowFullLessons
-        ? lessons
-        : lessons.filter((lesson) => lesson.isFreePreview === true);
 
       return {
         ...safeModule,
         id: module._id.toString(),
-        lessons: filteredLessons.map((lesson) => {
-          const { resources: _ignoredResources, ...safeLesson } = lesson as any;
-          return {
-            ...safeLesson,
-            id: lesson._id.toString(),
-            contentUrl: lesson.contentUrl,
-          };
-        }),
+        lessons: lessons.map((lesson) => ({
+          ...lesson,
+          id: lesson._id.toString()
+        })),
       };
     })
   );
 
-  // Return course with modules
+  // 3. Process Locks: Module -> Lesson
+  let previousModuleCompleted = true; // First module condition start
+
+  const processedModules = modulesWithLessons.map((module, moduleIndex) => {
+    const moduleId = module.id;
+
+    // Module Locking Logic
+    let isModuleLocked = true;
+    let moduleLockReason = "";
+
+    if (isPrivileged) {
+      isModuleLocked = false;
+    } else if (!options?.userId) {
+      isModuleLocked = true;
+      moduleLockReason = "🔒 Login to Enroll";
+    } else if (!isEnrolled) {
+      isModuleLocked = true;
+      moduleLockReason = moduleIndex === 0 ? "🔒 Enroll to Unlock" : "🔒 Enroll & Pay to Unlock";
+    } else {
+      // Enrolled User
+      if (moduleIndex === 0) {
+        isModuleLocked = false;
+      } else {
+        if (previousModuleCompleted) {
+          isModuleLocked = false;
+        } else {
+          isModuleLocked = true;
+          moduleLockReason = "🔒 Complete previous module to unlock this module";
+        }
+      }
+    }
+
+    // Determine if THIS module is completed (for the NEXT iteration)
+    const isThisModuleCompleted = completedModuleIds.includes(moduleId);
+
+    // Lesson Locking Logic inside Module
+    let previousLessonCompleted = true;
+
+    const processedLessons = module.lessons.map((lesson: any, lessonIndex: number) => {
+      let isLessonLocked = true;
+      let lessonLockReason = "";
+
+      const lessonId = lesson.id;
+      const isThisLessonCompleted = completedLessonIds.includes(lessonId);
+
+      if (isModuleLocked) {
+        isLessonLocked = true;
+        lessonLockReason = moduleLockReason;
+      } else {
+        // Module is unlocked. Check lesson sequence.
+        if (lessonIndex === 0) {
+          isLessonLocked = false;
+        } else {
+          if (previousLessonCompleted) {
+            isLessonLocked = false;
+          } else {
+            isLessonLocked = true;
+            lessonLockReason = "🔒 Complete previous lesson first";
+          }
+        }
+      }
+
+      // Update tracker for next lesson
+      previousLessonCompleted = isThisLessonCompleted;
+
+      const { resources: _ignored, contentUrl, ...safeLessonFields } = lesson as any;
+      const resultLesson: any = {
+        ...safeLessonFields,
+        isLocked: isLessonLocked,
+        lockReason: isLessonLocked ? lessonLockReason : undefined,
+        isCompleted: isThisLessonCompleted
+      };
+
+      if (isLessonLocked && !isPrivileged) {
+        delete resultLesson.contentUrl;
+      }
+
+      return resultLesson;
+    });
+
+    // Update module sequence tracker *after* processing this module
+    // Wait, if map runs linearly, previousModuleCompleted is updated for the NEXT iteration.
+    previousModuleCompleted = isThisModuleCompleted;
+
+    return {
+      ...module,
+      isLocked: isModuleLocked,
+      lockReason: isModuleLocked ? moduleLockReason : undefined,
+      isCompleted: isThisModuleCompleted,
+      lessons: processedLessons
+    };
+  });
+
+  // 4. Fetch Course Requirements (Assignments/Quizzes)
+  // They unlock only if ALL modules are completed.
+  const allModulesCompleted = processedModules.every(m => m.isCompleted);
+
+  const [assignments, quizzes] = await Promise.all([
+    Assignment.find({ courseId: id, status: "published" }).lean(),
+    Quiz.find({ courseId: id, status: "published" }).lean()
+  ]);
+
+  // Helper to process course-level items
+  const processCourseLevelItem = (item: any, type: "assignment" | "quiz") => {
+    let isLocked = true;
+    let reason = "";
+
+    if (isPrivileged) {
+      isLocked = false;
+    } else if (!isEnrolled) {
+      isLocked = true;
+      reason = "🔒 Enroll to access";
+    } else if (!allModulesCompleted) {
+      isLocked = true;
+      reason = "🔒 Complete all modules first";
+    } else {
+      isLocked = false;
+    }
+    return { ...item, isLocked, lockReason: isLocked ? reason : undefined };
+  };
+
+  const processedAssignments = assignments.map(a => processCourseLevelItem(a, "assignment"));
+  const processedQuizzes = quizzes.map(q => processCourseLevelItem(q, "quiz"));
+
   return {
     ...course.toObject(),
-    modules: modulesWithLessons,
+    modules: processedModules,
+    assignments: processedAssignments,
+    quizzes: processedQuizzes,
+    isCompleted: isEnrolled && allModulesCompleted // Simplified Course Completion
   };
 };
 
@@ -165,8 +310,157 @@ export const getLessonsByModule = (moduleId: string) => {
   return Lesson.find({ moduleId }).sort({ orderIndex: 1 });
 };
 
-export const getLessonById = (id: string) => {
-  return Lesson.findById(id);
+export const completeLesson = async (userId: string, lessonId: string) => {
+  const lesson = await Lesson.findById(lessonId);
+  if (!lesson) throw new Error("Lesson not found");
+
+  const enrollment = await Enrollment.findOne({
+    studentId: userId,
+    courseId: lesson.moduleId ? (await Module.findById(lesson.moduleId))?.courseId : null // robust way needed
+  });
+
+  // Actually, simpler: find module first to get courseId
+  const module = await Module.findById(lesson.moduleId);
+  if (!module) throw new Error("Module not found");
+
+  const enrollmentDoc = await Enrollment.findOne({
+    studentId: userId,
+    courseId: module.courseId
+  });
+
+  if (!enrollmentDoc) throw new Error("Enrollment not found");
+
+  // 1. Mark Lesson Complete
+  const lessonIdStr = lessonId.toString();
+  const alreadyCompleted = enrollmentDoc.completedLessons.some(id => id.toString() === lessonIdStr);
+
+  if (!alreadyCompleted) {
+    enrollmentDoc.completedLessons.push(lesson._id);
+  }
+
+  // 2. Check Module Completion
+  const moduleLessons = await Lesson.find({ moduleId: module._id }).select("_id");
+  const allModuleLessonsCompleted = moduleLessons.every(l =>
+    enrollmentDoc.completedLessons.some(cl => cl.toString() === l._id.toString())
+  );
+
+  if (allModuleLessonsCompleted) {
+    const moduleIdStr = module._id.toString();
+    const moduleCompleted = enrollmentDoc.completedModules.some(id => id.toString() === moduleIdStr);
+    if (!moduleCompleted) {
+      enrollmentDoc.completedModules.push(module._id);
+    }
+  }
+
+  // 3. Update Course Progress & Completion
+  // Count total lessons in course
+  const allModules = await Module.find({ courseId: module.courseId }).select("_id");
+  const allModuleIds = allModules.map(m => m._id);
+  const totalLessons = await Lesson.countDocuments({ moduleId: { $in: allModuleIds } });
+
+  if (totalLessons > 0) {
+    enrollmentDoc.progress = enrollmentDoc.completedLessons.length;
+    enrollmentDoc.completionPercentage = Math.round((enrollmentDoc.completedLessons.length / totalLessons) * 100);
+  }
+
+  // Check if ALL modules completed
+  const allModulesCompleted = allModules.every(m =>
+    enrollmentDoc.completedModules.some(cm => cm.toString() === m._id.toString())
+  );
+
+  // Note: Strict completion also requires Assignments/Quizzes. 
+  // For now, we set based on modules, but real logic should check those too.
+  if (allModulesCompleted) {
+    enrollmentDoc.isCompleted = true;
+  }
+
+  await enrollmentDoc.save();
+  return enrollmentDoc;
+};
+
+export const getLessonById = async (
+  id: string,
+  userId?: string,
+  userRole?: string
+) => {
+  // 1. Fetch Lesson
+  const lesson = await Lesson.findById(id);
+  if (!lesson) return null;
+
+  // 2. Privilege Check
+  const module = await Module.findById(lesson.moduleId);
+  if (!module) return null; // Orphaned lesson?
+
+  const course = await Course.findById(module.courseId);
+  if (!course) return null;
+
+  const courseInstructorId = course.instructorId.toString();
+  const isPrivileged =
+    userRole === "admin" ||
+    (userRole === "instructor" && courseInstructorId === userId);
+
+  if (isPrivileged) return lesson;
+
+  // 3. User Checks
+  if (!userId) {
+    throw new Error("🔒 Login to Enroll");
+  }
+
+  // Check Enrollment
+  const enrollment = await Enrollment.findOne({
+    courseId: course._id,
+    studentId: userId,
+  });
+
+  if (!enrollment) {
+    const isFree =
+      course.price === 0 ||
+      (course.discountPrice !== undefined && course.discountPrice === 0);
+    throw new Error(
+      isFree ? "🔒 Enroll to Unlock" : "🔒 Enroll & Pay to Unlock"
+    );
+  }
+
+  // 4. Calculate Global Index to check sequence
+  const allModules = await Module.find({ courseId: course._id })
+    .sort({ orderIndex: 1 })
+    .select("_id");
+
+  let previousLessonsCount = 0;
+  let moduleFound = false;
+
+  for (const m of allModules) {
+    if (m._id.equals(module._id)) {
+      // Current module: Count lessons before this one
+      const lessonsBefore = await Lesson.countDocuments({
+        moduleId: m._id,
+        orderIndex: { $lt: lesson.orderIndex },
+      });
+      previousLessonsCount += lessonsBefore;
+      moduleFound = true;
+      break;
+    } else {
+      // Previous module: Count all lessons
+      const count = await Lesson.countDocuments({ moduleId: m._id });
+      previousLessonsCount += count;
+    }
+  }
+
+  // If module not found in loop (should check), but we assume consistency.
+  const currentGlobalIndex = previousLessonsCount;
+
+  // 5. Completion Check
+  if (currentGlobalIndex === 0) {
+    // Lesson 1 is always unlocked for enrolled
+    return lesson;
+  }
+
+  const completedCount = enrollment.progress || 0;
+  if (completedCount >= currentGlobalIndex) {
+    return lesson;
+  } else {
+    throw new Error("🔒 Complete Previous Lesson First");
+  }
 };
 
 export const updateLesson = async (id: string, data: Partial<ILesson>) => {
@@ -185,47 +479,47 @@ export const getFreeLessons = () => {
 
 export const publishCourse = async (courseId: string, instructorId: string) => {
   const course = await Course.findById(courseId);
-  
+
   if (!course) {
     throw new Error("Course not found");
   }
-  
+
   // Check if instructor owns the course
   if (course.instructorId.toString() !== instructorId) {
     throw new Error("Unauthorized: You don't own this course");
   }
-  
+
   course.isPublished = true;
   await course.save();
-  
+
   return course;
 };
 
 export const unpublishCourse = async (courseId: string, userId: string, userRole: string) => {
   const course = await Course.findById(courseId);
-  
+
   if (!course) {
     throw new Error("Course not found");
   }
-  
+
   // Allow instructor (owner) or admin to unpublish
   if (userRole !== "admin" && course.instructorId.toString() !== userId) {
     throw new Error("Unauthorized: You don't have permission to unpublish this course");
   }
-  
+
   course.isPublished = false;
   await course.save();
-  
+
   return course;
 };
 
 export const approveCourse = async (courseId: string) => {
   const course = await Course.findById(courseId).populate("instructorId", "name email");
-  
+
   if (!course) {
     throw new Error("Course not found");
   }
-  
+
   course.isAdminApproved = true;
   await course.save();
 
@@ -239,20 +533,20 @@ export const approveCourse = async (courseId: string) => {
       course._id.toString()
     );
   }
-  
+
   return course;
 };
 
 export const rejectCourseApproval = async (courseId: string) => {
   const course = await Course.findById(courseId);
-  
+
   if (!course) {
     throw new Error("Course not found");
   }
-  
+
   course.isAdminApproved = false;
   await course.save();
-  
+
   return course;
 };
 

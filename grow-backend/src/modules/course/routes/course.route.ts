@@ -130,6 +130,13 @@ router.delete(
   controller.deleteLesson
 );
 
+router.post(
+  "/complete-lesson/:id",
+  requireAuth,
+  validate(schema.lessonIdSchema),
+  controller.completeLesson
+);
+
 router.get("/get-free-lessons", controller.getFreeLessons);
 
 // ===== COURSE PUBLISHING & APPROVAL ROUTES =====

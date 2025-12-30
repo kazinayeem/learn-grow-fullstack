@@ -24,10 +24,10 @@ import { FiCamera, FiEdit2, FiCheck, FiX, FiLock, FiPhone } from "react-icons/fi
 import axios from "axios";
 import { toast } from "react-toastify";
 import Cookies from "js-cookie";
-import { 
-    useSendPasswordChangeOtpMutation, 
+import {
+    useSendPasswordChangeOtpMutation,
     useVerifyPasswordChangeOtpMutation,
-    useUpdatePhoneNumberMutation 
+    useUpdatePhoneNumberMutation
 } from "@/redux/api/userApi";
 
 export default function UserProfile() {
@@ -35,7 +35,7 @@ export default function UserProfile() {
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
     const { isOpen: isPasswordModalOpen, onOpen: onPasswordModalOpen, onOpenChange: onPasswordModalOpenChange } = useDisclosure();
     const { isOpen: isPhoneModalOpen, onOpen: onPhoneModalOpen, onOpenChange: onPhoneModalOpenChange } = useDisclosure();
-    
+
     const [isEditing, setIsEditing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -75,7 +75,7 @@ export default function UserProfile() {
             try {
                 setIsLoading(true);
                 const token = Cookies.get("accessToken");
-                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
+                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/users/profile`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 const userData = response.data.data.user;
@@ -202,7 +202,7 @@ export default function UserProfile() {
             // Upload to backend
             const token = Cookies.get("accessToken");
             await axios.patch(
-                `${process.env.NEXT_PUBLIC_API_URL}/users/profile/photo`,
+                `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/users/profile/photo`,
                 { profileImage: compressedBase64 },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -225,7 +225,7 @@ export default function UserProfile() {
                 yearsOfExperience: formData.yearsOfExperience ? parseInt(formData.yearsOfExperience, 10) : undefined,
             };
             await axios.patch(
-                `${process.env.NEXT_PUBLIC_API_URL}/users/profile`,
+                `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/users/profile`,
                 updateData,
                 { headers: { Authorization: `Bearer ${token}` } }
             );

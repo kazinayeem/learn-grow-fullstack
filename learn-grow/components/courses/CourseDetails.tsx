@@ -8,6 +8,7 @@ import {
     Chip,
     Card,
     CardBody,
+    CardHeader,
     Divider,
     Tabs,
     Tab,
@@ -21,6 +22,7 @@ import CourseModules from "@/components/course/CourseModules";
 import UnifiedAssessmentView from "@/components/assessment/UnifiedAssessmentView";
 import DOMPurify from "isomorphic-dompurify";
 import Cookies from "js-cookie";
+import { FaTrophy, FaDownload } from "react-icons/fa";
 import "@/styles/prose.css";
 
 interface CourseDetailsProps {
@@ -162,6 +164,13 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
 
     // Hide unpublished or unapproved courses from public view
     const isAvailable = course?.isPublished && course?.isAdminApproved;
+
+    // Calculate progress
+    const modules = course?.modules || [];
+    const allLessons = modules.flatMap((m: any) => m.lessons || []);
+    const totalLessons = allLessons.length;
+    const completedCount = allLessons.filter((l: any) => l.isCompleted).length;
+    const progressPercentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
     if (isLoading) {
         return (
@@ -394,6 +403,34 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
 
                     {/* Right Column: Enrollment Card */}
                     <div className="lg:col-span-1">
+                        {/* Certificate Card - Show when 100% complete */}
+                        {progressPercentage === 100 && (
+                            <Card className="border-2 border-success bg-gradient-to-br from-success-50 to-success-100 mb-6">
+                                <CardHeader className="flex-col items-start gap-1">
+                                    <div className="flex items-center gap-2">
+                                        <FaTrophy className="text-2xl text-success" />
+                                        <h3 className="font-bold text-lg">Congratulations! 🎉</h3>
+                                    </div>
+                                    <p className="text-sm text-gray-700">
+                                        You've completed all course content!
+                                    </p>
+                                </CardHeader>
+                                <CardBody className="pt-0">
+                                    <Button
+                                        color="success"
+                                        size="lg"
+                                        className="w-full"
+                                        startContent={<FaDownload />}
+                                        onPress={() => {
+                                            const certificateUrl = `/api/certificate/generate?courseId=${courseId}&courseName=${encodeURIComponent(course.title)}`;
+                                            window.open(certificateUrl, '_blank');
+                                        }}
+                                    >
+                                        Download Certificate
+                                    </Button>
+                                </CardBody>
+                            </Card>
+                        )}
                         <Card className="sticky top-24 p-3 shadow-lg">
                             <CardBody className="gap-4">
                                 <div className="text-center">
@@ -484,10 +521,10 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                         size="md"
                                         className="w-full font-semibold"
                                         variant="shadow"
-                                        onPress={() => router.push(`/courses/${courseId}/learn`)}
+                                        onPress={() => setSelectedTab("content")}
                                         startContent={<span>🎓</span>}
                                     >
-                                        Go to Course
+                                        Start Learning
                                     </Button>
                                 ) : (
                                     <>

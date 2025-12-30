@@ -98,51 +98,51 @@ export const getAllCourses = async (req: Request, res: Response) => {
     const data =
       req.userRole === "admin"
         ? await Promise.all(
-            result.courses.map(async (course: any) => {
-              const modules = await Module.find({ courseId: course._id })
-                .sort({ orderIndex: 1 })
-                .lean();
+          result.courses.map(async (course: any) => {
+            const modules = await Module.find({ courseId: course._id })
+              .sort({ orderIndex: 1 })
+              .lean();
 
-              const modulesWithLessons = await Promise.all(
-                modules.map(async (module) => {
-                  const lessons = await Lesson.find({ moduleId: module._id })
-                    .sort({ orderIndex: 1 })
-                    .lean();
+            const modulesWithLessons = await Promise.all(
+              modules.map(async (module) => {
+                const lessons = await Lesson.find({ moduleId: module._id })
+                  .sort({ orderIndex: 1 })
+                  .lean();
 
-                  return {
-                    ...module,
-                    id: module._id.toString(),
-                    lessons: lessons.map((lesson) => ({
-                      ...lesson,
-                      id: lesson._id.toString(),
-                    })),
-                  };
-                })
-              );
+                return {
+                  ...module,
+                  id: module._id.toString(),
+                  lessons: lessons.map((lesson) => ({
+                    ...lesson,
+                    id: lesson._id.toString(),
+                  })),
+                };
+              })
+            );
 
-              return {
-                ...course,
-                modules: modulesWithLessons,
-              };
-            })
-          )
+            return {
+              ...course,
+              modules: modulesWithLessons,
+            };
+          })
+        )
         : await Promise.all(
-            result.courses.map(async (course: any) => {
-              const modules = await Module.find({ courseId: course._id })
-                .select("_id")
-                .lean();
-              const moduleIds = modules.map((m) => m._id);
-              const lessonsCount = moduleIds.length
-                ? await Lesson.countDocuments({ moduleId: { $in: moduleIds } })
-                : 0;
+          result.courses.map(async (course: any) => {
+            const modules = await Module.find({ courseId: course._id })
+              .select("_id")
+              .lean();
+            const moduleIds = modules.map((m) => m._id);
+            const lessonsCount = moduleIds.length
+              ? await Lesson.countDocuments({ moduleId: { $in: moduleIds } })
+              : 0;
 
-              return {
-                ...course,
-                modulesCount: modules.length,
-                lessonsCount,
-              };
-            })
-          );
+            return {
+              ...course,
+              modulesCount: modules.length,
+              lessonsCount,
+            };
+          })
+        );
 
     res.json({
       success: true,
@@ -506,22 +506,33 @@ export const getLessonsByModule = async (req: Request, res: Response) => {
 
 export const getLessonById = async (req: Request, res: Response) => {
   try {
-    const access = await ensureLessonAccess(
+    const lesson = await service.getLessonById(
       req.params.id,
       req.userId,
       req.userRole
     );
-    if (access.status !== 200) {
-      return res.status(access.status).json({ success: false, message: access.message });
+
+    if (!lesson) {
+      return res.status(404).json({
+        success: false,
+        message: "Lesson not found",
+      });
     }
 
-    const lesson = access.lesson;
     res.json({
       success: true,
       message: "Lesson retrieved successfully",
       data: lesson,
     });
   } catch (error: any) {
+    // Handle lock errors with 403
+    if (error.message && error.message.startsWith("🔒")) {
+      return res.status(403).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: "Failed to retrieve lesson",
@@ -581,6 +592,26 @@ export const deleteLesson = async (req: Request, res: Response) => {
   }
 };
 
+// ... (previous code)
+
+export const completeLesson = async (req: Request, res: Response) => {
+  try {
+    const result = await service.completeLesson(req.userId!, req.params.id);
+    res.json({
+      success: true,
+      message: "Lesson marked as complete",
+      data: result,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to complete lesson",
+      error: error.message,
+    });
+  }
+};
+
+// ... (next functions if any, or just end)
 export const getFreeLessons = async (_: Request, res: Response) => {
   try {
     const lessons = await service.getFreeLessons();
@@ -604,7 +635,7 @@ export const publishCourse = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const course = await service.publishCourse(id, req.userId!);
-    
+
     res.json({
       success: true,
       message: "Course published successfully",
@@ -622,7 +653,7 @@ export const unpublishCourse = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const course = await service.unpublishCourse(id, req.userId!, req.userRole!);
-    
+
     res.json({
       success: true,
       message: "Course unpublished successfully",
@@ -640,7 +671,7 @@ export const approveCourse = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const course = await service.approveCourse(id);
-    
+
     res.json({
       success: true,
       message: "Course approved successfully",
@@ -658,7 +689,7 @@ export const rejectCourseApproval = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const course = await service.rejectCourseApproval(id);
-    
+
     res.json({
       success: true,
       message: "Course approval revoked successfully",
@@ -675,7 +706,7 @@ export const rejectCourseApproval = async (req: Request, res: Response) => {
 export const getPendingApprovalCourses = async (_: Request, res: Response) => {
   try {
     const courses = await service.getPendingApprovalCourses();
-    
+
     res.json({
       success: true,
       message: "Pending approval courses retrieved successfully",
