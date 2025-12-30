@@ -33,6 +33,4 @@ const blogCategorySchema = new Schema<IBlogCategory>(
   { timestamps: true }
 );
 
-blogCategorySchema.index({ slug: 1 });
-
 export const BlogCategory = model<IBlogCategory>("BlogCategory", blogCategorySchema);

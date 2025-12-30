@@ -64,9 +64,9 @@ const quizQuestionSchema = new Schema<IQuizQuestion>(
 
 const quizSchema = new Schema<IQuiz>(
   {
-    assessmentId: { type: Schema.Types.ObjectId, ref: "Assessment", required: true, index: true },
-    courseId: { type: Schema.Types.ObjectId, ref: "Course", required: true, index: true },
-    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    assessmentId: { type: Schema.Types.ObjectId, ref: "Assessment", required: true },
+    courseId: { type: Schema.Types.ObjectId, ref: "Course", required: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
     assessmentType: { type: String, enum: ["quiz", "mid-exam", "final-exam"], default: "quiz" },
     title: { type: String, required: true, trim: true },
     description: { type: String },

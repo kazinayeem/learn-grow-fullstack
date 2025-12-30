@@ -31,9 +31,9 @@ export interface IAssignmentSubmission extends Document {
 
 const assignmentSchema = new Schema<IAssignment>(
   {
-    assessmentId: { type: Schema.Types.ObjectId, ref: "Assessment", required: true, index: true },
-    courseId: { type: Schema.Types.ObjectId, ref: "Course", required: true, index: true },
-    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    assessmentId: { type: Schema.Types.ObjectId, ref: "Assessment", required: true },
+    courseId: { type: Schema.Types.ObjectId, ref: "Course", required: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
     assessmentType: { type: String, enum: ["assignment", "project"], default: "assignment" },
     title: { type: String, required: true, trim: true },
     description: { type: String, required: true },

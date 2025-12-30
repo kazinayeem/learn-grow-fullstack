@@ -78,10 +78,10 @@ const blogSchema = new Schema<IBlog>(
 );
 
 // Index for better query performance
-blogSchema.index({ slug: 1 }, { unique: true, sparse: true });
 blogSchema.index({ author: 1 });
 blogSchema.index({ category: 1 });
 blogSchema.index({ isPublished: 1, isApproved: 1 });
 blogSchema.index({ createdAt: -1 });
+// slug: unique constraint already creates index, no need for explicit index() call
 
 export const Blog = model<IBlog>("Blog", blogSchema);

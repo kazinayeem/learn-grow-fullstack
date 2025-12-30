@@ -28,7 +28,7 @@ const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true },
     phone: { type: String, sparse: true, index: true }, // Index but NOT unique
-    email: { type: String, sparse: true },
+    email: { type: String, sparse: true, unique: true },
     password: { type: String },
     role: {
       type: String,
@@ -63,8 +63,6 @@ const userSchema = new Schema<IUser>(
   { timestamps: true }
 );
 
-// Create compound unique index to allow multiple null phone values
-// Phone unique constraint removed, can have duplicates
-userSchema.index({ email: 1 }, { unique: true, sparse: true });
+// unique: true on email field already creates the sparse unique index
 
 export const User = model<IUser>("User", userSchema);

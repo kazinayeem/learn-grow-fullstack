@@ -110,8 +110,8 @@ const questionSchema = new Schema<IQuestion>(
 
 const unifiedAssessmentSchema = new Schema<IUnifiedAssessment>(
   {
-    courseId: { type: Schema.Types.ObjectId, ref: "Course", required: true, index: true },
-    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    courseId: { type: Schema.Types.ObjectId, ref: "Course", required: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
     type: {
       type: String,
       enum: ["quiz", "assignment", "mid-exam", "final-exam", "project"],
