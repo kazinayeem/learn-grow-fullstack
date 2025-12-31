@@ -20,7 +20,9 @@
     "db:seed-blogs-500": "tsx src/scripts/seedBlogs500.ts",
     "db:seed-blogs-advanced": "tsx src/scripts/seedBlogsAdvanced.ts",
     "db:seed-jobs": "tsx src/modules/job/seed/seedJobs.ts",
-    "db:seed-all-courses": "npm run db:create-demo-course && npm run db:create-robotics-course && npm run db:create-python-course"
+    "db:seed-all-courses": "npm run db:create-demo-course && npm run db:create-robotics-course && npm run db:create-python-course",
+    "db:seed-live-classes": "node seed-500-classes.js",
+    "db:seed-500-courses": "tsx src/scripts/seed500Courses.ts"
   },
   "author": "",
   "license": "MIT",

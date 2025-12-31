@@ -3,6 +3,7 @@ import { baseApi } from "./api/baseApi";
 import { userApi } from "./api/userApi";
 import { quizApi } from "./api/quizApi";
 import { assignmentApi } from "./api/assignmentApi";
+import "./api/analyticsApi"; // Import to inject endpoints
 import enrollmentReducer, { loadEnrollments } from "./slices/enrollmentSlice";
 import paymentReducer, { loadPayments } from "./slices/paymentSlice";
 import quizAssignmentReducer, {
@@ -30,7 +31,12 @@ export const store = configureStore({
         courseContent: courseContentReducer,
     },
     middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat(baseApi.middleware, userApi.middleware, quizApi.middleware, assignmentApi.middleware),
+        getDefaultMiddleware().concat(
+            baseApi.middleware, 
+            userApi.middleware, 
+            quizApi.middleware, 
+            assignmentApi.middleware
+        ),
 });
 
 // Load data from localStorage on initialization

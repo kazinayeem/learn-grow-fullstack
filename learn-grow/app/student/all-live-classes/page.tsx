@@ -5,7 +5,6 @@ import { Card, CardBody, CardHeader, Button, Spinner, Chip, Divider, Input, Sele
 import { useRouter } from "next/navigation";
 import { FaVideo, FaClock, FaCalendar, FaArrowLeft, FaSearch } from "react-icons/fa";
 import { useGetAllLiveClassesQuery } from "@/redux/api/liveClassApi";
-import { useGetMyOrdersQuery } from "@/redux/api/orderApi";
 import RequireAuth from "@/components/Auth/RequireAuth";
 
 export default function AllLiveClassesPage() {
@@ -15,7 +14,7 @@ export default function AllLiveClassesPage() {
     const [statusFilter, setStatusFilter] = useState("all");
     const [currentTime, setCurrentTime] = useState(new Date());
     
-    const itemsPerPage = 100;
+    const itemsPerPage = 16;
 
     // Update current time every second for countdown
     useEffect(() => {
@@ -26,69 +25,14 @@ export default function AllLiveClassesPage() {
         return () => clearInterval(timer);
     }, []);
 
-    const { data: classesData, isLoading: classesLoading } = useGetAllLiveClassesQuery({ skip: 0, limit: 1000 });
-    const { data: ordersData } = useGetMyOrdersQuery();
-
-    const orders = ordersData?.orders || [];
+    // Calculate skip based on current page
+    const skip = (currentPage - 1) * itemsPerPage;
+    const { data: classesData, isLoading: classesLoading } = useGetAllLiveClassesQuery({ skip, limit: itemsPerPage });
     const allClasses = classesData?.data || [];
+    const totalCount = classesData?.pagination?.total || 0;
 
-    // Get the courses student has access to
-    const accessibleCourseIds = useMemo(() => {
-        const now = new Date();
-        const courseIds = new Set<string>();
-
-        orders.forEach((order: any) => {
-            // Check quarterly all access
-            if (
-                order.planType === "quarterly" &&
-                order.paymentStatus === "approved" &&
-                order.isActive &&
-                order.endDate &&
-                new Date(order.endDate) > now
-            ) {
-                // Has all access - will be handled separately
-                return;
-            }
-
-            // Check single course purchases
-            if (
-                order.planType === "single" &&
-                order.paymentStatus === "approved" &&
-                order.isActive &&
-                order.courseId
-            ) {
-                const courseId = typeof order.courseId === "object" ? order.courseId._id : order.courseId;
-                courseIds.add(courseId);
-            }
-        });
-
-        return courseIds;
-    }, [orders]);
-
-    // Check if user has all access
-    const hasAllAccess = useMemo(() => {
-        const now = new Date();
-        return orders.some(
-            (order: any) =>
-                order.planType === "quarterly" &&
-                order.paymentStatus === "approved" &&
-                order.isActive &&
-                order.endDate &&
-                new Date(order.endDate) > now
-        );
-    }, [orders]);
-
-    // Filter classes by accessible courses
-    const accessibleClasses = useMemo(() => {
-        if (hasAllAccess) {
-            return allClasses;
-        }
-
-        return allClasses.filter((cls: any) => {
-            const courseId = typeof cls.courseId === "object" ? cls.courseId._id : cls.courseId;
-            return accessibleCourseIds.has(courseId);
-        });
-    }, [allClasses, hasAllAccess, accessibleCourseIds]);
+    // Show all approved classes returned by API (no course-purchase filter)
+    const accessibleClasses = allClasses;
 
     // Separate upcoming and past classes
     const upcomingClasses = accessibleClasses.filter((c: any) => {
@@ -116,11 +60,29 @@ export default function AllLiveClassesPage() {
         return new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime();
     });
 
-    // Pagination
-    const totalPages = Math.ceil(filteredClasses.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedClasses = filteredClasses.slice(startIndex, endIndex);
+    // Pagination - use total count from API
+    const totalPages = Math.ceil(totalCount / itemsPerPage);
+    const paginatedClasses = filteredClasses;
+    const displayStart = totalCount === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+    const displayEnd = Math.min(currentPage * itemsPerPage, totalCount);
+
+    const pageNumbers = useMemo(() => {
+        const maxButtons = 9;
+        if (totalPages <= maxButtons) {
+            return Array.from({ length: totalPages }, (_, i) => i + 1);
+        }
+
+        const pages: (number | string)[] = [1];
+        const start = Math.max(2, currentPage - 2);
+        const end = Math.min(totalPages - 1, currentPage + 2);
+
+        if (start > 2) pages.push("left-ellipsis");
+        for (let i = start; i <= end; i++) pages.push(i);
+        if (end < totalPages - 1) pages.push("right-ellipsis");
+        pages.push(totalPages);
+
+        return pages;
+    }, [currentPage, totalPages]);
 
     // Function to get countdown time
     const getTimeStatus = (scheduledAt: string) => {
@@ -230,7 +192,7 @@ export default function AllLiveClassesPage() {
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <p className="text-xs opacity-90">Total</p>
-                                                <p className="text-xl font-bold">{filteredClasses.length}</p>
+                                                <p className="text-xl font-bold">{totalCount}</p>
                                             </div>
                                             <FaVideo className="text-2xl opacity-50" />
                                         </div>
@@ -276,7 +238,7 @@ export default function AllLiveClassesPage() {
                                         </Select>
                                         <div className="flex items-center">
                                             <p className="text-xs text-gray-600">
-                                                {Math.min(startIndex + 1, filteredClasses.length)}-{Math.min(endIndex, filteredClasses.length)} of {filteredClasses.length}
+                                                    {displayStart}-{displayEnd} of {totalCount}
                                             </p>
                                         </div>
                                     </div>
@@ -293,7 +255,7 @@ export default function AllLiveClassesPage() {
                                     </CardBody>
                                 </Card>
                             ) : (
-                                <div className="space-y-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                     {paginatedClasses.map((cls: any) => {
                                         const classDate = new Date(cls.scheduledAt);
                                         const courseName = typeof cls.courseId === "object" ? cls.courseId.title : "Course";
@@ -302,76 +264,53 @@ export default function AllLiveClassesPage() {
                                         const isUpcoming = classDate > currentTime && cls.status === "Scheduled";
 
                                         return (
-                                            <Card key={cls._id} className="hover:shadow-lg transition-shadow">
-                                                <CardBody className="p-3">
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <div className="flex-1">
-                                                            <div className="flex items-center gap-1 mb-0.5">
-                                                                <h3 className="font-bold text-sm">{cls.title}</h3>
-                                                                <Chip
-                                                                    size="sm"
-                                                                    variant="flat"
-                                                                    color={isUpcoming ? "warning" : "success"}
-                                                                    className="text-xs"
-                                                                >
+                                            <Card key={cls._id} className="hover:shadow-md transition-shadow">
+                                                <CardBody className="p-2 space-y-2">
+                                                    <div className="flex justify-between items-start gap-2">
+                                                        <div className="flex-1 min-w-0 space-y-1">
+                                                            <div className="flex items-center gap-1">
+                                                                <h3 className="font-semibold text-sm truncate" title={cls.title}>{cls.title}</h3>
+                                                                <Chip size="sm" variant="flat" color={isUpcoming ? "warning" : "success"} className="text-[10px]">
                                                                     {isUpcoming ? "Upcoming" : "Done"}
                                                                 </Chip>
                                                             </div>
-                                                            <p className="text-xs text-gray-600">{courseName}</p>
+                                                            <p className="text-[11px] text-gray-600 truncate" title={courseName}>{courseName}</p>
                                                         </div>
-                                                        <Chip size="sm" color="success" variant="flat" className="text-xs">
+                                                        <Chip size="sm" color="success" variant="flat" className="text-[11px]">
                                                             {cls.platform}
                                                         </Chip>
                                                     </div>
 
-                                                    <Divider className="my-1.5" />
-
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-                                                        <div className="space-y-1 text-xs">
-                                                            <div className="flex items-center gap-2 text-gray-700">
-                                                                <FaCalendar className="text-primary text-xs" />
-                                                                <span>{classDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
-                                            </div>
-                                                            <div className="flex items-center gap-2 text-gray-700">
-                                                                <FaClock className="text-primary text-xs" />
-                                                                <span>
-                                                                    {classDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} ({cls.duration}m)
-                                                                </span>
-                                                            </div>
+                                                    <div className="flex items-center justify-between text-[11px] text-gray-700">
+                                                        <div className="flex items-center gap-2">
+                                                            <FaCalendar className="text-primary text-[11px]" />
+                                                            <span>{classDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
                                                         </div>
-
-                                                        {isUpcoming && (
-                                                            <div className="p-2 bg-gradient-to-br from-orange-50 to-orange-100 rounded">
-                                                                <p className="text-xs text-gray-600 mb-0.5">⏱️ Time</p>
-                                                                <Chip
-                                                                    size="sm"
-                                                                    variant="flat"
-                                                                    color={timeStatus.color as any}
-                                                                    className="font-bold text-xs"
-                                                                >
-                                                                    {timeStatus.display}
-                                                                </Chip>
-                                                            </div>
-                                                        )}
+                                                        <div className="flex items-center gap-2">
+                                                            <FaClock className="text-primary text-[11px]" />
+                                                            <span>{classDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} ({cls.duration}m)</span>
+                                                        </div>
                                                     </div>
 
-                                                    {instructorName && (
-                                                        <div className="mb-2 p-2 bg-gray-50 rounded text-xs">
-                                                            <p className="text-gray-500 mb-0.5">Instructor</p>
-                                                            <p className="font-semibold">{instructorName}</p>
+                                                    {isUpcoming && (
+                                                        <div className="p-2 bg-gradient-to-br from-orange-50 to-orange-100 rounded">
+                                                            <div className="text-[11px] text-gray-600 mb-0.5 flex items-center gap-1">⏱️ <span>Time</span></div>
+                                                            <Chip size="sm" variant="flat" color={timeStatus.color as any} className="font-bold text-[11px]">
+                                                                {timeStatus.display}
+                                                            </Chip>
                                                         </div>
                                                     )}
 
                                                     {!isUpcoming && cls.recordedLink && (
-                                                        <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
-                                                            <p className="text-green-700 font-semibold mb-1">📹 Recording Available</p>
+                                                        <div className="p-2 bg-green-50 border border-green-200 rounded text-[11px] space-y-1">
+                                                            <p className="text-green-700 font-semibold">📹 Recording</p>
                                                             <a
                                                                 href={cls.recordedLink}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="text-green-600 hover:underline text-xs truncate block"
+                                                                className="text-green-600 hover:underline truncate block"
                                                             >
-                                                                Watch Recording
+                                                                Watch
                                                             </a>
                                                         </div>
                                                     )}
@@ -381,8 +320,8 @@ export default function AllLiveClassesPage() {
                                                             <Button
                                                                 color="primary"
                                                                 size="sm"
-                                                                className="flex-1 text-xs"
-                                                                startContent={<FaVideo className="text-xs" />}
+                                                                className="flex-1 text-[11px]"
+                                                                startContent={<FaVideo className="text-[11px]" />}
                                                                 onPress={() => window.open(cls.meetingLink, "_blank")}
                                                             >
                                                                 Join
@@ -391,7 +330,7 @@ export default function AllLiveClassesPage() {
                                                             <Button
                                                                 color="default"
                                                                 size="sm"
-                                                                className="flex-1 text-xs"
+                                                                className="flex-1 text-[11px]"
                                                                 isDisabled
                                                             >
                                                                 Done
@@ -400,7 +339,7 @@ export default function AllLiveClassesPage() {
                                                         <Button
                                                             size="sm"
                                                             variant="flat"
-                                                            className="text-xs"
+                                                            className="text-[11px]"
                                                             onPress={() =>
                                                                 router.push(
                                                                     `/courses/${typeof cls.courseId === "object" ? cls.courseId._id : cls.courseId}`
@@ -419,7 +358,7 @@ export default function AllLiveClassesPage() {
 
                             {/* Pagination */}
                             {totalPages > 1 && (
-                                <div className="flex justify-center items-center gap-2 mt-4">
+                                <div className="flex flex-wrap justify-center items-center gap-2 mt-4">
                                     <Button
                                         size="sm"
                                         isDisabled={currentPage === 1}
@@ -430,13 +369,8 @@ export default function AllLiveClassesPage() {
                                         Prev
                                     </Button>
 
-                                    <div className="flex items-center gap-1">
-                                        {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => {
-                                            if (totalPages <= 10) return i + 1;
-                                            if (i < 5) return i + 1;
-                                            if (i === 5) return "...";
-                                            return totalPages - (10 - i - 1);
-                                        }).map((page, idx) => (
+                                    <div className="flex flex-wrap items-center gap-1 justify-center">
+                                        {pageNumbers.map((page, idx) =>
                                             typeof page === "number" ? (
                                                 <Button
                                                     key={page}
@@ -444,15 +378,17 @@ export default function AllLiveClassesPage() {
                                                     size="sm"
                                                     color={currentPage === page ? "primary" : "default"}
                                                     variant={currentPage === page ? "flat" : "light"}
-                                                    className="h-7 w-7 text-xs"
+                                                    className="h-8 w-8 text-xs"
                                                     onPress={() => setCurrentPage(page)}
                                                 >
                                                     {page}
                                                 </Button>
                                             ) : (
-                                                <span key={idx} className="text-xs px-1">...</span>
+                                                <Button key={`${page}-${idx}`} size="sm" isDisabled variant="light" className="h-8 px-2 text-xxs">
+                                                    ...
+                                                </Button>
                                             )
-                                        ))}
+                                        )}
                                     </div>
 
                                     <Button

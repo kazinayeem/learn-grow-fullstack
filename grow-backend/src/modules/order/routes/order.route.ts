@@ -9,6 +9,7 @@ import {
   checkActiveSubscription,
   getUserPurchasedCourses,
   getEnrolledStudents,
+  sendOrderEmail,
 } from "../controller/order.controller";
 import { requireAuth, requireRoles } from "../../../middleware/auth";
 
@@ -26,5 +27,6 @@ router.get("/", requireAuth, requireRoles("admin", "manager"), getAllOrders);
 router.get("/:id", requireAuth, requireRoles("admin", "manager"), getOrderById);
 router.patch("/:id/approve", requireAuth, requireRoles("admin", "manager"), approveOrder);
 router.patch("/:id/reject", requireAuth, requireRoles("admin", "manager"), rejectOrder);
+router.post("/send-email", sendOrderEmail);
 
 export default router;

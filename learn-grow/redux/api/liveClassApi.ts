@@ -12,13 +12,22 @@ export const liveClassApi = baseApi.injectEndpoints({
       invalidatesTags: ["Course"],
     }),
 
-    getInstructorLiveClasses: builder.query({
-      query: () => ({
-        url: "/live-classes/instructor/my-classes",
-        method: "GET",
-      }),
-      providesTags: ["Course"],
-    }),
+    getInstructorLiveClasses: builder.query<any, { page?: number; limit?: number; status?: string; platform?: string; isApproved?: boolean; search?: string }>(
+      {
+        query: ({ page = 1, limit = 10, status, platform, isApproved, search } = {}) => {
+          let url = `/live-classes/instructor/my-classes?page=${page}&limit=${limit}`;
+          if (status) url += `&status=${status}`;
+          if (platform) url += `&platform=${platform}`;
+          if (isApproved !== undefined) url += `&isApproved=${isApproved}`;
+          if (search) url += `&search=${encodeURIComponent(search)}`;
+          return {
+            url,
+            method: "GET",
+          };
+        },
+        providesTags: ["Course"],
+      }
+    ),
 
     updateLiveClass: builder.mutation({
       query: ({ id, ...data }) => ({
@@ -59,7 +68,7 @@ export const liveClassApi = baseApi.injectEndpoints({
       }),
     }),
 
-    getAllLiveClasses: builder.query({
+    getAllLiveClasses: builder.query<any, { skip?: number; limit?: number }>({
       query: ({ skip = 0, limit = 20 } = {}) => ({
         url: `/live-classes/all?skip=${skip}&limit=${limit}`,
         method: "GET",
@@ -67,11 +76,18 @@ export const liveClassApi = baseApi.injectEndpoints({
     }),
 
     // Admin endpoints
-    getPendingLiveClasses: builder.query({
-      query: () => ({
-        url: "/live-classes/admin/pending",
-        method: "GET",
-      }),
+    getPendingLiveClasses: builder.query<any, { page?: number; limit?: number; status?: string; platform?: string; isApproved?: boolean; search?: string }>({
+      query: ({ page = 1, limit = 10, status, platform, isApproved, search } = {}) => {
+        let url = `/live-classes/admin/pending?page=${page}&limit=${limit}`;
+        if (status) url += `&status=${status}`;
+        if (platform) url += `&platform=${platform}`;
+        if (isApproved !== undefined) url += `&isApproved=${isApproved}`;
+        if (search) url += `&search=${search}`;
+        return {
+          url,
+          method: "GET",
+        };
+      },
       providesTags: ["Course"],
     }),
 

@@ -173,7 +173,7 @@ export default function UserManagementPage() {
                     <Button
                         variant="light"
                         startContent={<FaArrowLeft />}
-                        onPress={() => router.back()}
+                        onPress={() => router.push(currentUserRole === "manager" ? "/manager" : "/admin")}
                     >
                         Back
                     </Button>

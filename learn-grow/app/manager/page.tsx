@@ -86,57 +86,37 @@ function ManagerDashboardContent() {
       description: "Add, edit, or remove users",
       icon: <FaUsers className="text-3xl" />,
       color: "from-blue-500 to-blue-600",
-      href: "/admin/users",
+      href: "/manager/users",
     },
     {
       title: "Approve Instructors",
       description: "Review and approve instructors",
       icon: <FaUsers className="text-3xl" />,
       color: "from-yellow-500 to-yellow-600",
-      href: "/admin/instructors",
+      href: "/manager/instructors",
     },
     {
       title: "Manage Courses",
       description: "Approve and manage courses",
       icon: <FaBook className="text-3xl" />,
       color: "from-green-500 to-green-600",
-      href: "/admin/courses",
-    },
-    {
-      title: "View Reports",
-      description: "Analytics and insights",
-      icon: <FaChartLine className="text-3xl" />,
-      color: "from-purple-500 to-purple-600",
-      href: "/admin/reports",
+      href: "/manager/courses",
     },
     {
       title: "Kit Orders",
       description: "Manage hardware kit orders",
       icon: <FaBriefcase className="text-3xl" />,
       color: "from-pink-500 to-pink-600",
-      href: "/admin/orders",
+      href: "/manager/orders",
     },
     {
       title: "Live Classes",
       description: "Monitor live classes",
       icon: <FaCalendarAlt className="text-3xl" />,
       color: "from-indigo-500 to-indigo-600",
-      href: "/admin/live-classes",
-    },
-    {
-      title: "Assignments",
-      description: "View all assignments",
-      icon: <FaFileAlt className="text-3xl" />,
-      color: "from-cyan-500 to-cyan-600",
-      href: "/admin/assignments",
-    },
-    {
-      title: "Transactions",
-      description: "Payment records",
-      icon: <FaCreditCard className="text-3xl" />,
-      color: "from-red-500 to-red-600",
-      href: "/admin/transactions",
-    },
+      href: "/manager/live-classes",
+    }
+  
   ];
 
   const recentActivity = [
@@ -330,7 +310,7 @@ function ManagerDashboardContent() {
                   color="danger"
                   className="w-full mt-4"
                   startContent={<FaClipboardList />}
-                  onPress={() => router.push("/admin/orders")}
+                  onPress={() => router.push("/manager/orders")}
                 >
                   View Pending Orders ({stats.pendingOrders})
                 </Button>

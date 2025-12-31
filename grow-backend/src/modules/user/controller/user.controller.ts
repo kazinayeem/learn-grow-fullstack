@@ -304,7 +304,15 @@ export const updatePhoneNumber = async (req: Request, res: Response) => {
  */
 export const getAllInstructors = async (req: Request, res: Response) => {
   try {
-    const result = await service.getAllInstructors();
+    const { page, limit, search, status } = req.query;
+    
+    const result = await service.getAllInstructors({
+      page: page ? parseInt(page as string) : undefined,
+      limit: limit ? parseInt(limit as string) : undefined,
+      search: search as string,
+      status: status as string,
+    });
+    
     return res.status(200).json(result);
   } catch (error: any) {
     return res.status(500).json({

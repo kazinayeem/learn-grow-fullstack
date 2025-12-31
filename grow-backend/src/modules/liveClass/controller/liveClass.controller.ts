@@ -68,11 +68,25 @@ export const getLiveClassesByInstructor = async (req: Request, res: Response) =>
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    const classes = await LiveClassService.getLiveClassesByInstructor(instructorId);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const status = req.query.status ? String(req.query.status) : undefined;
+    const platform = req.query.platform ? String(req.query.platform) : undefined;
+    const isApproved = req.query.isApproved !== undefined ? req.query.isApproved === "true" : undefined;
+    const search = req.query.search ? String(req.query.search) : undefined;
+
+    const result = await LiveClassService.getLiveClassesByInstructor(instructorId, {
+      page,
+      limit,
+      status,
+      platform,
+      isApproved,
+      search,
+    });
 
     res.status(200).json({
       success: true,
-      data: classes,
+      ...result,
     });
   } catch (error) {
     console.error("Get instructor classes error:", error);
@@ -107,18 +121,31 @@ export const updateLiveClass = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const instructorId = (req as any).user?.id;
+    const userRole = (req as any).user?.role;
 
     if (!instructorId) {
+      console.error("❌ No instructorId found in request");
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
     // Check if instructor owns this class
     const liveClass = await LiveClassService.getLiveClassById(id);
     if (!liveClass) {
+      console.error("❌ Live class not found:", id);
       return res.status(404).json({ success: false, message: "Live class not found" });
     }
 
-    if (liveClass.instructorId.toString() !== instructorId) {
+    console.log("🔍 Authorization check:");
+    console.log(`   Class instructorId: ${liveClass.instructorId.toString()}`);
+    console.log(`   User instructorId: ${instructorId.toString()}`);
+    console.log(`   User role: ${userRole}`);
+
+    // Allow instructors to update their own classes, or admins/managers to update any class
+    const isOwner = liveClass.instructorId.toString() === instructorId.toString();
+    const isAdmin = userRole === "admin" || userRole === "manager";
+
+    if (!isOwner && !isAdmin) {
+      console.error("❌ Authorization failed - User doesn't own this class and is not an admin");
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
 
@@ -143,6 +170,7 @@ export const deleteLiveClass = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const instructorId = (req as any).user?.id;
+    const userRole = (req as any).user?.role;
 
     if (!instructorId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -154,7 +182,11 @@ export const deleteLiveClass = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: "Live class not found" });
     }
 
-    if (liveClass.instructorId.toString() !== instructorId) {
+    // Allow instructors to delete their own classes, or admins/managers to delete any class
+    const isOwner = liveClass.instructorId.toString() === instructorId.toString();
+    const isAdmin = userRole === "admin" || userRole === "manager";
+
+    if (!isOwner && !isAdmin) {
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
 
@@ -311,6 +343,7 @@ export const updateRecordedLink = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { recordedLink } = req.body;
     const instructorId = (req as any).user?.id;
+    const userRole = (req as any).user?.role;
 
     if (!instructorId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -326,7 +359,11 @@ export const updateRecordedLink = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: "Live class not found" });
     }
 
-    if (liveClass.instructorId.toString() !== instructorId) {
+    // Allow instructors to update their own classes, or admins/managers to update any class
+    const isOwner = liveClass.instructorId.toString() === instructorId.toString();
+    const isAdmin = userRole === "admin" || userRole === "manager";
+
+    if (!isOwner && !isAdmin) {
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
 

@@ -56,9 +56,11 @@ export const getPublishedCourses = async () => {
 };
 
 export const getFeaturedCourses = async () => {
-  // Only show courses that are both published AND admin approved
+  // Only show courses that are both published AND admin approved, limit to 3 most recent
   return Course.find({ isPublished: true, isFeatured: true, isAdminApproved: true })
     .populate("instructorId", "name email profileImage")
+    .sort({ createdAt: -1 })
+    .limit(3)
     .lean();
 };
 
@@ -267,9 +269,29 @@ export const deleteCourse = (id: string) => {
   return Course.findByIdAndDelete(id);
 };
 
-export const getCoursesByInstructor = (instructorId: string) => {
-  return Course.find({ instructorId })
-    .sort({ createdAt: -1 });
+export const getCoursesByInstructor = async (instructorId: string, options?: { page?: number; limit?: number }) => {
+  const page = options?.page || 1;
+  const limit = options?.limit || 10;
+  const skip = (page - 1) * limit;
+
+  const [courses, total] = await Promise.all([
+    Course.find({ instructorId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Course.countDocuments({ instructorId })
+  ]);
+
+  return {
+    courses,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 };
 
 export const getCoursesByCategory = (category: string) => {

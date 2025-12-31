@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Card, CardBody, Button, Input, Chip, Spinner } from "@nextui-org/react";
 import { FaVideo, FaClock, FaCalendar, FaCheckCircle, FaBan, FaArrowLeft, FaTrash } from "react-icons/fa";
 import { useRouter } from "next/navigation";
@@ -8,8 +8,8 @@ import { toast } from "react-hot-toast";
 import {
     useGetPendingLiveClassesQuery,
     useApproveLiveClassMutation,
-    useRejectLiveClassMutation,
     useDeleteLiveClassMutation,
+    useUpdateLiveClassMutation,
 } from "@/redux/api/liveClassApi";
 
 export default function AdminLiveClassesPage() {
@@ -21,37 +21,56 @@ export default function AdminLiveClassesPage() {
     const [approvalFilter, setApprovalFilter] = useState("all");
     const itemsPerPage = 10;
 
-    const { data: pendingData, isLoading, refetch } = useGetPendingLiveClassesQuery(undefined);
+    // Get user role from localStorage
+    const [userRole, setUserRole] = useState<string>("");
+
+    React.useEffect(() => {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+            const user = JSON.parse(storedUser);
+            setUserRole(user.role || "admin");
+        }
+    }, []);
+
+    const { data: pendingData, isLoading, refetch } = useGetPendingLiveClassesQuery({
+        page: currentPage,
+        limit: itemsPerPage,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        platform: platformFilter !== "all" ? platformFilter : undefined,
+        isApproved: approvalFilter === "approved" ? true : approvalFilter === "pending" ? false : undefined,
+        search: searchQuery || undefined,
+    });
     const [approveLiveClass] = useApproveLiveClassMutation();
-    const [rejectLiveClass] = useRejectLiveClassMutation();
     const [deleteLiveClass] = useDeleteLiveClassMutation();
+    const [updateLiveClass] = useUpdateLiveClassMutation();
 
     const classes = pendingData?.data || [];
-
-    // Filter classes
-    let filteredClasses = classes.filter((cls: any) => {
-        const matchesSearch = 
-            cls.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            cls.courseId?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            cls.instructorId?.name?.toLowerCase().includes(searchQuery.toLowerCase());
-        
-        const matchesStatus = statusFilter === "all" || cls.status?.toLowerCase() === statusFilter.toLowerCase();
-        const matchesPlatform = platformFilter === "all" || cls.platform?.toLowerCase() === platformFilter.toLowerCase();
-        const matchesApproval = approvalFilter === "all" || 
-            (approvalFilter === "approved" && cls.isApproved) ||
-            (approvalFilter === "pending" && !cls.isApproved);
-        
-        return matchesSearch && matchesStatus && matchesPlatform && matchesApproval;
-    });
-
-    // Count approved and pending
-    const approvedCount = classes.filter((cls: any) => cls.isApproved).length;
-    const pendingCount = classes.filter((cls: any) => !cls.isApproved).length;
-
-    // Pagination
-    const totalPages = Math.ceil(filteredClasses.length / itemsPerPage);
+    const pagination = pendingData?.pagination;
+    const totalPages = pagination ? Math.ceil(pagination.total / itemsPerPage) : 1;
+    const totalCount = pagination?.total || 0;
+    const paginatedClasses = classes;
+    const pendingCount = classes.filter((c: any) => !c.isApproved).length;
+    const approvedCount = classes.filter((c: any) => c.isApproved).length;
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedClasses = filteredClasses.slice(startIndex, startIndex + itemsPerPage);
+    const endIndex = Math.min(startIndex + classes.length, totalCount || classes.length);
+
+    const pageNumbers = useMemo(() => {
+        const maxButtons = 7;
+        if (totalPages <= maxButtons) {
+            return Array.from({ length: totalPages }, (_, i) => i + 1);
+        }
+
+        const pages: (number | string)[] = [1];
+        const start = Math.max(2, currentPage - 1);
+        const end = Math.min(totalPages - 1, currentPage + 1);
+
+        if (start > 2) pages.push("left-ellipsis");
+        for (let i = start; i <= end; i++) pages.push(i);
+        if (end < totalPages - 1) pages.push("right-ellipsis");
+        pages.push(totalPages);
+
+        return pages;
+    }, [currentPage, totalPages]);
 
     const handleApprove = async (id: string, title: string) => {
         if (confirm(`Approve live class: "${title}"?`)) {
@@ -65,18 +84,6 @@ export default function AdminLiveClassesPage() {
         }
     };
 
-    const handleReject = async (id: string, title: string) => {
-        if (confirm(`Reject and delete live class: "${title}"?`)) {
-            try {
-                await rejectLiveClass(id).unwrap();
-                toast.success("Live class rejected and deleted!");
-                refetch();
-            } catch (error: any) {
-                toast.error(error?.data?.message || "Failed to reject live class");
-            }
-        }
-    };
-
     const handleDelete = async (id: string, title: string) => {
         if (confirm(`Delete live class: "${title}"? This action cannot be undone.`)) {
             try {
@@ -85,6 +92,18 @@ export default function AdminLiveClassesPage() {
                 refetch();
             } catch (error: any) {
                 toast.error(error?.data?.message || "Failed to delete live class");
+            }
+        }
+    };
+
+    const handleRevoke = async (id: string, title: string) => {
+        if (confirm(`Revoke approval for: "${title}"?`)) {
+            try {
+                await updateLiveClass({ id, isApproved: false }).unwrap();
+                toast.success("Approval revoked.");
+                refetch();
+            } catch (error: any) {
+                toast.error(error?.data?.message || "Failed to revoke live class");
             }
         }
     };
@@ -118,7 +137,7 @@ export default function AdminLiveClassesPage() {
                         <Button 
                             variant="light" 
                             startContent={<FaArrowLeft />}
-                            onPress={() => router.push("/admin")}
+                            onPress={() => router.push(userRole === "manager" ? "/manager" : "/admin")}
                         >
                             Back
                         </Button>
@@ -129,7 +148,7 @@ export default function AdminLiveClassesPage() {
             </div>
 
             {/* Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
                 <Card className="bg-gradient-to-br from-orange-500 to-orange-600">
                     <CardBody className="text-white p-6">
                         <div className="flex items-center justify-between">
@@ -171,7 +190,7 @@ export default function AdminLiveClassesPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm opacity-90">Total Classes</p>
-                                <p className="text-3xl font-bold mt-1">{classes.length}</p>
+                                <p className="text-3xl font-bold mt-1">{totalCount}</p>
                             </div>
                             <FaVideo className="text-4xl opacity-50" />
                         </div>
@@ -305,7 +324,7 @@ export default function AdminLiveClassesPage() {
                                     </div>
 
                                     <div className="flex gap-2">
-                                        {!cls.isApproved && (
+                                        {!cls.isApproved ? (
                                             <Button
                                                 size="sm"
                                                 color="success"
@@ -315,16 +334,17 @@ export default function AdminLiveClassesPage() {
                                             >
                                                 Approve
                                             </Button>
+                                        ) : (
+                                            <Button
+                                                size="sm"
+                                                color="warning"
+                                                variant="flat"
+                                                startContent={<FaBan />}
+                                                onPress={() => handleRevoke(cls._id, cls.title)}
+                                            >
+                                                Revoke
+                                            </Button>
                                         )}
-                                        <Button
-                                            size="sm"
-                                            color="danger"
-                                            variant="flat"
-                                            startContent={<FaBan />}
-                                            onPress={() => handleReject(cls._id, cls.title)}
-                                        >
-                                            {cls.isApproved ? "Revoke" : "Reject"}
-                                        </Button>
                                         <Button
                                             size="sm"
                                             color="danger"
@@ -344,7 +364,7 @@ export default function AdminLiveClassesPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="mt-8 flex justify-center items-center gap-4">
+                <div className="mt-8 flex flex-wrap justify-center items-center gap-2">
                     <Button
                         size="sm"
                         isDisabled={currentPage === 1}
@@ -352,21 +372,27 @@ export default function AdminLiveClassesPage() {
                     >
                         Previous
                     </Button>
-                    
-                    <div className="flex gap-2">
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                            <Button
-                                key={page}
-                                size="sm"
-                                color={currentPage === page ? "primary" : "default"}
-                                variant={currentPage === page ? "solid" : "flat"}
-                                onPress={() => setCurrentPage(page)}
-                            >
-                                {page}
-                            </Button>
-                        ))}
+
+                    <div className="flex gap-2 flex-wrap justify-center">
+                        {pageNumbers.map((page, idx) =>
+                            typeof page === "number" ? (
+                                <Button
+                                    key={page}
+                                    size="sm"
+                                    color={currentPage === page ? "primary" : "default"}
+                                    variant={currentPage === page ? "solid" : "flat"}
+                                    onPress={() => setCurrentPage(page)}
+                                >
+                                    {page}
+                                </Button>
+                            ) : (
+                                <Button key={`${page}-${idx}`} size="sm" isDisabled variant="light">
+                                    ...
+                                </Button>
+                            )
+                        )}
                     </div>
-                    
+
                     <Button
                         size="sm"
                         isDisabled={currentPage === totalPages}
@@ -378,9 +404,9 @@ export default function AdminLiveClassesPage() {
             )}
 
             {/* Pagination Info */}
-            {filteredClasses.length > 0 && (
+            {totalCount > 0 && (
                 <div className="text-center text-sm text-gray-600 mt-4">
-                    Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredClasses.length)} of {filteredClasses.length} classes
+                    Showing {startIndex + 1} to {endIndex} of {totalCount} classes
                 </div>
             )}
         </div>

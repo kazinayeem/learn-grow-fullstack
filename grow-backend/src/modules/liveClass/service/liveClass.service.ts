@@ -17,10 +17,51 @@ export class LiveClassService {
       .populate("instructorId", "name email");
   }
 
-  static async getLiveClassesByInstructor(instructorId: string) {
-    return await LiveClass.find({ instructorId: new Types.ObjectId(instructorId) })
+  static async getLiveClassesByInstructor(
+    instructorId: string,
+    options?: { page?: number; limit?: number; status?: string; platform?: string; isApproved?: boolean; search?: string }
+  ) {
+    const page = options?.page && options.page > 0 ? options.page : 1;
+    const limit = options?.limit && options.limit > 0 ? options.limit : 10;
+    const skip = (page - 1) * limit;
+
+    const query: any = { instructorId: new Types.ObjectId(instructorId) };
+
+    if (options?.status) {
+      query.status = options.status;
+    }
+
+    if (options?.platform) {
+      query.platform = new RegExp(options.platform, "i");
+    }
+
+    if (options?.isApproved !== undefined) {
+      query.isApproved = options.isApproved;
+    }
+
+    if (options?.search) {
+      query.$or = [
+        { title: new RegExp(options.search, "i") },
+      ];
+    }
+
+    const total = await LiveClass.countDocuments(query);
+    const data = await LiveClass.find(query)
       .populate("courseId", "title")
-      .sort({ scheduledAt: -1 });
+      .populate("instructorId", "name email")
+      .sort({ scheduledAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    return {
+      data,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
+    };
   }
 
   static async getLiveClassesByCourse(courseId: string) {

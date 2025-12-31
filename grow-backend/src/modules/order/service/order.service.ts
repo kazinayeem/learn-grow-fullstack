@@ -231,19 +231,38 @@ export const getUserOrdersService = async (userId: string) => {
 /**
  * Get all orders (admin)
  */
-export const getAllOrdersService = async (filter?: { status?: string; planType?: string }) => {
+export const getAllOrdersService = async (filter?: { status?: string; planType?: string; page?: number; limit?: number }) => {
   try {
     const query: any = {};
     if (filter?.status) query.paymentStatus = filter.status;
     if (filter?.planType) query.planType = filter.planType;
 
+    const page = filter?.page || 1;
+    const limit = filter?.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const total = await Order.countDocuments(query);
+    
     const orders = await Order.find(query)
       .populate("userId", "name email phone")
       .populate("courseId", "title")
-      .populate("paymentMethodId", "name")
-      .sort({ createdAt: -1 });
+      .populate("paymentMethodId", "name accountNumber")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
-    return { success: true, data: orders };
+    const totalPages = Math.ceil(total / limit);
+
+    return { 
+      success: true, 
+      data: orders,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages
+      }
+    };
   } catch (error: any) {
     return { success: false, message: error.message };
   }

@@ -12,6 +12,8 @@ export default function StudentLiveClasses() {
     const { data: classesData, isLoading: classesLoading } = useGetUpcomingClassesQuery(20);
     const { data: ordersData } = useGetMyOrdersQuery();
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 3;
 
     // Update current time every second for countdown
     useEffect(() => {
@@ -83,9 +85,32 @@ export default function StudentLiveClasses() {
         });
     }, [allClasses, hasAllAccess, accessibleCourseIds]);
 
-    const upcomingClasses = accessibleClasses.filter((c: any) => 
-        c.status === "Scheduled"
-    );
+    // Filter for next 7 days
+    const next7DaysClasses = useMemo(() => {
+        const now = new Date();
+        const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+        return accessibleClasses.filter((c: any) => {
+            const classTime = new Date(c.scheduledAt);
+            return classTime >= now && classTime <= sevenDaysLater && c.status === "Scheduled";
+        }).sort((a: any, b: any) => {
+            return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
+        });
+    }, [accessibleClasses]);
+
+    // Pagination
+    const totalPages = Math.max(1, Math.ceil(next7DaysClasses.length / itemsPerPage));
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedClasses = next7DaysClasses.slice(startIndex, startIndex + itemsPerPage);
+    const displayStart = next7DaysClasses.length === 0 ? 0 : startIndex + 1;
+    const displayEnd = Math.min(startIndex + itemsPerPage, next7DaysClasses.length);
+
+    // Reset page if out of bounds
+    useEffect(() => {
+        if (currentPage > totalPages && totalPages > 0) {
+            setCurrentPage(1);
+        }
+    }, [totalPages, currentPage]);
 
     // Function to get countdown time
     const getTimeStatus = (scheduledAt: string) => {
@@ -145,78 +170,87 @@ export default function StudentLiveClasses() {
     }
 
     return (
-        <Card>
-            <CardHeader className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                    <FaVideo className="text-lg text-primary" />
-                    <h3 className="font-bold">Upcoming Live Classes</h3>
+        <Card className="shadow-lg bg-gradient-to-br from-gray-50 to-white border-1 border-gray-200">
+            <CardHeader className="flex justify-between items-center py-4 px-5 border-b-2 border-blue-100 bg-gradient-to-r from-blue-50 to-transparent">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                        <FaVideo className="text-base text-primary" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-sm text-gray-800">Upcoming Live Classes</h3>
+                        <p className="text-xs text-gray-500">Next 7 Days</p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {upcomingClasses.length > 0 && (
-                        <Chip size="sm" color="primary" variant="flat">
-                            {upcomingClasses.length} upcoming
+                    {next7DaysClasses.length > 0 && (
+                        <Chip size="sm" color="primary" variant="shadow" className="text-xs font-semibold">
+                            {next7DaysClasses.length} class{next7DaysClasses.length !== 1 ? 'es' : ''}
                         </Chip>
                     )}
                     <Button
                         size="sm"
-                        variant="flat"
                         color="primary"
+                        variant="shadow"
+                        className="text-xs font-semibold"
                         onPress={() => router.push("/student/all-live-classes")}
                     >
-                        View All Classes
+                        View All
                     </Button>
                 </div>
             </CardHeader>
 
-            <CardBody className="space-y-3">
-                {upcomingClasses.length === 0 ? (
-                    <div className="text-center py-8">
-                        <FaVideo className="text-4xl text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-600 font-medium">No live classes scheduled yet</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                            Your instructors will schedule classes here
-                        </p>
+            <CardBody className="space-y-3 py-4 px-5">
+                {next7DaysClasses.length === 0 ? (
+                    <div className="text-center py-8 px-4 rounded-lg bg-gradient-to-b from-gray-100 to-gray-50">
+                        <div className="p-3 rounded-full bg-gray-300/20 w-fit mx-auto mb-3">
+                            <FaVideo className="text-3xl text-gray-400 mx-auto" />
+                        </div>
+                        <p className="text-gray-700 font-semibold text-sm">No live classes scheduled</p>
+                        <p className="text-xs text-gray-500 mt-1">Check back soon or view all classes</p>
                     </div>
                 ) : (
                     <>
-                        {upcomingClasses.slice(0, 5).map((cls: any) => {
+                        {paginatedClasses.map((cls: any) => {
                             const classDate = new Date(cls.scheduledAt);
                             const courseName = typeof cls.courseId === "object" ? cls.courseId.title : "Course";
                             const instructorName = typeof cls.instructorId === "object" ? cls.instructorId.name : "Instructor";
                             const timeStatus = getTimeStatus(cls.scheduledAt);
 
                             return (
-                                <div key={cls._id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                                    <div className="flex items-start justify-between mb-2">
-                                        <div className="flex-1">
-                                            <h4 className="font-semibold text-sm mb-1">{cls.title}</h4>
-                                            <p className="text-xs text-gray-600">{courseName}</p>
+                                <div key={cls._id} className="border border-gray-200 rounded-lg p-3 hover:shadow-md hover:border-primary/30 transition-all duration-300 bg-white">
+                                    <div className="flex items-start justify-between mb-2 gap-2">
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-bold text-sm mb-1 line-clamp-2 text-gray-800">{cls.title}</h4>
+                                            <p className="text-xs text-gray-600 line-clamp-1">{courseName}</p>
                                         </div>
-                                        <Chip size="sm" variant="flat" color="success">
+                                        <Chip size="sm" variant="shadow" color="success" className="text-xs whitespace-nowrap font-semibold">
                                             {cls.platform}
                                         </Chip>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-3">
-                                        <div className="flex items-center gap-1">
-                                            <FaCalendar className="text-primary" />
-                                            <span>{classDate.toLocaleDateString()}</span>
+                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-3 bg-gray-50 rounded-lg p-2">
+                                        <div className="flex items-center gap-1.5">
+                                            <FaCalendar className="text-xs text-blue-500" />
+                                            <span className="text-xs font-medium">{classDate.toLocaleDateString()}</span>
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            <FaClock className="text-primary" />
-                                            <span>{classDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                                        <div className="flex items-center gap-1.5">
+                                            <FaClock className="text-xs text-orange-500" />
+                                            <span className="text-xs font-medium">{classDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                                         </div>
                                     </div>
 
                                     {/* Countdown/Status Display */}
-                                    <div className="mb-3 p-2 rounded-lg bg-gray-100">
+                                    <div className="mb-3">
                                         <Chip
                                             size="sm"
-                                            variant="flat"
+                                            variant="shadow"
                                             color={timeStatus.color as any}
-                                            className="font-bold"
+                                            className="font-bold text-xs w-full justify-center py-1"
                                         >
-                                            {timeStatus.status === "ended" ? "⏰ Over" : `⏱️ ${timeStatus.display}`}
+                                            <div className="flex items-center gap-1.5">
+                                                {timeStatus.status === "soon" && <div className="animate-pulse w-2 h-2 rounded-full bg-current"></div>}
+                                                {timeStatus.status === "ended" ? "Class Over" : `${timeStatus.display}`}
+                                            </div>
                                         </Chip>
                                     </div>
 
@@ -225,25 +259,26 @@ export default function StudentLiveClasses() {
                                             <Button
                                                 size="sm"
                                                 color="default"
-                                                className="flex-1"
+                                                variant="flat"
+                                                className="flex-1 text-xs font-semibold"
                                                 isDisabled
                                             >
-                                                Class Over
+                                                Session Over
                                             </Button>
                                         ) : (
                                             <Button
                                                 size="sm"
                                                 color="primary"
-                                                className="flex-1"
-                                                startContent={<FaVideo />}
+                                                className="flex-1 text-xs font-semibold shadow-md"
                                                 onPress={() => window.open(cls.meetingLink, "_blank")}
                                             >
-                                                Join Class
+                                                Join Now
                                             </Button>
                                         )}
                                         <Button
                                             size="sm"
-                                            variant="flat"
+                                            variant="bordered"
+                                            className="text-xs font-semibold border-primary/20"
                                             onPress={() =>
                                                 router.push(
                                                     `/courses/${typeof cls.courseId === "object" ? cls.courseId._id : cls.courseId}`
@@ -256,6 +291,54 @@ export default function StudentLiveClasses() {
                                 </div>
                             );
                         })}
+
+                        {/* Pagination Controls */}
+                        {totalPages > 1 && (
+                            <div className="flex flex-wrap justify-center items-center gap-2 mt-4 pt-4 border-t-2 border-gray-100">
+                                <Button
+                                    size="sm"
+                                    isDisabled={currentPage === 1}
+                                    variant="flat"
+                                    className="text-xs font-semibold px-3"
+                                    onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                                >
+                                    ← Prev
+                                </Button>
+
+                                <div className="flex gap-1.5 flex-wrap justify-center">
+                                    {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => {
+                                        const startPage = Math.max(1, currentPage - 2);
+                                        return startPage + i;
+                                    }).map((page) => (
+                                        <Button
+                                            key={page}
+                                            size="sm"
+                                            color={currentPage === page ? "primary" : "default"}
+                                            variant={currentPage === page ? "shadow" : "flat"}
+                                            className="text-xs font-semibold px-2.5 min-w-fit"
+                                            onPress={() => setCurrentPage(page)}
+                                        >
+                                            {page}
+                                        </Button>
+                                    ))}
+                                </div>
+
+                                <Button
+                                    size="sm"
+                                    isDisabled={currentPage === totalPages}
+                                    variant="flat"
+                                    className="text-xs font-semibold px-3"
+                                    onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                                >
+                                    Next →
+                                </Button>
+                            </div>
+                        )}
+
+                        {/* Pagination Info */}
+                        <div className="text-center text-xs text-gray-500 font-medium pt-2">
+                            Showing {displayStart}-{displayEnd} of {next7DaysClasses.length} classes
+                        </div>
                     </>
                 )}
             </CardBody>

@@ -281,11 +281,15 @@ export const getCoursesByInstructor = async (req: Request, res: Response) => {
     const targetInstructorId =
       req.userRole === "instructor" ? req.userId! : req.params.instructorId;
 
-    const courses = await service.getCoursesByInstructor(targetInstructorId);
+    const page = Math.max(1, parseInt(req.query.page as string || "1"));
+    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit as string || "10")));
+
+    const result = await service.getCoursesByInstructor(targetInstructorId, { page, limit });
     res.json({
       success: true,
       message: "Instructor courses retrieved successfully",
-      data: courses,
+      data: result.courses,
+      pagination: result.pagination,
     });
   } catch (error: any) {
     res.status(500).json({

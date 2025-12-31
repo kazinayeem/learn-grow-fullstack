@@ -26,7 +26,7 @@ import {
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useGetAllOrdersQuery, useApproveOrderMutation, useRejectOrderMutation } from "@/redux/api/orderApi";
-import { FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft, FaEye } from "react-icons/fa";
 
 interface DeliveryAddress {
   name: string;
@@ -77,44 +77,114 @@ const STATUS_COLOR_MAP: Record<string, "default" | "primary" | "success" | "warn
 export default function OrdersAdminPage() {
   const router = useRouter();
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  
+  // Get user role
+  const [userRole, setUserRole] = React.useState<string>("");
+  
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      setUserRole(user.role || "admin");
+    }
+  }, []);
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "approved" | "rejected">("pending");
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const itemsPerPage = 10;
 
   const { data, isLoading, refetch } = useGetAllOrdersQuery({
     status: filterStatus === "all" ? undefined : filterStatus,
+    page: currentPage,
+    limit: itemsPerPage,
   });
   const [approveOrderMutation, { isLoading: approving }] = useApproveOrderMutation();
   const [rejectOrderMutation, { isLoading: rejecting }] = useRejectOrderMutation();
 
   const orders = data?.orders || [];
+  const pagination = data?.pagination;
 
   const handleApprove = async () => {
     if (!selectedOrder) return;
 
+    setIsProcessing(true);
     try {
       await approveOrderMutation(selectedOrder._id).unwrap();
-      toast.success("Order approved successfully!");
+      
+      // Send approval email with invoice to backend
+      const emailData = {
+        to: selectedOrder.userId.email,
+        subject: "Order Approved - Learn Grow Academy",
+        type: "approval",
+        orderDetails: {
+          orderId: selectedOrder._id,
+          userName: selectedOrder.userId.name,
+          userEmail: selectedOrder.userId.email,
+          planType: PLAN_LABELS[selectedOrder.planType],
+          price: selectedOrder.price,
+          courseTitle: selectedOrder.courseId?.title || "All Courses Access",
+          transactionId: selectedOrder.transactionId,
+          paymentMethod: selectedOrder.paymentMethodId.name,
+          approvalDate: new Date().toLocaleDateString("bn-BD"),
+        }
+      };
+
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      await fetch(`${backendUrl}/orders/send-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(emailData),
+      }).catch(err => console.log("Email send initiated (non-blocking)"));
+
+      toast.success("✅ Order approved & email sent!");
       refetch();
       onOpenChange();
     } catch (error: any) {
       console.error("Approval error:", error);
       toast.error(error.data?.message || "Failed to approve order");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleReject = async () => {
     if (!selectedOrder) return;
 
+    setIsProcessing(true);
     try {
       await rejectOrderMutation({ id: selectedOrder._id }).unwrap();
-      toast.success("Order rejected");
+
+      // Send rejection email to backend
+      const emailData = {
+        to: selectedOrder.userId.email,
+        subject: "Order Rejected - Learn Grow Academy",
+        type: "rejection",
+        orderDetails: {
+          orderId: selectedOrder._id,
+          userName: selectedOrder.userId.name,
+          transactionId: selectedOrder.transactionId,
+          price: selectedOrder.price,
+        }
+      };
+
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      await fetch(`${backendUrl}/orders/send-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(emailData),
+      }).catch(err => console.log("Email send initiated (non-blocking)"));
+
+      toast.success("❌ Order rejected & notification sent!");
       refetch();
       onOpenChange();
     } catch (error: any) {
       console.error("Rejection error:", error);
       toast.error(error.data?.message || "Failed to reject order");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -132,6 +202,19 @@ export default function OrdersAdminPage() {
     );
   });
 
+  // Use server pagination from API, fallback to client-side for search
+  const totalPages = pagination?.totalPages || Math.max(1, Math.ceil(filteredOrders.length / itemsPerPage));
+  const displayStart = filteredOrders.length === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1;
+  const displayEnd = Math.min(currentPage * itemsPerPage, pagination?.total || filteredOrders.length);
+  const paginatedOrders = searchTerm ? filteredOrders : orders;
+
+  // Reset page if out of bounds
+  React.useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -147,7 +230,7 @@ export default function OrdersAdminPage() {
           <Button 
             variant="light" 
             startContent={<FaArrowLeft />}
-            onPress={() => router.back()}
+            onPress={() => router.push(userRole === "manager" ? "/manager" : "/admin")}
           >
             Back
           </Button>
@@ -215,98 +298,152 @@ export default function OrdersAdminPage() {
       </div>
 
       {/* Orders Table */}
-      <Table aria-label="Orders table">
-        <TableHeader>
-          <TableColumn>ব্যবহারকারী</TableColumn>
-          <TableColumn>প্ল্যান</TableColumn>
-          <TableColumn>কোর্স/কিট</TableColumn>
-          <TableColumn>মূল্য</TableColumn>
-          <TableColumn>অ্যাক্সেস সময়</TableColumn>
-          <TableColumn>স্ট্যাটাস</TableColumn>
-          <TableColumn>অর্ডার তারিখ</TableColumn>
-          <TableColumn>অ্যাকশন</TableColumn>
-        </TableHeader>
-        <TableBody
-          emptyContent={
-            filteredOrders.length === 0 ? "কোনো অর্ডার নেই | No orders found" : undefined
-          }
-        >
-          {filteredOrders.map((order) => (
-            <TableRow key={order._id}>
-              <TableCell>
-                <div>
-                  <p className="font-semibold">{order.userId.name}</p>
-                  <p className="text-sm text-gray-600">{order.userId.email}</p>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div>
-                  <p className="font-semibold">{PLAN_LABELS[order.planType]}</p>
-                  {order.planType === "kit" && (
-                    <p className="text-xs text-gray-500">🤖 রোবোটিক্স কিট</p>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                {order.courseId ? (
-                  <div>
-                    <p className="font-semibold text-sm">{order.courseId.title}</p>
-                    <p className="text-xs text-gray-500">কোর্স ID: {order.courseId._id.slice(-6)}</p>
-                  </div>
-                ) : order.planType === "kit" ? (
-                  <p className="text-sm text-gray-600">📦 ডেলিভারি প্রয়োজন</p>
-                ) : (
-                  <p className="text-sm text-gray-500">সব কোর্স অ্যাক্সেস</p>
-                )}
-              </TableCell>
-              <TableCell>৳{order.price.toLocaleString()}</TableCell>
-              <TableCell>
-                {order.startDate && order.endDate ? (
-                  <div className="text-sm">
-                    <p className="text-xs text-gray-500">শুরু:</p>
-                    <p className="font-semibold">{new Date(order.startDate).toLocaleDateString("bn-BD")}</p>
-                    <p className="text-xs text-gray-500 mt-1">শেষ:</p>
-                    <p className="font-semibold">{new Date(order.endDate).toLocaleDateString("bn-BD")}</p>
-                    {order.isActive && new Date(order.endDate) > new Date() && (
-                      <Chip size="sm" color="success" variant="flat" className="mt-1">সক্রিয়</Chip>
+      <Card className="shadow-lg bg-white border border-gray-200">
+        <CardBody>
+          <Table aria-label="Orders table" className="overflow-auto">
+            <TableHeader>
+              <TableColumn>ব্যবহারকারী</TableColumn>
+              <TableColumn>প্ল্যান</TableColumn>
+              <TableColumn>কোর্স/কিট</TableColumn>
+              <TableColumn>মূল্য</TableColumn>
+              <TableColumn>অ্যাক্সেস সময়</TableColumn>
+              <TableColumn>স্ট্যাটাস</TableColumn>
+              <TableColumn>অর্ডার তারিখ</TableColumn>
+              <TableColumn>অ্যাকশন</TableColumn>
+            </TableHeader>
+            <TableBody
+              emptyContent={
+                filteredOrders.length === 0 ? "কোনো অর্ডার নেই | No orders found" : undefined
+              }
+            >
+              {paginatedOrders.map((order) => (
+                <TableRow key={order._id} className="hover:bg-blue-50 transition-colors">
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      <p className="font-semibold text-gray-900">{order.userId.name}</p>
+                      <p className="text-xs text-gray-500">{order.userId.email}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      <p className="font-semibold text-sm text-gray-800">{PLAN_LABELS[order.planType]}</p>
+                      {order.planType === "kit" && (
+                        <p className="text-xs text-gray-500">🤖 রোবোটিক্স কিট</p>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {order.courseId ? (
+                      <div className="flex flex-col gap-1">
+                        <p className="font-semibold text-sm text-gray-800">{order.courseId.title}</p>
+                        <p className="text-xs text-gray-500">ID: {order.courseId._id.slice(-6)}</p>
+                      </div>
+                    ) : order.planType === "kit" ? (
+                      <p className="text-sm text-gray-600">📦 ডেলিভারি প্রয়োজন</p>
+                    ) : (
+                      <p className="text-sm text-gray-500">সব কোর্স অ্যাক্সেস</p>
                     )}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500">পেন্ডিং</p>
-                )}
-              </TableCell>
-              <TableCell>
-                <Chip
-                  color={STATUS_COLOR_MAP[order.paymentStatus]}
-                  variant="flat"
-                  size="sm"
-                >
-                  {order.paymentStatus === "pending" && "পেন্ডিং"}
-                  {order.paymentStatus === "approved" && "অনুমোদিত"}
-                  {order.paymentStatus === "rejected" && "প্রত্যাখ্যাত"}
-                </Chip>
-              </TableCell>
-              <TableCell>
-                <div className="text-sm">
-                  <p>{new Date(order.createdAt).toLocaleDateString("bn-BD")}</p>
-                  <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleTimeString("bn-BD", { hour: '2-digit', minute: '2-digit' })}</p>
-                </div>
-              </TableCell>
-              <TableCell>
-                <Button
-                  isIconOnly
-                  color="primary"
-                  variant="light"
-                  size="sm"
-                  onPress={() => openOrderDetails(order)}
-                >
-                  বিস্তারিত
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-bold text-primary">৳{order.price.toLocaleString()}</span>
+                  </TableCell>
+                  <TableCell>
+                    {order.startDate && order.endDate ? (
+                      <div className="text-xs space-y-0.5">
+                        <p className="text-gray-500">শুরু: <span className="font-semibold text-gray-800">{new Date(order.startDate).toLocaleDateString("bn-BD")}</span></p>
+                        <p className="text-gray-500">শেষ: <span className="font-semibold text-gray-800">{new Date(order.endDate).toLocaleDateString("bn-BD")}</span></p>
+                        {order.isActive && new Date(order.endDate) > new Date() && (
+                          <Chip size="sm" color="success" variant="flat" className="mt-1">সক্রিয়</Chip>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 italic">পেন্ডিং</p>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      color={STATUS_COLOR_MAP[order.paymentStatus]}
+                      variant="solid"
+                      size="sm"
+                      className="font-semibold"
+                    >
+                      {order.paymentStatus === "pending" && "⏳ পেন্ডিং"}
+                      {order.paymentStatus === "approved" && "✅ অনুমোদিত"}
+                      {order.paymentStatus === "rejected" && "❌ প্রত্যাখ্যাত"}
+                    </Chip>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      <p className="font-semibold text-gray-800">{new Date(order.createdAt).toLocaleDateString("bn-BD")}</p>
+                      <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleTimeString("bn-BD", { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      color="primary"
+                      variant="light"
+                      size="sm"
+                      startContent={<FaEye className="text-lg" />}
+                      className="font-semibold"
+                      onPress={() => openOrderDetails(order)}
+                    >
+                      বিস্তারিত
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardBody>
+      </Card>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex flex-wrap justify-center items-center gap-2 mt-6 pt-4 border-t border-gray-200">
+          <Button
+            size="sm"
+            isDisabled={currentPage === 1}
+            variant="flat"
+            className="text-sm font-semibold px-4"
+            onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
+          >
+            ← Previous
+          </Button>
+
+          <div className="flex gap-1.5 flex-wrap justify-center">
+            {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+              const startPage = Math.max(1, currentPage - 2);
+              return startPage + i;
+            }).map((page) => (
+              <Button
+                key={page}
+                size="sm"
+                color={currentPage === page ? "primary" : "default"}
+                variant={currentPage === page ? "solid" : "flat"}
+                className="text-sm font-semibold px-3 min-w-fit"
+                onPress={() => setCurrentPage(page)}
+              >
+                {page}
+              </Button>
+            ))}
+          </div>
+
+          <Button
+            size="sm"
+            isDisabled={currentPage === totalPages}
+            variant="flat"
+            className="text-sm font-semibold px-4"
+            onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+          >
+            Next →
+          </Button>
+        </div>
+      )}
+
+      {/* Pagination Info */}
+      <div className="text-center text-sm text-gray-600 font-medium mt-4">
+        Showing {displayStart}-{displayEnd} of {pagination?.total || filteredOrders.length} orders | Page {currentPage} of {totalPages}
+      </div>
 
       {/* Order Details Modal */}
       <Modal
@@ -319,132 +456,132 @@ export default function OrdersAdminPage() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader>অর্ডার বিস্তারিত | Order Details</ModalHeader>
-              <ModalBody>
+              <ModalHeader className="text-base">অর্ডার বিস্তারিত | Order Details</ModalHeader>
+              <ModalBody className="space-y-3 text-sm">
                 {selectedOrder && (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {/* User Info */}
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h3 className="font-semibold mb-2">ব্যবহারকারীর তথ্য</h3>
-                      <p>
-                        <span className="text-gray-600">নাম:</span> {selectedOrder.userId.name}
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <h3 className="font-semibold mb-2 text-sm">ব্যবহারকারীর তথ্য</h3>
+                      <p className="text-xs">
+                        <span className="text-gray-600">নাম:</span> <span className="font-medium">{selectedOrder.userId.name}</span>
                       </p>
-                      <p>
-                        <span className="text-gray-600">ইমেইল:</span> {selectedOrder.userId.email}
+                      <p className="text-xs">
+                        <span className="text-gray-600">ইমেইল:</span> <span className="font-medium line-clamp-1">{selectedOrder.userId.email}</span>
                       </p>
                     </div>
 
                     {/* Order Info */}
-                    <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-4 rounded-lg border-2 border-blue-200">
-                      <h3 className="font-semibold mb-3 text-lg flex items-center gap-2">
+                    <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-3 rounded-lg border border-blue-200">
+                      <h3 className="font-semibold mb-2 text-sm flex items-center gap-1">
                         📋 অর্ডার তথ্য
                       </h3>
-                      <div className="space-y-2">
-                        <div>
-                          <span className="text-gray-600 font-medium">অর্ডার ID:</span>
-                          <code className="ml-2 bg-white px-2 py-1 rounded text-sm">{selectedOrder._id}</code>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="line-clamp-1">
+                          <span className="text-gray-600 font-medium">ID:</span>
+                          <code className="ml-1 bg-white px-1 py-0.5 rounded text-xs">{selectedOrder._id.slice(-8)}</code>
                         </div>
                         <div>
-                          <span className="text-gray-600 font-medium">প্ল্যান টাইপ:</span>
-                          <Chip size="sm" color="primary" variant="flat" className="ml-2">
+                          <span className="text-gray-600 font-medium">প্ল্যান:</span>
+                          <Chip size="xs" color="primary" variant="flat" className="ml-1">
                             {PLAN_LABELS[selectedOrder.planType]}
                           </Chip>
                         </div>
                         <div>
                           <span className="text-gray-600 font-medium">মূল্য:</span>
-                          <span className="ml-2 text-xl font-bold text-primary">৳{selectedOrder.price.toLocaleString()}</span>
+                          <span className="ml-1 font-bold text-primary">৳{selectedOrder.price.toLocaleString()}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600 font-medium">অর্ডার তারিখ:</span>
-                          <span className="ml-2">{new Date(selectedOrder.createdAt).toLocaleDateString("bn-BD", { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                          <span className="text-sm text-gray-500 ml-2">({new Date(selectedOrder.createdAt).toLocaleTimeString("bn-BD")})</span>
+                          <span className="text-gray-600 font-medium">তারিখ:</span>
+                          <span className="ml-1">{new Date(selectedOrder.createdAt).toLocaleDateString("bn-BD")}</span>
+                          <span className="text-xs text-gray-500 ml-1">({new Date(selectedOrder.createdAt).toLocaleTimeString("bn-BD", { hour: '2-digit', minute: '2-digit' })})</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Course/Kit Info */}
                     {selectedOrder.courseId && (
-                      <div className="bg-gradient-to-br from-green-50 to-teal-50 p-4 rounded-lg border-2 border-green-200">
-                        <h3 className="font-semibold mb-3 text-lg flex items-center gap-2">
-                          📚 কোর্স তথ্য
+                      <div className="bg-gradient-to-br from-green-50 to-teal-50 p-3 rounded-lg border border-green-200">
+                        <h3 className="font-semibold mb-2 text-sm flex items-center gap-1">
+                          📚 কোর্স
                         </h3>
-                        <div className="space-y-2">
-                          <p>
-                            <span className="text-gray-600 font-medium">কোর্সের নাম:</span>
-                            <span className="ml-2 font-semibold text-green-900">{selectedOrder.courseId.title}</span>
+                        <div className="space-y-1.5 text-xs">
+                          <p className="line-clamp-2">
+                            <span className="text-gray-600 font-medium">নাম:</span>
+                            <span className="ml-1 font-semibold text-green-900">{selectedOrder.courseId.title}</span>
                           </p>
-                          <p>
-                            <span className="text-gray-600 font-medium">কোর্স ID:</span>
-                            <code className="ml-2 bg-white px-2 py-1 rounded text-sm">{selectedOrder.courseId._id}</code>
+                          <p className="line-clamp-1">
+                            <span className="text-gray-600 font-medium">ID:</span>
+                            <code className="ml-1 bg-white px-1 py-0.5 rounded text-xs">{selectedOrder.courseId._id.slice(-6)}</code>
                           </p>
                         </div>
                       </div>
                     )}
 
                     {selectedOrder.planType === "kit" && (
-                      <div className="bg-gradient-to-br from-orange-50 to-yellow-50 p-4 rounded-lg border-2 border-orange-200">
-                        <h3 className="font-semibold mb-3 text-lg flex items-center gap-2">
-                          🤖 রোবোটিক্স কিট তথ্য
+                      <div className="bg-gradient-to-br from-orange-50 to-yellow-50 p-3 rounded-lg border border-orange-200">
+                        <h3 className="font-semibold mb-2 text-sm flex items-center gap-1">
+                          🤖 কিট
                         </h3>
-                        <p className="text-gray-700">
-                          এই অর্ডারে একটি রোবোটিক্স কিট রয়েছে যা ডেলিভারি করা হবে।
+                        <p className="text-xs text-gray-700 mb-1">
+                          ডেলিভারি প্রয়োজন
                         </p>
-                        <div className="mt-2 bg-white p-3 rounded">
-                          <p className="text-sm text-gray-600">কিট কন্টেন্ট: Arduino, Sensors, Motors, Components</p>
+                        <div className="bg-white p-2 rounded">
+                          <p className="text-xs text-gray-600">Arduino, Sensors, Motors, Components</p>
                         </div>
                       </div>
                     )}
 
                     {/* Payment Info */}
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h3 className="font-semibold mb-2">পেমেন্ট তথ্য</h3>
-                      <p>
-                        <span className="text-gray-600">পেমেন্ট পদ্ধতি:</span>{" "}
-                        {selectedOrder.paymentMethodId.name}
-                      </p>
-                      <p>
-                        <span className="text-gray-600">অ্যাকাউন্ট:</span>{" "}
-                        {selectedOrder.paymentMethodId.accountNumber}
-                      </p>
-                      <p>
-                        <span className="text-gray-600">ট্রানজ্যাকশন ID:</span> {selectedOrder.transactionId}
-                      </p>
-                      <p>
-                        <span className="text-gray-600">পাঠানোর নম্বর:</span> {selectedOrder.senderNumber}
-                      </p>
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <h3 className="font-semibold mb-2 text-sm">পেমেন্ট তথ্য</h3>
+                      <div className="space-y-1 text-xs">
+                        <p className="line-clamp-1">
+                          <span className="text-gray-600">পদ্ধতি:</span> <span className="font-medium">{selectedOrder.paymentMethodId.name}</span>
+                        </p>
+                        <p className="line-clamp-1">
+                          <span className="text-gray-600">অ্যাকাউন্ট:</span> <span className="font-medium">{selectedOrder.paymentMethodId.accountNumber}</span>
+                        </p>
+                        <p className="line-clamp-1">
+                          <span className="text-gray-600">ট্রানজ্যাকশন:</span> <span className="font-medium">{selectedOrder.transactionId.slice(-8)}</span>
+                        </p>
+                        <p className="line-clamp-1">
+                          <span className="text-gray-600">সেন্ডার:</span> <span className="font-medium">{selectedOrder.senderNumber}</span>
+                        </p>
+                      </div>
                     </div>
 
                     {/* Delivery Address */}
                     {selectedOrder.deliveryAddress && (
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <h3 className="font-semibold mb-2">ডেলিভারি ঠিকানা</h3>
-                        <p>
-                          <span className="text-gray-600">নাম:</span> {selectedOrder.deliveryAddress.name}
-                        </p>
-                        <p>
-                          <span className="text-gray-600">ফোন:</span> {selectedOrder.deliveryAddress.phone}
-                        </p>
-                        <p>
-                          <span className="text-gray-600">ঠিকানা:</span>{" "}
-                          {selectedOrder.deliveryAddress.fullAddress}, {selectedOrder.deliveryAddress.city}-
-                          {selectedOrder.deliveryAddress.postalCode}
-                        </p>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <h3 className="font-semibold mb-2 text-sm">ডেলিভারি ঠিকানা</h3>
+                        <div className="space-y-1 text-xs">
+                          <p className="line-clamp-1">
+                            <span className="text-gray-600">নাম:</span> {selectedOrder.deliveryAddress.name}
+                          </p>
+                          <p className="line-clamp-1">
+                            <span className="text-gray-600">ফোন:</span> {selectedOrder.deliveryAddress.phone}
+                          </p>
+                          <p className="line-clamp-2">
+                            <span className="text-gray-600">ঠিকানা:</span> {selectedOrder.deliveryAddress.fullAddress}, {selectedOrder.deliveryAddress.city}-{selectedOrder.deliveryAddress.postalCode}
+                          </p>
+                        </div>
                       </div>
                     )}
 
                     {/* Status & Access Time Info */}
-                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-lg border-2 border-purple-200">
-                      <h3 className="font-semibold mb-3 text-lg flex items-center gap-2">
-                        ⏰ স্ট্যাটাস ও অ্যাক্সেস সময়
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-3 rounded-lg border border-purple-200">
+                      <h3 className="font-semibold mb-2 text-sm flex items-center gap-1">
+                        ⏰ স্ট্যাটাস
                       </h3>
-                      <div className="space-y-3">
-                        <div>
-                          <span className="text-gray-600 font-medium">পেমেন্ট স্ট্যাটাস:</span>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-600 font-medium text-xs">পেমেন্ট:</span>
                           <Chip
                             color={STATUS_COLOR_MAP[selectedOrder.paymentStatus]}
                             variant="solid"
-                            size="md"
-                            className="ml-2"
+                            size="sm"
+                            className="text-xs"
                           >
                             {selectedOrder.paymentStatus === "pending" && "⏳ পেন্ডিং"}
                             {selectedOrder.paymentStatus === "approved" && "✅ অনুমোদিত"}
@@ -453,49 +590,41 @@ export default function OrdersAdminPage() {
                         </div>
 
                         {selectedOrder.startDate && selectedOrder.endDate && (
-                          <div className="bg-white p-4 rounded-lg space-y-2">
-                            <div className="flex justify-between items-center">
+                          <div className="bg-white p-2 rounded space-y-1 text-xs">
+                            <div className="flex justify-between items-center gap-1">
                               <div>
-                                <p className="text-xs text-gray-500">অ্যাক্সেস শুরু</p>
-                                <p className="font-semibold text-green-700">
-                                  {new Date(selectedOrder.startDate).toLocaleDateString("bn-BD", {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                  })}
+                                <p className="text-xs text-gray-500">শুরু</p>
+                                <p className="font-semibold text-green-700 text-xs">
+                                  {new Date(selectedOrder.startDate).toLocaleDateString("bn-BD")}
                                 </p>
                               </div>
-                              <div className="text-2xl">→</div>
+                              <div>→</div>
                               <div>
-                                <p className="text-xs text-gray-500">অ্যাক্সেস শেষ</p>
-                                <p className="font-semibold text-red-700">
-                                  {new Date(selectedOrder.endDate).toLocaleDateString("bn-BD", {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                  })}
+                                <p className="text-xs text-gray-500">শেষ</p>
+                                <p className="font-semibold text-red-700 text-xs">
+                                  {new Date(selectedOrder.endDate).toLocaleDateString("bn-BD")}
                                 </p>
                               </div>
                             </div>
 
-                            <div className="pt-2 border-t border-gray-200">
+                            <div className="pt-1 border-t border-gray-200 space-y-0.5">
                               <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-600">মোট সময়কাল:</span>
-                                <span className="font-semibold">৯০ দিন (৩ মাস)</span>
+                                <span className="text-gray-600">সময়কাল:</span>
+                                <span className="font-semibold">৯০ দিন</span>
                               </div>
-                              <div className="flex items-center justify-between mt-1">
-                                <span className="text-sm text-gray-600">বর্তমান স্ট্যাটাস:</span>
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600">স্ট্যাটাস:</span>
                                 {selectedOrder.isActive && new Date(selectedOrder.endDate) > new Date() ? (
-                                  <Chip size="sm" color="success" variant="flat">🟢 সক্রিয়</Chip>
+                                  <Chip size="xs" color="success" variant="flat" className="text-xs">সক্রিয়</Chip>
                                 ) : (
-                                  <Chip size="sm" color="default" variant="flat">⚪ মেয়াদ শেষ</Chip>
+                                  <Chip size="xs" color="default" variant="flat" className="text-xs">মেয়াদ শেষ</Chip>
                                 )}
                               </div>
                               {selectedOrder.isActive && new Date(selectedOrder.endDate) > new Date() && (
-                                <div className="flex items-center justify-between mt-1">
-                                  <span className="text-sm text-gray-600">বাকি সময়:</span>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-gray-600">বাকি:</span>
                                   <span className="font-semibold text-primary">
-                                    {Math.ceil((new Date(selectedOrder.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} দিন
+                                    {Math.ceil((new Date(selectedOrder.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}d
                                   </span>
                                 </div>
                               )}
@@ -504,9 +633,9 @@ export default function OrdersAdminPage() {
                         )}
 
                         {!selectedOrder.startDate && selectedOrder.paymentStatus === "pending" && (
-                          <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
-                            <p className="text-sm text-yellow-800">
-                              ⏳ অনুমোদনের পরে অ্যাক্সেস সময় নির্ধারিত হবে
+                          <div className="bg-yellow-50 p-2 rounded border border-yellow-200">
+                            <p className="text-xs text-yellow-800">
+                              অনুমোদনের পরে অ্যাক্সেস সময় নির্ধারিত হবে
                             </p>
                           </div>
                         )}
@@ -515,27 +644,59 @@ export default function OrdersAdminPage() {
                   </div>
                 )}
               </ModalBody>
-              <ModalFooter>
+              <ModalFooter className="gap-3 bg-gray-50 border-t border-gray-200">
                 {selectedOrder?.paymentStatus === "pending" && (
                   <>
                     <Button
                       color="danger"
-                      variant="light"
+                      variant="flat"
                       onPress={handleReject}
-                      isLoading={rejecting}
+                      isLoading={isProcessing}
+                      isDisabled={isProcessing}
+                      className="font-semibold"
                     >
-                      প্রত্যাখ্যান করুন
+                      ❌ প্রত্যাখ্যান করুন
                     </Button>
                     <Button
                       color="success"
                       onPress={handleApprove}
-                      isLoading={approving}
+                      isLoading={isProcessing}
+                      isDisabled={isProcessing}
+                      className="font-semibold"
                     >
-                      অনুমোদন করুন
+                      ✅ অনুমোদন করুন
                     </Button>
                   </>
                 )}
-                <Button color="default" onPress={onClose}>
+                {selectedOrder?.paymentStatus === "approved" && (
+                  <Button
+                    color="danger"
+                    variant="flat"
+                    onPress={handleReject}
+                    isLoading={isProcessing}
+                    isDisabled={isProcessing}
+                    className="font-semibold"
+                  >
+                    ❌ প্রত্যাখ্যান করুন
+                  </Button>
+                )}
+                {selectedOrder?.paymentStatus === "rejected" && (
+                  <Button
+                    color="success"
+                    onPress={handleApprove}
+                    isLoading={isProcessing}
+                    isDisabled={isProcessing}
+                    className="font-semibold"
+                  >
+                    ✅ অনুমোদন করুন
+                  </Button>
+                )}
+                <Button 
+                  color="default" 
+                  variant="light"
+                  onPress={onClose}
+                  className="font-semibold"
+                >
                   বন্ধ করুন
                 </Button>
               </ModalFooter>

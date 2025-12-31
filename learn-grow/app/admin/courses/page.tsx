@@ -40,12 +40,24 @@ import { toast } from "react-toastify";
 
 export default function ManageCoursesPage() {
   const router = useRouter();
+  
+  // Get user role
+  const [userRole, setUserRole] = React.useState<string>("");
+  
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      setUserRole(user.role || "admin");
+    }
+  }, []);
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "approved">("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(6);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
@@ -82,8 +94,8 @@ export default function ManageCoursesPage() {
   const [updateCourse, { isLoading: isUpdatingCourse }] = useUpdateCourseMutation();
 
   const courseList: any[] = data?.data?.courses || data?.data || [];
-  const totalCourses = data?.data?.total || data?.total || courseList.length;
-  const totalPages = Math.ceil(totalCourses / limit);
+  const totalCourses = data?.pagination?.total || data?.data?.total || data?.total || courseList.length;
+  const totalPages = data?.pagination?.totalPages || Math.ceil(totalCourses / limit);
 
   // Debug: Log course data to see structure
   React.useEffect(() => {
@@ -180,7 +192,7 @@ export default function ManageCoursesPage() {
         <Button
           variant="light"
           startContent={<FaArrowLeft />}
-          onPress={() => router.back()}
+          onPress={() => router.push(userRole === "manager" ? "/manager" : "/admin")}
         >
           Back
         </Button>
@@ -241,6 +253,7 @@ export default function ManageCoursesPage() {
           }}
           className="w-full sm:w-48"
           size="lg"
+          variant="bordered"
         >
           <SelectItem key="" value="">All Categories</SelectItem>
           {categories?.map((cat: any) => (
@@ -256,9 +269,11 @@ export default function ManageCoursesPage() {
             setLimit(Number(e.target.value));
             setPage(1);
           }}
-          className="w-full sm:w-32"
+          className="w-full sm:w-40"
           size="lg"
+          variant="bordered"
         >
+          <SelectItem key="6" value="6">6</SelectItem>
           <SelectItem key="10" value="10">10</SelectItem>
           <SelectItem key="20" value="20">20</SelectItem>
           <SelectItem key="50" value="50">50</SelectItem>
@@ -438,15 +453,62 @@ export default function ManageCoursesPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center mt-8 mb-6">
-          <Pagination
-            total={totalPages}
-            page={page}
-            onChange={setPage}
-            showControls
-            color="primary"
-            size="lg"
-          />
+        <div className="flex flex-col items-center gap-4 mt-8 mb-6">
+          <div className="flex items-center gap-2 flex-wrap justify-center">
+            <Button
+              size="sm"
+              isDisabled={page === 1}
+              variant="flat"
+              className="text-sm font-semibold px-4"
+              onPress={() => setPage(Math.max(1, page - 1))}
+            >
+              ← Previous
+            </Button>
+
+            {/* Page Numbers */}
+            <div className="flex gap-1.5 flex-wrap justify-center">
+              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                let pageNum;
+                
+                if (totalPages <= 7) {
+                  // Show all pages if 7 or fewer
+                  pageNum = i + 1;
+                } else {
+                  // Show pages around current page
+                  const startPage = Math.max(1, Math.min(page - 3, totalPages - 6));
+                  pageNum = startPage + i;
+                }
+
+                return (
+                  <Button
+                    key={pageNum}
+                    size="sm"
+                    color={page === pageNum ? "primary" : "default"}
+                    variant={page === pageNum ? "solid" : "flat"}
+                    className="text-sm font-semibold px-3 min-w-[40px]"
+                    onPress={() => setPage(pageNum)}
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+
+            <Button
+              size="sm"
+              isDisabled={page === totalPages}
+              variant="flat"
+              className="text-sm font-semibold px-4"
+              onPress={() => setPage(Math.min(totalPages, page + 1))}
+            >
+              Next →
+            </Button>
+          </div>
+
+          {/* Pagination Info */}
+          <div className="text-sm text-gray-600 font-medium">
+            Page {page} of {totalPages} | Total Courses: {totalCourses}
+          </div>
         </div>
       )}
 

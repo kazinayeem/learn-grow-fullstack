@@ -399,7 +399,7 @@ function AdminDashboardContent() {
 
 export default function AdminDashboard() {
   return (
-    <RequireAuth allowedRoles={["admin", "manager"]}>
+    <RequireAuth allowedRoles={["admin"]}>
       <AdminDashboardContent />
     </RequireAuth>
   );

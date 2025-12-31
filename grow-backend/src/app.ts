@@ -21,6 +21,7 @@ import paymentMethodRoutes from "./modules/payment/routes/payment-method.route.j
 import orderRoutes from "./modules/order/routes/order.route.js";
 import teamRoutes from "./modules/team/routes/team.routes.js";
 import googleRoutes from "./modules/user/routes/google.routes.js";
+import analyticsRoutes from "./modules/analytics/analytics.route.js";
 import { ENV } from "./config/env.js";
 import "./config/passport.js";
 
@@ -73,6 +74,7 @@ export const createApp = () => {
   app.use("/api/assignment", assignmentRoutes);
   app.use("/api/status", statusRoutes);
   app.use("/api/v1/status", statusRoutes);
+  app.use("/api/analytics", analyticsRoutes);
   // Site Content (public + admin upsert)
   app.use("/api/site-content", siteContentRoutes);
   app.use("/api/v1/site-content", siteContentRoutes);

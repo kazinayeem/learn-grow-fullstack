@@ -1,0 +1,98 @@
+🚀 SEEDING LIVE CLASSES - STEP BY STEP
+=====================================
+
+⚠️  IMPORTANT: MongoDB Must Be Running First!
+
+STEP 1: Start MongoDB
+====================
+Open a NEW terminal/command prompt and run:
+
+    mongod
+
+Wait for this message:
+    "waiting for connections on port 27017"
+
+Leave this terminal open while seeding.
+
+---
+
+STEP 2: In Another Terminal, Go to Backend
+===========================================
+    cd c:\Users\NAYEEM\OneDrive\Desktop\learn-grow-fullstack\grow-backend
+
+---
+
+STEP 3: Run the Seeding Script
+==============================
+    npm run db:seed-live-classes
+
+OR directly:
+
+    node seed-500-classes.js
+
+---
+
+EXPECTED OUTPUT
+===============
+You should see:
+
+    🔗 Connecting to MongoDB...
+    ✅ Connected to MongoDB
+    
+    📊 Existing live classes: 0
+    
+    🌱 Seeding 500 live classes...
+       Instructor ID: 6952577980ee5a7cebb59a74
+       Course ID: 6952bcab6b638e58891980ab
+    
+      📝 Generated 50 classes...
+      📝 Generated 100 classes...
+      ...
+      📝 Generated 500 classes...
+    
+    💾 Inserting 500 classes into database...
+    ✅ Successfully inserted 500 classes!
+    
+    📊 Database Statistics:
+       Total Classes: 500
+       Scheduled: ~330
+       Completed: ~120
+       Cancelled: ~25
+       Approved: ~350
+       Pending Approval: ~150
+       With Recordings: ~50
+    
+    ✅ Seeding complete!
+
+---
+
+TROUBLESHOOTING
+===============
+
+❌ "connect ECONNREFUSED"
+   → MongoDB is not running
+   → Make sure you ran 'mongod' in step 1
+   → Wait for "waiting for connections on port 27017"
+
+❌ "Cannot find module 'mongoose'"
+   → You're running from wrong directory
+   → Make sure you're in: grow-backend folder
+   → Run: cd grow-backend first
+
+❌ "EADDRINUSE: address already in use"
+   → MongoDB port is already in use
+   → Change port or kill existing MongoDB process
+
+---
+
+VERIFY IT WORKED
+================
+1. Go to: http://localhost:3000/instructor/live-classes/
+2. Refresh the page
+3. You should see 500 classes (pagination shows 10 per page)
+4. Try "Mark as Done" button on a scheduled class
+5. Try adding a recording link on a completed class
+
+---
+
+That's it! Follow these 3 steps and you'll have 500 classes seeded.

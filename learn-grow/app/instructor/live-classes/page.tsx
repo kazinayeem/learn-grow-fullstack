@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
     Card,
     CardBody,
@@ -63,16 +63,6 @@ export default function InstructorLiveClassesPage() {
         return () => clearInterval(timer);
     }, []);
 
-    // API Queries - skip until authenticated
-    const { data: coursesData, isLoading: coursesLoading } = useGetInstructorCoursesQuery(instructorId as string, {
-        skip: !isAuthed || !instructorId,
-    });
-    const { data: classesData, isLoading: classesLoading, refetch } = useGetInstructorLiveClassesQuery(undefined, { skip: !isAuthed });
-    const [createLiveClass, { isLoading: createLoading }] = useCreateLiveClassMutation();
-    const [deleteLiveClass, { isLoading: deleteLoading }] = useDeleteLiveClassMutation();
-    const [updateRecordedLink, { isLoading: recordingLoading }] = useUpdateRecordedLinkMutation();
-    const [updateLiveClass] = useUpdateLiveClassMutation();
-
     const [newClass, setNewClass] = useState({
         title: "",
         courseId: "",
@@ -102,10 +92,33 @@ export default function InstructorLiveClassesPage() {
         meetingLink: "",
     });
     const [currentTime, setCurrentTime] = useState(new Date());
-    const itemsPerPage = 10;
+    const itemsPerPage = 12;
+
+    // API Queries - skip until authenticated
+    const { data: coursesData, isLoading: coursesLoading } = useGetInstructorCoursesQuery(instructorId as string, {
+        skip: !isAuthed || !instructorId,
+    });
+
+    const queryParams = {
+        page: currentPage,
+        limit: itemsPerPage,
+        status: statusFilter !== "all" ? (statusFilter === "scheduled" ? "Scheduled" : "Completed") : undefined,
+        platform: platformFilter !== "all" ? platformFilter : undefined,
+        isApproved: approvalFilter === "approved" ? true : approvalFilter === "pending" ? false : undefined,
+        search: searchQuery || undefined,
+    } as const;
+
+    const { data: classesData, isLoading: classesLoading, refetch } = useGetInstructorLiveClassesQuery(queryParams, {
+        skip: !isAuthed,
+    });
+    const [createLiveClass, { isLoading: createLoading }] = useCreateLiveClassMutation();
+    const [deleteLiveClass, { isLoading: deleteLoading }] = useDeleteLiveClassMutation();
+    const [updateRecordedLink, { isLoading: recordingLoading }] = useUpdateRecordedLinkMutation();
+    const [updateLiveClass] = useUpdateLiveClassMutation();
 
     const instructorCourses = coursesData?.data || coursesData?.courses || [];
     const liveClasses = classesData?.data || [];
+    const totalClasses = classesData?.pagination?.total ?? liveClasses.length;
 
     const handleScheduleClass = async () => {
         setFormError(null);
@@ -170,6 +183,21 @@ export default function InstructorLiveClassesPage() {
                 alert("Class cancelled successfully");
             } catch (error) {
                 alert("Failed to cancel class");
+            }
+        }
+    };
+
+    const handleMarkAsDone = async (classId: string) => {
+        if (confirm("Mark this class as completed? You'll then be able to add the recorded link.")) {
+            try {
+                await updateLiveClass({
+                    id: classId,
+                    status: "Completed",
+                }).unwrap();
+                refetch();
+                alert("Class marked as completed");
+            } catch (error: any) {
+                alert("Failed to mark class as done: " + (error?.data?.message || "Unknown error"));
             }
         }
     };
@@ -267,25 +295,37 @@ export default function InstructorLiveClassesPage() {
     const upcomingClasses = liveClasses.filter((c: any) => c.status === "Scheduled");
     const completedClasses = liveClasses.filter((c: any) => c.status === "Completed");
 
-    // Apply search and filters
-    let filteredClasses = liveClasses.filter((cls: any) => {
-        const matchesSearch = 
-            cls.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            getCourseTitle(cls.courseId)?.toLowerCase().includes(searchQuery.toLowerCase());
-        
-        const matchesStatus = statusFilter === "all" || cls.status?.toLowerCase() === statusFilter.toLowerCase();
-        const matchesPlatform = platformFilter === "all" || cls.platform?.toLowerCase() === platformFilter.toLowerCase();
-        const matchesApproval = approvalFilter === "all" || 
-            (approvalFilter === "approved" && cls.isApproved) ||
-            (approvalFilter === "pending" && !cls.isApproved);
-        
-        return matchesSearch && matchesStatus && matchesPlatform && matchesApproval;
-    });
-
-    // Pagination
-    const totalPages = Math.ceil(filteredClasses.length / itemsPerPage);
+    const apiTotalPages = classesData?.pagination?.totalPages;
+    const computedTotalPages = Math.ceil(totalClasses / itemsPerPage) || 1;
+    const totalPages = Math.max(1, apiTotalPages ?? computedTotalPages);
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedClasses = filteredClasses.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedClasses = liveClasses;
+    const displayStart = totalClasses === 0 ? 0 : startIndex + 1;
+    const displayEnd = totalClasses === 0 ? 0 : Math.min(startIndex + paginatedClasses.length, totalClasses);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages || 1);
+        }
+    }, [currentPage, totalPages]);
+
+    const pageNumbers = useMemo(() => {
+        const maxButtons = 7;
+        if (totalPages <= maxButtons) {
+            return Array.from({ length: totalPages }, (_, i) => i + 1);
+        }
+
+        const pages: (number | string)[] = [1];
+        const start = Math.max(2, currentPage - 1);
+        const end = Math.min(totalPages - 1, currentPage + 1);
+
+        if (start > 2) pages.push("left-ellipsis");
+        for (let i = start; i <= end; i++) pages.push(i);
+        if (end < totalPages - 1) pages.push("right-ellipsis");
+        pages.push(totalPages);
+
+        return pages;
+    }, [currentPage, totalPages]);
 
     if (!isAuthed) {
         return (
@@ -466,7 +506,7 @@ export default function InstructorLiveClassesPage() {
                 )}
 
                 {/* All Classes with Pagination */}
-                {instructorCourses.length > 0 && filteredClasses.length > 0 && (
+                {instructorCourses.length > 0 && totalClasses > 0 && (
                     <div className="mb-8">
                         <h2 className="text-2xl font-bold mb-4">All Classes</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
@@ -585,21 +625,32 @@ export default function InstructorLiveClassesPage() {
                                         )}
                                     </CardBody>
 
-                                    <CardFooter className="p-6 pt-0 flex gap-2">
+                                    <CardFooter className="p-6 pt-0 flex gap-2 flex-wrap">
                                         {classItem.status === "Scheduled" ? (
                                             <>
                                                 <Button
                                                     color="primary"
-                                                    className="flex-1"
+                                                    className="flex-1 min-w-fit"
+                                                    size="sm"
                                                     startContent={<FaVideo />}
                                                     onPress={() => window.open(classItem.meetingLink, "_blank")}
                                                 >
                                                     Start Class
                                                 </Button>
                                                 <Button
+                                                    color="warning"
+                                                    className="flex-1 min-w-fit"
+                                                    size="sm"
+                                                    startContent={<FaVideo />}
+                                                    onPress={() => handleMarkAsDone(classItem._id)}
+                                                >
+                                                    Mark as Done
+                                                </Button>
+                                                <Button
                                                     color="default"
                                                     variant="flat"
-                                                    className="flex-1"
+                                                    className="flex-1 min-w-fit"
+                                                    size="sm"
                                                     startContent={<FaEdit />}
                                                     onPress={() => handleEditClass(classItem)}
                                                 >
@@ -633,7 +684,7 @@ export default function InstructorLiveClassesPage() {
 
                         {/* Pagination Controls */}
                         {totalPages > 1 && (
-                            <div className="flex justify-center items-center gap-4 mb-8">
+                            <div className="flex flex-wrap justify-center items-center gap-4 mb-8">
                                 <Button
                                     size="sm"
                                     isDisabled={currentPage === 1}
@@ -641,21 +692,27 @@ export default function InstructorLiveClassesPage() {
                                 >
                                     Previous
                                 </Button>
-                                
-                                <div className="flex gap-2">
-                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                        <Button
-                                            key={page}
-                                            size="sm"
-                                            color={currentPage === page ? "primary" : "default"}
-                                            variant={currentPage === page ? "solid" : "flat"}
-                                            onPress={() => setCurrentPage(page)}
-                                        >
-                                            {page}
-                                        </Button>
-                                    ))}
+
+                                <div className="flex gap-2 flex-wrap justify-center">
+                                    {pageNumbers.map((page, idx) =>
+                                        typeof page === "number" ? (
+                                            <Button
+                                                key={page}
+                                                size="sm"
+                                                color={currentPage === page ? "primary" : "default"}
+                                                variant={currentPage === page ? "solid" : "flat"}
+                                                onPress={() => setCurrentPage(page)}
+                                            >
+                                                {page}
+                                            </Button>
+                                        ) : (
+                                            <Button key={`${page}-${idx}`} size="sm" isDisabled variant="light">
+                                                ...
+                                            </Button>
+                                        )
+                                    )}
                                 </div>
-                                
+
                                 <Button
                                     size="sm"
                                     isDisabled={currentPage === totalPages}
@@ -668,13 +725,13 @@ export default function InstructorLiveClassesPage() {
 
                         {/* Pagination Info */}
                         <div className="text-center text-sm text-gray-600 mb-8">
-                            Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredClasses.length)} of {filteredClasses.length} classes
+                            Showing {displayStart} to {displayEnd} of {totalClasses} classes
                         </div>
                     </div>
                 )}
 
                 {/* No Classes Message */}
-                {instructorCourses.length > 0 && filteredClasses.length === 0 && (
+                {instructorCourses.length > 0 && totalClasses === 0 && (
                     <Card>
                         <CardBody className="text-center py-12">
                             <FaVideo className="text-4xl text-gray-300 mx-auto mb-4" />

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { Order } from "../model/order.model";
 import mongoose from "mongoose";
+import nodemailer from "nodemailer";
 import {
   createOrderService,
   getUserOrdersService,
@@ -78,11 +79,13 @@ export const createOrder = async (req: Request, res: Response) => {
 // Get all orders (Admin only)
 export const getAllOrders = async (req: Request, res: Response) => {
   try {
-    const { status, planType } = req.query;
+    const { status, planType, page = 1, limit = 10 } = req.query;
 
     const result = await getAllOrdersService({
       status: status as string,
       planType: planType as string,
+      page: parseInt(page as string) || 1,
+      limit: parseInt(limit as string) || 10,
     });
 
     if (!result.success) {
@@ -93,6 +96,7 @@ export const getAllOrders = async (req: Request, res: Response) => {
       success: true,
       orders: result.data,
       data: result.data,
+      pagination: result.pagination,
     });
   } catch (error: any) {
     console.error("Get all orders error:", error);
@@ -337,6 +341,157 @@ export const getEnrolledStudents = async (req: Request, res: Response) => {
       success: false, 
       message: "Failed to fetch enrolled students", 
       error: error.message 
+    });
+  }
+};
+
+// Send order email (approval/rejection with invoice)
+export const sendOrderEmail = async (req: Request, res: Response) => {
+  try {
+    const { to, subject, type, orderDetails } = req.body;
+
+    if (!to || !subject || !type || !orderDetails) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: to, subject, type, orderDetails"
+      });
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: process.env.EMAIL_SERVICE || "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
+
+    let htmlContent = "";
+
+    if (type === "approval") {
+      const { userName, orderId, courseTitle, price, approvalDate, planType, transactionId } = orderDetails;
+      htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 8px;">
+          <div style="background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #3b82f6; padding-bottom: 20px;">
+              <h1 style="color: #3b82f6; margin: 0; font-size: 28px;">✅ Order Approved!</h1>
+              <p style="color: #666; margin: 5px 0 0 0;">Learn Grow Academy</p>
+            </div>
+            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">Hello <strong>${userName}</strong>,</p>
+            <p style="font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 20px;">
+              We're excited to inform you that your payment has been <strong style="color: #10b981;">verified and approved</strong>! Your account is now activated.
+            </p>
+            <div style="background-color: #f0f9ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <h2 style="color: #3b82f6; margin-top: 0; font-size: 18px;">📋 Invoice Details</h2>
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                  <td style="padding: 10px 0; color: #666;"><strong>Order ID:</strong></td>
+                  <td style="padding: 10px 0; color: #333; text-align: right;"><code style="background: white; padding: 4px 8px; border-radius: 3px;">${orderId.slice(-8)}</code></td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                  <td style="padding: 10px 0; color: #666;"><strong>Plan Type:</strong></td>
+                  <td style="padding: 10px 0; color: #333; text-align: right;">${planType}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                  <td style="padding: 10px 0; color: #666;"><strong>Course/Plan:</strong></td>
+                  <td style="padding: 10px 0; color: #333; text-align: right;">${courseTitle}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                  <td style="padding: 10px 0; color: #666;"><strong>Amount:</strong></td>
+                  <td style="padding: 10px 0; color: #333; text-align: right; font-weight: bold; font-size: 14px;">৳${price.toLocaleString('bn-BD')}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                  <td style="padding: 10px 0; color: #666;"><strong>Transaction ID:</strong></td>
+                  <td style="padding: 10px 0; color: #333; text-align: right; font-size: 12px;">${transactionId.slice(-10)}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px 0; color: #666;"><strong>Approval Date:</strong></td>
+                  <td style="padding: 10px 0; color: #333; text-align: right;">${approvalDate}</td>
+                </tr>
+              </table>
+            </div>
+            <div style="background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <h3 style="color: #10b981; margin-top: 0; font-size: 16px;">🎓 Next Steps</h3>
+              <ul style="color: #666; font-size: 13px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                <li>Your access will be activated within 24 hours</li>
+                <li>You'll receive another email with your login credentials</li>
+                <li>Check your dashboard at https://learngrow.com</li>
+                <li>Start learning with unlimited course access</li>
+              </ul>
+            </div>
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #999;">
+              <p style="margin: 5px 0;">Learn Grow Academy | Making Education Accessible</p>
+              <p style="margin: 5px 0;">© 2025 Learn Grow. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (type === "rejection") {
+      const { userName, orderId, transactionId, price } = orderDetails;
+      htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 8px;">
+          <div style="background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #ef4444; padding-bottom: 20px;">
+              <h1 style="color: #ef4444; margin: 0; font-size: 28px;">❌ Order Rejected</h1>
+              <p style="color: #666; margin: 5px 0 0 0;">Learn Grow Academy</p>
+            </div>
+            <p style="font-size: 16px; color: #333; margin-bottom: 20px;">Hello <strong>${userName}</strong>,</p>
+            <p style="font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 20px;">
+              Unfortunately, your order payment could not be verified and has been <strong style="color: #ef4444;">rejected</strong>.
+            </p>
+            <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <h3 style="color: #ef4444; margin-top: 0; font-size: 16px;">Rejection Details</h3>
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <tr style="border-bottom: 1px solid #fee2e2;">
+                  <td style="padding: 10px 0; color: #666;"><strong>Order ID:</strong></td>
+                  <td style="padding: 10px 0; color: #333; text-align: right;"><code style="background: white; padding: 4px 8px; border-radius: 3px;">${orderId.slice(-8)}</code></td>
+                </tr>
+                <tr style="border-bottom: 1px solid #fee2e2;">
+                  <td style="padding: 10px 0; color: #666;"><strong>Amount:</strong></td>
+                  <td style="padding: 10px 0; color: #333; text-align: right; font-weight: bold;">৳${price.toLocaleString('bn-BD')}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px 0; color: #666;"><strong>Transaction ID:</strong></td>
+                  <td style="padding: 10px 0; color: #333; text-align: right; font-size: 12px;">${transactionId.slice(-10)}</td>
+                </tr>
+              </table>
+            </div>
+            <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <h3 style="color: #3b82f6; margin-top: 0; font-size: 16px;">💡 What Now?</h3>
+              <ul style="color: #666; font-size: 13px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                <li>Verify the transaction details provided</li>
+                <li>Contact our support team for more information</li>
+                <li>You can retry with corrected payment information</li>
+                <li>Our team will assist you within 24 hours</li>
+              </ul>
+            </div>
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #999;">
+              <p style="margin: 5px 0;">Learn Grow Academy | Making Education Accessible</p>
+              <p style="margin: 5px 0;">© 2025 Learn Grow. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to,
+      subject,
+      html: htmlContent,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({
+      success: true,
+      message: "Email sent successfully"
+    });
+  } catch (error: any) {
+    console.error("Send order email error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to send email",
+      error: error.message
     });
   }
 };

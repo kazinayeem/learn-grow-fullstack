@@ -18,6 +18,7 @@ import {
     Select,
     SelectItem,
     Switch,
+    Pagination,
 } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import { FaPlus, FaEdit, FaTrash, FaEye, FaUsers, FaChartLine } from "react-icons/fa";
@@ -53,6 +54,8 @@ export default function InstructorCoursesPage() {
     const [instructorId, setInstructorId] = useState<string | null>(null);
     const [isApproved, setIsApproved] = useState<boolean>(false);
     const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 12;
 
     const checkAndRefreshApprovalStatus = async () => {
         // Fetch fresh user data from server
@@ -101,9 +104,10 @@ export default function InstructorCoursesPage() {
     }, []);
 
     // Data query for instructor courses (stateless, skips until id ready)
-    const { data: instructorCoursesResp, isLoading } = useGetInstructorCoursesQuery(instructorId as string, {
-        skip: !instructorId,
-    });
+    const { data: instructorCoursesResp, isLoading } = useGetInstructorCoursesQuery(
+        { instructorId: instructorId as string, page: currentPage, limit: itemsPerPage },
+        { skip: !instructorId }
+    );
 
     // Mutations
     const [createCourse, { isLoading: isCreating }] = useCreateCourseMutation();
@@ -132,9 +136,18 @@ export default function InstructorCoursesPage() {
         ? instructorCoursesResp!.data
         : courses;
 
+    // Get pagination info from API response
+    const totalPages = instructorCoursesResp?.pagination?.totalPages || 1;
+
+    // Filter courses by search (client-side for now)
     const filteredCourses = hydratedCourses.filter((course: any) =>
         course.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    // Reset to page 1 when search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
 
     const handleCreateCourse = () => {
         // Reset errors
@@ -414,6 +427,19 @@ export default function InstructorCoursesPage() {
                     </Card>
                 ))}
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="flex justify-center mt-8">
+                    <Pagination
+                        total={totalPages}
+                        page={currentPage}
+                        onChange={setCurrentPage}
+                        showControls
+                        color="primary"
+                    />
+                </div>
+            )}
 
             {/* Modal removed; creation now on /instructor/courses/create */}
         </div>

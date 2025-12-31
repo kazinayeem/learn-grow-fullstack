@@ -48,7 +48,11 @@ export const courseApi = baseApi.injectEndpoints({
             providesTags: (result, error, id) => [{ type: "Course", id }],
         }),
         getInstructorCourses: build.query({
-            query: (instructorId: string) => ({ url: `/course/get-instructor-courses/${instructorId}`, method: "GET" }),
+            query: ({ instructorId, page = 1, limit = 12 }: { instructorId: string; page?: number; limit?: number }) => ({
+                url: `/course/get-instructor-courses/${instructorId}`,
+                method: "GET",
+                params: { page, limit },
+            }),
             providesTags: ["Course"],
         }),
         getCategoryCourses: build.query({

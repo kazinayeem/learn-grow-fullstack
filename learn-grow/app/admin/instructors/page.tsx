@@ -12,17 +12,24 @@ import {
 
 export default function InstructorApprovalPage() {
     const router = useRouter();
-    const { data: instructors, isLoading, refetch } = useGetAllInstructorsQuery(undefined);
-    const [approveInstructor, { isLoading: isApproving }] = useApproveInstructorMutation();
-    const [rejectInstructor, { isLoading: isRejecting }] = useRejectInstructorMutation();
-    const [processingId, setProcessingId] = React.useState<string | null>(null);
+    
+    // Get user role
+    const [userRole, setUserRole] = useState<string>("");
+    
+    useEffect(() => {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+            const user = JSON.parse(storedUser);
+            setUserRole(user.role || "admin");
+        }
+    }, []);
     
     // Pagination and search state
     const [searchTerm, setSearchTerm] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "approved">("all");
     const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(10);
+    const [limit, setLimit] = useState(12);
 
     // Debounce search
     useEffect(() => {
@@ -32,6 +39,17 @@ export default function InstructorApprovalPage() {
         }, 500);
         return () => clearTimeout(timer);
     }, [searchTerm]);
+
+    const { data, isLoading, refetch } = useGetAllInstructorsQuery({
+        page,
+        limit,
+        search: debouncedSearch,
+        status: filterStatus === "all" ? undefined : filterStatus,
+    });
+    
+    const [approveInstructor, { isLoading: isApproving }] = useApproveInstructorMutation();
+    const [rejectInstructor, { isLoading: isRejecting }] = useRejectInstructorMutation();
+    const [processingId, setProcessingId] = React.useState<string | null>(null);
 
     const handleApprove = async (instructorId: string) => {
         if (confirm("Are you sure you want to approve this instructor?")) {
@@ -74,27 +92,12 @@ export default function InstructorApprovalPage() {
         );
     }
 
-    const instructorList = instructors?.data || [];
+    const instructorList = data?.data || [];
+    const pagination = data?.pagination;
+    const totalPages = pagination?.totalPages || 1;
+    const totalInstructors = pagination?.total || instructorList.length;
     
-    // Filter by search and status
-    const filteredInstructors = instructorList.filter((instructor: any) => {
-        const matchesSearch = !debouncedSearch || 
-            instructor.name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-            instructor.email?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-            instructor._id?.toLowerCase().includes(debouncedSearch.toLowerCase());
-        
-        const matchesStatus = 
-            filterStatus === "all" ||
-            (filterStatus === "pending" && !instructor.isApproved) ||
-            (filterStatus === "approved" && instructor.isApproved);
-        
-        return matchesSearch && matchesStatus;
-    });
-    
-    // Pagination
-    const totalPages = Math.ceil(filteredInstructors.length / limit);
-    const paginatedInstructors = filteredInstructors.slice((page - 1) * limit, page * limit);
-    
+    // Get counts from current data
     const pending = instructorList.filter((i: any) => !i.isApproved);
     const approved = instructorList.filter((i: any) => i.isApproved);
 
@@ -103,10 +106,10 @@ export default function InstructorApprovalPage() {
             <Button
                 variant="light"
                 startContent={<FaArrowLeft />}
-                onPress={() => router.push("/admin")}
+                onPress={() => router.push(userRole === "manager" ? "/manager" : "/admin")}
                 className="mb-6"
             >
-                Back to Admin Dashboard
+                Back to Dashboard
             </Button>
             
             <div className="mb-8">
@@ -123,7 +126,7 @@ export default function InstructorApprovalPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm opacity-90">Total Instructors</p>
-                                <p className="text-3xl font-bold">{instructorList.length}</p>
+                                <p className="text-3xl font-bold">{totalInstructors}</p>
                             </div>
                             <FaUserCheck className="text-4xl opacity-50" />
                         </div>
@@ -158,7 +161,7 @@ export default function InstructorApprovalPage() {
             {/* Search and Filter Controls */}
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <Input
-                    placeholder="Search by name, email, or ID..."
+                    placeholder="Search by name, email..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     size="lg"
@@ -168,21 +171,6 @@ export default function InstructorApprovalPage() {
                     isClearable
                     onClear={() => setSearchTerm("")}
                 />
-                <Select
-                    label="Items per page"
-                    selectedKeys={[String(limit)]}
-                    onChange={(e) => {
-                        setLimit(Number(e.target.value));
-                        setPage(1);
-                    }}
-                    className="w-full sm:w-32"
-                    size="lg"
-                >
-                    <SelectItem key="10" value="10">10</SelectItem>
-                    <SelectItem key="20" value="20">20</SelectItem>
-                    <SelectItem key="50" value="50">50</SelectItem>
-                    <SelectItem key="100" value="100">100</SelectItem>
-                </Select>
             </div>
 
             {/* Filter Tabs */}
@@ -195,14 +183,14 @@ export default function InstructorApprovalPage() {
                 className="mb-6"
                 color="primary"
             >
-                <Tab key="all" title={`All (${filteredInstructors.length})`} />
-                <Tab key="pending" title={`Pending (${pending.length})`} />
-                <Tab key="approved" title={`Approved (${approved.length})`} />
+                <Tab key="all" title={`All (${totalInstructors})`} />
+                <Tab key="pending" title="Pending" />
+                <Tab key="approved" title="Approved" />
             </Tabs>
 
             {/* Instructors Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                {paginatedInstructors.map((instructor: any) => (
+                {instructorList.map((instructor: any) => (
                             <Card key={instructor._id} className={instructor.isApproved ? "border-2 border-green-300" : "border-2 border-yellow-300"}>
                                 <CardBody className="p-6">
                                     <div className="flex justify-between items-start mb-4">
@@ -267,20 +255,63 @@ export default function InstructorApprovalPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="flex justify-center mt-8 mb-6">
-                    <Pagination
-                        total={totalPages}
-                        page={page}
-                        onChange={setPage}
-                        showControls
-                        color="primary"
-                        size="lg"
-                    />
+                <div className="flex flex-col items-center gap-4 mt-8 mb-6">
+                    <div className="flex items-center gap-2 flex-wrap justify-center">
+                        <Button
+                            size="sm"
+                            isDisabled={page === 1}
+                            variant="flat"
+                            className="text-sm font-semibold px-4"
+                            onPress={() => setPage(Math.max(1, page - 1))}
+                        >
+                            ← Previous
+                        </Button>
+
+                        <div className="flex gap-1.5 flex-wrap justify-center">
+                            {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                                let pageNum;
+                                
+                                if (totalPages <= 7) {
+                                    pageNum = i + 1;
+                                } else {
+                                    const startPage = Math.max(1, Math.min(page - 3, totalPages - 6));
+                                    pageNum = startPage + i;
+                                }
+
+                                return (
+                                    <Button
+                                        key={pageNum}
+                                        size="sm"
+                                        color={page === pageNum ? "primary" : "default"}
+                                        variant={page === pageNum ? "solid" : "flat"}
+                                        className="text-sm font-semibold px-3 min-w-[40px]"
+                                        onPress={() => setPage(pageNum)}
+                                    >
+                                        {pageNum}
+                                    </Button>
+                                );
+                            })}
+                        </div>
+
+                        <Button
+                            size="sm"
+                            isDisabled={page === totalPages}
+                            variant="flat"
+                            className="text-sm font-semibold px-4"
+                            onPress={() => setPage(Math.min(totalPages, page + 1))}
+                        >
+                            Next →
+                        </Button>
+                    </div>
+
+                    <div className="text-sm text-gray-600 font-medium">
+                        Page {page} of {totalPages} | Total Instructors: {totalInstructors}
+                    </div>
                 </div>
             )}
 
             {/* No Results */}
-            {filteredInstructors.length === 0 && (
+            {instructorList.length === 0 && (
                 <Card>
                     <CardBody className="p-8 text-center text-gray-500">
                         No instructors found matching your criteria.

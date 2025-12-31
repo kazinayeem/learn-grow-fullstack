@@ -699,20 +699,62 @@ export const updatePhoneNumber = async (
 /**
  * Get all instructors with their approval status
  */
-export const getAllInstructors = async (): Promise<{
+export const getAllInstructors = async (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+}): Promise<{
   success: boolean;
   message: string;
   data?: any[];
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }> => {
   try {
-    const instructors = await User.find({ role: "instructor" }).select(
-      "-password -otp -otpExpiresAt -refreshToken -verificationToken"
-    );
+    const page = params?.page || 1;
+    const limit = params?.limit || 12;
+    const skip = (page - 1) * limit;
+
+    // Build query
+    const query: any = { role: "instructor" };
+
+    // Search filter
+    if (params?.search) {
+      query.$or = [
+        { name: { $regex: params.search, $options: "i" } },
+        { email: { $regex: params.search, $options: "i" } },
+      ];
+    }
+
+    // Status filter
+    if (params?.status === "pending") {
+      query.isApproved = false;
+    } else if (params?.status === "approved") {
+      query.isApproved = true;
+    }
+
+    const total = await User.countDocuments(query);
+    const instructors = await User.find(query)
+      .select("-password -otp -otpExpiresAt -refreshToken -verificationToken")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     return {
       success: true,
       message: "Instructors retrieved successfully",
       data: instructors,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   } catch (error: any) {
     console.error("Get instructors error:", error);

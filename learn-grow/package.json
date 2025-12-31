@@ -60,6 +60,7 @@
 		"react-quill-new": "^3.7.0",
 		"react-redux": "^9.2.0",
 		"react-toastify": "^10.0.3",
+		"recharts": "^3.6.0",
 		"sweetalert2": "^11.26.17",
 		"swiper": "^11.1.15"
 	},

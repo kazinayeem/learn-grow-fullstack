@@ -10,12 +10,16 @@ import StudentLiveClasses from "./StudentLiveClasses";
 
 export default function StudentDashboard() {
     const router = useRouter();
-    const { data: ordersData, isLoading: ordersLoading } = useGetMyOrdersQuery();
-    const { data: coursesData, isLoading: coursesLoading } = useGetAllCoursesQuery({ skip: 0, limit: 100 });
-
-    const [user, setUser] = React.useState<any>(null);
     const [currentPage, setCurrentPage] = React.useState(1);
     const coursesPerPage = 6;
+    
+    const { data: ordersData, isLoading: ordersLoading } = useGetMyOrdersQuery();
+    const { data: coursesData, isLoading: coursesLoading } = useGetAllCoursesQuery({ 
+        page: currentPage,
+        limit: coursesPerPage 
+    });
+
+    const [user, setUser] = React.useState<any>(null);
 
     React.useEffect(() => {
         const storedUser = localStorage.getItem("user");
@@ -26,6 +30,7 @@ export default function StudentDashboard() {
 
     const orders = ordersData?.orders || [];
     const allCourses = coursesData?.data || coursesData?.courses || [];
+    const totalCoursesInSystem = coursesData?.pagination?.total || coursesData?.total || 0;
 
     // Check if user has active quarterly (all access) subscription
     const hasAllAccess = useMemo(() => {
@@ -118,13 +123,12 @@ export default function StudentDashboard() {
         };
     }, [hasAllAccess, orders]);
 
-    // Pagination logic
-    const totalPages = Math.ceil(purchasedCourses.length / coursesPerPage);
-    const startIndex = (currentPage - 1) * coursesPerPage;
-    const endIndex = startIndex + coursesPerPage;
-    const displayedCourses = purchasedCourses.slice(startIndex, endIndex);
+    // Pagination logic - use API pagination
+    const totalPages = coursesData?.pagination?.totalPages || Math.ceil(purchasedCourses.length / coursesPerPage);
+    const displayedCourses = purchasedCourses; // All courses from API (already limited to 6)
 
     const stats = [
+        { label: "Total Courses Available", value: totalCoursesInSystem, color: "bg-indigo-500", icon: <FaBook /> },
         { label: "Purchased Courses", value: purchasedCourses.length, color: "bg-blue-500", icon: <FaBook /> },
         { label: "Total Orders", value: orders.filter(o => o.paymentStatus === "approved").length, color: "bg-green-500", icon: <FaCheckCircle />, clickable: true, onClick: () => router.push("/student/orders") },
         { label: "Pending Orders", value: orders.filter(o => o.paymentStatus === "pending").length, color: "bg-orange-500", icon: <FaClock /> },
@@ -174,7 +178,7 @@ export default function StudentDashboard() {
 
             <div className="container mx-auto max-w-7xl px-6 -mt-8">
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
                     {stats.map((stat, index) => (
                         <Card
                             key={index}
@@ -234,7 +238,7 @@ export default function StudentDashboard() {
                                     </h2>
                                     <div className="text-sm text-gray-500 flex items-center gap-2">
                                         <span>
-                                            {purchasedCourses.length} course{purchasedCourses.length !== 1 ? "s" : ""} available
+                                            {totalCoursesInSystem} course{totalCoursesInSystem !== 1 ? "s" : ""} available
                                         </span>
                                         {hasAllAccess && <Chip size="sm" color="success" variant="flat">Premium</Chip>}
                                     </div>
@@ -311,40 +315,57 @@ export default function StudentDashboard() {
                                             ))}
                                         </div>
                                         {totalPages > 1 && (
-                                            <div className="flex items-center justify-between pt-4 border-t">
-                                                <p className="text-sm text-gray-600">
-                                                    Showing {startIndex + 1}-{Math.min(endIndex, purchasedCourses.length)} of {purchasedCourses.length}
-                                                </p>
-                                                <div className="flex gap-2">
+                                            <div className="flex flex-col gap-3 pt-4 border-t">
+                                                <div className="flex items-center gap-2 flex-wrap justify-center">
                                                     <Button
                                                         size="sm"
                                                         variant="flat"
                                                         isDisabled={currentPage === 1}
-                                                        onPress={() => setCurrentPage(currentPage - 1)}
+                                                        onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                                                        className="font-semibold"
                                                     >
-                                                        Previous
+                                                        ← Previous
                                                     </Button>
-                                                    <div className="flex gap-1">
-                                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                                            <Button
-                                                                key={page}
-                                                                size="sm"
-                                                                variant={currentPage === page ? "solid" : "flat"}
-                                                                color={currentPage === page ? "primary" : "default"}
-                                                                onPress={() => setCurrentPage(page)}
-                                                            >
-                                                                {page}
-                                                            </Button>
-                                                        ))}
+
+                                                    <div className="flex gap-1.5 flex-wrap justify-center">
+                                                        {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => {
+                                                            let pageNum;
+                                                            
+                                                            if (totalPages <= 10) {
+                                                                pageNum = i + 1;
+                                                            } else {
+                                                                const startPage = Math.max(1, Math.min(currentPage - 4, totalPages - 9));
+                                                                pageNum = startPage + i;
+                                                            }
+
+                                                            return (
+                                                                <Button
+                                                                    key={pageNum}
+                                                                    size="sm"
+                                                                    variant={currentPage === pageNum ? "solid" : "flat"}
+                                                                    color={currentPage === pageNum ? "primary" : "default"}
+                                                                    onPress={() => setCurrentPage(pageNum)}
+                                                                    className="min-w-[40px] font-semibold"
+                                                                >
+                                                                    {pageNum}
+                                                                </Button>
+                                                            );
+                                                        })}
                                                     </div>
+
                                                     <Button
                                                         size="sm"
                                                         variant="flat"
                                                         isDisabled={currentPage === totalPages}
-                                                        onPress={() => setCurrentPage(currentPage + 1)}
+                                                        onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                                                        className="font-semibold"
                                                     >
-                                                        Next
+                                                        Next →
                                                     </Button>
+                                                </div>
+
+                                                <div className="text-center text-sm text-gray-600">
+                                                    Showing {((currentPage - 1) * coursesPerPage) + 1}-{Math.min(currentPage * coursesPerPage, totalCoursesInSystem)} of {totalCoursesInSystem} courses | Page {currentPage} of {totalPages}
                                                 </div>
                                             </div>
                                         )}

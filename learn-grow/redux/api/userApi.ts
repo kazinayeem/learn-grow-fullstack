@@ -80,7 +80,16 @@ export const userApi = createApi({
 
         // Get all instructors (for admin)
         getAllInstructors: builder.query({
-            query: () => "/instructors",
+            query: (params = {}) => ({
+                url: "/instructors",
+                method: "GET",
+                params: {
+                    page: params.page || 1,
+                    limit: params.limit || 12,
+                    search: params.search || undefined,
+                    status: params.status || undefined,
+                },
+            }),
             providesTags: ["Users"],
         }),
 

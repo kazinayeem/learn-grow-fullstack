@@ -35,8 +35,8 @@ export default function AdminLayout({
       }
 
       const user = JSON.parse(userStr);
-      if (!user?.role || !["admin", "manager"].includes(user.role)) {
-        router.replace("/login");
+      if (!user?.role || user.role !== "admin") {
+        router.replace("/unauthorized");
         return;
       }
 
