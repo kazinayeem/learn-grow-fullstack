@@ -29,6 +29,7 @@ export default function LoginForm() {
     { label: "👨‍💼 Admin", email: "admin@learngrow.com", password: "admin123", icon: "🔐" },
     { label: "👨‍🎓 Student", email: "demo@learngrow.com", password: "demo123", icon: "📚" },
     { label: "👨‍🏫 Instructor", email: "instructor@learngrow.com", password: "demo123", icon: "🎓" },
+    { label: "👔 Manager", email: "manager@learngrow.com", password: "demo123", icon: "💼" },
   ];
 
   const fillDemoCredentials = (demoEmail: string, demoPassword: string) => {
@@ -143,13 +144,13 @@ export default function LoginForm() {
             <p className="text-xs font-semibold text-gray-700 mb-3 text-center">
               🎯 Quick Login - Click to auto-fill:
             </p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {demoAccounts.map((account, index) => (
                 <Button
                   key={index}
                   size="sm"
                   variant="flat"
-                  color={index === 0 ? "danger" : index === 1 ? "primary" : "success"}
+                  color={index === 0 ? "danger" : index === 1 ? "primary" : index === 2 ? "success" : "warning"}
                   onClick={() => fillDemoCredentials(account.email, account.password)}
                   className="text-xs font-medium"
                   disabled={isLoading}

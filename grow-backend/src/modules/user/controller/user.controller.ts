@@ -71,6 +71,14 @@ export const login = async (req: Request, res: Response) => {
     const result = await service.login(req.body);
 
     if (result.success) {
+      // Set access token as httpOnly cookie for server-side auth fallback (separate name to avoid shadowing JS-readable cookie)
+      res.cookie("accessTokenHttpOnly", result.data?.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 60 * 60 * 1000, // 1 hour
+      });
+
       // Set refresh token as httpOnly cookie
       res.cookie("refreshToken", result.data?.refreshToken, {
         httpOnly: true,
@@ -96,10 +104,21 @@ export const login = async (req: Request, res: Response) => {
  */
 export const refreshToken = async (req: Request, res: Response) => {
   try {
-    const { refreshToken: token } = req.body;
+    const tokenFromBody = req.body?.refreshToken;
+    const tokenFromCookie = (req as any).cookies?.refreshToken;
+    const token = tokenFromBody || tokenFromCookie;
+
     const result = await service.refreshAccessToken(token);
 
     if (result.success) {
+      // Also rotate access token into httpOnly cookie (distinct name) to ensure subsequent requests succeed without headers
+      res.cookie("accessTokenHttpOnly", result.data?.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 60 * 60 * 1000, // 1 hour
+      });
+
       return res.status(200).json(result);
     } else {
       return res.status(401).json(result);

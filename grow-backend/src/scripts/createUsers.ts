@@ -93,6 +93,26 @@ async function createUsers() {
       console.log("   Password: demo123");
     }
 
+    // Check if manager already exists
+    const existingManager = await User.findOne({ email: "manager@learngrow.com" });
+    if (existingManager) {
+      console.log("ℹ️  Manager user already exists");
+    } else {
+      // Create Manager User
+      const managerUser = await User.create({
+        name: "Demo Manager",
+        email: "manager@learngrow.com",
+        phone: "01700000004",
+        password: hashedDemoPassword,
+        role: "manager",
+        isVerified: true,
+        isApproved: true,
+      });
+      console.log("✅ Manager user created successfully");
+      console.log("   Email: manager@learngrow.com");
+      console.log("   Password: demo123");
+    }
+
     console.log("\n📋 Summary:");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("Admin Login:");
@@ -105,6 +125,10 @@ async function createUsers() {
     console.log("");
     console.log("Demo Instructor Login:");
     console.log("  Email: instructor@learngrow.com");
+    console.log("  Password: demo123");
+    console.log("");
+    console.log("Manager Login:");
+    console.log("  Email: manager@learngrow.com");
     console.log("  Password: demo123");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 

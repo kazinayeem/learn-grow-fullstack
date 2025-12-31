@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
     Table,
     TableHeader,
@@ -35,6 +35,17 @@ export default function UserManagementPage() {
     const [limit, setLimit] = useState(10);
     const [roleFilter, setRoleFilter] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
+    const [currentUserRole, setCurrentUserRole] = useState<string>("");
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const userStr = localStorage.getItem("user");
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                setCurrentUserRole(user.role || "");
+            }
+        }
+    }, []);
 
     const { data, isLoading, refetch, isFetching } = useGetUsersAdminQuery({ page, limit, search: searchQuery, role: roleFilter });
     const [deleteUser] = useDeleteUserMutation();
@@ -127,6 +138,8 @@ export default function UserManagementPage() {
         switch (role) {
             case "admin":
                 return "danger";
+            case "manager":
+                return "success";
             case "instructor":
                 return "warning";
             default:
@@ -140,6 +153,7 @@ export default function UserManagementPage() {
         { key: "instructor", label: "Instructor" },
         { key: "guardian", label: "Guardian" },
         { key: "admin", label: "Admin" },
+        { key: "manager", label: "Manager" },
     ], []);
 
 
@@ -168,14 +182,16 @@ export default function UserManagementPage() {
                         <p className="text-gray-600 mt-1">Manage all platform users</p>
                     </div>
                 </div>
-                <Button
-                    color="primary"
-                    startContent={<FaPlus />}
-                    onPress={onOpen}
-                    size="lg"
-                >
-                    Add New User
-                </Button>
+                {currentUserRole === "admin" && (
+                    <Button
+                        color="primary"
+                        startContent={<FaPlus />}
+                        onPress={onOpen}
+                        size="lg"
+                    >
+                        Add New User
+                    </Button>
+                )}
             </div>
 
             {/* Stats */}
@@ -265,35 +281,39 @@ export default function UserManagementPage() {
                                     </div>
                                 </TableCell>
                                 <TableCell>
-                                    <Dropdown>
-                                        <DropdownTrigger>
-                                            <Button
-                                                variant="light"
-                                                size="sm"
-                                                isIconOnly
-                                            >
-                                                <FaEllipsisV />
-                                            </Button>
-                                        </DropdownTrigger>
-                                        <DropdownMenu aria-label="User actions">
-                                            <DropdownItem
-                                                key="edit"
-                                                startContent={<FaEdit />}
-                                                onPress={() => handleOpenEditModal(user)}
-                                            >
-                                                Edit User
-                                            </DropdownItem>
-                                            <DropdownItem
-                                                key="delete"
-                                                className="text-danger"
-                                                color="danger"
-                                                startContent={<FaTrash />}
-                                                onPress={() => handleDeleteUser(user._id, user.name)}
-                                            >
-                                                Delete User
-                                            </DropdownItem>
-                                        </DropdownMenu>
-                                    </Dropdown>
+                                    {currentUserRole === "admin" ? (
+                                        <Dropdown>
+                                            <DropdownTrigger>
+                                                <Button
+                                                    variant="light"
+                                                    size="sm"
+                                                    isIconOnly
+                                                >
+                                                    <FaEllipsisV />
+                                                </Button>
+                                            </DropdownTrigger>
+                                            <DropdownMenu aria-label="User actions">
+                                                <DropdownItem
+                                                    key="edit"
+                                                    startContent={<FaEdit />}
+                                                    onPress={() => handleOpenEditModal(user)}
+                                                >
+                                                    Edit User
+                                                </DropdownItem>
+                                                <DropdownItem
+                                                    key="delete"
+                                                    className="text-danger"
+                                                    color="danger"
+                                                    startContent={<FaTrash />}
+                                                    onPress={() => handleDeleteUser(user._id, user.name)}
+                                                >
+                                                    Delete User
+                                                </DropdownItem>
+                                            </DropdownMenu>
+                                        </Dropdown>
+                                    ) : (
+                                        <span className="text-sm text-gray-400">View Only</span>
+                                    )}
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -371,7 +391,7 @@ export default function UserManagementPage() {
                                             Role
                                         </label>
                                         <div className="flex gap-4">
-                                            {["student", "instructor", "admin"].map((role) => (
+                                            {["student", "instructor", "admin", "manager"].map((role) => (
                                                 <Button
                                                     key={role}
                                                     color={newUser.role === role ? "primary" : "default"}
@@ -434,7 +454,7 @@ export default function UserManagementPage() {
                                             Role
                                         </label>
                                         <div className="flex gap-4">
-                                            {["student", "instructor", "admin", "guardian"].map((role) => (
+                                            {["student", "instructor", "admin", "guardian", "manager"].map((role) => (
                                                 <Button
                                                     key={role}
                                                     color={editForm.role === role ? "primary" : "default"}

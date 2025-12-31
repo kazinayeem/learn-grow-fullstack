@@ -38,7 +38,7 @@ import {
   FaRobot,
 } from "react-icons/fa";
 
-function AdminDashboardContent() {
+function ManagerDashboardContent() {
   const router = useRouter();
 
   // Fetch real data
@@ -103,111 +103,57 @@ function AdminDashboardContent() {
       href: "/admin/courses",
     },
     {
-      title: "Live Classes",
-      description: "Approve and manage live classes",
-      icon: <FaCalendarAlt className="text-3xl" />,
-      color: "from-cyan-500 to-cyan-600",
-      href: "/admin/live-classes",
-    },
-    {
-      title: "Analytics",
-      description: "View platform analytics",
+      title: "View Reports",
+      description: "Analytics and insights",
       icon: <FaChartLine className="text-3xl" />,
       color: "from-purple-500 to-purple-600",
-      href: "/admin/analytics",
+      href: "/admin/reports",
     },
     {
-      title: "Manage Orders",
-      description: "Approve payment requests",
-      icon: <FaClipboardList className="text-3xl" />,
-      color: "from-red-500 to-red-600",
+      title: "Kit Orders",
+      description: "Manage hardware kit orders",
+      icon: <FaBriefcase className="text-3xl" />,
+      color: "from-pink-500 to-pink-600",
       href: "/admin/orders",
     },
     {
-      title: "Settings",
-      description: "Configure platform settings",
-      icon: <FaCog className="text-3xl" />,
-      color: "from-orange-500 to-orange-600",
-      href: "/admin/settings",
-    },
-    {
-      title: "Site Content",
-      description: "Manage pages, blog & team",
-      icon: <FaShieldAlt className="text-3xl" />,
-      color: "from-pink-500 to-pink-600",
-      href: "/admin/content",
-    },
-    {
-      title: "Manage Jobs",
-      description: "Post and manage job openings",
-      icon: <FaBriefcase className="text-3xl" />,
-      color: "from-teal-500 to-teal-600",
-      href: "/admin/jobs",
-    },
-    {
-      title: "Manage Blogs",
-      description: "Approve blogs and manage articles",
-      icon: <FaFileAlt className="text-3xl" />,
+      title: "Live Classes",
+      description: "Monitor live classes",
+      icon: <FaCalendarAlt className="text-3xl" />,
       color: "from-indigo-500 to-indigo-600",
-      href: "/admin/blog",
+      href: "/admin/live-classes",
     },
     {
-      title: "Create Blog",
-      description: "Write and publish a new blog post",
+      title: "Assignments",
+      description: "View all assignments",
       icon: <FaFileAlt className="text-3xl" />,
       color: "from-cyan-500 to-cyan-600",
-      href: "/blog/create",
+      href: "/admin/assignments",
     },
     {
-      title: "Manage Events",
-      description: "Create and manage events",
-      icon: <FaCalendarAlt className="text-3xl" />,
-      color: "from-red-500 to-red-600",
-      href: "/admin/events",
-    },
-    {
-      title: "Manage Guests",
-      description: "Add and manage event guests",
-      icon: <FaUserTie className="text-3xl" />,
-      color: "from-violet-500 to-violet-600",
-      href: "/admin/guests",
-    },
-  
-    {
-      title: "Payment Methods",
-      description: "Manage payment options",
+      title: "Transactions",
+      description: "Payment records",
       icon: <FaCreditCard className="text-3xl" />,
-      color: "from-blue-500 to-blue-600",
-      href: "/admin/payment-methods",
+      color: "from-red-500 to-red-600",
+      href: "/admin/transactions",
     },
   ];
 
   const recentActivity = [
-    {
-      type: "user",
-      message: "15 new students registered today",
-      time: "2 hours ago",
-    },
-    {
-      type: "course",
-      message: "3 new courses submitted for approval",
-      time: "4 hours ago",
-    },
-    {
-      type: "revenue",
-      message: "Revenue increased by 12% this week",
-      time: "1 day ago",
-    },
+    { type: "user", message: "5 new students registered today", time: "2 hours ago" },
+    { type: "course", message: "New course 'Advanced React' approved", time: "4 hours ago" },
+    { type: "revenue", message: "Payment of 15,000 BDT received", time: "6 hours ago" },
+    { type: "user", message: "Instructor John Doe submitted new course", time: "1 day ago" },
   ];
 
-  const isLoading = !usersData || !coursesData;
+  const isLoading = !usersData && !coursesData;
 
   return (
-    <div className="min-h-screen bg-gray-50 container mx-auto px-4 py-8 max-w-7xl">
+    <div>
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">Admin Dashboard 🛡️</h1>
-        <p className="text-gray-600">Manage and oversee the entire platform</p>
+        <h1 className="text-4xl font-bold mb-2">Manager Dashboard 📊</h1>
+        <p className="text-gray-600">Manage and oversee platform operations</p>
       </div>
 
       {/* Statistics Cards */}
@@ -397,10 +343,10 @@ function AdminDashboardContent() {
   );
 }
 
-export default function AdminDashboard() {
+export default function ManagerDashboard() {
   return (
     <RequireAuth allowedRoles={["admin", "manager"]}>
-      <AdminDashboardContent />
+      <ManagerDashboardContent />
     </RequireAuth>
   );
 }

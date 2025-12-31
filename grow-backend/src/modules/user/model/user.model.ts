@@ -5,7 +5,7 @@ export interface IUser {
   phone: string;
   email?: string;
   password: string;
-  role: "admin" | "instructor" | "student" | "guardian";
+  role: "admin" | "manager" | "instructor" | "student" | "guardian";
   profileImage?: string;
   otp?: string;
   otpExpiresAt?: Date;
@@ -32,7 +32,7 @@ const userSchema = new Schema<IUser>(
     password: { type: String },
     role: {
       type: String,
-      enum: ["admin", "instructor", "student", "guardian"],
+      enum: ["admin", "manager", "instructor", "student", "guardian"],
       default: "student",
       required: true,
     },

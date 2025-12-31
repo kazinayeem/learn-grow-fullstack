@@ -14,6 +14,7 @@ import { assignmentRoutes } from "./modules/assignment/index.js";
 import { siteContentRoutes } from "./modules/siteContent/index.js";
 import { settingsRoutes } from "./modules/settings/index.js";
 import { statusRoutes } from "./modules/status/index.js";
+import { liveClassRoutes } from "./modules/liveClass/index.js";
 import blogRoutes from "./modules/blog/routes/blog.route.js";
 import eventRoutes from "./modules/event/routes/event.route.js";
 import paymentMethodRoutes from "./modules/payment/routes/payment-method.route.js";
@@ -66,6 +67,7 @@ export const createApp = () => {
   app.use("/api/team", teamRoutes);
   app.use("/api/job", jobRoutes);
   app.use("/api/course", courseRoutes);
+  app.use("/api/live-classes", liveClassRoutes);
   app.use("/api/assessment", assessmentRoutes);
   app.use("/api/quiz", quizRoutes);
   app.use("/api/assignment", assignmentRoutes);

@@ -158,21 +158,21 @@ router.patch(
 router.patch(
   "/approve-course/:id",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   controller.approveCourse
 );
 
 router.patch(
   "/reject-course/:id",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   controller.rejectCourseApproval
 );
 
 router.get(
   "/pending-approval-courses",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   controller.getPendingApprovalCourses
 );
 
@@ -197,7 +197,7 @@ router.patch(
 router.patch(
   "/admin/set-registration/:id",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   validate(schema.adminSetRegistrationSchema),
   controller.adminSetRegistration
 );

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useGetMyOrdersQuery } from "@/redux/api/orderApi";
 import { useGetAllCoursesQuery } from "@/redux/api/courseApi";
 import { FaBook, FaCheckCircle, FaClock, FaTrophy, FaRocket, FaCalendar, FaShoppingCart } from "react-icons/fa";
+import StudentLiveClasses from "./StudentLiveClasses";
 
 export default function StudentDashboard() {
     const router = useRouter();
@@ -200,6 +201,9 @@ export default function StudentDashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Left Column - Subscription Info & Purchased Courses */}
                     <div className="lg:col-span-2 space-y-6">
+                        {/* Live Classes */}
+                        <StudentLiveClasses />
+
                         {/* Subscription Status */}
                         {activeSubscription && (
                             <Card className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">

@@ -25,7 +25,7 @@ router.post(
 router.patch(
   "/update-category/:id",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   validate(schema.updateCategorySchema),
   controller.updateCategory
 );
@@ -33,7 +33,7 @@ router.patch(
 router.delete(
   "/delete-category/:id",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   validate(schema.categoryIdSchema),
   controller.deleteCategory
 );

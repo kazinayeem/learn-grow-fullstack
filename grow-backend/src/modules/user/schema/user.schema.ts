@@ -6,9 +6,9 @@ export const createUserSchema = z.object({
     phone: z.string().min(10, "Phone must be at least 10 characters"),
     email: z.string().email("Invalid email address").optional().or(z.literal("")),
     password: z.string().min(6, "Password must be at least 6 characters"),
-    role: z.enum(["student", "instructor", "guardian"]).refine(
-      (val) => ["student", "instructor", "guardian"].includes(val),
-      { message: "Role must be student, instructor, or guardian" }
+    role: z.enum(["student", "instructor", "guardian", "admin", "manager"]).refine(
+      (val) => ["student", "instructor", "guardian", "admin", "manager"].includes(val),
+      { message: "Role must be student, instructor, guardian, admin, or manager" }
     ),
   }),
 });
@@ -36,7 +36,7 @@ export const registerSchema = z.object({
     email: z.string().email("Invalid email address").optional(),
     phone: z.string().min(10, "Phone must be at least 10 characters").optional(),
     password: z.string().min(6, "Password must be at least 6 characters"),
-    role: z.enum(["student", "instructor", "guardian"]),
+    role: z.enum(["student", "instructor", "guardian", "admin", "manager"]),
   }).refine((data) => data.email || data.phone, {
     message: "Either email or phone is required",
   }),

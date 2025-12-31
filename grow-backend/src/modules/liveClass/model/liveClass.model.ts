@@ -9,6 +9,8 @@ export interface ILiveClass {
   platform: "Zoom" | "Meet" | "Other";
   meetingLink: string;
   status: "Scheduled" | "Completed" | "Cancelled";
+  isApproved: boolean;
+  recordedLink?: string;
 }
 
 const liveClassSchema = new Schema<ILiveClass>({
@@ -19,11 +21,15 @@ const liveClassSchema = new Schema<ILiveClass>({
   duration: Number,
   platform: { type: String, enum: ["Zoom", "Meet", "Other"] },
   meetingLink: String,
+  recordedLink: { type: String, default: null },
   status: {
     type: String,
     enum: ["Scheduled", "Completed", "Cancelled"],
     default: "Scheduled",
   },
+  isApproved: { type: Boolean, default: false },
+}, { 
+  timestamps: true 
 });
 
 export const LiveClass = model<ILiveClass>("LiveClass", liveClassSchema);

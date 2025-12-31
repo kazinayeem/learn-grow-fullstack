@@ -55,12 +55,16 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
         return;
       }
 
-      const token = Cookies.get("accessToken");
+      const tokenCookie = Cookies.get("accessToken");
+      const tokenLocal = localStorage.getItem("token") || localStorage.getItem("accessToken");
+      const token = tokenCookie || tokenLocal;
       const user = localStorage.getItem("user");
+      const role = Cookies.get("userRole") || localStorage.getItem("userRole");
+
       console.log("🔄 Navbar: token =", token ? "EXISTS" : "MISSING");
       console.log("🔄 Navbar: user =", user ? "EXISTS" : "MISSING");
 
-      if (!token || !user) {
+      if (!token && !user) {
         console.log("🔄 Navbar: No auth data, setting unauthenticated");
         setIsAuthenticated(false);
         setUser(null);
@@ -69,8 +73,11 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
       }
 
       console.log("🔄 Navbar: Auth data found, setting authenticated");
+      const parsed = user ? JSON.parse(user) : null;
       setIsAuthenticated(true);
-      setUser(JSON.parse(user));
+      setUser(parsed);
+      const resolvedRole = parsed?.role || role || undefined;
+      setDashboardUrl(getDashboardUrl(resolvedRole));
       setIsLoading(false);
     };
 
@@ -203,6 +210,7 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
 export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
+  const [mobileAuth, setMobileAuth] = React.useState<{ authed: boolean; user?: any }>({ authed: false });
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -212,6 +220,29 @@ export const Navbar = () => {
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  React.useEffect(() => {
+    const syncMobile = () => {
+      const tokenCookie = Cookies.get("accessToken");
+      const tokenLocal = typeof window !== "undefined" ? localStorage.getItem("token") || localStorage.getItem("accessToken") : null;
+      const token = tokenCookie || tokenLocal;
+      const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+
+      if (token || userStr) {
+        try {
+          setMobileAuth({ authed: true, user: userStr ? JSON.parse(userStr) : undefined });
+        } catch {
+          setMobileAuth({ authed: true });
+        }
+      } else {
+        setMobileAuth({ authed: false });
+      }
+    };
+
+    syncMobile();
+    window.addEventListener("auth-change", syncMobile);
+    return () => window.removeEventListener("auth-change", syncMobile);
   }, []);
 
   return (
@@ -308,40 +339,81 @@ export const Navbar = () => {
         ))}
         <NavbarMenuItem>
           <div className="flex flex-col gap-3 mt-4 w-full">
-            <Button
-              as={NextLink}
-              className={clsx(
-                "text-sm font-bold border-2 bg-transparent",
-                isScrolled
-                  ? "text-white border-white/40 hover:bg-white/10"
-                  : "text-[#121064] border-[#121064]/40 hover:bg-[#121064]/5"
-              )}
-              href="/login"
-              size="lg"
-              variant="bordered"
-              radius="full"
-              fullWidth
-              onPress={() => setIsMenuOpen(false)}
-            >
-              লগইন
-            </Button>
-            <Button
-              as={Link}
-              className={clsx(
-                "text-sm font-bold",
-                isScrolled
-                  ? "text-[#121064] bg-white hover:bg-white/90"
-                  : "text-white bg-[#121064] hover:bg-[#121064]/90"
-              )}
-              href="/register"
-              size="lg"
-              variant="solid"
-              radius="full"
-              fullWidth
-              onPress={() => setIsMenuOpen(false)}
-            >
-              রেজিস্ট্রেশন
-            </Button>
+            {mobileAuth.authed ? (
+              <>
+                <Button
+                  as={NextLink}
+                  className={clsx(
+                    "text-sm font-bold border-2 bg-transparent",
+                    isScrolled
+                      ? "text-white border-white/40 hover:bg-white/10"
+                      : "text-[#121064] border-[#121064]/40 hover:bg-[#121064]/5"
+                  )}
+                  href={getDashboardUrl(mobileAuth.user?.role)}
+                  size="lg"
+                  variant="bordered"
+                  radius="full"
+                  fullWidth
+                  onPress={() => setIsMenuOpen(false)}
+                >
+                  Dashboard
+                </Button>
+                <Button
+                  as={NextLink}
+                  className={clsx(
+                    "text-sm font-bold",
+                    isScrolled
+                      ? "text-[#121064] bg-white hover:bg-white/90"
+                      : "text-white bg-[#121064] hover:bg-[#121064]/90"
+                  )}
+                  href="/profile"
+                  size="lg"
+                  variant="solid"
+                  radius="full"
+                  fullWidth
+                  onPress={() => setIsMenuOpen(false)}
+                >
+                  Profile
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  as={NextLink}
+                  className={clsx(
+                    "text-sm font-bold border-2 bg-transparent",
+                    isScrolled
+                      ? "text-white border-white/40 hover:bg-white/10"
+                      : "text-[#121064] border-[#121064]/40 hover:bg-[#121064]/5"
+                  )}
+                  href="/login"
+                  size="lg"
+                  variant="bordered"
+                  radius="full"
+                  fullWidth
+                  onPress={() => setIsMenuOpen(false)}
+                >
+                  লগইন
+                </Button>
+                <Button
+                  as={Link}
+                  className={clsx(
+                    "text-sm font-bold",
+                    isScrolled
+                      ? "text-[#121064] bg-white hover:bg-white/90"
+                      : "text-white bg-[#121064] hover:bg-[#121064]/90"
+                  )}
+                  href="/register"
+                  size="lg"
+                  variant="solid"
+                  radius="full"
+                  fullWidth
+                  onPress={() => setIsMenuOpen(false)}
+                >
+                  রেজিস্ট্রেশন
+                </Button>
+              </>
+            )}
           </div>
         </NavbarMenuItem>
       </NavbarMenu>

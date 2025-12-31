@@ -21,21 +21,21 @@ router.post("/:id/register", controller.registerForEvent);
 router.post(
   "/create",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   controller.createEvent
 );
 
 router.patch(
   "/:id",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   controller.updateEvent
 );
 
 router.delete(
   "/:id",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   controller.deleteEvent
 );
 
@@ -43,14 +43,14 @@ router.delete(
 router.post(
   "/:id/guests",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   controller.addGuestsToEvent
 );
 
 router.delete(
   "/:id/guests/:guestId",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   controller.removeGuestFromEvent
 );
 
@@ -58,7 +58,7 @@ router.delete(
 router.patch(
   "/:id/meeting-link",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   controller.updateMeetingLink
 );
 
@@ -66,35 +66,35 @@ router.patch(
 router.get(
   "/:id/registrations",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   controller.getEventRegistrations
 );
 
 router.post(
   "/:id/registrations/send-email",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   controller.sendRegistrationEmail
 );
 
 router.get(
   "/:id/registrations/email-history",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   controller.getEmailHistory
 );
 
 router.delete(
   "/registrations/:id",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   controller.deleteRegistration
 );
 
 router.patch(
   "/registrations/:id",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   controller.updateRegistration
 );
 
@@ -107,28 +107,28 @@ router.get("/guests/list", controller.getAllGuests);
 router.post(
   "/guests/create",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   controller.createGuest
 );
 
 router.get(
   "/guests/:id",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   controller.getGuestById
 );
 
 router.patch(
   "/guests/:id",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   controller.updateGuest
 );
 
 router.delete(
   "/guests/:id",
   requireAuth,
-  requireRoles("admin"),
+  requireRoles("admin", "manager"),
   controller.deleteGuest
 );
 

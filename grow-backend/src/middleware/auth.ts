@@ -19,15 +19,20 @@ export const requireAuth = async (
 ) => {
   try {
     const authHeader = req.headers.authorization;
+    const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : undefined;
+    const cookieToken = (req as any).cookies?.accessToken as string | undefined;
+    const cookieTokenHttpOnly = (req as any).cookies?.accessTokenHttpOnly as string | undefined;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    // Prefer Authorization header, fall back to either cookie name
+    const token = bearerToken || cookieToken || cookieTokenHttpOnly;
+
+    if (!token) {
       return res.status(401).json({
         success: false,
         message: "No authorization token provided",
       });
     }
 
-    const token = authHeader.split(" ")[1];
     const decoded = verifyAccessToken(token);
 
     if (!decoded || !decoded.id) {
@@ -46,10 +51,15 @@ export const requireAuth = async (
       });
     }
 
-    // Attach user info to request
+    // Attach user info to request in multiple shapes for legacy handlers
     req.userId = user._id.toString();
     req.userRole = user.role;
     req.userEmail = user.email;
+    (req as any).user = {
+      id: user._id.toString(),
+      role: user.role,
+      email: user.email,
+    };
 
     next();
   } catch (error) {
@@ -64,7 +74,7 @@ export const requireAuth = async (
  * Middleware to require specific roles
  */
 export const requireRoles = (
-  ...roles: Array<"admin" | "instructor" | "student" | "guardian">
+  ...roles: Array<"admin" | "manager" | "instructor" | "student" | "guardian">
 ) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.userRole || !roles.includes(req.userRole as any)) {

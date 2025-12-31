@@ -16,6 +16,7 @@ export default function UnauthorizedPage() {
       instructor: "/instructor",
       guardian: "/guardian",
       admin: "/admin",
+      manager: "/manager",
     };
     return roleRedirects[role || "student"] || "/student";
   };
@@ -71,6 +72,7 @@ export default function UnauthorizedPage() {
               <li>👨‍🏫 <strong>Instructor:</strong> /instructor</li>
               <li>👪 <strong>Guardian:</strong> /guardian</li>
               <li>⚙️ <strong>Admin:</strong> /admin</li>
+              <li>💼 <strong>Manager:</strong> /manager</li>
             </ul>
           </div>
         </CardBody>

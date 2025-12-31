@@ -383,8 +383,8 @@ export const login = async (input: LoginInput): Promise<AuthResponse> => {
       };
     }
 
-    // Allow students, guardians, instructors, admins, and super admins to login
-    const allowedRoles = ["student", "guardian", "instructor", "admin", "super_admin"];
+    // Allow students, guardians, instructors, admins, managers, and super admins to login
+    const allowedRoles = ["student", "guardian", "instructor", "admin", "manager", "super_admin"];
     if (!allowedRoles.includes(user.role)) {
       return {
         success: false,
@@ -996,7 +996,7 @@ export const listUsersAdmin = async (params: { page?: number; limit?: number; se
     const skip = (page - 1) * limit;
 
     const filter: any = {};
-    if (params.role && ["admin", "instructor", "student", "guardian"].includes(params.role)) {
+    if (params.role && ["admin", "manager", "instructor", "student", "guardian"].includes(params.role)) {
       filter.role = params.role;
     }
     if (params.search) {

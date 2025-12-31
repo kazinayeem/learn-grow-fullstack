@@ -14,15 +14,15 @@ import {
 import { FaHome, FaUser, FaSignOutAlt, FaBars } from "react-icons/fa";
 import Cookies from "js-cookie";
 
-export default function AdminLayout({
+export default function ManagerLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
-  const [userRole, setUserRole] = useState<"admin" | "instructor" | "student" | "guardian">("admin");
-  const [userName, setUserName] = useState("Admin");
+  const [userRole, setUserRole] = useState<"admin" | "manager" | "instructor" | "student" | "guardian">("manager");
+  const [userName, setUserName] = useState("Manager");
   const [userEmail, setUserEmail] = useState("");
   const [profileImage, setProfileImage] = useState("");
 
@@ -41,7 +41,7 @@ export default function AdminLayout({
       }
 
       setUserRole(user.role);
-      setUserName(user.name || "Admin");
+      setUserName(user.name || "Manager");
       setUserEmail(user.email || "");
       setProfileImage(user.profileImage || "");
     } catch {}
@@ -49,28 +49,28 @@ export default function AdminLayout({
   }, [router]);
 
   const handleLogout = async () => {
-    console.log("🚪 Admin Layout: Logout initiated");
+    console.log("🚪 Manager Layout: Logout initiated");
     
     // Set logout flag FIRST
     sessionStorage.setItem("loggingOut", "1");
-    console.log("🚪 Admin Layout: Set loggingOut flag");
+    console.log("🚪 Manager Layout: Set loggingOut flag");
 
     // Clear cookies
     Cookies.remove("accessToken", { path: "/" });
     Cookies.remove("refreshToken", { path: "/" });
     Cookies.remove("userRole", { path: "/" });
-    console.log("🚪 Admin Layout: Cleared cookies");
+    console.log("🚪 Manager Layout: Cleared cookies");
 
     // Clear localStorage (minimal)
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       localStorage.removeItem("userRole");
-      console.log("🚪 Admin Layout: Cleared localStorage");
+      console.log("🚪 Manager Layout: Cleared localStorage");
     }
 
-    // Single redirect using router.replace (NO window.location.href, NO router.push)
-    console.log("🚪 Admin Layout: Redirecting to /login");
+    // Single redirect using router.replace
+    console.log("🚪 Manager Layout: Redirecting to /login");
     router.replace("/login");
   };
 
@@ -81,12 +81,12 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Top Navbar */}
-      <nav className="fixed top-0 left-0 right-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg z-50">
+      <nav className="fixed top-0 left-0 right-0 bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-lg z-50">
         <div className="px-4 sm:px-6 py-3">
           <div className="flex items-center justify-between">
             {/* Logo/Title */}
             <div className="flex items-center gap-3">
-              <h1 className="text-xl sm:text-2xl font-bold">Admin Dashboard</h1>
+              <h1 className="text-xl sm:text-2xl font-bold">Manager Dashboard</h1>
             </div>
 
             {/* Right Side - Actions */}
@@ -124,7 +124,7 @@ export default function AdminLayout({
                     />
                     <div className="hidden md:block text-right">
                       <p className="text-sm font-semibold">{userName}</p>
-                      <p className="text-xs text-purple-200">{userRole}</p>
+                      <p className="text-xs text-green-200">{userRole}</p>
                     </div>
                   </div>
                 </DropdownTrigger>
@@ -134,7 +134,7 @@ export default function AdminLayout({
                     <p className="font-semibold text-primary">{userEmail}</p>
                   </DropdownItem>
                   <DropdownItem 
-                    key="admin-profile" 
+                    key="manager-profile" 
                     startContent={<FaUser />}
                     onPress={() => router.push("/profile")}
                   >

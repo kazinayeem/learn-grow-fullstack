@@ -29,6 +29,8 @@ export function getDashboardUrl(role?: string): string {
     switch (role.toLowerCase()) {
         case 'admin':
             return '/admin';
+        case 'manager':
+            return '/manager';
         case 'instructor':
         case 'teacher':
             return '/instructor';

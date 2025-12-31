@@ -22,9 +22,9 @@ router.get("/purchased-courses", requireAuth, getUserPurchasedCourses);
 router.get("/course/:courseId/students", requireAuth, getEnrolledStudents);
 
 // Admin routes
-router.get("/", requireAuth, requireRoles("admin"), getAllOrders);
-router.get("/:id", requireAuth, requireRoles("admin"), getOrderById);
-router.patch("/:id/approve", requireAuth, requireRoles("admin"), approveOrder);
-router.patch("/:id/reject", requireAuth, requireRoles("admin"), rejectOrder);
+router.get("/", requireAuth, requireRoles("admin", "manager"), getAllOrders);
+router.get("/:id", requireAuth, requireRoles("admin", "manager"), getOrderById);
+router.patch("/:id/approve", requireAuth, requireRoles("admin", "manager"), approveOrder);
+router.patch("/:id/reject", requireAuth, requireRoles("admin", "manager"), rejectOrder);
 
 export default router;

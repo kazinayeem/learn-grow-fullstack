@@ -17,6 +17,7 @@ export function AuthGuard({
 }: AuthGuardProps) {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
+  const [shouldRender, setShouldRender] = useState(false);
   const hasRedirected = useRef(false); // Prevent multiple redirects
 
   useEffect(() => {
@@ -38,6 +39,7 @@ export function AuthGuard({
       console.log("🔐 AuthGuard: Clearing logout flag and showing login page");
       sessionStorage.removeItem("loggingOut");
       setIsChecking(false);
+      setShouldRender(true);
       return; // Don't redirect, let them see login page
     }
 
@@ -64,11 +66,18 @@ export function AuthGuard({
       console.log("🔐 AuthGuard: Redirecting to:", target);
       hasRedirected.current = true; // Mark as redirected
       router.replace(target);
+      return; // Don't set shouldRender to true - redirecting
     } else {
       console.log("🔐 AuthGuard: Showing login page");
       setIsChecking(false);
+      setShouldRender(true);
     }
   }, []); // Empty dependency array - run only once
+
+  // Don't render children while checking auth or if redirecting
+  if (isChecking || !shouldRender) {
+    return null;
+  }
 
   return <>{children}</>;
 }
