@@ -15,8 +15,8 @@ export default function StudentDashboard() {
 
     const { data: ordersData, isLoading: ordersLoading } = useGetMyOrdersQuery();
     const { data: coursesData, isLoading: coursesLoading } = useGetAllCoursesQuery({
-        page: currentPage,
-        limit: coursesPerPage
+        page: 1,
+        limit: 100  // Fetch more courses to avoid pagination issues
     });
 
     const [user, setUser] = React.useState<any>(null);
@@ -61,6 +61,17 @@ export default function StudentDashboard() {
                     order.courseId
             );
 
+            console.log("[StudentDashboard] Total orders:", orders.length);
+            console.log("[StudentDashboard] Approved single orders:", approvedOrders.length);
+            console.log("[StudentDashboard] All orders detail:", orders.map((o: any) => ({
+                id: o._id,
+                planType: o.planType,
+                paymentStatus: o.paymentStatus,
+                isActive: o.isActive,
+                courseId: typeof o.courseId === 'object' ? o.courseId?._id : o.courseId,
+                courseTitle: typeof o.courseId === 'object' ? o.courseId?.title : 'N/A'
+            })));
+
             if (approvedOrders.length === 0) {
                 return [];
             }
@@ -71,14 +82,28 @@ export default function StudentDashboard() {
                 return id;
             });
 
+            console.log("[StudentDashboard] Course IDs to match:", courseIds);
+            console.log("[StudentDashboard] All courses count:", allCourses.length);
+
             // Only return courses that match the purchased course IDs
             const matched = allCourses.filter((course: any) => {
                 const matches = courseIds.includes(course._id) &&
                     course.isPublished &&
                     course.isAdminApproved;
+                
+                if (courseIds.includes(course._id)) {
+                    console.log(`[StudentDashboard] Course ${course._id} (${course.title}):`, {
+                        included: courseIds.includes(course._id),
+                        isPublished: course.isPublished,
+                        isAdminApproved: course.isAdminApproved,
+                        finalMatch: matches
+                    });
+                }
+                
                 return matches;
             });
 
+            console.log("[StudentDashboard] Matched courses:", matched.length);
             return matched;
         }
     }, [hasAllAccess, orders, allCourses]);
@@ -107,9 +132,8 @@ export default function StudentDashboard() {
         };
     }, [hasAllAccess, orders]);
 
-    // Pagination logic - use API pagination
-    const totalPages = 1; // Pagination disabled
-    const displayedCourses = purchasedCourses.slice(0, 2); // Show only recent 2
+    // Pagination logic - disabled for full course display
+    const displayedCourses = purchasedCourses; // Show all purchased courses
 
     const stats = [
         { label: "Total Courses Available", value: totalCoursesInSystem, color: "bg-indigo-500", icon: <FaBook /> },

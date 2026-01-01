@@ -14,21 +14,28 @@ function AuthCallbackContent() {
   useEffect(() => {
     const processCallback = async () => {
       try {
+        console.log("[AuthCallback] Processing OAuth callback");
         const success = handleOAuthCallback(searchParams);
 
         if (success) {
           const role = searchParams.get("role");
           const redirect = searchParams.get("redirect");
 
+          console.log("[AuthCallback] Auth success, redirecting to:", redirect || "/student");
           const redirectUrl = redirect || "/student"; // Default to /student
+          
+          // Small delay to ensure user data is saved
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           toast.success("Login successful!");
           router.push(redirectUrl);
         } else {
+          console.warn("[AuthCallback] handleOAuthCallback returned false");
           toast.error("Authentication failed. Please try again.");
           router.push("/login");
         }
       } catch (error) {
-        console.error("Auth callback error:", error);
+        console.error("[AuthCallback] Auth callback error:", error);
         toast.error("An error occurred. Please try again.");
         router.push("/login");
       } finally {

@@ -34,7 +34,12 @@ const STATUS_ICONS = {
 
 export default function StudentOrdersPage() {
   const router = useRouter();
-  const { data, isLoading } = useGetMyOrdersQuery();
+  const { data, isLoading, refetch } = useGetMyOrdersQuery();
+
+  // Force refetch on mount to ensure data loads
+  React.useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   if (isLoading) {
     return (

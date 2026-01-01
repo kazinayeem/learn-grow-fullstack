@@ -495,3 +495,186 @@ export const sendOrderEmail = async (req: Request, res: Response) => {
     });
   }
 };
+
+// Get student's orders for guardian or student viewing own data
+export const getStudentOrdersForGuardian = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+    const userRole = req.userRole;
+    const { studentId: queryStudentId } = req.query;
+
+    console.log(`[GuardianAPI] ========== REQUEST START ==========`);
+    console.log(`[GuardianAPI] userId from token: ${userId}, userRole: ${userRole}`);
+    console.log(`[GuardianAPI] queryStudentId from params: ${queryStudentId}`);
+    console.log(`[GuardianAPI] Full query params:`, req.query);
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { User } = await import("../../user/model/user.model");
+    const { Enrollment } = await import("../../enrollment/model/enrollment.model");
+    const { Lesson } = await import("../../course/model/lesson.model");
+
+    let studentIdToFetch = userId;
+
+    console.log(`[GuardianAPI] userId: ${userId}, userRole: ${userRole}, queryStudentId: ${queryStudentId}`);
+
+    // If guardian, get their linked child (student)
+    if (userRole === "guardian") {
+      // First, get the guardian user to check their linked children
+      const guardianUser = await User.findById(userId).populate('children');
+      
+      console.log(`[GuardianAPI] guardianUser ID:`, guardianUser?._id);
+      console.log(`[GuardianAPI] guardianUser children count:`, guardianUser?.children?.length);
+      console.log(`[GuardianAPI] guardianUser.children:`, guardianUser?.children?.map((c: any) => ({ _id: c._id, name: c.name, email: c.email })));
+
+      if (!guardianUser || !guardianUser.children || guardianUser.children.length === 0) {
+        return res.json({ 
+          success: true, 
+          data: { 
+            orders: [], 
+            enrollments: [],
+            message: "No linked student found"
+          } 
+        });
+      }
+
+      // If studentId is provided as query param, verify it's one of their children
+      if (queryStudentId && typeof queryStudentId === 'string') {
+        const childrenIds = guardianUser.children.map((c: any) => 
+          (c._id?.toString() || c.toString())
+        );
+        
+        console.log(`[GuardianAPI] Checking if ${queryStudentId} is in guardian's children:`, childrenIds);
+        
+        if (childrenIds.includes(queryStudentId)) {
+          studentIdToFetch = queryStudentId;
+          console.log(`[GuardianAPI] Guardian ${userId} requesting verified student: ${studentIdToFetch}`);
+        } else {
+          return res.status(403).json({ 
+            success: false, 
+            message: "You do not have permission to view this student's data" 
+          });
+        }
+      } else {
+        // Otherwise, get their first linked child (student)
+        const firstChild = guardianUser.children[0] as any;
+        studentIdToFetch = firstChild._id?.toString() || firstChild.toString();
+        console.log(`[GuardianAPI] Guardian ${userId} accessing default student child: ${studentIdToFetch}`);
+      }
+    }
+    // If student, verify they're trying to access their own data
+    else if (userRole === "student") {
+      // Student can only view their own data
+      studentIdToFetch = userId;
+      console.log(`[GuardianAPI] Student accessing own data: ${studentIdToFetch}`);
+    } else {
+      // Other roles not allowed
+      return res.status(403).json({ success: false, message: "Forbidden" });
+    }
+
+    // Get student's orders
+    const orders = await Order.find({ userId: studentIdToFetch })
+      .populate("courseId", "title thumbnail price")
+      .populate("paymentMethodId", "name accountNumber")
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    console.log(`[GuardianAPI] Found ${orders.length} orders for student ${studentIdToFetch}`);
+    console.log(`[GuardianAPI] Order course IDs:`, orders.map((o: any) => o.courseId?._id || o.courseId));
+
+    // Get student's enrollments
+    const enrollments = await Enrollment.find({ studentId: studentIdToFetch })
+      .populate("courseId", "title thumbnail price level")
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    console.log(`[GuardianAPI] Query filter: studentId = ${studentIdToFetch}`);
+    console.log(`[GuardianAPI] Found ${enrollments.length} enrollments for student ${studentIdToFetch}`);
+    
+    if (enrollments.length > 0) {
+      console.log(`[GuardianAPI] Enrollment details:`, enrollments.map((e: any) => ({
+        _id: e._id,
+        studentId: e.studentId,
+        courseTitle: e.courseId?.title,
+        courseId: e.courseId?._id,
+        progress: e.progress,
+        createdAt: e.createdAt
+      })));
+    }
+
+    // Fetch module data for each course to calculate progress
+    const { Module } = await import("../../course/model/module.model");
+    
+    const enrichedEnrollments = await Promise.all(
+      enrollments.map(async (enrollment: any) => {
+        try {
+          const modules = await Module.find({ courseId: enrollment.courseId._id }).lean();
+          
+          // For each module, get lesson count
+          const modulesWithLessons = await Promise.all(
+            modules.map(async (module: any) => {
+              const lessons = await Lesson.find({ moduleId: module._id }).lean();
+              return {
+                _id: module._id,
+                title: module.title,
+                orderIndex: module.orderIndex,
+                lessons: lessons
+              };
+            })
+          );
+          
+          return {
+            _id: enrollment._id,
+            studentId: enrollment.studentId,
+            courseId: {
+              _id: enrollment.courseId._id,
+              title: enrollment.courseId.title,
+              thumbnail: enrollment.courseId.thumbnail,
+              price: enrollment.courseId.price,
+              level: enrollment.courseId.level,
+              modules: modulesWithLessons
+            },
+            progress: enrollment.progress || 0,
+            completionPercentage: enrollment.completionPercentage || 0,
+            isCompleted: enrollment.isCompleted || false,
+            completedLessons: enrollment.completedLessons || [],
+            createdAt: enrollment.createdAt,
+            updatedAt: enrollment.updatedAt
+          };
+        } catch (enrollmentError) {
+          console.error("Error processing enrollment:", enrollmentError);
+          return null;
+        }
+      })
+    );
+
+    // Filter out any null enrollments (errors)
+    const validEnrollments = enrichedEnrollments.filter(e => e !== null);
+
+    return res.json({
+      success: true,
+      data: {
+        orders,
+        enrollments: validEnrollments,
+        student: {
+          _id: studentIdToFetch,
+        },
+        _debug: {
+          guardianId: userId,
+          linkedStudentId: studentIdToFetch,
+          enrollmentCount: validEnrollments.length,
+          orderCount: orders.length
+        }
+      }
+    });
+  } catch (error: any) {
+    console.error("Get student orders error:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to fetch student data", 
+      error: error.message 
+    });
+  }
+};

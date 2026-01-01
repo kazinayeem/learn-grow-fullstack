@@ -84,6 +84,10 @@ if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
               { upsert: true }
             );
 
+            // Add student to guardian's children array
+            guardian.children = [user._id] as any;
+            await guardian.save();
+
             if (email) {
               sendGuardianCredentialsEmail(email, name || "Student", guardianEmail, guardianPasswordPlain).catch((err) =>
                 console.error("Failed to send guardian credentials (Google signup):", err)

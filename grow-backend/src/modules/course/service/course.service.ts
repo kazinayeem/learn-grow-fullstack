@@ -10,59 +10,75 @@ import { sendCourseApprovalEmail } from "@/utils/otp";
 // ===== COURSE SERVICES =====
 
 export const createCourse = async (data: Partial<ICourse>) => {
-  return Course.create(data);
+  try {
+    return await Course.create(data);
+  } catch (error: any) {
+    throw new Error(`Failed to create course: ${error.message}`);
+  }
 };
 
 export const getAllCourses = async (filters: any = {}) => {
-  const query: any = {};
+  try {
+    const query: any = {};
 
-  if (filters.category) query.category = filters.category;
-  if (filters.type) query.type = filters.type;
-  if (filters.level) query.level = filters.level;
-  if (filters.isPublished !== undefined) query.isPublished = filters.isPublished === "true";
-  if (filters.isFeatured !== undefined) query.isFeatured = filters.isFeatured === "true";
-  if (filters.isRegistrationOpen !== undefined) query.isRegistrationOpen = filters.isRegistrationOpen === "true";
-  if (filters.instructorId) query.instructorId = filters.instructorId;
+    if (filters.category) query.category = filters.category;
+    if (filters.type) query.type = filters.type;
+    if (filters.level) query.level = filters.level;
+    if (filters.isPublished !== undefined) query.isPublished = filters.isPublished === "true";
+    if (filters.isFeatured !== undefined) query.isFeatured = filters.isFeatured === "true";
+    if (filters.isRegistrationOpen !== undefined) query.isRegistrationOpen = filters.isRegistrationOpen === "true";
+    if (filters.instructorId) query.instructorId = filters.instructorId;
 
-  const page = Math.max(1, parseInt(filters.page || "1"));
-  const limit = Math.max(1, Math.min(100, parseInt(filters.limit || "10")));
-  const skip = (page - 1) * limit;
+    const page = Math.max(1, parseInt(filters.page || "1"));
+    const limit = Math.max(1, Math.min(100, parseInt(filters.limit || "10")));
+    const skip = (page - 1) * limit;
 
-  const courses = await Course.find(query)
-    .populate("instructorId", "name email profileImage")
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit)
-    .lean();
+    const courses = await Course.find(query)
+      .populate("instructorId", "name email profileImage")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
 
-  const total = await Course.countDocuments(query);
+    const total = await Course.countDocuments(query);
 
-  return {
-    courses,
-    pagination: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
+    return {
+      courses,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to get courses: ${error.message}`);
+  }
 };
 
 export const getPublishedCourses = async () => {
-  // Only show courses that are both published AND admin approved
-  return Course.find({ isPublished: true, isAdminApproved: true })
-    .populate("instructorId", "name email profileImage")
-    .sort({ createdAt: -1 })
-    .lean();
+  try {
+    // Only show courses that are both published AND admin approved
+    return await Course.find({ isPublished: true, isAdminApproved: true })
+      .populate("instructorId", "name email profileImage")
+      .sort({ createdAt: -1 })
+      .lean();
+  } catch (error: any) {
+    throw new Error(`Failed to get published courses: ${error.message}`);
+  }
 };
 
 export const getFeaturedCourses = async () => {
-  // Only show courses that are both published AND admin approved, limit to 3 most recent
-  return Course.find({ isPublished: true, isFeatured: true, isAdminApproved: true })
-    .populate("instructorId", "name email profileImage")
-    .sort({ createdAt: -1 })
-    .limit(3)
-    .lean();
+  try {
+    // Only show courses that are both published AND admin approved, limit to 3 most recent
+    return await Course.find({ isPublished: true, isFeatured: true, isAdminApproved: true })
+      .populate("instructorId", "name email profileImage")
+      .sort({ createdAt: -1 })
+      .limit(3)
+      .lean();
+  } catch (error: any) {
+    throw new Error(`Failed to get featured courses: ${error.message}`);
+  }
 };
 
 export const getCourseById = async (

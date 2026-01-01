@@ -31,7 +31,7 @@ export const createApp = () => {
   // CORS configuration
   app.use(
     cors({
-      origin: [ENV.FRONTEND_URL, "http://localhost:3000"],
+      origin: [ENV.FRONTEND_URL, "http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
       credentials: true,
     })
   );

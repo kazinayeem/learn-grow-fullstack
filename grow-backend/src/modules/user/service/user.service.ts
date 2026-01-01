@@ -303,6 +303,10 @@ export const register = async (input: RegisterInput): Promise<AuthResponse> => {
           { upsert: true }
         );
 
+        // Add student to guardian's children array
+        guardian.children = [user._id] as any;
+        await guardian.save();
+
         // Send guardian credentials email
         if (email) {
           sendGuardianCredentialsEmail(email, name, guardianEmail, guardianPasswordPlain).catch(err =>
@@ -1004,6 +1008,13 @@ export const connectChildAsGuardian = async (
       { upsert: true }
     ).catch(err => console.error("Failed to upsert student profile guardian (manual link):", err));
 
+    // Upsert guardian profile with studentId pointer (non-blocking)
+    GuardianProfile.findOneAndUpdate(
+      { userId: guardian._id },
+      { $setOnInsert: { userId: guardian._id }, $set: { studentId: student._id } },
+      { upsert: true }
+    ).catch(err => console.error("Failed to upsert guardian profile (manual link):", err));
+
     return {
       success: true,
       message: "Student linked to guardian",
@@ -1543,6 +1554,20 @@ export const studentAcceptGuardian = async (studentId: string, guardianId: strin
     }
 
     await Promise.all([guardian.save(), student.save()]);
+
+    // Upsert student profile guardian pointer (non-blocking)
+    StudentProfile.findOneAndUpdate(
+      { userId: student._id },
+      { $setOnInsert: { userId: student._id }, $set: { guardianId: guardian._id } },
+      { upsert: true }
+    ).catch(err => console.error("Failed to upsert student profile (accept guardian):", err));
+
+    // Upsert guardian profile with studentId pointer (non-blocking)
+    GuardianProfile.findOneAndUpdate(
+      { userId: guardian._id },
+      { $setOnInsert: { userId: guardian._id }, $set: { studentId: student._id } },
+      { upsert: true }
+    ).catch(err => console.error("Failed to upsert guardian profile (accept guardian):", err));
 
     return {
       success: true,

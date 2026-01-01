@@ -62,39 +62,92 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
     const router = useRouter();
     const { courseId } = params;
     const [authChecked, setAuthChecked] = useState(false);
-    const [isAuthorized, setIsAuthorized] = useState(true);
+    const [isAuthorized, setIsAuthorized] = useState(false);
     const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
     const { isOpen, onOpen, onClose } = useDisclosure();
 
     // Auth check - must be logged in
     useEffect(() => {
-        try {
-            const token = typeof window !== "undefined" ? localStorage.getItem("token") || localStorage.getItem("accessToken") : null;
-            const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
-            const user = userStr ? JSON.parse(userStr) : null;
+        const checkAuth = async () => {
+            try {
+                // Wait for hydration
+                if (typeof window === 'undefined') {
+                    return;
+                }
 
-            if (!token || !user) {
-                toast.error("Please login to access this course");
+                // Give localStorage time to be available
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
+                const userStr = localStorage.getItem("user");
+                
+                console.log("[Dashboard] Auth check - Token:", !!token, "User:", !!userStr);
+
+                if (!token || !userStr) {
+                    console.warn("[Dashboard] No token or user found, redirecting to login");
+                    toast.error("Please login to access this course");
+                    setIsAuthorized(false);
+                    setAuthChecked(true);
+                    
+                    // Redirect after a small delay
+                    const timer = setTimeout(() => {
+                        router.replace("/login");
+                    }, 500);
+                    
+                    return () => clearTimeout(timer);
+                }
+
+                // Validate user can be parsed
+                try {
+                    const user = JSON.parse(userStr);
+                    console.log("[Dashboard] User authenticated:", user._id);
+                    setIsAuthorized(true);
+                    setAuthChecked(true);
+                } catch (parseErr) {
+                    console.error("[Dashboard] Failed to parse user:", parseErr);
+                    toast.error("Session invalid. Please login again.");
+                    setIsAuthorized(false);
+                    setAuthChecked(true);
+                    
+                    const timer = setTimeout(() => {
+                        router.replace("/login");
+                    }, 500);
+                    
+                    return () => clearTimeout(timer);
+                }
+            } catch (err) {
+                console.error("[Dashboard] Auth check error:", err);
                 setIsAuthorized(false);
                 setAuthChecked(true);
-                router.replace("/login");
-                return;
+                toast.error("Authentication error");
+                
+                const timer = setTimeout(() => {
+                    router.replace("/login");
+                }, 500);
+                
+                return () => clearTimeout(timer);
             }
+        };
 
-            // Allow students, instructors, and admins to access
-            setIsAuthorized(true);
-            setAuthChecked(true);
-        } catch (err) {
-            console.error("Auth check error:", err);
-            setIsAuthorized(false);
-            setAuthChecked(true);
-            router.replace("/login");
-        }
+        checkAuth();
     }, [router]);
 
     // Fetch course data
     const { data: courseResponse, isLoading, error, refetch } = useGetCourseByIdQuery(courseId);
     const courseData = courseResponse?.data || null;
+
+    // Log course fetch status
+    useEffect(() => {
+        if (authChecked && isAuthorized) {
+            console.log("[Dashboard] Course fetch status - Loading:", isLoading, "Has data:", !!courseData, "Error:", error);
+            if (courseData) {
+                console.log("[Dashboard] Course loaded:", courseData.title, "Modules:", courseData.modules?.length || 0);
+            }
+            if (error) {
+                console.error("[Dashboard] Course fetch error:", error);
+            }
+        }
+    }, [isLoading, courseData, error, authChecked, isAuthorized]);
 
     const modules: Module[] = courseData?.modules || [];
     const isCompleted = courseData?.isCompleted || false;
@@ -235,14 +288,28 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
 
     if (!authChecked) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Spinner size="lg" label="Checking authorization..." />
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <Spinner size="lg" label="Checking authorization..." />
+                    <p className="mt-4 text-gray-600">Please wait while we verify your access...</p>
+                </div>
             </div>
         );
     }
 
     if (!isAuthorized) {
-        return null;
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <Card className="max-w-md">
+                    <CardBody className="p-8 text-center">
+                        <p className="text-gray-600 text-lg mb-4">You must be logged in to view this course.</p>
+                        <Button color="primary" onPress={() => router.push("/login")}>
+                            Go to Login
+                        </Button>
+                    </CardBody>
+                </Card>
+            </div>
+        );
     }
 
     if (isLoading) {
@@ -255,13 +322,23 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
 
     if (error || !courseData) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <Card className="max-w-md">
                     <CardBody className="p-8 text-center">
                         <p className="text-red-500 text-lg mb-4">Failed to load course</p>
-                        <Button color="primary" onPress={() => router.push("/student/my-courses")}>
-                            Back to My Courses
-                        </Button>
+                        {error && (
+                            <p className="text-sm text-gray-600 mb-4">
+                                {typeof error === 'string' ? error : (error as any).status || 'Unknown error'}
+                            </p>
+                        )}
+                        <div className="flex gap-2 justify-center">
+                            <Button color="primary" onPress={() => refetch()}>
+                                Retry
+                            </Button>
+                            <Button color="default" onPress={() => router.push("/student/my-courses")}>
+                                Back to My Courses
+                            </Button>
+                        </div>
                     </CardBody>
                 </Card>
             </div>
@@ -490,7 +567,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                             <Button color="success" onPress={async () => {
                                 try {
                                     const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
-                                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/course/complete-lesson/${currentLesson.id}`, {
+                                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/course/complete-lesson/${currentLesson.id}`, {
                                         method: 'POST',
                                         headers: {
                                             'Authorization': `Bearer ${token}`,

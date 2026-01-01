@@ -333,10 +333,71 @@ export const handleOAuthCallback = (params: URLSearchParams) => {
     });
     if (role) {
       Cookies.set("userRole", role, { path: "/" });
+      localStorage.setItem("userRole", role);
     }
+    
+    // Also save tokens to localStorage for compatibility
+    localStorage.setItem("token", accessToken);
+    localStorage.setItem("accessToken", accessToken);
+    
+    // Fetch and save user data
+    fetchUserProfile(accessToken).then(() => {
+      // Trigger auth change event to update navbar
+      window.dispatchEvent(new Event("auth-change"));
+    });
+    
     return true;
   }
   return false;
+};
+
+/**
+ * Fetch user profile and save to localStorage
+ */
+/**
+ * Fetch user profile and save to localStorage
+ */
+const fetchUserProfile = async (token: string) => {
+  try {
+    console.log("[Auth] Fetching user profile from:", `${API_URL}/users/profile`);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    const response = await fetch(`${API_URL}/users/profile`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    console.log("[Auth] Profile fetch response status:", response.status);
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log("[Auth] Profile data received:", data);
+      
+      if (data.success && data.data) {
+        localStorage.setItem("user", JSON.stringify(data.data));
+        console.log("[Auth] User profile saved to localStorage");
+      }
+    } else {
+      console.warn("[Auth] Profile fetch failed with status:", response.status);
+      const errorText = await response.text();
+      console.warn("[Auth] Error response:", errorText);
+    }
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.error("[Auth] Profile fetch timeout");
+    } else {
+      console.error("[Auth] Failed to fetch user profile:", error);
+    }
+    // Don't re-throw, allow the app to continue
+  }
 };
 
 export default authApi;
