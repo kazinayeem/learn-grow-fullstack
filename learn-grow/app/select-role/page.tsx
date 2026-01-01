@@ -102,7 +102,7 @@ function SelectRoleContent() {
 
           <Input
             label="Mobile Number"
-            placeholder="+8801XXXXXXXXX"
+            placeholder="+8801234567890"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             disabled={isLoading}

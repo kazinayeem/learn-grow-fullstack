@@ -119,7 +119,7 @@ export default async function RefundPolicyPage() {
                     <p className="mb-2"><strong>Refund Department</strong></p>
                     <p className="mb-2"><strong>Email:</strong> <a href="mailto:refunds@learnandgrow.io" className="text-primary hover:underline">refunds@learnandgrow.io</a></p>
                     <p className="mb-2"><strong>Support:</strong> <a href="mailto:support@learnandgrow.io" className="text-primary hover:underline">support@learnandgrow.io</a></p>
-                    <p className="mb-2"><strong>Phone:</strong> +880-XXXX-XXXXXX (Business hours: 10 AM - 6 PM, Sat-Thu)</p>
+                    <p className="mb-2"><strong>Phone:</strong> +880-1234-567890 (Business hours: 10 AM - 6 PM, Sat-Thu)</p>
                     <p className="mb-2"><strong>Response Time:</strong> Within 48 hours</p>
                 </div>
 

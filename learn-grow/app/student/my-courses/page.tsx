@@ -56,11 +56,12 @@ export default function MyCoursesPage() {
                                 {courses.map((item: any) => (
                                     <Card
                                         key={item.course._id}
-                                        isPressable
-                                        onPress={() => router.push(`/courses/${item.course._id}`)}
                                         className="hover:scale-[1.02] transition-all border border-transparent hover:border-primary"
                                     >
-                                        <div className="relative aspect-video">
+                                        <div 
+                                            className="relative aspect-video cursor-pointer"
+                                            onClick={() => router.push(`/courses/${item.course._id}`)}
+                                        >
                                             <img
                                                 src={item.course.thumbnail || "/images/course-placeholder.jpg"}
                                                 alt={item.course.title}
@@ -75,14 +76,20 @@ export default function MyCoursesPage() {
                                             <h3 className="font-bold text-lg mb-2 line-clamp-2">
                                                 {item.course.title}
                                             </h3>
-                                            <div className="flex items-center justify-between mt-4">
-                                                <div className="text-sm text-gray-500">
+                                            <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                                                <div>
                                                     {item.course.instructor?.name || "Instructor"}
                                                 </div>
-                                                <div className="flex items-center gap-2 text-primary font-semibold text-sm">
-                                                    Continue <FaRocket />
-                                                </div>
                                             </div>
+                                            <Button
+                                                color="primary"
+                                                variant="shadow"
+                                                className="w-full font-semibold"
+                                                onPress={() => router.push(`/student/course/${item.course._id}/dashboard`)}
+                                                startContent={<FaRocket />}
+                                            >
+                                                Continue Learning
+                                            </Button>
                                         </CardBody>
                                     </Card>
                                 ))}

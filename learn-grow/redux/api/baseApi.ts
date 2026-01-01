@@ -124,6 +124,7 @@ export const baseApi = createApi({
         "JobApplication",
         "EmailHistory",
         "LatestEmail",
+        "Analytics",
     ],
     endpoints: () => ({}),
 });

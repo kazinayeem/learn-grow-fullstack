@@ -204,7 +204,7 @@ export const getCourseById = async (
       // Update tracker for next lesson
       previousLessonCompleted = isThisLessonCompleted;
 
-      const { resources: _ignored, contentUrl, ...safeLessonFields } = lesson as any;
+      const { resources: _ignored, ...safeLessonFields } = lesson as any;
       const resultLesson: any = {
         ...safeLessonFields,
         isLocked: isLessonLocked,
@@ -212,6 +212,7 @@ export const getCourseById = async (
         isCompleted: isThisLessonCompleted
       };
 
+      // Remove contentUrl for locked lessons (but keep for privileged users)
       if (isLessonLocked && !isPrivileged) {
         delete resultLesson.contentUrl;
       }

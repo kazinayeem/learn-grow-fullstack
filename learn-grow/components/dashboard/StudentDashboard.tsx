@@ -47,15 +47,9 @@ export default function StudentDashboard() {
 
     // Get purchased courses
     const purchasedCourses = useMemo(() => {
-        console.log('=== Course Access Debug ===');
-        console.log('Has All Access:', hasAllAccess);
-        console.log('All Courses:', allCourses);
-        console.log('Orders:', orders);
-
         if (hasAllAccess) {
             // If has all access, return all published courses  
             const filtered = allCourses.filter((course: any) => course.isPublished && course.isAdminApproved);
-            console.log('Premium Access - Showing all courses:', filtered.length);
             return filtered;
         } else {
             // Get specific courses from single purchases
@@ -67,34 +61,24 @@ export default function StudentDashboard() {
                     order.courseId
             );
 
-            console.log('Single Purchase Orders:', approvedOrders);
-
             if (approvedOrders.length === 0) {
-                console.log('No approved single purchase orders');
                 return [];
             }
 
             const courseIds = approvedOrders.map(order => {
                 // Handle both object and string courseId
                 const id = typeof order.courseId === 'object' ? order.courseId._id : order.courseId;
-                console.log('Extracted course ID:', id);
                 return id;
             });
-
-            console.log('Looking for course IDs:', courseIds);
 
             // Only return courses that match the purchased course IDs
             const matched = allCourses.filter((course: any) => {
                 const matches = courseIds.includes(course._id) &&
                     course.isPublished &&
                     course.isAdminApproved;
-                if (matches) {
-                    console.log('Matched course:', course.title, course._id);
-                }
                 return matches;
             });
 
-            console.log('Final matched courses:', matched.length);
             return matched;
         }
     }, [hasAllAccess, orders, allCourses]);

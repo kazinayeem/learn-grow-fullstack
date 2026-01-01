@@ -215,7 +215,7 @@ export const getAnalytics = async (req: Request, res: Response) => {
     const recentEnrollments = await Enrollment.find()
       .sort({ createdAt: -1 })
       .limit(10)
-      .populate('userId', 'name email')
+      .populate('studentId', 'name email')
       .populate('courseId', 'title')
       .lean();
 

@@ -535,7 +535,7 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                         size="md"
                                         className="w-full font-semibold"
                                         variant="shadow"
-                                        onPress={() => setSelectedTab("content")}
+                                        onPress={() => router.push(`/student/course/${courseId}/dashboard`)}
                                         startContent={<span>🎓</span>}
                                     >
                                         Start Learning
