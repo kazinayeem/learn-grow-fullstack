@@ -2,6 +2,7 @@ import { Order, IOrder } from "../model/order.model";
 import { User } from "../../user/model/user.model";
 import { Course } from "../../course/model/course.model";
 import { PaymentMethod } from "../../payment/model/payment-method.model";
+import { Enrollment } from "../../enrollment/model/enrollment.model";
 import { ENV } from "@/config/env";
 import mongoose from "mongoose";
 import nodemailer from "nodemailer";
@@ -112,7 +113,7 @@ export const createOrderService = async (
 ) => {
   try {
     console.log("Creating order service for user:", userId);
-    
+
     // Validate user exists
     const user = await User.findById(userId);
     if (!user) {
@@ -242,7 +243,7 @@ export const getAllOrdersService = async (filter?: { status?: string; planType?:
     const skip = (page - 1) * limit;
 
     const total = await Order.countDocuments(query);
-    
+
     const orders = await Order.find(query)
       .populate("userId", "name email phone")
       .populate("courseId", "title")
@@ -253,8 +254,8 @@ export const getAllOrdersService = async (filter?: { status?: string; planType?:
 
     const totalPages = Math.ceil(total / limit);
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: orders,
       pagination: {
         total,
@@ -290,6 +291,34 @@ export const approveOrderService = async (orderId: string) => {
       endDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
     }
     // Kit only: no end date needed (one-time delivery)
+
+    // Create Enrollment if not exists
+    if (order.planType === "single" && order.courseId) {
+      const existingEnrollment = await Enrollment.findOne({
+        studentId: order.userId,
+        courseId: order.courseId,
+      });
+
+      if (!existingEnrollment) {
+        await Enrollment.create({
+          studentId: order.userId,
+          courseId: order.courseId,
+          progress: 0,
+          isCompleted: false,
+          completedLessons: [],
+          completedModules: [],
+          completedAssignments: [],
+          completedQuizzes: [],
+          completedProjects: [],
+        });
+        console.log(`Enrollment created for user ${order.userId} in course ${order.courseId}`);
+      }
+    }
+
+    // TODO: Handle quarterly (all access) enrollment creation strategy if needed.
+    // Ideally, for all-access, we might create enrollments lazily or handle checks purely via order.
+    // But currently course.service.ts relies on Enrollment doc for progress.
+    // For now, we fix the single course purchase flow which is the user's immediate issue.
 
     const updatedOrder = await Order.findByIdAndUpdate(
       orderId,
@@ -511,7 +540,7 @@ export const getEnrolledStudentsService = async (courseId: string, instructorId:
       if (order.userId) {
         const student = order.userId as any;
         const studentId = student._id.toString();
-        
+
         // If student already exists with single purchase, update to quarterly
         if (studentMap.has(studentId)) {
           const existing = studentMap.get(studentId);

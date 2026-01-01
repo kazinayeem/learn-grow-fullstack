@@ -12,11 +12,11 @@ export default function StudentDashboard() {
     const router = useRouter();
     const [currentPage, setCurrentPage] = React.useState(1);
     const coursesPerPage = 6;
-    
+
     const { data: ordersData, isLoading: ordersLoading } = useGetMyOrdersQuery();
-    const { data: coursesData, isLoading: coursesLoading } = useGetAllCoursesQuery({ 
+    const { data: coursesData, isLoading: coursesLoading } = useGetAllCoursesQuery({
         page: currentPage,
-        limit: coursesPerPage 
+        limit: coursesPerPage
     });
 
     const [user, setUser] = React.useState<any>(null);
@@ -53,8 +53,8 @@ export default function StudentDashboard() {
         console.log('Orders:', orders);
 
         if (hasAllAccess) {
-            // If has all access, return all published courses
-            const filtered = allCourses.filter(course => course.isPublished && course.isAdminApproved);
+            // If has all access, return all published courses  
+            const filtered = allCourses.filter((course: any) => course.isPublished && course.isAdminApproved);
             console.log('Premium Access - Showing all courses:', filtered.length);
             return filtered;
         } else {
@@ -84,7 +84,7 @@ export default function StudentDashboard() {
             console.log('Looking for course IDs:', courseIds);
 
             // Only return courses that match the purchased course IDs
-            const matched = allCourses.filter(course => {
+            const matched = allCourses.filter((course: any) => {
                 const matches = courseIds.includes(course._id) &&
                     course.isPublished &&
                     course.isAdminApproved;
@@ -124,8 +124,8 @@ export default function StudentDashboard() {
     }, [hasAllAccess, orders]);
 
     // Pagination logic - use API pagination
-    const totalPages = coursesData?.pagination?.totalPages || Math.ceil(purchasedCourses.length / coursesPerPage);
-    const displayedCourses = purchasedCourses; // All courses from API (already limited to 6)
+    const totalPages = 1; // Pagination disabled
+    const displayedCourses = purchasedCourses.slice(0, 2); // Show only recent 2
 
     const stats = [
         { label: "Total Courses Available", value: totalCoursesInSystem, color: "bg-indigo-500", icon: <FaBook /> },
@@ -236,13 +236,9 @@ export default function StudentDashboard() {
                                     <h2 className="text-xl font-bold">
                                         {hasAllAccess ? "All Courses" : "My Purchased Courses"}
                                     </h2>
-                                    <div className="text-sm text-gray-500 flex items-center gap-2">
-                                        <span>
-                                            {totalCoursesInSystem} course{totalCoursesInSystem !== 1 ? "s" : ""} available
-                                        </span>
-                                        {hasAllAccess && <Chip size="sm" color="success" variant="flat">Premium</Chip>}
-                                    </div>
+                                    {hasAllAccess && <Chip size="sm" color="success" variant="flat">Premium</Chip>}
                                 </div>
+
                                 <Button
                                     size="sm"
                                     color="primary"
@@ -285,13 +281,21 @@ export default function StudentDashboard() {
                                 ) : (
                                     <>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                                            {displayedCourses.map((course) => (
+                                            {displayedCourses.map((course: any) => (
                                                 <Card
                                                     key={course._id}
                                                     isPressable
                                                     onPress={() => router.push(`/courses/${course._id}`)}
                                                     className="hover:scale-[1.02] transition-all border border-divider hover:border-primary"
                                                 >
+                                                    <div className="relative aspect-video">
+                                                        <img
+                                                            src={course.thumbnail || "/images/course-placeholder.jpg"}
+                                                            alt={course.title}
+                                                            className="object-cover w-full h-full"
+                                                        />
+                                                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+                                                    </div>
                                                     <CardBody className="p-4">
                                                         <div className="flex items-center justify-between gap-3">
                                                             <div className="flex-1 min-w-0">
@@ -314,61 +318,6 @@ export default function StudentDashboard() {
                                                 </Card>
                                             ))}
                                         </div>
-                                        {totalPages > 1 && (
-                                            <div className="flex flex-col gap-3 pt-4 border-t">
-                                                <div className="flex items-center gap-2 flex-wrap justify-center">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="flat"
-                                                        isDisabled={currentPage === 1}
-                                                        onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                                                        className="font-semibold"
-                                                    >
-                                                        ← Previous
-                                                    </Button>
-
-                                                    <div className="flex gap-1.5 flex-wrap justify-center">
-                                                        {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => {
-                                                            let pageNum;
-                                                            
-                                                            if (totalPages <= 10) {
-                                                                pageNum = i + 1;
-                                                            } else {
-                                                                const startPage = Math.max(1, Math.min(currentPage - 4, totalPages - 9));
-                                                                pageNum = startPage + i;
-                                                            }
-
-                                                            return (
-                                                                <Button
-                                                                    key={pageNum}
-                                                                    size="sm"
-                                                                    variant={currentPage === pageNum ? "solid" : "flat"}
-                                                                    color={currentPage === pageNum ? "primary" : "default"}
-                                                                    onPress={() => setCurrentPage(pageNum)}
-                                                                    className="min-w-[40px] font-semibold"
-                                                                >
-                                                                    {pageNum}
-                                                                </Button>
-                                                            );
-                                                        })}
-                                                    </div>
-
-                                                    <Button
-                                                        size="sm"
-                                                        variant="flat"
-                                                        isDisabled={currentPage === totalPages}
-                                                        onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                                                        className="font-semibold"
-                                                    >
-                                                        Next →
-                                                    </Button>
-                                                </div>
-
-                                                <div className="text-center text-sm text-gray-600">
-                                                    Showing {((currentPage - 1) * coursesPerPage) + 1}-{Math.min(currentPage * coursesPerPage, totalCoursesInSystem)} of {totalCoursesInSystem} courses | Page {currentPage} of {totalPages}
-                                                </div>
-                                            </div>
-                                        )}
                                     </>
                                 )}
                             </CardBody>
@@ -395,28 +344,28 @@ export default function StudentDashboard() {
                                     className="h-20 flex-col"
                                     variant="flat"
                                     color="success"
-                                    onPress={() => router.push("/courses")}
+                                    onPress={() => router.push("/student/my-courses")}
                                 >
-                                    <span className="text-2xl mb-1">📚</span>
-                                    <span className="text-xs">All Courses</span>
+                                    <span className="text-2xl mb-1">🎓</span>
+                                    <span className="text-xs">My Courses</span>
                                 </Button>
                                 <Button
                                     className="h-20 flex-col"
                                     variant="flat"
                                     color="secondary"
-                                    onPress={() => router.push("/student/orders")}
+                                    onPress={() => router.push("/courses")}
                                 >
-                                    <span className="text-2xl mb-1">📦</span>
-                                    <span className="text-xs">My Orders</span>
+                                    <span className="text-2xl mb-1">🔍</span>
+                                    <span className="text-xs">Browse Courses</span>
                                 </Button>
                                 <Button
                                     className="h-20 flex-col"
                                     variant="flat"
                                     color="warning"
-                                    onPress={() => router.push("/blog/create")}
+                                    onPress={() => router.push("/student/orders")}
                                 >
-                                    <span className="text-2xl mb-1">📝</span>
-                                    <span className="text-xs">Write Blog</span>
+                                    <span className="text-2xl mb-1">📦</span>
+                                    <span className="text-xs">My Orders</span>
                                 </Button>
                                 <Button
                                     className="h-20 flex-col"
@@ -431,10 +380,10 @@ export default function StudentDashboard() {
                                     className="h-20 flex-col"
                                     variant="flat"
                                     color="default"
-                                    onPress={() => router.push("/student/blogs")}
+                                    onPress={() => router.push("/blog/create")}
                                 >
-                                    <span className="text-2xl mb-1">📄</span>
-                                    <span className="text-xs">My Blogs</span>
+                                    <span className="text-2xl mb-1">📝</span>
+                                    <span className="text-xs">Write Blog</span>
                                 </Button>
                             </CardBody>
                         </Card>
@@ -521,6 +470,6 @@ export default function StudentDashboard() {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

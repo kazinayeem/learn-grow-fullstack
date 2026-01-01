@@ -135,10 +135,18 @@ export const optionalAuth = async (
 ) => {
   try {
     const authHeader = req.headers.authorization;
+    const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : undefined;
+    const cookieToken = (req as any).cookies?.accessToken as string | undefined;
+    const cookieTokenHttpOnly = (req as any).cookies?.accessTokenHttpOnly as string | undefined;
 
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.split(" ")[1];
+    // Prefer Authorization header, fall back to cookies
+    const token = bearerToken || cookieToken || cookieTokenHttpOnly;
+
+    console.log(`[optionalAuth] Header: ${!!bearerToken}, Cookie: ${!!cookieToken}, CookieHttp: ${!!cookieTokenHttpOnly}`);
+
+    if (token) {
       const decoded = verifyAccessToken(token);
+      console.log(`[optionalAuth] Decoded:`, decoded);
 
       if (decoded && decoded.id) {
         const user = await User.findById(decoded.id).lean();
