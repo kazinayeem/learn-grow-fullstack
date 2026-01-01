@@ -30,7 +30,7 @@ interface CourseDetailsProps {
 }
 
 export default function CourseDetails({ courseId }: CourseDetailsProps) {
-    const { data, isLoading, error } = useGetCourseByIdQuery(courseId);
+    const { data, isLoading, error, refetch } = useGetCourseByIdQuery(courseId);
     const { data: ordersData } = useGetMyOrdersQuery();
     const router = useRouter();
     const [selectedTab, setSelectedTab] = useState("overview");
@@ -171,6 +171,20 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
     const totalLessons = allLessons.length;
     const completedCount = allLessons.filter((l: any) => l.isCompleted).length;
     const progressPercentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+
+    // Force refetch if enrolled but content is locked (e.g. stale cache)
+    useEffect(() => {
+        if (isEnrolled && course?.modules?.[0]?.isLocked) {
+            // Small timeout to prevent infinite loops if backend is actually broken
+            const timer = setTimeout(() => {
+                refetch();
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [isEnrolled, course, refetch]);
+
+    // Use backend isCompleted flag if available
+    const isCourseCompleted = course?.isCompleted;
 
     if (isLoading) {
         return (
@@ -403,8 +417,8 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
 
                     {/* Right Column: Enrollment Card */}
                     <div className="lg:col-span-1">
-                        {/* Certificate Card - Show when 100% complete */}
-                        {progressPercentage === 100 && (
+                        {/* Certificate Card - Show when course is fully completed (lessons + assessments) */}
+                        {isCourseCompleted && (
                             <Card className="border-2 border-success bg-gradient-to-br from-success-50 to-success-100 mb-6">
                                 <CardHeader className="flex-col items-start gap-1">
                                     <div className="flex items-center gap-2">

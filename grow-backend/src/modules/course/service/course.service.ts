@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import { Course, ICourse } from "../model/course.model";
 import { Module, IModule } from "../model/module.model";
 import { Lesson, ILesson } from "../model/lesson.model";
@@ -83,16 +84,24 @@ export const getCourseById = async (
   let completedModuleIds: string[] = [];
 
   if (options?.userId) {
+    // Debug Log
+    console.log(`[getCourseById] Checking enrollment. CourseId: ${id}, UserId: ${options.userId}`);
+
     const enrollment = await Enrollment.findOne({
-      courseId: id,
-      studentId: options.userId,
+      courseId: new Types.ObjectId(id),
+      studentId: new Types.ObjectId(options.userId),
     }).lean();
 
     if (enrollment) {
+      console.log(`[getCourseById] Enrollment found. ID: ${(enrollment as any)._id}`);
       isEnrolled = true;
       completedLessonIds = enrollment.completedLessons?.map(id => id.toString()) || [];
       completedModuleIds = enrollment.completedModules?.map(id => id.toString()) || [];
+    } else {
+      console.log(`[getCourseById] No enrollment found.`);
     }
+  } else {
+    console.log(`[getCourseById] No User ID provided in options.`);
   }
 
   const courseInstructorId =
@@ -103,6 +112,8 @@ export const getCourseById = async (
     options?.userRole === "admin" ||
     (options?.userRole === "instructor" &&
       courseInstructorId === options.userId);
+
+  console.log(`[getCourseById] Privileged: ${isPrivileged}, Enrolled: ${isEnrolled}`);
 
   // 2. Fetch Modules & Lessons
   const modules = await Module.find({ courseId: id })
@@ -209,7 +220,6 @@ export const getCourseById = async (
     });
 
     // Update module sequence tracker *after* processing this module
-    // Wait, if map runs linearly, previousModuleCompleted is updated for the NEXT iteration.
     previousModuleCompleted = isThisModuleCompleted;
 
     return {
@@ -257,7 +267,12 @@ export const getCourseById = async (
     modules: processedModules,
     assignments: processedAssignments,
     quizzes: processedQuizzes,
-    isCompleted: isEnrolled && allModulesCompleted // Simplified Course Completion
+    // Fix: isCompleted should be enrolled.isCompleted OR calc
+    // But enrollment doc has isCompleted.
+    // However, here we return the COURSE object, not enrollment.
+    // We should ideally merge enrollment details into the course response or handle it in frontend.
+    // For now, let's just return true if completed
+    isCompleted: isEnrolled && allModulesCompleted && processedAssignments.every(a => !a.isLocked) && processedQuizzes.every(q => !q.isLocked)
   };
 };
 
@@ -375,10 +390,15 @@ export const completeLesson = async (userId: string, lessonId: string) => {
   }
 
   // 3. Update Course Progress & Completion
-  // Count total lessons in course
+  // Count total lessons, assignments, and quizzes in course
   const allModules = await Module.find({ courseId: module.courseId }).select("_id");
   const allModuleIds = allModules.map(m => m._id);
-  const totalLessons = await Lesson.countDocuments({ moduleId: { $in: allModuleIds } });
+
+  const [totalLessons, totalAssignments, totalQuizzes] = await Promise.all([
+    Lesson.countDocuments({ moduleId: { $in: allModuleIds } }),
+    Assignment.countDocuments({ courseId: module.courseId, status: "published" }),
+    Quiz.countDocuments({ courseId: module.courseId, status: "published" })
+  ]);
 
   if (totalLessons > 0) {
     enrollmentDoc.progress = enrollmentDoc.completedLessons.length;
@@ -390,10 +410,14 @@ export const completeLesson = async (userId: string, lessonId: string) => {
     enrollmentDoc.completedModules.some(cm => cm.toString() === m._id.toString())
   );
 
-  // Note: Strict completion also requires Assignments/Quizzes. 
-  // For now, we set based on modules, but real logic should check those too.
-  if (allModulesCompleted) {
+  // Check if ALL assignments and quizzes completed
+  const assignmentsCompleted = enrollmentDoc.completedAssignments?.length >= totalAssignments;
+  const quizzesCompleted = enrollmentDoc.completedQuizzes?.length >= totalQuizzes;
+
+  if (allModulesCompleted && assignmentsCompleted && quizzesCompleted) {
     enrollmentDoc.isCompleted = true;
+  } else {
+    enrollmentDoc.isCompleted = false;
   }
 
   await enrollmentDoc.save();
