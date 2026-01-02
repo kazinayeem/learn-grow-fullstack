@@ -75,7 +75,7 @@ export const getApplicationById = async (id: string) => {
 };
 
 export const getApplicationsByJobId = async (jobId: string) => {
-  return JobApplication.find({ jobId })
+  return JobApplication.find({ jobId: jobId as any })
     .populate("jobId", "title department")
     .sort({ appliedAt: -1 })
     .lean();

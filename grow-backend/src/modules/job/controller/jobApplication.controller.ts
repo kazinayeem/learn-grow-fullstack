@@ -5,7 +5,7 @@ export const applyForJob = async (req: Request, res: Response) => {
   try {
     const application = await service.applyForJob({
       ...req.body,
-      userId: req.user?.id,
+      userId: req.userId,
     });
     res.status(201).json({
       success: true,

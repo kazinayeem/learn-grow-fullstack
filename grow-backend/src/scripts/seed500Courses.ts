@@ -272,7 +272,7 @@ async function seed500Courses() {
       courses.push(course);
 
       // Generate and create modules
-      const modulesData = generateModules(course._id, i);
+      const modulesData = generateModules((course as any)._id, i);
       const createdModules = await Module.insertMany(modulesData);
       allModules.push(...createdModules);
 
