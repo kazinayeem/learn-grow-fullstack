@@ -83,7 +83,8 @@ const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
             result = await baseQuery(args, api, extraOptions);
         }
 
-        // If still unauthorized after refresh, force logout
+        // If still unauthorized after refresh attempt, clear tokens but DON'T force redirect
+        // Let each page/component handle auth failures appropriately
         if (result.error && result.error.status === 401) {
             Cookies.remove("accessToken", { path: "/" });
             Cookies.remove("refreshToken", { path: "/" });
@@ -93,7 +94,9 @@ const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
                 localStorage.removeItem("token");
                 localStorage.removeItem("refreshToken");
                 localStorage.removeItem("userRole");
-                window.location.href = "/login?session_expired=true";
+                localStorage.removeItem("user");
+                // DON'T redirect - let components handle it
+                // window.location.href = "/login?session_expired=true";
             }
         }
     }

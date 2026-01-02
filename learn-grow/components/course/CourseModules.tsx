@@ -63,9 +63,10 @@ interface CourseModulesProps {
     isEnrolled: boolean;
     modulesFromApi?: ModuleFromApi[];
     hasAccess?: boolean;
+    canViewPreview?: boolean;
 }
 
-export default function CourseModules({ courseId, isEnrolled, modulesFromApi, hasAccess = false }: CourseModulesProps) {
+export default function CourseModules({ courseId, isEnrolled, modulesFromApi, hasAccess = false, canViewPreview = false }: CourseModulesProps) {
     const [completeLesson, { isLoading: isCompleting }] = useCompleteLessonMutation();
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [selectedLesson, setSelectedLesson] = useState<LessonFromApi | null>(null);
@@ -191,13 +192,10 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
 
                                 {module.lectures.map((lesson) => {
                                     // Logic for display
-                                    // If user is NOT enrolled/hasAccess, everything except free preview is "locked" visually in a different way or same way.
-                                    // The backend `isLocked` logic works for Enrolled users (sequential).
-                                    // For non-enrolled users, `isLocked` might technically be true or false depending on backend, 
-                                    // but we should enforce lock if !hasAccess && !isFreePreview.
-
-                                    const isRealLocked = hasAccess ? !!lesson.isLocked : (!lesson.isFreePreview);
-                                    const lockReason = hasAccess ? lesson.lockReason : "Enroll to access this lesson";
+                                    // If user can preview (free course or has access), show free preview + full content if has access
+                                    // If cannot preview and not free preview, show locked
+                                    const isRealLocked = canViewPreview ? !!lesson.isLocked : (!lesson.isFreePreview);
+                                    const lockReason = canViewPreview ? lesson.lockReason : "Enroll to access this lesson";
                                     const isCompleted = !!lesson.isCompleted;
 
                                     return (

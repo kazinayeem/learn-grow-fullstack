@@ -162,6 +162,10 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
 
     const course = data?.data || data || sampleCourses.find(c => c._id === courseId) || sampleCourses[0];
 
+    // For free courses: anyone can see outline/preview
+    const isFree = course?.isFree || course?.price === 0;
+    const canViewPreview = isFree || hasAccess;
+
     // Hide unpublished or unapproved courses from public view
     const isAvailable = course?.isPublished && course?.isAdminApproved;
 
@@ -299,6 +303,7 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                     isEnrolled={isEnrolled}
                                     modulesFromApi={course.modules}
                                     hasAccess={hasAccess}
+                                    canViewPreview={canViewPreview}
                                 />
                             </Tab>
 
@@ -540,6 +545,24 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                     >
                                         Start Learning
                                     </Button>
+                                ) : isFree ? (
+                                    <>
+                                        <div className="bg-success-50 border border-success-200 rounded-lg p-3 mb-4">
+                                            <p className="text-success-700 text-sm text-center font-semibold">
+                                                ✨ This is a FREE course!
+                                            </p>
+                                        </div>
+                                        <Button
+                                            color="success"
+                                            size="md"
+                                            className="w-full font-semibold"
+                                            variant="shadow"
+                                            onPress={handleEnrollClick}
+                                            isDisabled={!isEnrollmentOpen(course)}
+                                        >
+                                            {isEnrollmentOpen(course) ? "🎓 Enroll Now" : "Enrollment Closed"}
+                                        </Button>
+                                    </>
                                 ) : (
                                     <>
                                         <RegistrationInfo course={course} />
@@ -551,7 +574,7 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                             onPress={handleEnrollClick}
                                             isDisabled={!isEnrollmentOpen(course)}
                                         >
-                                            {isEnrollmentOpen(course) ? (course.price > 0 ? "💳 Buy Now" : "🎓 Enroll Free") : "Enrollment Closed"}
+                                            {isEnrollmentOpen(course) ? "💳 Buy Now" : "Enrollment Closed"}
                                         </Button>
                                     </>
                                 )}
