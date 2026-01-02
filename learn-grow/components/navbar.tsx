@@ -38,8 +38,12 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
   const [isLoading, setIsLoading] = React.useState(true);
   const [user, setUser] = React.useState<any>(null);
   const [dashboardUrl, setDashboardUrl] = React.useState("/dashboard");
+  const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
+    // Mark component as mounted
+    setMounted(true);
+
     const syncAuth = () => {
       console.log("🔄 Navbar: Auth sync triggered");
 
@@ -58,13 +62,17 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
       const tokenCookie = Cookies.get("accessToken");
       const tokenLocal = localStorage.getItem("token") || localStorage.getItem("accessToken");
       const token = tokenCookie || tokenLocal;
-      const user = localStorage.getItem("user");
+      const userStr = localStorage.getItem("user");
       const role = Cookies.get("userRole") || localStorage.getItem("userRole");
 
+      console.log("🔄 Navbar: Checking auth...");
+      console.log("🔄 Navbar: tokenCookie =", tokenCookie ? "EXISTS" : "MISSING");
+      console.log("🔄 Navbar: tokenLocal =", tokenLocal ? "EXISTS" : "MISSING");
       console.log("🔄 Navbar: token =", token ? "EXISTS" : "MISSING");
-      console.log("🔄 Navbar: user =", user ? "EXISTS" : "MISSING");
+      console.log("🔄 Navbar: userStr =", userStr ? "EXISTS" : "MISSING");
+      console.log("🔄 Navbar: role =", role);
 
-      if (!token && !user) {
+      if (!token && !userStr) {
         console.log("🔄 Navbar: No auth data, setting unauthenticated");
         setIsAuthenticated(false);
         setUser(null);
@@ -72,23 +80,33 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
         return;
       }
 
-      console.log("🔄 Navbar: Auth data found, setting authenticated");
-      const parsed = user ? JSON.parse(user) : null;
-      setIsAuthenticated(true);
-      setUser(parsed);
-      const resolvedRole = parsed?.role || role || undefined;
-      setDashboardUrl(getDashboardUrl(resolvedRole));
+      try {
+        console.log("🔄 Navbar: Auth data found, setting authenticated");
+        const parsed = userStr ? JSON.parse(userStr) : null;
+        console.log("🔄 Navbar: Parsed user =", parsed);
+        setIsAuthenticated(true);
+        setUser(parsed);
+        const resolvedRole = parsed?.role || role || undefined;
+        console.log("🔄 Navbar: Resolved role =", resolvedRole);
+        setDashboardUrl(getDashboardUrl(resolvedRole));
+      } catch (e) {
+        console.error("🔄 Navbar: Error parsing user:", e);
+        setIsAuthenticated(false);
+        setUser(null);
+      }
       setIsLoading(false);
     };
 
-
+    // Immediate sync on mount
     syncAuth();
+
     // Listen for custom auth change event
     const onAuthChange = () => {
       console.log("🔄 Navbar: Auth change event received");
       syncAuth();
     };
     window.addEventListener("auth-change", onAuthChange);
+    
     return () => {
       window.removeEventListener("auth-change", onAuthChange);
     };
@@ -132,11 +150,12 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
   };
 
 
-  if (isLoading) {
+  if (isLoading && !mounted) {
     return <Skeleton className="rounded-full w-10 h-10" />;
   }
 
-  if (isAuthenticated) {
+  // If we have auth data in state, show authenticated view immediately
+  if (isAuthenticated && user) {
     return (
       <Dropdown placement="bottom-end">
         <DropdownTrigger>

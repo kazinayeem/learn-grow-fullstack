@@ -17,7 +17,7 @@ router.post(
   controller.createCourse
 );
 
-router.get("/get-all-courses", controller.getAllCourses);
+router.get("/get-all-courses", optionalAuth, controller.getAllCourses);
 
 router.get("/get-published-courses", controller.getPublishedCourses);
 

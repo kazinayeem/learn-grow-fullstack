@@ -95,9 +95,12 @@ export default function InstructorLiveClassesPage() {
     const itemsPerPage = 12;
 
     // API Queries - skip until authenticated
-    const { data: coursesData, isLoading: coursesLoading } = useGetInstructorCoursesQuery(instructorId as string, {
-        skip: !isAuthed || !instructorId,
-    });
+    const { data: coursesData, isLoading: coursesLoading } = useGetInstructorCoursesQuery(
+        { instructorId: instructorId as string, page: 1, limit: 100 },
+        {
+            skip: !isAuthed || !instructorId,
+        }
+    );
 
     const queryParams = {
         page: currentPage,

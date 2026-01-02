@@ -86,10 +86,22 @@ export const createCourse = async (req: Request, res: Response) => {
 
 export const getAllCourses = async (req: Request, res: Response) => {
   try {
+    // Debug logging
+    console.log("[getAllCourses] userRole:", req.userRole);
+    console.log("[getAllCourses] userId:", req.userId);
+    console.log("[getAllCourses] query:", req.query);
+
     // Instructors see only their courses when authenticated
     const filters: any = { ...req.query };
     if (req.userRole === "instructor") {
       filters.instructorId = req.userId;
+    }
+
+    // For students, filter to only show enrolled courses
+    if (req.userRole === "student") {
+      console.log("[getAllCourses] Student mode - filtering enrolled courses");
+      filters.studentId = req.userId;
+      filters.enrolledOnly = true;
     }
 
     const result = await service.getAllCourses(filters);

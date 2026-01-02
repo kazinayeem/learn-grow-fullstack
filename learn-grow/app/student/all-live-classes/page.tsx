@@ -5,6 +5,7 @@ import { Card, CardBody, CardHeader, Button, Spinner, Chip, Divider, Input, Sele
 import { useRouter } from "next/navigation";
 import { FaVideo, FaClock, FaCalendar, FaArrowLeft, FaSearch } from "react-icons/fa";
 import { useGetAllLiveClassesQuery } from "@/redux/api/liveClassApi";
+import { useGetMyOrdersQuery } from "@/redux/api/orderApi";
 import RequireAuth from "@/components/Auth/RequireAuth";
 
 export default function AllLiveClassesPage() {
@@ -15,6 +16,10 @@ export default function AllLiveClassesPage() {
     const [currentTime, setCurrentTime] = useState(new Date());
     
     const itemsPerPage = 16;
+
+    // Get student's orders to filter enrollments
+    const { data: ordersData } = useGetMyOrdersQuery();
+    const orders = ordersData?.orders || [];
 
     // Update current time every second for countdown
     useEffect(() => {
@@ -31,8 +36,49 @@ export default function AllLiveClassesPage() {
     const allClasses = classesData?.data || [];
     const totalCount = classesData?.pagination?.total || 0;
 
-    // Show all approved classes returned by API (no course-purchase filter)
-    const accessibleClasses = allClasses;
+    // Filter classes based on student enrollment
+    const accessibleClasses = useMemo(() => {
+        // Check if student has quarterly (premium) subscription
+        const now = new Date();
+        const hasQuarterly = orders.some(
+            order =>
+                order.planType === "quarterly" &&
+                order.paymentStatus === "approved" &&
+                order.isActive &&
+                order.endDate &&
+                new Date(order.endDate) > now
+        );
+
+        if (hasQuarterly) {
+            // Premium: show all classes
+            return allClasses;
+        }
+
+        // Get enrolled course IDs from single purchases
+        const enrolledCourseIds = orders
+            .filter(
+                order =>
+                    order.planType === "single" &&
+                    order.paymentStatus === "approved" &&
+                    order.isActive &&
+                    order.courseId
+            )
+            .map(order => {
+                const id = typeof order.courseId === 'object' ? order.courseId._id : order.courseId;
+                return id;
+            });
+
+        if (enrolledCourseIds.length === 0) {
+            // No enrollment, show no classes
+            return [];
+        }
+
+        // Filter classes to only those from enrolled courses
+        return allClasses.filter((cls: any) => {
+            const courseId = typeof cls.courseId === 'object' ? cls.courseId._id : cls.courseId;
+            return enrolledCourseIds.includes(courseId);
+        });
+    }, [allClasses, orders]);
 
     // Separate upcoming and past classes
     const upcomingClasses = accessibleClasses.filter((c: any) => {
@@ -60,11 +106,12 @@ export default function AllLiveClassesPage() {
         return new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime();
     });
 
-    // Pagination - use total count from API
-    const totalPages = Math.ceil(totalCount / itemsPerPage);
+    // Pagination - use FILTERED count, not API total count
+    const filteredTotal = filteredClasses.length;
+    const totalPages = Math.ceil(filteredTotal / itemsPerPage);
     const paginatedClasses = filteredClasses;
-    const displayStart = totalCount === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
-    const displayEnd = Math.min(currentPage * itemsPerPage, totalCount);
+    const displayStart = filteredTotal === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+    const displayEnd = Math.min(currentPage * itemsPerPage, filteredTotal);
 
     const pageNumbers = useMemo(() => {
         const maxButtons = 9;
@@ -192,7 +239,7 @@ export default function AllLiveClassesPage() {
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <p className="text-xs opacity-90">Total</p>
-                                                <p className="text-xl font-bold">{totalCount}</p>
+                                                <p className="text-xl font-bold">{accessibleClasses.length}</p>
                                             </div>
                                             <FaVideo className="text-2xl opacity-50" />
                                         </div>
@@ -238,7 +285,7 @@ export default function AllLiveClassesPage() {
                                         </Select>
                                         <div className="flex items-center">
                                             <p className="text-xs text-gray-600">
-                                                    {displayStart}-{displayEnd} of {totalCount}
+                                                    {displayStart}-{displayEnd} of {filteredTotal}
                                             </p>
                                         </div>
                                     </div>

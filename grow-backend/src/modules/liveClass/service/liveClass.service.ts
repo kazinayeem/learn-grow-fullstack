@@ -1,5 +1,6 @@
 import { LiveClass, ILiveClass } from "../model/liveClass.model";
 import { Types } from "mongoose";
+import { Order } from "@/modules/order/model/order.model";
 
 export class LiveClassService {
   static async createLiveClass(data: Partial<ILiveClass> & { instructorId: string; courseId: string }) {
@@ -92,17 +93,71 @@ export class LiveClassService {
       .limit(limit);
   }
 
-  static async getAllLiveClasses(skip: number = 0, limit: number = 20) {
-    return await LiveClass.find({ isApproved: true })
+  static async getAllLiveClasses(
+    skip: number = 0,
+    limit: number = 10,
+    options?: { enrolledOnly?: boolean; studentId?: string }
+  ) {
+    // If not a student or enrolledOnly is false, return all classes
+    if (!options?.enrolledOnly || !options?.studentId) {
+      const classes = await LiveClass.find({ isApproved: true })
+        .populate("courseId", "title")
+        .populate("instructorId", "name email")
+        .sort({ scheduledAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+      const total = await LiveClass.countDocuments({ isApproved: true });
+      return { classes, total };
+    }
+
+    // For students: get enrolled courses from orders
+    console.log(`[getAllLiveClasses] Filtering for student: ${options.studentId}`);
+
+    const orders = await Order.find({
+      userId: new Types.ObjectId(options.studentId),
+      paymentStatus: "approved",
+      isActive: true,
+    });
+
+    console.log(`[getAllLiveClasses] Found ${orders.length} approved orders`);
+
+    // Get enrolled courseIds from single purchases
+    const enrolledCourseIds = orders
+      .filter((order) => order.planType === "single" && order.courseId)
+      .map((order) => order.courseId);
+
+    // Check if student has quarterly subscription (access to all courses)
+    const hasQuarterly = orders.some((order) => order.planType === "quarterly");
+
+    console.log(`[getAllLiveClasses] enrolledCourseIds: ${enrolledCourseIds.length}, hasQuarterly: ${hasQuarterly}`);
+
+    let query: any = { isApproved: true };
+
+    // If not quarterly, filter by enrolled courses
+    if (!hasQuarterly && enrolledCourseIds.length === 0) {
+      // No access to any courses
+      return { classes: [], total: 0 };
+    }
+
+    if (!hasQuarterly && enrolledCourseIds.length > 0) {
+      // Only show classes for enrolled courses
+      query.courseId = { $in: enrolledCourseIds };
+    }
+    // If hasQuarterly, query is just { isApproved: true } - show all classes
+
+    const classes = await LiveClass.find(query)
       .populate("courseId", "title")
       .populate("instructorId", "name email")
       .sort({ scheduledAt: -1 })
       .skip(skip)
       .limit(limit);
-  }
 
-  static async countLiveClasses() {
-    return await LiveClass.countDocuments({ isApproved: true });
+    const total = await LiveClass.countDocuments(query);
+
+    console.log(`[getAllLiveClasses] Returning ${classes.length} classes out of ${total} total`);
+
+    return { classes, total };
   }
 
   static async getPendingLiveClasses(page: number = 1, limit: number = 10, filters?: any) {

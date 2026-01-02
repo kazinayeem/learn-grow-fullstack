@@ -14,9 +14,10 @@ export default function StudentDashboard() {
     const coursesPerPage = 6;
 
     const { data: ordersData, isLoading: ordersLoading } = useGetMyOrdersQuery();
+    // Now API will filter courses based on student's enrolled courses
     const { data: coursesData, isLoading: coursesLoading } = useGetAllCoursesQuery({
-        page: 1,
-        limit: 100  // Fetch more courses to avoid pagination issues
+        page: currentPage,
+        limit: coursesPerPage
     });
 
     const [user, setUser] = React.useState<any>(null);
@@ -29,8 +30,10 @@ export default function StudentDashboard() {
     }, []);
 
     const orders = ordersData?.orders || [];
-    const allCourses = coursesData?.data || coursesData?.courses || [];
-    const totalCoursesInSystem = coursesData?.pagination?.total || coursesData?.total || 0;
+    // API now returns only enrolled courses for students
+    const purchasedCourses = coursesData?.data || coursesData?.courses || [];
+    const totalPurchasedCourses = coursesData?.pagination?.total || 0;
+    const totalPages = coursesData?.pagination?.totalPages || 1;
 
     // Check if user has active quarterly (all access) subscription
     const hasAllAccess = useMemo(() => {
@@ -45,68 +48,17 @@ export default function StudentDashboard() {
         );
     }, [orders]);
 
-    // Get purchased courses
-    const purchasedCourses = useMemo(() => {
-        if (hasAllAccess) {
-            // If has all access, return all published courses  
-            const filtered = allCourses.filter((course: any) => course.isPublished && course.isAdminApproved);
-            return filtered;
-        } else {
-            // Get specific courses from single purchases
-            const approvedOrders = orders.filter(
-                order =>
-                    order.planType === "single" &&
-                    order.paymentStatus === "approved" &&
-                    order.isActive &&
-                    order.courseId
-            );
-
-            console.log("[StudentDashboard] Total orders:", orders.length);
-            console.log("[StudentDashboard] Approved single orders:", approvedOrders.length);
-            console.log("[StudentDashboard] All orders detail:", orders.map((o: any) => ({
-                id: o._id,
-                planType: o.planType,
-                paymentStatus: o.paymentStatus,
-                isActive: o.isActive,
-                courseId: typeof o.courseId === 'object' ? o.courseId?._id : o.courseId,
-                courseTitle: typeof o.courseId === 'object' ? o.courseId?.title : 'N/A'
-            })));
-
-            if (approvedOrders.length === 0) {
-                return [];
-            }
-
-            const courseIds = approvedOrders.map(order => {
-                // Handle both object and string courseId
-                const id = typeof order.courseId === 'object' ? order.courseId._id : order.courseId;
-                return id;
-            });
-
-            console.log("[StudentDashboard] Course IDs to match:", courseIds);
-            console.log("[StudentDashboard] All courses count:", allCourses.length);
-
-            // Only return courses that match the purchased course IDs
-            const matched = allCourses.filter((course: any) => {
-                const matches = courseIds.includes(course._id) &&
-                    course.isPublished &&
-                    course.isAdminApproved;
-                
-                if (courseIds.includes(course._id)) {
-                    console.log(`[StudentDashboard] Course ${course._id} (${course.title}):`, {
-                        included: courseIds.includes(course._id),
-                        isPublished: course.isPublished,
-                        isAdminApproved: course.isAdminApproved,
-                        finalMatch: matches
-                    });
-                }
-                
-                return matches;
-            });
-
-            console.log("[StudentDashboard] Matched courses:", matched.length);
-            return matched;
-        }
-    }, [hasAllAccess, orders, allCourses]);
+    // Count approved single purchases (if no quarterly)
+    const singlePurchaseCount = useMemo(() => {
+        if (hasAllAccess) return 0;
+        return orders.filter(
+            order =>
+                order.planType === "single" &&
+                order.paymentStatus === "approved" &&
+                order.isActive &&
+                order.courseId
+        ).length;
+    }, [hasAllAccess, orders]);
 
     // Get active subscription info
     const activeSubscription = useMemo(() => {
@@ -132,15 +84,14 @@ export default function StudentDashboard() {
         };
     }, [hasAllAccess, orders]);
 
-    // Pagination logic - disabled for full course display
-    const displayedCourses = purchasedCourses; // Show all purchased courses
+    // Pagination logic
+    const displayedCourses = purchasedCourses; // Show paginated courses from API
 
     const stats = [
-        { label: "Total Courses Available", value: totalCoursesInSystem, color: "bg-indigo-500", icon: <FaBook /> },
-        { label: "Purchased Courses", value: purchasedCourses.length, color: "bg-blue-500", icon: <FaBook /> },
+        { label: "Purchased Courses", value: totalPurchasedCourses, color: "bg-blue-500", icon: <FaBook /> },
         { label: "Total Orders", value: orders.filter(o => o.paymentStatus === "approved").length, color: "bg-green-500", icon: <FaCheckCircle />, clickable: true, onClick: () => router.push("/student/orders") },
         { label: "Pending Orders", value: orders.filter(o => o.paymentStatus === "pending").length, color: "bg-orange-500", icon: <FaClock /> },
-        { label: hasAllAccess ? "All Access" : "Single Access", value: hasAllAccess ? "✓" : purchasedCourses.length, color: hasAllAccess ? "bg-purple-500" : "bg-gray-500", icon: <FaTrophy /> },
+        { label: hasAllAccess ? "All Access" : "Single Access", value: hasAllAccess ? "✓" : singlePurchaseCount, color: hasAllAccess ? "bg-purple-500" : "bg-gray-500", icon: <FaTrophy /> },
     ];
 
     if (ordersLoading || coursesLoading) {
@@ -326,6 +277,39 @@ export default function StudentDashboard() {
                                                 </Card>
                                             ))}
                                         </div>
+                                        
+                                        {/* Pagination */}
+                                        {totalPages > 1 && (
+                                            <div className="flex justify-center items-center gap-2 mt-6 pt-4 border-t">
+                                                <Button
+                                                    isIconOnly
+                                                    variant="light"
+                                                    isDisabled={currentPage === 1}
+                                                    onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                                                >
+                                                    ←
+                                                </Button>
+                                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                                    <Button
+                                                        key={page}
+                                                        variant={currentPage === page ? "solid" : "light"}
+                                                        color={currentPage === page ? "primary" : "default"}
+                                                        size="sm"
+                                                        onPress={() => setCurrentPage(page)}
+                                                    >
+                                                        {page}
+                                                    </Button>
+                                                ))}
+                                                <Button
+                                                    isIconOnly
+                                                    variant="light"
+                                                    isDisabled={currentPage === totalPages}
+                                                    onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                                                >
+                                                    →
+                                                </Button>
+                                            </div>
+                                        )}
                                     </>
                                 )}
                             </CardBody>

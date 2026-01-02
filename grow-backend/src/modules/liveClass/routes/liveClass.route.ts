@@ -2,13 +2,13 @@ import express from "express";
 import * as controller from "../controller/liveClass.controller";
 import * as schema from "../schema/liveClass.schema";
 import { validate } from "@/middleware/validate";
-import { requireAuth, requireRoles } from "@/middleware/auth";
+import { requireAuth, requireRoles, optionalAuth } from "@/middleware/auth";
 
 const router = express.Router();
 
 // Public routes (specific routes first, then generic)
 router.get("/upcoming", controller.getUpcomingClasses);
-router.get("/all", controller.getAllLiveClasses);
+router.get("/all", optionalAuth, controller.getAllLiveClasses);
 
 // Admin routes (before generic :id routes)
 router.get(

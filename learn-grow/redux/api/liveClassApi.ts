@@ -69,7 +69,7 @@ export const liveClassApi = baseApi.injectEndpoints({
     }),
 
     getAllLiveClasses: builder.query<any, { skip?: number; limit?: number }>({
-      query: ({ skip = 0, limit = 20 } = {}) => ({
+      query: ({ skip = 0, limit = 10 } = {}) => ({
         url: `/live-classes/all?skip=${skip}&limit=${limit}`,
         method: "GET",
       }),

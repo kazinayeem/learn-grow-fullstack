@@ -29,8 +29,62 @@ export const getAllCourses = async (filters: any = {}) => {
     if (filters.isRegistrationOpen !== undefined) query.isRegistrationOpen = filters.isRegistrationOpen === "true";
     if (filters.instructorId) query.instructorId = filters.instructorId;
 
+    // If student requesting enrolled courses only
+    if (filters.enrolledOnly && filters.studentId) {
+      console.log("[getAllCourses] Processing enrolled courses for student:", filters.studentId);
+      
+      // Get orders for this student with approved payment and active status
+      const Order = require("../../order/model/order.model").Order;
+      const orders = await Order.find({
+        userId: filters.studentId,
+        paymentStatus: "approved",
+        isActive: true,
+      });
+
+      console.log("[getAllCourses] Found orders:", orders.length, orders.map((o: any) => ({
+        id: o._id,
+        planType: o.planType,
+        courseId: o.courseId,
+      })));
+
+      // Extract course IDs from orders
+      const enrolledCourseIds = orders
+        .filter((order: any) => order.courseId) // Filter orders with courseId (single purchases)
+        .map((order: any) => order.courseId);
+
+      console.log("[getAllCourses] Enrolled course IDs:", enrolledCourseIds);
+
+      // Check for quarterly (all access) subscription
+      const hasQuarterly = orders.some((order: any) => order.planType === "quarterly");
+
+      console.log("[getAllCourses] Has quarterly?", hasQuarterly);
+
+      if (hasQuarterly) {
+        // If student has quarterly subscription, show all published and approved courses
+        query.isPublished = true;
+        query.isAdminApproved = true;
+      } else if (enrolledCourseIds.length > 0) {
+        // Otherwise, only show courses they've purchased
+        query._id = { $in: enrolledCourseIds };
+        query.isPublished = true;
+        query.isAdminApproved = true;
+      } else {
+        // No active orders, return empty result
+        console.log("[getAllCourses] No active orders found, returning empty");
+        return {
+          courses: [],
+          pagination: {
+            total: 0,
+            page: 1,
+            limit: 6,
+            totalPages: 0,
+          },
+        };
+      }
+    }
+
     const page = Math.max(1, parseInt(filters.page || "1"));
-    const limit = Math.max(1, Math.min(100, parseInt(filters.limit || "10")));
+    const limit = filters.enrolledOnly ? 6 : Math.max(1, Math.min(100, parseInt(filters.limit || "10")));
     const skip = (page - 1) * limit;
 
     const courses = await Course.find(query)

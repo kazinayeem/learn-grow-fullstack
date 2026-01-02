@@ -137,7 +137,7 @@ function CheckoutContent() {
 
     const fetchPaymentMethods = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/payment-methods");
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/payment-methods`);
         const methods = response.data?.data || response.data || [];
         const active = Array.isArray(methods)
           ? methods.filter((m: PaymentMethod) => m.isActive !== false)
@@ -167,7 +167,7 @@ function CheckoutContent() {
       try {
         const token = getAuthToken();
         const response = await axios.get(
-          `http://localhost:5000/api/course/get-course/${courseId}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/course/get-course/${courseId}`,
           { headers: token ? { Authorization: `Bearer ${token}` } : {} }
         );
 
@@ -297,11 +297,11 @@ function CheckoutContent() {
       }
 
       console.log("=== SENDING API REQUEST ===");
-      console.log("URL: http://localhost:5000/api/orders");
+      console.log("URL: ${process.env.NEXT_PUBLIC_API_URL}/orders");
       console.log("Payload:", JSON.stringify(payload, null, 2));
       console.log("Token:", token.substring(0, 20) + "...");
 
-      const response = await axios.post("http://localhost:5000/api/orders", payload, {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/orders`, payload, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -528,7 +528,7 @@ function CheckoutContent() {
                         variant="bordered"
                         isRequired
                       >
-                        {paymentMethods.map((method) => (
+                        {paymentMethods?.map((method) => (
                           <SelectItem key={method._id} textValue={method.name}>
                             <div className="flex flex-col">
                               <span className="font-semibold text-gray-900">{method.name}</span>

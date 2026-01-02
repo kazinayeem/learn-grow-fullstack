@@ -228,17 +228,27 @@ export const getUpcomingClasses = async (req: Request, res: Response) => {
 export const getAllLiveClasses = async (req: Request, res: Response) => {
   try {
     const skip = parseInt(req.query.skip as string) || 0;
-    const limit = parseInt(req.query.limit as string) || 20;
-    const classes = await LiveClassService.getAllLiveClasses(skip, limit);
-    const total = await LiveClassService.countLiveClasses();
+    const limit = parseInt(req.query.limit as string) || 10;
+    const userId = (req as any).userId;
+    const userRole = (req as any).userRole;
+
+    console.log(`[getAllLiveClasses] userId: ${userId}, userRole: ${userRole}`);
+
+    // For students, filter by enrolled courses only
+    const enrolledOnly = userRole === "student";
+
+    const result = await LiveClassService.getAllLiveClasses(skip, limit, {
+      enrolledOnly,
+      studentId: userId,
+    });
 
     res.status(200).json({
       success: true,
-      data: classes,
+      data: result.classes,
       pagination: {
         skip,
         limit,
-        total,
+        total: result.total,
       },
     });
   } catch (error) {
