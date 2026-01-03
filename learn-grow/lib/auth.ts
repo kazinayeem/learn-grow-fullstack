@@ -161,17 +161,17 @@ export const register = async (userData: {
     const response = await authApi.post("/users/register", userData);
     const { accessToken, refreshToken } = response.data.data;
 
-    // Store tokens
+    // Store tokens (using lax sameSite for cross-port compatibility)
     Cookies.set("accessToken", accessToken, {
       expires: 7,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: false, // Set to false for HTTP
+      sameSite: "lax",
       path: "/",
     });
     Cookies.set("refreshToken", refreshToken, {
       expires: 30,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: false, // Set to false for HTTP
+      sameSite: "lax",
       path: "/",
     });
     Cookies.set("userRole", response.data.data.user.role, { path: "/" });
@@ -206,17 +206,17 @@ export const login = async (credentials: {
     const response = await authApi.post("/users/login", credentials);
     const { accessToken, refreshToken } = response.data.data;
 
-    // Store tokens
+    // Store tokens (using lax sameSite for cross-port compatibility)
     Cookies.set("accessToken", accessToken, {
       expires: 7,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: false, // Set to false for HTTP
+      sameSite: "lax",
       path: "/",
     });
     Cookies.set("refreshToken", refreshToken, {
       expires: 30,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: false, // Set to false for HTTP
+      sameSite: "lax",
       path: "/",
     });
     Cookies.set("userRole", response.data.data.user.role, { path: "/" });
@@ -321,14 +321,14 @@ export const handleOAuthCallback = (params: URLSearchParams) => {
   if (accessToken && refreshToken) {
     Cookies.set("accessToken", accessToken, {
       expires: 7,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: false, // Set to false for HTTP
+      sameSite: "lax",
       path: "/",
     });
     Cookies.set("refreshToken", refreshToken, {
       expires: 30,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: false, // Set to false for HTTP
+      sameSite: "lax",
       path: "/",
     });
     if (role) {

@@ -74,11 +74,22 @@ export default function UserProfile() {
         const fetchProfile = async () => {
             try {
                 setIsLoading(true);
-                const token = Cookies.get("accessToken");
+                const token = Cookies.get("accessToken") || localStorage.getItem("token");
+                
+                if (!token) {
+                    throw new Error("No token found");
+                }
+                
                 const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/users/profile`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 const userData = response.data.data.user;
+                
+                // Update localStorage with latest data
+                if (typeof window !== "undefined") {
+                    localStorage.setItem("user", JSON.stringify(userData));
+                }
+                
                 setUser(userData);
                 setProfilePhoto(userData.profileImage || "");
                 const expertise = Array.isArray(userData.expertise)
@@ -96,7 +107,35 @@ export default function UserProfile() {
                 });
             } catch (error) {
                 console.error("Failed to fetch profile:", error);
-                toast.error("Failed to load profile");
+                
+                // Fallback to localStorage data if API fails
+                const storedUser = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+                if (storedUser) {
+                    try {
+                        const userData = JSON.parse(storedUser);
+                        setUser(userData);
+                        setProfilePhoto(userData.profileImage || "");
+                        const expertise = Array.isArray(userData.expertise)
+                            ? userData.expertise.join(", ")
+                            : userData.expertise || "";
+                        setFormData({
+                            name: userData.name || "",
+                            email: userData.email || "",
+                            phone: userData.phone || "",
+                            bio: userData.bio || "",
+                            expertise: expertise,
+                            qualification: userData.qualification || "",
+                            institution: userData.institution || "",
+                            yearsOfExperience: userData.yearsOfExperience?.toString() || "",
+                        });
+                        toast.warning("Using cached profile data");
+                    } catch (parseError) {
+                        console.error("Failed to parse stored user data:", parseError);
+                        toast.error("Failed to load profile");
+                    }
+                } else {
+                    toast.error("Failed to load profile");
+                }
             } finally {
                 setIsLoading(false);
             }

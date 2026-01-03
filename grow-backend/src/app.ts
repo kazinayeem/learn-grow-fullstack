@@ -28,10 +28,18 @@ import "./config/passport.js";
 export const createApp = () => {
   const app = express();
 
-  // CORS configuration
+  // CORS configuration - allow production IPs
   app.use(
     cors({
-      origin: [ENV.FRONTEND_URL, "http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
+      origin: [
+        ENV.FRONTEND_URL, 
+        "http://localhost:3000", 
+        "http://localhost:3001", 
+        "http://localhost:3002",
+        "http://174.129.111.162:3000", // Production frontend
+        "http://174.129.111.162:3001",
+        "http://174.129.111.162:3002"
+      ],
       credentials: true,
     })
   );
