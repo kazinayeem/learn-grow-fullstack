@@ -24,11 +24,13 @@ export const sendRegistrationConfirmation = async (
     .map((g) => `${g.fullName} (${g.role})`)
     .join(", ");
   
+  // Format date in UTC to avoid timezone issues on server
   const eventDate = new Date(event.eventDate).toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: "UTC",
   });
   
   let locationInfo = "";
@@ -143,11 +145,13 @@ export const sendMeetingLinkToAllAttendees = async (eventId: string) => {
     .map((g) => `${g.fullName} (${g.role})`)
     .join(", ");
   
+  // Format date in UTC to avoid timezone issues on server
   const eventDate = new Date(event.eventDate).toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: "UTC",
   });
   
   const htmlTemplate = (name: string) => `

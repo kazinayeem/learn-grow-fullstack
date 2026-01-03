@@ -86,7 +86,11 @@ function EditInstructorCourseContent() {
     e.preventDefault();
     if (!courseId) return;
     try {
-      const payload = { id: courseId, ...formData, price: Number(formData.price), registrationDeadline: formData.registrationDeadline || undefined } as any;
+      // Convert registration deadline date to ISO string with time at start of day (UTC)
+      const deadline = formData.registrationDeadline 
+        ? new Date(formData.registrationDeadline + "T00:00:00.000Z").toISOString()
+        : undefined;
+      const payload = { id: courseId, ...formData, price: Number(formData.price), registrationDeadline: deadline } as any;
       await updateCourse(payload).unwrap();
       alert("Course updated successfully!");
       router.push("/instructor/courses");
@@ -175,7 +179,7 @@ function EditInstructorCourseContent() {
                 </Select>
                 <Button 
                   isIconOnly 
-                  color="primary\" 
+                  color="primary" 
                   variant="flat" 
                   onPress={onOpen}
                   className="mt-6"

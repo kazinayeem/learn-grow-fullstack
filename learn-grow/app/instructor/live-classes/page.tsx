@@ -143,8 +143,9 @@ export default function InstructorLiveClassesPage() {
         }
 
         try {
-            // Combine date and time into ISO datetime
-            const scheduledAt = new Date(`${newClass.date}T${newClass.time}`).toISOString();
+            // Combine date and time into ISO datetime (properly handles local to UTC)
+            const localDateTime = new Date(`${newClass.date}T${newClass.time}`);
+            const scheduledAt = localDateTime.toISOString();
 
             await createLiveClass({
                 title: newClass.title,
@@ -224,12 +225,16 @@ export default function InstructorLiveClassesPage() {
 
     const handleEditClass = (classItem: any) => {
         setEditingClassId(classItem._id);
+        // Convert UTC to local time for editing
         const date = new Date(classItem.scheduledAt);
+        const localDate = date.toISOString().split("T")[0];
+        const localTime = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        
         setEditForm({
             title: classItem.title,
             courseId: typeof classItem.courseId === "object" ? classItem.courseId._id : classItem.courseId,
-            date: date.toISOString().split("T")[0],
-            time: date.toTimeString().slice(0, 5),
+            date: localDate,
+            time: localTime,
             duration: classItem.duration.toString(),
             platform: classItem.platform,
             meetingLink: classItem.meetingLink,
@@ -243,7 +248,10 @@ export default function InstructorLiveClassesPage() {
         }
 
         try {
-            const scheduledAt = new Date(`${editForm.date}T${editForm.time}`).toISOString();
+            // Combine date and time into ISO datetime (properly handles local to UTC)
+            const localDateTime = new Date(`${editForm.date}T${editForm.time}`);
+            const scheduledAt = localDateTime.toISOString();
+            
             await updateLiveClass({
                 id: editingClassId,
                 title: editForm.title,

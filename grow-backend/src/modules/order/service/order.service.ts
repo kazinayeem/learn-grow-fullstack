@@ -58,7 +58,7 @@ const sendOrderEmail = async (order: any) => {
         <div style="max-width:640px;margin:0 auto;font-family:Arial,sans-serif;color:#111;">
           <div style="background:linear-gradient(135deg,#0ea5e9,#8b5cf6);padding:18px 20px;border-radius:10px 10px 0 0;color:white;">
             <h2 style="margin:0;font-size:20px;">Order Submitted</h2>
-            <p style="margin:4px 0 0;">${new Date(order.createdAt || Date.now()).toLocaleString()}</p>
+            <p style="margin:4px 0 0;">${new Date(order.createdAt || Date.now()).toLocaleString("en-US", { timeZone: "Asia/Dhaka" })}</p>
           </div>
           <div style="border:1px solid #e2e8f0;border-top:0;border-radius:0 0 10px 10px;padding:20px;background:#fff;">
             <h3 style="margin:0 0 12px;font-size:18px;">Order Details</h3>

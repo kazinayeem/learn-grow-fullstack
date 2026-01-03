@@ -85,7 +85,7 @@ export default function InstructorCreateCoursePage() {
         duration: parseInt(form.duration),
         thumbnail: form.thumbnailUrl,
         isRegistrationOpen: !!form.isRegistrationOpen,
-        registrationDeadline: form.registrationDeadline || undefined,
+        registrationDeadline: form.registrationDeadline ? new Date(form.registrationDeadline + "T00:00:00.000Z").toISOString() : undefined,
         instructorId,
       } as any).unwrap();
       router.push("/instructor/courses");

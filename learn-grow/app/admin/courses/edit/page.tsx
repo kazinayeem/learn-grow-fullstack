@@ -83,7 +83,7 @@ function EditCourseContent() {
         thumbnail: course.thumbnail || "",
         type: course.type || "recorded",
         isRegistrationOpen: !!course.isRegistrationOpen,
-        registrationDeadline: course.registrationDeadline ? new Date(course.registrationDeadline).toISOString().slice(0, 10) : "",
+        registrationDeadline: course.registrationDeadline ? new Date(course.registrationDeadline).toISOString().split('T')[0] : "",
         isPublished: course.isPublished ?? true,
       });
     }
