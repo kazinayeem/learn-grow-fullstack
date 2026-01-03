@@ -619,7 +619,7 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
       } else {
         // Otherwise, get their first linked student from GuardianProfile
         const firstProfile = guardianProfiles[0];
-        studentIdToFetch = firstProfile.studentId?.toString() || firstProfile.studentId;
+        studentIdToFetch = firstProfile.studentId?.toString() || (firstProfile.studentId ? firstProfile.studentId.toString() : '');
         console.log(`[GuardianAPI] Guardian ${userId} accessing default linked student: ${studentIdToFetch}`);
       }
     }
@@ -673,7 +673,7 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
       endDate: { $gte: now },
     }).lean();
 
-    let allCourseEnrollments = [...enrollments];
+    let allCourseEnrollments: any[] = [...enrollments];
     let hasQuarterlyAccess = false;
 
     // If student has quarterly subscription, fetch all published courses
@@ -703,6 +703,10 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
         completionPercentage: 0,
         isCompleted: false,
         completedLessons: [],
+        completedModules: [],
+        completedAssignments: [],
+        completedQuizzes: [],
+        completedProjects: [],
         createdAt: quarterlyOrder.createdAt,
         updatedAt: quarterlyOrder.updatedAt,
         accessType: "quarterly",
