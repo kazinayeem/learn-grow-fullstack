@@ -4,6 +4,8 @@ import helmet from "helmet";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import passport from "passport";
+import compression from "compression";
+import rateLimit from "express-rate-limit";
 import { userRoutes } from "./modules/user/index.js";
 import { categoryRoutes } from "./modules/category/index.js";
 import { jobRoutes } from "./modules/job/index.js";
@@ -24,35 +26,100 @@ import googleRoutes from "./modules/user/routes/google.routes.js";
 import analyticsRoutes from "./modules/analytics/analytics.route.js";
 import { ENV } from "./config/env.js";
 import "./config/passport.js";
+// Security middleware imports
+import {
+  helmetConfig,
+  globalRateLimiter,
+  authRateLimiter,
+  preventParamPollution,
+  requestSizeLimiter,
+  mongoSanitize,
+  securityHeaders,
+  hidePoweredBy,
+  enforceHttps,
+  validateContentType,
+  requestTimeout,
+  securityLogger,
+} from "./middleware/security.middleware.js";
+import { verifyToken, optionalAuth } from "./middleware/auth.middleware.js";
 
 export const createApp = () => {
   const app = express();
 
-  // CORS configuration - allow production IPs
+  // ====================================
+  // SECURITY LAYER 1: Basic Security Headers
+  // ====================================
+  app.use(helmetConfig); // Security headers
+  app.use(securityHeaders); // Custom security headers
+  app.use(hidePoweredBy); // Hide server info
+  app.use(enforceHttps); // HTTPS redirect in production
+
+  // ====================================
+  // SECURITY LAYER 2: Rate Limiting & DDoS Protection
+  // ====================================
+  app.use(globalRateLimiter); // Global rate limit
+
+  // ====================================
+  // SECURITY LAYER 3: Input Validation & Sanitization
+  // ====================================
+  app.use(validateContentType); // Validate Content-Type header
+  app.use(requestTimeout(30000)); // 30 second timeout
+  app.use(express.json(requestSizeLimiter.json));
+  app.use(express.urlencoded(requestSizeLimiter.urlencoded));
+  app.use(mongoSanitize); // Prevent NoSQL injection
+  app.use(preventParamPollution); // Prevent parameter pollution
+
+  // ====================================
+  // SECURITY LAYER 4: Logging & Monitoring
+  // ====================================
+  app.use(morgan("combined")); // HTTP request logging
+  app.use(securityLogger); // Security event logging
+
+  // ====================================
+  // SECURITY LAYER 5: CORS (Cross-Origin Resource Sharing)
+  // ====================================
   app.use(
     cors({
       origin: [
-        ENV.FRONTEND_URL, 
-        "http://localhost:3000", 
-        "http://localhost:3001", 
+        ENV.FRONTEND_URL,
+        "http://localhost:3000",
+        "http://localhost:3001",
         "http://localhost:3002",
         "http://174.129.111.162:3000", // Production frontend
         "http://174.129.111.162:3001",
-        "http://174.129.111.162:3002"
+        "http://174.129.111.162:3002",
+        "http://174.129.111.162",
       ],
       credentials: true,
+      maxAge: 86400, // Cache preflight for 24 hours
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
     })
   );
 
-  app.use(helmet());
-  app.use(morgan("dev"));
-  app.use(express.json({ limit: "2mb" }));
-  app.use(express.urlencoded({ extended: true, limit: "2mb" }));
-  app.use(cookieParser());
+  // ====================================
+  // SECURITY LAYER 6: Cookie & Session
+  // ====================================
+  app.use(cookieParser()); // Parse cookies
 
-  // Passport configuration
+  // ====================================
+  // SECURITY LAYER 7: Authentication (Passport)
+  // ====================================
   app.use(passport.initialize());
   // Do not enable Passport sessions; app uses stateless JWT
+
+  // ====================================
+  // SECURITY LAYER 8: Performance Monitoring
+  // ====================================
+  app.use(async (req, res, next) => {
+    const start = Date.now();
+    res.on("finish", () => {
+      const duration = Date.now() - start;
+      if (duration > 500)
+        console.log(`${req.method} ${req.path} - ${duration}ms`);
+    });
+    next();
+  });
 
   // Health check routes
   app.get("/health", (_req, res) => {

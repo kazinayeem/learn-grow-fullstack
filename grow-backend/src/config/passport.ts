@@ -24,7 +24,8 @@ if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
         let isNewUser = false;
 
         if (user) {
-          return done(null, user);
+          const expressUser = { id: user._id.toString(), email: user.email, role: user.role };
+          return done(null, expressUser as any);
         }
 
         // Check if email already exists
@@ -37,7 +38,8 @@ if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
             // Link Google to existing user
             user.googleId = profile.id;
             await user.save();
-            return done(null, user);
+            const expressUser = { id: user._id.toString(), email: user.email, role: user.role };
+            return done(null, expressUser as any);
           }
         }
 
@@ -105,7 +107,8 @@ if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
           );
         }
 
-        return done(null, user);
+        const expressUser = { id: user._id.toString(), email: user.email || '', role: user.role };
+        return done(null, expressUser as any);
       } catch (error) {
         return done(error, undefined);
       }
@@ -123,7 +126,12 @@ passport.serializeUser((user: any, done) => {
 passport.deserializeUser(async (id: string, done) => {
   try {
     const user = await User.findById(id);
-    done(null, user);
+    if (user) {
+      const expressUser = { id: user._id.toString(), email: user.email, role: user.role };
+      done(null, expressUser as any);
+    } else {
+      done(null, false);
+    }
   } catch (error) {
     done(error, null);
   }
