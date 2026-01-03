@@ -178,14 +178,6 @@ export default function ManageCoursesPage() {
     published: courseList.filter((c) => c.isPublished && c.isAdminApproved).length,
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center p-10">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto px-6 py-8 max-w-7xl">
       <div className="flex items-center gap-3 mb-6">
@@ -194,7 +186,7 @@ export default function ManageCoursesPage() {
           startContent={<FaArrowLeft />}
           onPress={() => router.push(userRole === "manager" ? "/manager" : "/admin")}
         >
-          Back
+          Back to Dashboard
         </Button>
         <div>
           <h1 className="text-3xl font-bold">Course Management</h1>
@@ -204,6 +196,12 @@ export default function ManageCoursesPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}><CardBody className="animate-pulse bg-gray-100 h-20" /></Card>
+          ))
+        ) : (
+        <>
         <Card>
           <CardBody className="text-center py-6">
             <p className="text-3xl font-bold text-primary">{totalCourses}</p>
@@ -228,6 +226,8 @@ export default function ManageCoursesPage() {
             <p className="text-gray-600 mt-1">Live & Published</p>
           </CardBody>
         </Card>
+        </>
+        )}
       </div>
 
       {/* Search and Limit Controls */}

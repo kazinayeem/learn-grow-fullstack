@@ -1593,3 +1593,92 @@ export const studentAcceptGuardian = async (studentId: string, guardianId: strin
     return { success: false, message: error.message || "Failed to accept guardian" };
   }
 };
+
+/**
+ * Get lightweight admin dashboard stats (optimized)
+ */
+export const getAdminDashboardStats = async () => {
+  try {
+    const stats = await User.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalUsers: { $sum: 1 },
+          students: {
+            $sum: { $cond: [{ $eq: ["$role", "student"] }, 1, 0] },
+          },
+          instructors: {
+            $sum: { $cond: [{ $eq: ["$role", "instructor"] }, 1, 0] },
+          },
+          guardians: {
+            $sum: { $cond: [{ $eq: ["$role", "guardian"] }, 1, 0] },
+          },
+          admins: {
+            $sum: { $cond: [{ $eq: ["$role", "admin"] }, 1, 0] },
+          },
+        },
+      },
+    ]);
+
+    // Calculate revenue from approved orders
+    const Order = require("../../order/model/order.model").Order;
+    
+    const revenueStats = await Order.aggregate([
+      {
+        $match: {
+          paymentStatus: "approved",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$price" },
+          totalOrders: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Calculate this month's revenue
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const thisMonthRevenue = await Order.aggregate([
+      {
+        $match: {
+          paymentStatus: "approved",
+          createdAt: { $gte: startOfMonth },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          revenue: { $sum: "$price" },
+        },
+      },
+    ]);
+
+    const revenue = revenueStats[0] || { totalRevenue: 0, totalOrders: 0 };
+    const monthRevenue = thisMonthRevenue[0] || { revenue: 0 };
+
+    return {
+      success: true,
+      message: "Dashboard stats retrieved",
+      data: {
+        ...(stats[0] || {
+          totalUsers: 0,
+          students: 0,
+          instructors: 0,
+          guardians: 0,
+          admins: 0,
+        }),
+        totalRevenue: revenue.totalRevenue,
+        totalOrders: revenue.totalOrders,
+        thisMonthRevenue: monthRevenue.revenue,
+      },
+    };
+  } catch (error: any) {
+    console.error("Dashboard stats error:", error);
+    return { success: false, message: error.message || "Failed to get stats" };
+  }
+};

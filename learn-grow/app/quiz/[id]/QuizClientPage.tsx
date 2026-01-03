@@ -34,10 +34,30 @@ export default function TakeQuizPage({ params }: { params: Promise<{ id: string 
     const [timeLeft, setTimeLeft] = useState(0);
     const [quizSubmitted, setQuizSubmitted] = useState(false);
     const [score, setScore] = useState(0);
+    const [previousAttempt, setPreviousAttempt] = useState<any>(null);
 
     // Fetch quiz data from API
     const { data: quizData, isLoading, error } = useGetQuizByIdQuery(resolvedParams.id);
     const quiz = quizData?.data;
+
+    // Check if student has already taken this quiz
+    useEffect(() => {
+        if (quiz) {
+            const attemptKey = `quiz_attempt_${resolvedParams.id}`;
+            const savedAttempt = localStorage.getItem(attemptKey);
+            if (savedAttempt) {
+                try {
+                    const attempt = JSON.parse(savedAttempt);
+                    setPreviousAttempt(attempt);
+                    setAnswers(attempt.answers);
+                    setScore(attempt.score);
+                    setQuizSubmitted(true);
+                } catch (e) {
+                    console.error("Error loading previous attempt:", e);
+                }
+            }
+        }
+    }, [quiz, resolvedParams.id]);
 
     // Initialize timer when quiz loads
     useEffect(() => {
@@ -100,6 +120,20 @@ export default function TakeQuizPage({ params }: { params: Promise<{ id: string 
 
         setScore(totalScore);
         setQuizSubmitted(true);
+
+        // Save attempt to localStorage
+        const attemptKey = `quiz_attempt_${resolvedParams.id}`;
+        const attemptData = {
+            quizId: resolvedParams.id,
+            score: totalScore,
+            totalPoints,
+            answers,
+            correctCount,
+            totalQuestions: quiz.questions.length,
+            submittedAt: new Date().toISOString(),
+            percentage: (totalScore / totalPoints) * 100,
+        };
+        localStorage.setItem(attemptKey, JSON.stringify(attemptData));
     };
 
     // Loading state
@@ -144,9 +178,22 @@ export default function TakeQuizPage({ params }: { params: Promise<{ id: string 
         }).length;
         const percentage = (score / totalPoints) * 100;
         const passed = percentage >= (quiz.passingScore || 60);
+        const submittedDate = previousAttempt ? new Date(previousAttempt.submittedAt).toLocaleString() : new Date().toLocaleString();
 
         return (
             <div className="container mx-auto px-4 py-8 max-w-4xl">
+                {previousAttempt && (
+                    <Card className="mb-4 border-2 border-warning">
+                        <CardBody className="p-4 bg-warning-50">
+                            <p className="text-center font-semibold text-warning-700">
+                                ℹ️ You have already taken this quiz. Retaking is not allowed. Below are your previous results.
+                            </p>
+                            <p className="text-center text-sm text-gray-600 mt-1">
+                                Submitted on: {submittedDate}
+                            </p>
+                        </CardBody>
+                    </Card>
+                )}
                 <Card className="border-2 border-primary">
                     <CardBody className="p-8 text-center">
                         <div className={`inline-block p-6 rounded-full mb-6 ${passed ? "bg-green-100" : "bg-orange-100"}`}>
@@ -279,22 +326,24 @@ export default function TakeQuizPage({ params }: { params: Promise<{ id: string 
                             <Button
                                 color="primary"
                                 size="lg"
-                                onPress={() => router.push("/dashboard/my-courses")}
+                                onPress={() => router.push("/student/my-courses")}
                             >
-                                Back to Courses
+                                Back to My Courses
                             </Button>
-                            <Button
-                                variant="bordered"
-                                size="lg"
-                                onPress={() => {
-                                    setQuizSubmitted(false);
-                                    setAnswers({});
-                                    setCurrentQuestionIndex(0);
-                                    setTimeLeft(quiz.duration * 60);
-                                }}
-                            >
-                                Retake Quiz
-                            </Button>
+                            {!previousAttempt && (
+                                <Button
+                                    variant="bordered"
+                                    size="lg"
+                                    onPress={() => {
+                                        setQuizSubmitted(false);
+                                        setAnswers({});
+                                        setCurrentQuestionIndex(0);
+                                        setTimeLeft(quiz.duration * 60);
+                                    }}
+                                >
+                                    Retake Quiz
+                                </Button>
+                            )}
                         </div>
                     </CardBody>
                 </Card>

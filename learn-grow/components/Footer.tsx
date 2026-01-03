@@ -225,16 +225,16 @@ const Footer: React.FC = () => {
             © {new Date().getFullYear()} {siteConfig.name}. All rights reserved.
           </p>
 
-          {/* Design Credit */}
+          {/* Built By Credit */}
           <p>
-            Design by{" "}
+            Built by{" "}
             <Link
-              className="text-blue-400 hover:text-blue-300 transition-colors"
-              href="https://rylic.studio"
+              className="text-blue-400 hover:text-blue-300 transition-colors font-semibold"
+              href="https://bornosoftnr.com"
               target="_blank"
               rel="noopener noreferrer"
             >
-              Rylic Studio
+              BoRno Software
             </Link>
           </p>
         </div>

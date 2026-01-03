@@ -16,6 +16,11 @@ import {
     ModalBody,
     ModalFooter,
     useDisclosure,
+    Tabs,
+    Tab,
+    Avatar,
+    Divider,
+    CircularProgress,
 } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import {
@@ -29,8 +34,15 @@ import {
     FaBook,
     FaPlay,
     FaExternalLinkAlt,
+    FaClock,
+    FaChartLine,
+    FaGraduationCap,
+    FaCalendar,
+    FaAward,
 } from "react-icons/fa";
 import { useGetCourseByIdQuery } from "@/redux/api/courseApi";
+import { useGetQuizzesByCourseQuery } from "@/redux/api/quizApi";
+import { useGetAssignmentsByCourseQuery } from "@/redux/api/assignmentApi";
 import { toast } from "react-toastify";
 
 interface Lesson {
@@ -136,6 +148,14 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
     const { data: courseResponse, isLoading, error, refetch } = useGetCourseByIdQuery(courseId);
     const courseData = courseResponse?.data || null;
 
+    // Fetch quizzes for this course
+    const { data: quizzesResponse, isLoading: quizzesLoading } = useGetQuizzesByCourseQuery(courseId);
+    const quizzes = quizzesResponse?.data || [];
+
+    // Fetch assignments for this course
+    const { data: assignmentsResponse, isLoading: assignmentsLoading } = useGetAssignmentsByCourseQuery(courseId);
+    const assignments = assignmentsResponse?.data || [];
+
     // Log course fetch status
     useEffect(() => {
         if (authChecked && isAuthorized) {
@@ -186,7 +206,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
         if (lesson.type === "quiz" || lesson.type === "assignment") {
             // Navigate to quiz or assignment page
             if (lesson.type === "quiz") {
-                router.push(`/student/quiz/${lesson.id}`);
+                router.push(`/quiz/${lesson.id}`);
             } else {
                 router.push(`/student/assignment/${lesson.id}`);
             }
@@ -520,6 +540,449 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                     </AccordionItem>
                                 ))}
                             </Accordion>
+                        )}
+                    </CardBody>
+                </Card>
+
+                {/* Quizzes & Assessments Section */}
+                <Card className="mt-6">
+                    <CardBody className="p-6">
+                        <h2 className="text-2xl font-bold mb-6">Quizzes & Assessments</h2>
+                        
+                        {quizzesLoading ? (
+                            <div className="text-center py-8">
+                                <Spinner size="lg" label="Loading quizzes..." />
+                            </div>
+                        ) : quizzes.length === 0 ? (
+                            <div className="text-center py-12 text-gray-500">
+                                <FaClipboardList className="text-6xl mx-auto mb-4 text-gray-300" />
+                                <p>No quizzes or assessments available yet</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                {/* Regular Quizzes */}
+                                {quizzes.filter((q: any) => q.assessmentType === "quiz").length > 0 && (
+                                    <div>
+                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                            <FaClipboardList className="text-blue-600" />
+                                            Regular Quizzes
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {quizzes.filter((q: any) => q.assessmentType === "quiz").map((quiz: any) => (
+                                                <Card 
+                                                    key={quiz._id}
+                                                    className="border-2 border-blue-200 hover:border-blue-400 hover:shadow-lg transition-all"
+                                                >
+                                                    <CardBody className="p-4">
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                                                                    <FaClipboardList size={20} />
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="font-semibold text-sm">{quiz.title}</h4>
+                                                                </div>
+                                                            </div>
+                                                            {quiz.status === "published" ? (
+                                                                <Chip size="sm" color="success" variant="flat">Published</Chip>
+                                                            ) : (
+                                                                <Chip size="sm" color="warning" variant="flat">Draft</Chip>
+                                                            )}
+                                                        </div>
+                                                        {quiz.description && (
+                                                            <p className="text-xs text-gray-600 mb-3 line-clamp-2">{quiz.description}</p>
+                                                        )}
+                                                        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                                                            <span>{quiz.questions?.length || 0} Questions</span>
+                                                            {quiz.timeLimit && <span>{quiz.timeLimit} mins</span>}
+                                                        </div>
+                                                        <Button 
+                                                            size="sm" 
+                                                            color="primary" 
+                                                            variant="flat"
+                                                            fullWidth
+                                                            startContent={<FaPlay />}
+                                                            isDisabled={quiz.status !== "published"}
+                                                            onPress={() => {
+                                                                if (quiz.status === "published") {
+                                                                    // Check if already taken
+                                                                    const attemptKey = `quiz_attempt_${quiz._id}`;
+                                                                    const hasAttempt = localStorage.getItem(attemptKey);
+                                                                    if (hasAttempt) {
+                                                                        router.push(`/quiz/${quiz._id}`); // Will show results
+                                                                    } else {
+                                                                        router.push(`/quiz/${quiz._id}`);
+                                                                    }
+                                                                }
+                                                            }}
+                                                        >
+                                                            {quiz.status === "published" ? 
+                                                                (typeof window !== 'undefined' && localStorage.getItem(`quiz_attempt_${quiz._id}`) ? "View Results" : "Start Quiz") 
+                                                                : "Not Available"}
+                                                        </Button>
+                                                    </CardBody>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Mid Exams */}
+                                {quizzes.filter((q: any) => q.assessmentType === "mid-exam").length > 0 && (
+                                    <div>
+                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                            <FaTasks className="text-orange-600" />
+                                            Mid-Term Exams
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {quizzes.filter((q: any) => q.assessmentType === "mid-exam").map((quiz: any) => (
+                                                <Card 
+                                                    key={quiz._id}
+                                                    className="border-2 border-orange-200 hover:border-orange-400 hover:shadow-lg transition-all"
+                                                >
+                                                    <CardBody className="p-4">
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="p-2 rounded-lg bg-orange-100 text-orange-600">
+                                                                    <FaTasks size={20} />
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="font-semibold text-sm">{quiz.title}</h4>
+                                                                </div>
+                                                            </div>
+                                                            {quiz.status === "published" ? (
+                                                                <Chip size="sm" color="success" variant="flat">Published</Chip>
+                                                            ) : (
+                                                                <Chip size="sm" color="warning" variant="flat">Draft</Chip>
+                                                            )}
+                                                        </div>
+                                                        {quiz.description && (
+                                                            <p className="text-xs text-gray-600 mb-3 line-clamp-2">{quiz.description}</p>
+                                                        )}
+                                                        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                                                            <span>{quiz.questions?.length || 0} Questions</span>
+                                                            {quiz.timeLimit && <span>{quiz.timeLimit} mins</span>}
+                                                        </div>
+                                                        <Button 
+                                                            size="sm" 
+                                                            color="warning" 
+                                                            variant="flat"
+                                                            fullWidth
+                                                            startContent={<FaPlay />}
+                                                            isDisabled={quiz.status !== "published"}
+                                                            onPress={() => quiz.status === "published" && router.push(`/quiz/${quiz._id}`)}
+                                                        >
+                                                            {quiz.status === "published" ? 
+                                                                (typeof window !== 'undefined' && localStorage.getItem(`quiz_attempt_${quiz._id}`) ? "View Results" : "Start Mid-Term") 
+                                                                : "Not Available"}
+                                                        </Button>
+                                                    </CardBody>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Final Exams */}
+                                {quizzes.filter((q: any) => q.assessmentType === "final-exam").length > 0 && (
+                                    <div>
+                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                            <FaCheckCircle className="text-purple-600" />
+                                            Final Exams
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {quizzes.filter((q: any) => q.assessmentType === "final-exam").map((quiz: any) => (
+                                                <Card 
+                                                    key={quiz._id}
+                                                    className="border-2 border-purple-200 hover:border-purple-400 hover:shadow-lg transition-all"
+                                                >
+                                                    <CardBody className="p-4">
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="p-2 rounded-lg bg-purple-100 text-purple-600">
+                                                                    <FaCheckCircle size={20} />
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="font-semibold text-sm">{quiz.title}</h4>
+                                                                </div>
+                                                            </div>
+                                                            {quiz.status === "published" ? (
+                                                                <Chip size="sm" color="success" variant="flat">Published</Chip>
+                                                            ) : (
+                                                                <Chip size="sm" color="warning" variant="flat">Draft</Chip>
+                                                            )}
+                                                        </div>
+                                                        {quiz.description && (
+                                                            <p className="text-xs text-gray-600 mb-3 line-clamp-2">{quiz.description}</p>
+                                                        )}
+                                                        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                                                            <span>{quiz.questions?.length || 0} Questions</span>
+                                                            {quiz.timeLimit && <span>{quiz.timeLimit} mins</span>}
+                                                        </div>
+                                                        <Button 
+                                                            size="sm" 
+                                                            color="secondary" 
+                                                            variant="flat"
+                                                            fullWidth
+                                                            startContent={<FaPlay />}
+                                                            isDisabled={quiz.status !== "published"}
+                                                            onPress={() => quiz.status === "published" && router.push(`/quiz/${quiz._id}`)}
+                                                        >
+                                                            {quiz.status === "published" ? 
+                                                                (typeof window !== 'undefined' && localStorage.getItem(`quiz_attempt_${quiz._id}`) ? "View Results" : "Start Final Exam") 
+                                                                : "Not Available"}
+                                                        </Button>
+                                                    </CardBody>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </CardBody>
+                </Card>
+
+                {/* Assignments & Projects Section */}
+                <Card className="mt-6">
+                    <CardBody className="p-6">
+                        <h2 className="text-2xl font-bold mb-6">Assignments & Projects</h2>
+                        
+                        {assignmentsLoading ? (
+                            <div className="text-center py-8">
+                                <Spinner size="lg" label="Loading assignments..." />
+                            </div>
+                        ) : assignments.length === 0 ? (
+                            <div className="text-center py-12 text-gray-500">
+                                <FaTasks className="text-6xl mx-auto mb-4 text-gray-300" />
+                                <p>No assignments or projects available yet</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                {/* Regular Assignments */}
+                                {assignments.filter((a: any) => a.assessmentType === "assignment").length > 0 && (
+                                    <div>
+                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                            <FaTasks className="text-blue-600" />
+                                            Regular Assignments
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {assignments.filter((a: any) => a.assessmentType === "assignment").map((assignment: any) => (
+                                                <Card 
+                                                    key={assignment._id}
+                                                    className="border-2 border-blue-200 hover:border-blue-400 hover:shadow-lg transition-all"
+                                                >
+                                                    <CardBody className="p-4">
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                                                                    <FaTasks size={20} />
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="font-semibold text-sm">{assignment.title}</h4>
+                                                                </div>
+                                                            </div>
+                                                            {assignment.status === "published" ? (
+                                                                <Chip size="sm" color="success" variant="flat">Published</Chip>
+                                                            ) : (
+                                                                <Chip size="sm" color="warning" variant="flat">Draft</Chip>
+                                                            )}
+                                                        </div>
+                                                        {assignment.description && (
+                                                            <p className="text-xs text-gray-600 mb-3 line-clamp-2">{assignment.description}</p>
+                                                        )}
+                                                        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                                                            <span>Max Score: {assignment.maxScore || 100}</span>
+                                                            {assignment.dueDate && (
+                                                                <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
+                                                            )}
+                                                        </div>
+                                                        <Button 
+                                                            size="sm" 
+                                                            color="primary" 
+                                                            variant="flat"
+                                                            fullWidth
+                                                            startContent={<FaPlay />}
+                                                            isDisabled={assignment.status !== "published"}
+                                                            onPress={() => assignment.status === "published" && router.push(`/student/assignment/${assignment._id}`)}
+                                                        >
+                                                            {assignment.status === "published" ? "Start Assignment" : "Not Available"}
+                                                        </Button>
+                                                    </CardBody>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Mid-Term Assignments */}
+                                {assignments.filter((a: any) => a.assessmentType === "mid-term").length > 0 && (
+                                    <div>
+                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                            <FaTasks className="text-orange-600" />
+                                            Mid-Term Assignments
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {assignments.filter((a: any) => a.assessmentType === "mid-term").map((assignment: any) => (
+                                                <Card 
+                                                    key={assignment._id}
+                                                    className="border-2 border-orange-200 hover:border-orange-400 hover:shadow-lg transition-all"
+                                                >
+                                                    <CardBody className="p-4">
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="p-2 rounded-lg bg-orange-100 text-orange-600">
+                                                                    <FaTasks size={20} />
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="font-semibold text-sm">{assignment.title}</h4>
+                                                                </div>
+                                                            </div>
+                                                            {assignment.status === "published" ? (
+                                                                <Chip size="sm" color="success" variant="flat">Published</Chip>
+                                                            ) : (
+                                                                <Chip size="sm" color="warning" variant="flat">Draft</Chip>
+                                                            )}
+                                                        </div>
+                                                        {assignment.description && (
+                                                            <p className="text-xs text-gray-600 mb-3 line-clamp-2">{assignment.description}</p>
+                                                        )}
+                                                        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                                                            <span>Max Score: {assignment.maxScore || 100}</span>
+                                                            {assignment.dueDate && (
+                                                                <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
+                                                            )}
+                                                        </div>
+                                                        <Button 
+                                                            size="sm" 
+                                                            color="warning" 
+                                                            variant="flat"
+                                                            fullWidth
+                                                            startContent={<FaPlay />}
+                                                            isDisabled={assignment.status !== "published"}
+                                                            onPress={() => assignment.status === "published" && router.push(`/student/assignment/${assignment._id}`)}
+                                                        >
+                                                            {assignment.status === "published" ? "Start Mid-Term" : "Not Available"}
+                                                        </Button>
+                                                    </CardBody>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Final Assignments */}
+                                {assignments.filter((a: any) => a.assessmentType === "final").length > 0 && (
+                                    <div>
+                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                            <FaCheckCircle className="text-purple-600" />
+                                            Final Assignments
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {assignments.filter((a: any) => a.assessmentType === "final").map((assignment: any) => (
+                                                <Card 
+                                                    key={assignment._id}
+                                                    className="border-2 border-purple-200 hover:border-purple-400 hover:shadow-lg transition-all"
+                                                >
+                                                    <CardBody className="p-4">
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="p-2 rounded-lg bg-purple-100 text-purple-600">
+                                                                    <FaCheckCircle size={20} />
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="font-semibold text-sm">{assignment.title}</h4>
+                                                                </div>
+                                                            </div>
+                                                            {assignment.status === "published" ? (
+                                                                <Chip size="sm" color="success" variant="flat">Published</Chip>
+                                                            ) : (
+                                                                <Chip size="sm" color="warning" variant="flat">Draft</Chip>
+                                                            )}
+                                                        </div>
+                                                        {assignment.description && (
+                                                            <p className="text-xs text-gray-600 mb-3 line-clamp-2">{assignment.description}</p>
+                                                        )}
+                                                        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                                                            <span>Max Score: {assignment.maxScore || 100}</span>
+                                                            {assignment.dueDate && (
+                                                                <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
+                                                            )}
+                                                        </div>
+                                                        <Button 
+                                                            size="sm" 
+                                                            color="secondary" 
+                                                            variant="flat"
+                                                            fullWidth
+                                                            startContent={<FaPlay />}
+                                                            isDisabled={assignment.status !== "published"}
+                                                            onPress={() => assignment.status === "published" && router.push(`/student/assignment/${assignment._id}`)}
+                                                        >
+                                                            {assignment.status === "published" ? "Start Final Assignment" : "Not Available"}
+                                                        </Button>
+                                                    </CardBody>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Projects */}
+                                {assignments.filter((a: any) => a.assessmentType === "project").length > 0 && (
+                                    <div>
+                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                            <FaBook className="text-green-600" />
+                                            Projects
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {assignments.filter((a: any) => a.assessmentType === "project").map((assignment: any) => (
+                                                <Card 
+                                                    key={assignment._id}
+                                                    className="border-2 border-green-200 hover:border-green-400 hover:shadow-lg transition-all"
+                                                >
+                                                    <CardBody className="p-4">
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="p-2 rounded-lg bg-green-100 text-green-600">
+                                                                    <FaBook size={20} />
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="font-semibold text-sm">{assignment.title}</h4>
+                                                                </div>
+                                                            </div>
+                                                            {assignment.status === "published" ? (
+                                                                <Chip size="sm" color="success" variant="flat">Published</Chip>
+                                                            ) : (
+                                                                <Chip size="sm" color="warning" variant="flat">Draft</Chip>
+                                                            )}
+                                                        </div>
+                                                        {assignment.description && (
+                                                            <p className="text-xs text-gray-600 mb-3 line-clamp-2">{assignment.description}</p>
+                                                        )}
+                                                        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                                                            <span>Max Score: {assignment.maxScore || 100}</span>
+                                                            {assignment.dueDate && (
+                                                                <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
+                                                            )}
+                                                        </div>
+                                                        <Button 
+                                                            size="sm" 
+                                                            color="success" 
+                                                            variant="flat"
+                                                            fullWidth
+                                                            startContent={<FaPlay />}
+                                                            isDisabled={assignment.status !== "published"}
+                                                            onPress={() => assignment.status === "published" && router.push(`/student/assignment/${assignment._id}`)}
+                                                        >
+                                                            {assignment.status === "published" ? "Start Project" : "Not Available"}
+                                                        </Button>
+                                                    </CardBody>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         )}
                     </CardBody>
                 </Card>

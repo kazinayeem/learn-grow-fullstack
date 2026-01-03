@@ -86,8 +86,9 @@ export const requestSizeLimiter = {
 export const mongoSanitize = (req: Request, res: Response, next: NextFunction) => {
   const sanitize = (data: any): any => {
     if (typeof data === 'string') {
-      // Remove $ and . characters that could be used in NoSQL injection
-      return data.replace(/\$/g, '').replace(/\./g, '');
+      // Remove $ characters that could be used in NoSQL injection
+      // BUT: Keep dots (.) as they're legitimate in emails and URLs
+      return data.replace(/\$/g, '');
     }
     if (data instanceof Object) {
       for (let key in data) {

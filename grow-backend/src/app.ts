@@ -47,6 +47,42 @@ export const createApp = () => {
   const app = express();
 
   // ====================================
+  // SECURITY LAYER 0: CORS (Must be FIRST)
+  // ====================================
+  const corsOptions = {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Allowed origins list
+      const allowedOrigins = [
+        ENV.FRONTEND_URL,
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://174.129.111.162:3000", // Production frontend
+        "http://174.129.111.162:3001",
+        "http://174.129.111.162:3002",
+        "http://174.129.111.162",
+      ];
+      
+      // Allow requests with no origin (like mobile apps or Postman)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn(`CORS blocked request from origin: ${origin}`);
+        callback(null, true); // Allow for now, but log it
+      }
+    },
+    credentials: true,
+    maxAge: 86400, // Cache preflight for 24 hours
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With', 'Accept'],
+    exposedHeaders: ['Content-Length', 'X-JSON-Response-Length'],
+    optionsSuccessStatus: 204,
+    preflightContinue: false,
+  };
+  
+  app.use(cors(corsOptions));
+
+  // ====================================
   // SECURITY LAYER 1: Basic Security Headers
   // ====================================
   app.use(helmetConfig); // Security headers
@@ -76,40 +112,18 @@ export const createApp = () => {
   app.use(securityLogger); // Security event logging
 
   // ====================================
-  // SECURITY LAYER 5: CORS (Cross-Origin Resource Sharing)
-  // ====================================
-  app.use(
-    cors({
-      origin: [
-        ENV.FRONTEND_URL,
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:3002",
-        "http://174.129.111.162:3000", // Production frontend
-        "http://174.129.111.162:3001",
-        "http://174.129.111.162:3002",
-        "http://174.129.111.162",
-      ],
-      credentials: true,
-      maxAge: 86400, // Cache preflight for 24 hours
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
-    })
-  );
-
-  // ====================================
-  // SECURITY LAYER 6: Cookie & Session
+  // SECURITY LAYER 5: Cookie & Session
   // ====================================
   app.use(cookieParser()); // Parse cookies
 
   // ====================================
-  // SECURITY LAYER 7: Authentication (Passport)
+  // SECURITY LAYER 6: Authentication (Passport)
   // ====================================
   app.use(passport.initialize());
   // Do not enable Passport sessions; app uses stateless JWT
 
   // ====================================
-  // SECURITY LAYER 8: Performance Monitoring
+  // SECURITY LAYER 7: Performance Monitoring
   // ====================================
   app.use(async (req, res, next) => {
     const start = Date.now();
@@ -162,12 +176,14 @@ export const createApp = () => {
   app.use("/api/v1/site-content", siteContentRoutes);
   app.use("/api/v1/settings", settingsRoutes);
 
-  // 404 handler
+  // 404 handler - Ensure CORS headers on 404
   app.use((_req, res) => {
+    res.header('Access-Control-Allow-Origin', res.getHeader('Access-Control-Allow-Origin') as string || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
     res.status(404).json({ success: false, message: "Not Found" });
   });
 
-  // Global error handler
+  // Global error handler - Ensure CORS headers on errors
   app.use(
     (
       err: any,
@@ -176,9 +192,16 @@ export const createApp = () => {
       _next: express.NextFunction
     ) => {
       console.error("Global error handler:", err);
-      res.status(500).json({
+      
+      // Ensure CORS headers are present on error responses
+      res.header('Access-Control-Allow-Origin', res.getHeader('Access-Control-Allow-Origin') as string || '*');
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS,HEAD');
+      res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-CSRF-Token,X-Requested-With,Accept');
+      
+      res.status(err.status || 500).json({
         success: false,
-        message: "Internal Server Error",
+        message: err.message || "Internal Server Error",
         error: process.env.NODE_ENV === "development" ? err.message : undefined,
       });
     }

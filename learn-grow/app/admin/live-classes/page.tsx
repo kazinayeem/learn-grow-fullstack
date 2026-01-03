@@ -139,7 +139,7 @@ export default function AdminLiveClassesPage() {
                             startContent={<FaArrowLeft />}
                             onPress={() => router.push(userRole === "manager" ? "/manager" : "/admin")}
                         >
-                            Back
+                            Back to Dashboard
                         </Button>
                         <h1 className="text-4xl font-bold">Pending Live Classes 🎥</h1>
                     </div>

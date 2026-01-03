@@ -45,13 +45,9 @@ class TeamService {
         bio?: string;
     }) {
         try {
-            // Calculate image size from base64
-            const imageSize = Buffer.byteLength(data.image, "utf8");
-
-            // Check if image exceeds 1MB
-            if (imageSize > 1048576) {
-                return { success: false, message: "Image size must not exceed 1MB" };
-            }
+            // No need to calculate image size for URLs
+            // Set imageSize to 0 for backward compatibility
+            const imageSize = 0;
 
             const newMember = new TeamMember({
                 ...data,

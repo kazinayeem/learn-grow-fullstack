@@ -36,6 +36,7 @@ router.patch("/instructors/:instructorId/approve", requireAuth, requireRoles("ad
 router.patch("/instructors/:instructorId/reject", requireAuth, requireRoles("admin", "manager"), controller.rejectInstructor);
 
 // Admin routes for user management with pagination/CRUD
+router.get("/admin/dashboard/stats", requireAuth, requireRoles("admin", "manager"), controller.getAdminDashboardStats);
 router.get("/admin", requireAuth, requireRoles("admin", "manager"), controller.listUsers);
 router.post("/admin", requireAuth, requireRoles("admin"), controller.createUserAdmin);
 router.get("/admin/:id", requireAuth, requireRoles("admin", "manager"), controller.getUserByIdAdmin);

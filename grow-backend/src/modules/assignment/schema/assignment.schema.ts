@@ -3,7 +3,7 @@ import { z } from "zod";
 export const createAssignmentSchema = z.object({
   body: z.object({
     courseId: z.string().min(1, "Course ID is required"),
-    assessmentType: z.enum(["assignment", "project"]).optional(),
+    assessmentType: z.enum(["assignment", "project", "mid-term", "final"]).optional(),
     title: z.string().min(1, "Title is required"),
     description: z.string().min(1, "Description is required"),
     instructions: z.string().optional(),
@@ -18,6 +18,7 @@ export const updateAssignmentSchema = z.object({
     id: z.string().min(1, "Assignment ID is required"),
   }),
   body: z.object({
+    assessmentType: z.enum(["assignment", "project", "mid-term", "final"]).optional(),
     title: z.string().optional(),
     description: z.string().optional(),
     instructions: z.string().optional(),

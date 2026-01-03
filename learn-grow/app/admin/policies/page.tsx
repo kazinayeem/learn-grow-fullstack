@@ -72,7 +72,7 @@ export default function PoliciesAdminPage() {
           <Button 
             variant="light" 
             startContent={<FaArrowLeft />}
-            onPress={() => router.back()}
+            onPress={() => router.push("/admin")}
           >
             Back
           </Button>

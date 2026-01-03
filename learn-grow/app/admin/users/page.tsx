@@ -157,14 +157,6 @@ export default function UserManagementPage() {
     ], []);
 
 
-    if (isLoading) {
-        return (
-            <div className="flex justify-center items-center min-h-screen">
-                <Spinner size="lg" label="Loading users..." />
-            </div>
-        );
-    }
-
     return (
         <div className="container mx-auto px-4 py-8 max-w-7xl">
             {/* Header */}
@@ -175,7 +167,7 @@ export default function UserManagementPage() {
                         startContent={<FaArrowLeft />}
                         onPress={() => router.push(currentUserRole === "manager" ? "/manager" : "/admin")}
                     >
-                        Back
+                        Back to Dashboard
                     </Button>
                     <div>
                         <h1 className="text-3xl font-bold">User Management</h1>
@@ -196,6 +188,12 @@ export default function UserManagementPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                {isLoading ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="bg-gray-100 animate-pulse p-6 rounded-lg h-24" />
+                    ))
+                ) : (
+                <>
                 <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-lg">
                     <p className="text-sm opacity-90">Total Users</p>
                     <p className="text-3xl font-bold">{counts.totalUsers}</p>
@@ -212,6 +210,8 @@ export default function UserManagementPage() {
                     <p className="text-sm opacity-90">Admins</p>
                     <p className="text-3xl font-bold">{counts.admins}</p>
                 </div>
+                </>
+                )}
             </div>
 
             {/* Filters */}

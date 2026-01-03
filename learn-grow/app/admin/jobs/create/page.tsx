@@ -54,7 +54,7 @@ export default function CreateJobPage() {
             <Button
                 variant="light"
                 startContent={<FaArrowLeft />}
-                onPress={() => router.back()}
+                onPress={() => router.push("/admin")}
                 className="mb-4"
             >
                 Back to Jobs

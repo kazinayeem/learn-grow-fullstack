@@ -1,6 +1,6 @@
 import { Schema, model, Types, Document } from "mongoose";
 
-export type AssessmentType = "quiz" | "assignment" | "mid-exam" | "final-exam" | "project";
+export type AssessmentType = "quiz" | "assignment" | "mid-exam" | "final-exam" | "project" | "mid-term" | "final";
 export type AssessmentStatus = "draft" | "active" | "published";
 
 export interface IAssessment extends Document {
@@ -19,7 +19,7 @@ const assessmentSchema = new Schema<IAssessment>(
   {
     courseId: { type: Schema.Types.ObjectId, ref: "Course", required: true },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    type: { type: String, enum: ["quiz", "assignment", "mid-exam", "final-exam", "project"], required: true },
+    type: { type: String, enum: ["quiz", "assignment", "mid-exam", "final-exam", "project", "mid-term", "final"], required: true },
     title: { type: String, required: true, trim: true },
     description: { type: String },
     questions: { type: Number },

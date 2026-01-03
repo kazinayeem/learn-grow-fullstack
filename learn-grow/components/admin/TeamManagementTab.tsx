@@ -23,7 +23,6 @@ import {
 } from "@nextui-org/react";
 import toast from "react-hot-toast";
 import { FaTrash, FaEdit, FaEye, FaEyeSlash } from "react-icons/fa";
-import ImageUploadBase64 from "@/components/admin/ImageUploadBase64";
 import {
     useGetAllTeamMembersQuery,
     useCreateTeamMemberMutation,
@@ -77,17 +76,24 @@ export default function TeamManagementTab() {
         linkedIn: "",
         twitter: "",
         bio: "",
+        imageUrl: "",
     });
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
-    const [imageSize, setImageSize] = useState(0);
 
     const teamMembers = (teamData?.data || []) as TeamMember[];
     const instructors = (instructorsData?.data || []) as Instructor[];
 
     // Handle Add Member
     const handleAddMember = async () => {
-        if (!formData.name || !formData.role || !selectedImage) {
-            toast.error("Name, Role, and Image are required");
+        if (!formData.name || !formData.role || !formData.imageUrl) {
+            toast.error("Name, Role, and Image URL are required");
+            return;
+        }
+
+        // Validate URL format
+        try {
+            new URL(formData.imageUrl);
+        } catch {
+            toast.error("Please enter a valid image URL");
             return;
         }
 
@@ -95,16 +101,14 @@ export default function TeamManagementTab() {
             await createTeamMember({
                 name: formData.name,
                 role: formData.role,
-                image: selectedImage,
+                image: formData.imageUrl,
                 linkedIn: formData.linkedIn,
                 twitter: formData.twitter,
                 bio: formData.bio,
             }).unwrap();
 
             toast.success("Team member added successfully!");
-            setFormData({ name: "", role: "", linkedIn: "", twitter: "", bio: "" });
-            setSelectedImage(null);
-            setImageSize(0);
+            setFormData({ name: "", role: "", linkedIn: "", twitter: "", bio: "", imageUrl: "" });
         } catch (error) {
             toast.error((error as any)?.data?.message || "Failed to add member");
         }
@@ -224,17 +228,24 @@ export default function TeamManagementTab() {
                             />
 
                             <div>
-                                <p className="text-sm font-semibold mb-3">Profile Picture</p>
-                                <ImageUploadBase64
-                                    onImageSelected={(base64, size) => {
-                                        setSelectedImage(base64);
-                                        setImageSize(size);
-                                    }}
-                                    preview={selectedImage ?? undefined}
-                                    isLoading={createLoading}
+                                <p className="text-sm font-semibold mb-3">Profile Picture URL</p>
+                                <Input
+                                    label="Image URL"
+                                    placeholder="https://example.com/image.jpg"
+                                    value={formData.imageUrl}
+                                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                                    description="Enter a direct link to the profile image"
                                 />
-                                {imageSize > 0 && (
-                                    <p className="text-xs text-gray-500 mt-2">Size: {(imageSize / 1024).toFixed(2)} KB</p>
+                                {formData.imageUrl && (
+                                    <div className="mt-3">
+                                        <Image
+                                            src={formData.imageUrl}
+                                            alt="Preview"
+                                            width={150}
+                                            height={150}
+                                            className="rounded-lg object-cover"
+                                        />
+                                    </div>
                                 )}
                             </div>
 
@@ -270,17 +281,6 @@ export default function TeamManagementTab() {
                                 <>
                                     <div className="space-y-2 max-h-96 overflow-y-auto border rounded-lg p-3 bg-gray-50">
                                         {instructors.map((instructor) => {
-                                            // Handle base64 image display
-                                            const getImageSrc = () => {
-                                                if (!instructor.profileImage) return undefined;
-                                                // Check if it already has data URI prefix
-                                                if (instructor.profileImage.startsWith('data:')) {
-                                                    return instructor.profileImage;
-                                                }
-                                                // Add prefix for base64 string
-                                                return `data:image/jpeg;base64,${instructor.profileImage}`;
-                                            };
-
                                             return (
                                                 <div
                                                     key={instructor._id}
@@ -300,7 +300,7 @@ export default function TeamManagementTab() {
                                                         onChange={() => {}}
                                                     />
                                                     <Avatar
-                                                        src={getImageSrc()}
+                                                        src={instructor.profileImage}
                                                         name={instructor.name.charAt(0)}
                                                         size="sm"
                                                         className="flex-shrink-0"
@@ -362,7 +362,7 @@ export default function TeamManagementTab() {
 
                                                 {member.image && member.image !== "placeholder" ? (
                                                     <Image
-                                                        src={member.image.startsWith('data:') ? member.image : `data:image/jpeg;base64,${member.image}`}
+                                                        src={member.image}
                                                         alt={member.name}
                                                         width="100%"
                                                         height={150}
@@ -493,14 +493,26 @@ export default function TeamManagementTab() {
                                             }
                                         />
                                         <div>
-                                            <p className="text-sm font-semibold mb-2">Current Image</p>
-                                            <Image
-                                                src={`data:image/jpeg;base64,${editingMember.image}`}
-                                                alt={editingMember.name}
-                                                width={100}
-                                                height={100}
-                                                className="rounded-lg"
+                                            <p className="text-sm font-semibold mb-2">Image URL</p>
+                                            <Input
+                                                label="Image URL"
+                                                placeholder="https://example.com/image.jpg"
+                                                value={editingMember.image || ""}
+                                                onChange={(e) =>
+                                                    setEditingMember({ ...editingMember, image: e.target.value })
+                                                }
                                             />
+                                            {editingMember.image && (
+                                                <div className="mt-3">
+                                                    <Image
+                                                        src={editingMember.image}
+                                                        alt={editingMember.name}
+                                                        width={100}
+                                                        height={100}
+                                                        className="rounded-lg"
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                     </>
                                 )}

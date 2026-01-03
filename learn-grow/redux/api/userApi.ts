@@ -20,6 +20,12 @@ export const userApi = createApi({
     }),
     tagTypes: ["Users"],
     endpoints: (builder) => ({
+        // Admin: Get lightweight dashboard stats
+        getAdminDashboardStats: builder.query({
+            query: () => "/admin/dashboard/stats",
+            providesTags: ["Users"],
+        }),
+
         // Admin: List users with pagination, search, role filter
         getUsersAdmin: builder.query({
             query: ({ page = 1, limit = 10, search = "", role = "" } = {}) => {
@@ -147,6 +153,7 @@ export const userApi = createApi({
 });
 
 export const {
+    useGetAdminDashboardStatsQuery,
     useGetUsersAdminQuery,
     useGetUserByIdQuery,
     useCreateUserMutation,

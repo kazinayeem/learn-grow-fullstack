@@ -79,7 +79,8 @@ function InstructorAssessmentsContent() {
       type: quiz.assessmentType || "quiz",
       details: `${quiz.questions?.length || 0} questions • ${quiz.duration || 30} min`,
       submissions: 0, // TODO: fetch quiz attempts
-      typeLabel: "Quiz",
+      typeLabel: quiz.assessmentType === "mid-exam" ? "Mid Exam" : 
+                 quiz.assessmentType === "final-exam" ? "Final Exam" : "Quiz",
     })),
     ...assignments.map((assignment: any) => ({
       _id: assignment._id,
@@ -90,7 +91,9 @@ function InstructorAssessmentsContent() {
         : "No deadline",
       submissions: assignment.submissionsCount || 0,
       typeLabel:
-        assignment.assessmentType === "project" ? "Project" : "Assignment",
+        assignment.assessmentType === "project" ? "Project" :
+        assignment.assessmentType === "mid-term" ? "Mid-Term Assignment" :
+        assignment.assessmentType === "final" ? "Final Assignment" : "Assignment",
       hasSubmissions: true,
     })),
   ];
@@ -110,8 +113,10 @@ function InstructorAssessmentsContent() {
       case "quiz":
         return "primary";
       case "mid-exam":
+      case "mid-term":
         return "warning";
       case "final-exam":
+      case "final":
         return "danger";
       case "assignment":
         return "secondary";

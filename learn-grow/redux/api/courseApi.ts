@@ -35,6 +35,14 @@ export const courseApi = baseApi.injectEndpoints({
             }),
             providesTags: ["Course"],
         }),
+        getCoursesCount: build.query({
+            query: (params = {}) => ({
+                url: "/course/get-courses-count",
+                method: "GET",
+                params,
+            }),
+            providesTags: ["Course"],
+        }),
         getPublishedCourses: build.query({
             query: () => ({ url: "/course/get-published-courses", method: "GET" }),
             providesTags: ["Course"],
@@ -46,6 +54,10 @@ export const courseApi = baseApi.injectEndpoints({
         getCourseById: build.query({
             query: (id: string) => ({ url: `/course/get-course/${id}`, method: "GET" }),
             providesTags: (result, error, id) => [{ type: "Course", id }],
+        }),
+        getCourseStats: build.query({
+            query: (id: string) => ({ url: `/course/get-course-stats/${id}`, method: "GET" }),
+            providesTags: (result, error, id) => [{ type: "Course", id: `stats-${id}` }],
         }),
         getInstructorCourses: build.query({
             query: ({ instructorId, page = 1, limit = 12 }: { instructorId: string; page?: number; limit?: number }) => ({
@@ -186,9 +198,11 @@ export const courseApi = baseApi.injectEndpoints({
 export const {
     // Courses
     useGetAllCoursesQuery,
+    useGetCoursesCountQuery,
     useGetPublishedCoursesQuery,
     useGetFeaturedCoursesQuery,
     useGetCourseByIdQuery,
+    useGetCourseStatsQuery,
     useGetInstructorCoursesQuery,
     useGetCategoryCoursesQuery,
     useCreateCourseMutation,

@@ -100,7 +100,7 @@ export default function CreateCoursePage() {
   return (
     <div className="min-h-screen bg-gray-100 py-10">
       <div className="container mx-auto px-6 py-8 max-w-4xl">
-        <Button variant="light" onPress={() => router.back()} className="mb-6">
+        <Button variant="light" onPress={() => router.push("/admin")} className="mb-6">
           ← Back to Admin
         </Button>
 
@@ -242,7 +242,7 @@ export default function CreateCoursePage() {
                   type="button"
                   variant="bordered"
                   size="lg"
-                  onPress={() => router.back()}
+                  onPress={() => router.push("/admin")}
                 >
                   Cancel
                 </Button>

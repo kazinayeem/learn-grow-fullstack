@@ -24,7 +24,13 @@ if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
         let isNewUser = false;
 
         if (user) {
-          const expressUser = { id: user._id.toString(), email: user.email, role: user.role };
+          const expressUser = { 
+            _id: user._id, 
+            id: user._id.toString(), 
+            email: user.email, 
+            role: user.role,
+            isNewGoogleUser: false
+          };
           return done(null, expressUser as any);
         }
 
@@ -38,7 +44,13 @@ if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
             // Link Google to existing user
             user.googleId = profile.id;
             await user.save();
-            const expressUser = { id: user._id.toString(), email: user.email, role: user.role };
+            const expressUser = { 
+              _id: user._id, 
+              id: user._id.toString(), 
+              email: user.email, 
+              role: user.role,
+              isNewGoogleUser: false
+            };
             return done(null, expressUser as any);
           }
         }
@@ -107,7 +119,13 @@ if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
           );
         }
 
-        const expressUser = { id: user._id.toString(), email: user.email || '', role: user.role };
+        const expressUser = { 
+          _id: user._id, 
+          id: user._id.toString(), 
+          email: user.email || '', 
+          role: user.role,
+          isNewGoogleUser: false
+        };
         return done(null, expressUser as any);
       } catch (error) {
         return done(error, undefined);

@@ -81,7 +81,11 @@ export default function AdminEventsPage() {
           <Button 
             variant="light" 
             startContent={<FaArrowLeft />}
-            onPress={() => router.back()}
+            onPress={() => {
+                const userStr = localStorage.getItem("user");
+                const user = userStr ? JSON.parse(userStr) : null;
+                router.push(user?.role === "manager" ? "/manager" : "/admin");
+            }}
           >
             Back
           </Button>

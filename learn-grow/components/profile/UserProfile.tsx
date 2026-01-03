@@ -31,7 +31,6 @@ import {
 } from "@/redux/api/userApi";
 
 export default function UserProfile() {
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
     const { isOpen: isPasswordModalOpen, onOpen: onPasswordModalOpen, onOpenChange: onPasswordModalOpenChange } = useDisclosure();
     const { isOpen: isPhoneModalOpen, onOpen: onPhoneModalOpen, onOpenChange: onPhoneModalOpenChange } = useDisclosure();
@@ -175,78 +174,39 @@ export default function UserProfile() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    // Compress image to base64 with max 500KB
-    const compressImage = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = (event) => {
-                const img = new Image();
-                img.src = event.target?.result as string;
-                img.onload = () => {
-                    const canvas = document.createElement("canvas");
-                    let width = img.width;
-                    let height = img.height;
-                    const maxSize = 800;
+    // Handle image URL input
+    const [imageUrlInput, setImageUrlInput] = useState("");
+    const { isOpen: isImageModalOpen, onOpen: onImageModalOpen, onOpenChange: onImageModalOpenChange } = useDisclosure();
 
-                    if (width > height) {
-                        if (width > maxSize) {
-                            height *= maxSize / width;
-                            width = maxSize;
-                        }
-                    } else {
-                        if (height > maxSize) {
-                            width *= maxSize / height;
-                            height = maxSize;
-                        }
-                    }
+    const handlePhotoUpload = async (imageUrl: string) => {
+        if (!imageUrl || imageUrl.trim() === "") {
+            toast.error("Please enter a valid image URL");
+            return;
+        }
 
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext("2d");
-                    ctx?.drawImage(img, 0, 0, width, height);
-
-                    let quality = 0.9;
-                    let result = canvas.toDataURL("image/jpeg", quality);
-
-                    // Reduce quality until size is under 500KB
-                    while (result.length > 500 * 1024 && quality > 0.1) {
-                        quality -= 0.1;
-                        result = canvas.toDataURL("image/jpeg", quality);
-                    }
-
-                    if (result.length > 500 * 1024) {
-                        reject(new Error("Image too large even after compression"));
-                    } else {
-                        resolve(result);
-                    }
-                };
-                img.onerror = () => reject(new Error("Failed to load image"));
-            };
-            reader.onerror = () => reject(new Error("Failed to read file"));
-        });
-    };
-
-    const handlePhotoUpload = async (file: File) => {
-        if (!file.type.startsWith("image/")) {
-            toast.error("Please upload a valid image file");
+        // Basic URL validation
+        try {
+            new URL(imageUrl);
+        } catch {
+            toast.error("Please enter a valid URL");
             return;
         }
 
         try {
             setIsUploadingPhoto(true);
-            const compressedBase64 = await compressImage(file);
-            setProfilePhoto(compressedBase64);
+            setProfilePhoto(imageUrl);
 
             // Upload to backend
             const token = Cookies.get("accessToken");
             await axios.patch(
                 `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/users/profile/photo`,
-                { profileImage: compressedBase64 },
+                { profileImage: imageUrl },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
             toast.success("Profile photo updated successfully");
+            setImageUrlInput("");
+            onImageModalOpenChange();
         } catch (error) {
             console.error("Failed to upload photo:", error);
             toast.error("Failed to upload photo");
@@ -314,7 +274,7 @@ export default function UserProfile() {
                         {/* Camera icon for instructors only */}
                         {userRole === "instructor" && (
                             <button
-                                onClick={() => fileInputRef.current?.click()}
+                                onClick={onImageModalOpen}
                                 disabled={isUploadingPhoto}
                                 className="absolute bottom-0 right-0 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full transition-colors disabled:opacity-50"
                                 title="Change profile photo"
@@ -326,17 +286,6 @@ export default function UserProfile() {
                                 )}
                             </button>
                         )}
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                                if (e.target.files?.[0]) {
-                                    handlePhotoUpload(e.target.files[0]);
-                                }
-                            }}
-                            className="hidden"
-                        />
                     </div>
 
                     <div className="flex-1">
@@ -745,6 +694,38 @@ export default function UserProfile() {
                                     isLoading={updatingPhone}
                                 >
                                     Update Phone
+                                </Button>
+                            </ModalFooter>
+                        </>
+                    )}
+                </ModalContent>
+            </Modal>
+
+            {/* Image URL Modal */}
+            <Modal isOpen={isImageModalOpen} onOpenChange={onImageModalOpenChange}>
+                <ModalContent>
+                    {(onClose) => (
+                        <>
+                            <ModalHeader className="flex flex-col gap-1">Update Profile Photo</ModalHeader>
+                            <ModalBody>
+                                <Input
+                                    label="Image URL"
+                                    placeholder="https://example.com/your-image.jpg"
+                                    value={imageUrlInput}
+                                    onChange={(e) => setImageUrlInput(e.target.value)}
+                                    description="Enter a direct link to your profile image"
+                                />
+                            </ModalBody>
+                            <ModalFooter>
+                                <Button color="danger" variant="light" onPress={onClose}>
+                                    Cancel
+                                </Button>
+                                <Button 
+                                    color="primary" 
+                                    onPress={() => handlePhotoUpload(imageUrlInput)}
+                                    isLoading={isUploadingPhoto}
+                                >
+                                    Update Photo
                                 </Button>
                             </ModalFooter>
                         </>

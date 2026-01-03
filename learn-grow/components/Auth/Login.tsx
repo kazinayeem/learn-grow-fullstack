@@ -16,14 +16,20 @@ export default function Login() {
         setError("");
         setIsLoading(true);
 
-        const phone = credentials.loginInput.trim();
+        const loginInput = credentials.loginInput.trim();
         const password = credentials.password;
 
-        console.log("🔐 Attempting login for:", phone);
+        // Determine if input is email or phone
+        const isEmail = loginInput.includes("@");
+        const loginData = isEmail 
+            ? { email: loginInput, password }
+            : { phone: loginInput, password };
+
+        console.log("🔐 Attempting login with:", loginData);
 
         try {
             // Use real API via lib/auth
-            const { data, success, message } = await login({ phone, password });
+            const { data, success, message } = await login(loginData);
 
             if (success && data) {
                 console.log("✅ API Login successful:", data);
@@ -99,7 +105,7 @@ export default function Login() {
                 <form className="mt-8 space-y-6" onSubmit={handleLogin}>
                     <div className="rounded-md shadow-sm space-y-4">
                         <div>
-                            <label htmlFor="loginInput" className="sr-only">Phone Number</label>
+                            <label htmlFor="loginInput" className="sr-only">Phone or Email</label>
                             <input
                                 id="loginInput"
                                 name="loginInput"
@@ -108,7 +114,7 @@ export default function Login() {
                                 value={credentials.loginInput}
                                 onChange={(e) => setCredentials({ ...credentials, loginInput: e.target.value })}
                                 className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300/20 bg-white/10 backdrop-blur text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                                placeholder="Phone Number"
+                                placeholder="Phone Number or Email"
                             />
                         </div>
                         <div>

@@ -6,7 +6,7 @@ import { User } from "@/modules/user/model/user.model";
 interface CreateAssignmentInput {
   courseId: string;
   createdBy: string;
-  assessmentType?: "assignment" | "project";
+  assessmentType?: "assignment" | "project" | "mid-term" | "final";
   title: string;
   description: string;
   instructions?: string;

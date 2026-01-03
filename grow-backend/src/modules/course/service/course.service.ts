@@ -115,7 +115,7 @@ export const getPublishedCourses = async () => {
   try {
     // Only show courses that are both published AND admin approved
     return await Course.find({ isPublished: true, isAdminApproved: true })
-      .populate("instructorId", "name email profileImage")
+      .populate("instructorId", "name email")
       .sort({ createdAt: -1 })
       .lean();
   } catch (error: any) {
@@ -127,7 +127,7 @@ export const getFeaturedCourses = async () => {
   try {
     // Only show courses that are both published AND admin approved, limit to 3 most recent
     return await Course.find({ isPublished: true, isFeatured: true, isAdminApproved: true })
-      .populate("instructorId", "name email profileImage")
+      .populate("instructorId", "name email")
       .sort({ createdAt: -1 })
       .limit(3)
       .lean();
@@ -373,6 +373,91 @@ export const deleteCourse = (id: string) => {
   return Course.findByIdAndDelete(id);
 };
 
+/**
+ * Get course statistics for instructor dashboard
+ * Calculates: engagement rate, completion rate, total revenue, enrolled students count
+ * Optimized with aggregation pipeline for minimal database pressure
+ */
+export const getCourseStats = async (courseId: string) => {
+  try {
+    const courseObjectId = new Types.ObjectId(courseId);
+
+    // Single aggregation pipeline for all stats - optimized for performance
+    const stats = await Enrollment.aggregate([
+      { $match: { courseId: courseObjectId } },
+      {
+        $facet: {
+          // Total enrolled students
+          totalEnrolled: [{ $count: "count" }],
+          
+          // Completed students (isCompleted = true)
+          completedStudents: [
+            { $match: { isCompleted: true } },
+            { $count: "count" }
+          ],
+          
+          // Engaged students (progress > 0 or has completed items)
+          engagedStudents: [
+            {
+              $match: {
+                $or: [
+                  { progress: { $gt: 0 } },
+                  { completionPercentage: { $gt: 0 } },
+                  { completedLessons: { $exists: true, $ne: [] } }
+                ]
+              }
+            },
+            { $count: "count" }
+          ]
+        }
+      }
+    ]);
+
+    // Calculate revenue from approved orders for this course
+    const revenueResult = await Order.aggregate([
+      {
+        $match: {
+          courseId: courseObjectId,
+          paymentStatus: "approved"
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$price" }
+        }
+      }
+    ]);
+
+    // Extract counts from facet results
+    const totalEnrolled = stats[0]?.totalEnrolled[0]?.count || 0;
+    const completedCount = stats[0]?.completedStudents[0]?.count || 0;
+    const engagedCount = stats[0]?.engagedStudents[0]?.count || 0;
+    const totalRevenue = revenueResult[0]?.totalRevenue || 0;
+
+    // Calculate percentages (avoid division by zero)
+    const completionRate = totalEnrolled > 0 
+      ? Math.round((completedCount / totalEnrolled) * 100) 
+      : 0;
+    
+    const engagementRate = totalEnrolled > 0 
+      ? Math.round((engagedCount / totalEnrolled) * 100) 
+      : 0;
+
+    return {
+      enrolledStudents: totalEnrolled,
+      completionRate,
+      engagementRate,
+      revenue: totalRevenue,
+      completedStudents: completedCount,
+      engagedStudents: engagedCount
+    };
+  } catch (error: any) {
+    console.error(`[getCourseStats] Error calculating stats for course ${courseId}:`, error.message);
+    throw new Error(`Failed to get course stats: ${error.message}`);
+  }
+};
+
 export const getCoursesByInstructor = async (instructorId: string, options?: { page?: number; limit?: number }) => {
   const page = options?.page || 1;
   const limit = options?.limit || 10;
@@ -383,12 +468,33 @@ export const getCoursesByInstructor = async (instructorId: string, options?: { p
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
+      .select('_id title description category type price level language duration thumbnail isPublished isAdminApproved isRegistrationOpen registrationDeadline createdAt updatedAt instructorId')
       .lean(),
     Course.countDocuments({ instructorId })
   ]);
 
+  // Add module and lesson counts for each course (optimized)
+  const coursesWithCounts = await Promise.all(
+    courses.map(async (course: any) => {
+      const modules = await Module.find({ courseId: course._id })
+        .select("_id")
+        .lean();
+      
+      const moduleIds = modules.map((m) => m._id);
+      const lessonsCount = moduleIds.length
+        ? await Lesson.countDocuments({ moduleId: { $in: moduleIds } })
+        : 0;
+
+      return {
+        ...course,
+        modulesCount: modules.length,
+        lessonsCount,
+      };
+    })
+  );
+
   return {
-    courses,
+    courses: coursesWithCounts,
     pagination: {
       total,
       page,

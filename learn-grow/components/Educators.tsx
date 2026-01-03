@@ -78,7 +78,7 @@ const Educators: React.FC = () => {
                                             alt={`${member.name}'s profile`}
                                             className="w-32 h-32 rounded-full object-cover border-4 border-primary-100"
                                             height={120}
-                                            src={`data:image/jpeg;base64,${member.image}`}
+                                            src={member.image}
                                             width={120}
                                         />
                                     </div>

@@ -3,8 +3,8 @@ import mongoose, { Schema, Document } from "mongoose";
 interface ITeamMember extends Document {
     name: string;
     role: string;
-    image: string; // Base64 encoded image
-    imageSize: number; // Size in bytes
+    image: string; // Image URL
+    imageSize: number; // Size in bytes (deprecated, kept for backward compatibility)
     linkedIn?: string;
     twitter?: string;
     bio?: string;

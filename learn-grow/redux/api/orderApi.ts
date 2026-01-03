@@ -94,6 +94,10 @@ export const orderApi = baseApi.injectEndpoints({
       query: (id) => ({
         url: `/orders/${id}/approve`,
         method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {},
       }),
       invalidatesTags: (_result, _error, id) => [{ type: "Order", id }, "Order"],
     }),
@@ -102,6 +106,9 @@ export const orderApi = baseApi.injectEndpoints({
       query: ({ id, reason }) => ({
         url: `/orders/${id}/reject`,
         method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: { reason },
       }),
       invalidatesTags: (_result, _error, { id }) => [{ type: "Order", id }, "Order"],
@@ -168,14 +175,18 @@ export const orderApi = baseApi.injectEndpoints({
             expiresAt?: string;
             orderId: string;
           }>;
-          totalCount: number;
-          singlePurchaseCount: number;
-          quarterlySubscriptionCount: number;
+          pagination: {
+            total: number;
+            page: number;
+            limit: number;
+            totalPages: number;
+          };
         };
       },
-      string
+      { courseId: string; page?: number; limit?: number }
     >({
-      query: (courseId) => `/orders/course/${courseId}/students`,
+      query: ({ courseId, page = 1, limit = 20 }) => 
+        `/orders/course/${courseId}/students?page=${page}&limit=${limit}`,
       providesTags: ["Order"],
     }),
   }),

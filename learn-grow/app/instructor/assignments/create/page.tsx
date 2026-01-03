@@ -25,13 +25,27 @@ function CreateAssignmentContent() {
   const typeParam = searchParams.get("type") || "assignment";
 
   const [instructorId, setInstructorId] = useState<string | null>(null);
+  
+  // Calculate default due date (7 days from now)
+  const getDefaultDueDate = () => {
+    const date = new Date();
+    date.setDate(date.getDate() + 7);
+    // Format as datetime-local: YYYY-MM-DDTHH:mm
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   const [formData, setFormData] = useState({
     courseId: courseIdParam || "",
-    assessmentType: typeParam as "assignment" | "project",
+    assessmentType: typeParam as "assignment" | "project" | "mid-term" | "final-exam",
     title: "",
     description: "",
     instructions: "",
-    dueDate: "",
+    dueDate: getDefaultDueDate(),
     maxScore: 100,
   });
 
@@ -79,10 +93,16 @@ function CreateAssignmentContent() {
 
     try {
       await createAssignment(formData).unwrap();
-      toast.success(`${formData.assessmentType === "project" ? "Project" : "Assignment"} created successfully`);
+      const typeLabels: {[key: string]: string} = {
+        "assignment": "Assignment",
+        "project": "Project",
+        "mid-term": "Mid-Term Exam",
+        "final-exam": "Final Exam"
+      };
+      toast.success(`${typeLabels[formData.assessmentType] || "Item"} created successfully`);
       router.push("/instructor/assessments");
     } catch (error: any) {
-      toast.error(error?.data?.message || "Failed to create assignment");
+      toast.error(error?.data?.message || "Failed to create item");
     }
   };
 
@@ -94,7 +114,10 @@ function CreateAssignmentContent() {
     );
   }
 
+  // Determine if this is a project for button text
   const isProject = formData.assessmentType === "project";
+  const isMidTerm = formData.assessmentType === "mid-term";
+  const isFinalExam = formData.assessmentType === "final-exam";
 
   return (
     <div className="min-h-screen bg-gray-50 container mx-auto px-4 py-8 max-w-4xl">
@@ -109,11 +132,15 @@ function CreateAssignmentContent() {
           Back
         </Button>
         <h1 className="text-4xl font-bold mb-2">
-          {isProject ? "Create Project 🎯" : "Create Assignment 📄"}
+          {formData.assessmentType === "project" ? "Create Project 🎯" : formData.assessmentType === "mid-term" ? "Create Mid-Term Exam 📝" : formData.assessmentType === "final-exam" ? "Create Final Exam 🏆" : "Create Assignment 📄"}
         </h1>
         <p className="text-gray-600">
-          {isProject 
+          {formData.assessmentType === "project" 
             ? "Create a new project for your students to work on"
+            : formData.assessmentType === "mid-term"
+            ? "Create a mid-term examination for your course"
+            : formData.assessmentType === "final-exam"
+            ? "Create a final examination for your course"
             : "Create a new assignment for your course"}
         </p>
       </div>
@@ -123,7 +150,7 @@ function CreateAssignmentContent() {
         <Card>
           <CardHeader className="bg-gray-100 p-6">
             <h2 className="text-xl font-semibold">
-              {isProject ? "Project Details" : "Assignment Details"}
+              {formData.assessmentType === "project" ? "Project Details" : formData.assessmentType === "mid-term" ? "Mid-Term Exam Details" : formData.assessmentType === "final-exam" ? "Final Exam Details" : "Assignment Details"}
             </h2>
           </CardHeader>
           <CardBody className="gap-6 p-6">
@@ -147,12 +174,18 @@ function CreateAssignmentContent() {
             <Select
               label="Type *"
               selectedKeys={[formData.assessmentType]}
-              onChange={(e) => setFormData({ ...formData, assessmentType: e.target.value as "assignment" | "project" })}
+              onChange={(e) => setFormData({ ...formData, assessmentType: e.target.value as "assignment" | "project" | "mid-term" | "final-exam" })}
               isRequired
               disableAnimation
             >
               <SelectItem key="assignment" value="assignment">
                 Assignment
+              </SelectItem>
+              <SelectItem key="mid-term" value="mid-term">
+                Mid-Term Exam
+              </SelectItem>
+              <SelectItem key="final-exam" value="final-exam">
+                Final Exam
               </SelectItem>
               <SelectItem key="project" value="project">
                 Project
@@ -161,8 +194,8 @@ function CreateAssignmentContent() {
 
             {/* Title */}
             <Input
-              label={`${isProject ? "Project" : "Assignment"} Title *`}
-              placeholder={isProject ? "Enter project title" : "Enter assignment title"}
+              label={`${formData.assessmentType === "project" ? "Project" : formData.assessmentType === "mid-term" ? "Mid-Term Exam" : formData.assessmentType === "final-exam" ? "Final Exam" : "Assignment"} Title *`}
+              placeholder={formData.assessmentType === "project" ? "Enter project title" : "Enter title"}
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               isRequired
@@ -171,7 +204,7 @@ function CreateAssignmentContent() {
             {/* Description */}
             <Textarea
               label="Description *"
-              placeholder={isProject ? "Enter project description" : "Enter assignment description"}
+              placeholder={formData.assessmentType === "project" ? "Enter project description" : "Enter description"}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               minRows={4}
@@ -185,9 +218,9 @@ function CreateAssignmentContent() {
               value={formData.instructions}
               onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
               minRows={6}
-              description={isProject 
+              description={formData.assessmentType === "project"
                 ? "Provide clear guidelines, requirements, and deliverables for the project"
-                : "Provide step-by-step instructions for completing the assignment"}
+                : "Provide step-by-step instructions for completing the task"}
             />
 
             {/* Due Date and Max Score */}
@@ -236,7 +269,7 @@ function CreateAssignmentContent() {
                 startContent={<FaSave />}
                 isLoading={isCreating}
               >
-                {isProject ? "Create Project" : "Create Assignment"}
+                {isProject ? "Create Project" : isMidTerm ? "Create Mid-Term Exam" : isFinalExam ? "Create Final Exam" : "Create Assignment"}
               </Button>
             </div>
           </CardBody>

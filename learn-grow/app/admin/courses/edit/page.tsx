@@ -156,10 +156,10 @@ function EditCourseContent() {
       <Button 
         variant="light" 
         startContent={<FaArrowLeft />}
-        onPress={() => router.back()} 
+        onPress={() => router.push("/admin")} 
         className="mb-6"
       >
-        Back
+        Back to Dashboard
       </Button>
 
       <Card>
@@ -307,7 +307,7 @@ function EditCourseContent() {
                 type="button"
                 variant="bordered"
                 size="lg"
-                onPress={() => router.back()}
+                onPress={() => router.push("/admin")}
               >
                 Cancel
               </Button>

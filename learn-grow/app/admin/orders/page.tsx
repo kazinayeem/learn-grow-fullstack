@@ -124,17 +124,22 @@ export default function OrdersAdminPage() {
 
     setIsProcessing(true);
     try {
-      await approveOrderMutation(selectedOrder._id).unwrap();
+      // Log request details
+      console.log("Approving order:", selectedOrder._id);
+      
+      // Approve the order
+      const approveResult = await approveOrderMutation(selectedOrder._id).unwrap();
+      console.log("Order approved successfully:", approveResult);
       
       // Send approval email with invoice to backend
       const emailData = {
-        to: selectedOrder.userId.email,
+        to: selectedOrder.userId?.email || "",
         subject: "Order Approved - Learn Grow Academy",
         type: "approval",
         orderDetails: {
           orderId: selectedOrder._id,
-          userName: selectedOrder.userId.name,
-          userEmail: selectedOrder.userId.email,
+          userName: selectedOrder.userId?.name || "Unknown User",
+          userEmail: selectedOrder.userId?.email || "N/A",
           planType: PLAN_LABELS[selectedOrder.planType],
           price: selectedOrder.price,
           courseTitle: selectedOrder.courseId?.title || "All Courses Access",
@@ -145,18 +150,62 @@ export default function OrdersAdminPage() {
       };
 
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-      await fetch(`${backendUrl}/orders/send-email`, {
+      const emailResponse = await fetch(`${backendUrl}/orders/send-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(emailData),
-      }).catch(err => console.log("Email send initiated (non-blocking)"));
+      });
+      
+      if (!emailResponse.ok) {
+        const errorText = await emailResponse.text();
+        console.warn("Email sending failed, but order approved:", {
+          status: emailResponse.status,
+          statusText: emailResponse.statusText,
+          errorText
+        });
+      } else {
+        console.log("Email sent successfully");
+      }
 
       toast.success("✅ Order approved & email sent!");
       refetch();
       onOpenChange();
     } catch (error: any) {
-      console.error("Approval error:", error);
-      toast.error(error.data?.message || "Failed to approve order");
+      // Handle different error types
+      console.error("Approval error - Raw error object:", error);
+      console.error("Approval error - Error type:", typeof error);
+      console.error("Approval error - Error keys:", Object.keys(error || {}));
+      console.error("Approval error - Error JSON:", JSON.stringify(error, null, 2));
+      console.error("API URL being used:", process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api');
+      
+      // Try to extract meaningful error message
+      let errorMessage = "Failed to approve order";
+      
+      // Check for network/fetch errors
+      if (error?.status === "FETCH_ERROR") {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        errorMessage = `⚠️ Network Error: Unable to reach the backend server at ${apiUrl}. Possible causes: Backend not running, CORS blocked, or network issue. Error: ${error?.error || 'Unknown'}`;
+        console.error("Network error details:", error?.error);
+      } else if (error?.data?.message) {
+        errorMessage = error.data.message;
+      } else if (error?.data?.error?.message) {
+        errorMessage = error.data.error.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.status && error?.status !== "FETCH_ERROR") {
+        errorMessage = `Server error (${error.status})`;
+      } else if (error?.originalStatus) {
+        errorMessage = `Server error (${error.originalStatus})`;
+      } else {
+        // Fallback: convert to string and trim
+        const errorString = String(error).trim();
+        if (errorString && errorString !== '{}') {
+          errorMessage = errorString;
+        }
+      }
+      
+      console.error("Final error message:", errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -167,34 +216,83 @@ export default function OrdersAdminPage() {
 
     setIsProcessing(true);
     try {
-      await rejectOrderMutation({ id: selectedOrder._id }).unwrap();
+      // Log request details
+      console.log("Rejecting order:", selectedOrder._id);
+      
+      // Reject the order
+      const rejectResult = await rejectOrderMutation({ id: selectedOrder._id }).unwrap();
+      console.log("Order rejected successfully:", rejectResult);
 
       // Send rejection email to backend
       const emailData = {
-        to: selectedOrder.userId.email,
+        to: selectedOrder.userId?.email || "",
         subject: "Order Rejected - Learn Grow Academy",
         type: "rejection",
         orderDetails: {
           orderId: selectedOrder._id,
-          userName: selectedOrder.userId.name,
+          userName: selectedOrder.userId?.name || "Unknown User",
           transactionId: selectedOrder.transactionId,
           price: selectedOrder.price,
         }
       };
 
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-      await fetch(`${backendUrl}/orders/send-email`, {
+      const emailResponse = await fetch(`${backendUrl}/orders/send-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(emailData),
-      }).catch(err => console.log("Email send initiated (non-blocking)"));
+      });
+      
+      if (!emailResponse.ok) {
+        const errorText = await emailResponse.text();
+        console.warn("Email sending failed, but order rejected:", {
+          status: emailResponse.status,
+          statusText: emailResponse.statusText,
+          errorText
+        });
+      } else {
+        console.log("Rejection email sent successfully");
+      }
 
       toast.success("❌ Order rejected & notification sent!");
       refetch();
       onOpenChange();
     } catch (error: any) {
-      console.error("Rejection error:", error);
-      toast.error(error.data?.message || "Failed to reject order");
+      // Handle different error types
+      console.error("Rejection error - Raw error object:", error);
+      console.error("Rejection error - Error type:", typeof error);
+      console.error("Rejection error - Error keys:", Object.keys(error || {}));
+      console.error("Rejection error - Error JSON:", JSON.stringify(error, null, 2));
+      console.error("API URL being used:", process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api');
+      
+      // Try to extract meaningful error message
+      let errorMessage = "Failed to reject order";
+      
+      // Check for network/fetch errors
+      if (error?.status === "FETCH_ERROR") {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        errorMessage = `⚠️ Network Error: Unable to reach the backend server at ${apiUrl}. Possible causes: Backend not running, CORS blocked, or network issue. Error: ${error?.error || 'Unknown'}`;
+        console.error("Network error details:", error?.error);
+      } else if (error?.data?.message) {
+        errorMessage = error.data.message;
+      } else if (error?.data?.error?.message) {
+        errorMessage = error.data.error.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.status && error?.status !== "FETCH_ERROR") {
+        errorMessage = `Server error (${error.status})`;
+      } else if (error?.originalStatus) {
+        errorMessage = `Server error (${error.originalStatus})`;
+      } else {
+        // Fallback: convert to string and trim
+        const errorString = String(error).trim();
+        if (errorString && errorString !== '{}') {
+          errorMessage = errorString;
+        }
+      }
+      
+      console.error("Final error message:", errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -208,9 +306,9 @@ export default function OrdersAdminPage() {
   const filteredOrders = orders.filter((order) => {
     const searchLower = searchTerm.toLowerCase();
     return (
-      order.userId.name.toLowerCase().includes(searchLower) ||
-      order.userId.email.toLowerCase().includes(searchLower) ||
-      order.transactionId.toLowerCase().includes(searchLower)
+      (order.userId?.name?.toLowerCase().includes(searchLower) || false) ||
+      (order.userId?.email?.toLowerCase().includes(searchLower) || false) ||
+      (order.transactionId?.toLowerCase().includes(searchLower) || false)
     );
   });
 
@@ -355,8 +453,8 @@ export default function OrdersAdminPage() {
                 <TableRow key={order._id} className="hover:bg-blue-50 transition-colors">
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      <p className="font-semibold text-gray-900">{order.userId.name}</p>
-                      <p className="text-xs text-gray-500">{order.userId.email}</p>
+                      <p className="font-semibold text-gray-900">{order.userId?.name || "Unknown User"}</p>
+                      <p className="text-xs text-gray-500">{order.userId?.email || "N/A"}</p>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -380,7 +478,7 @@ export default function OrdersAdminPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <span className="font-bold text-primary">৳{order.price.toLocaleString()}</span>
+                    <span className="font-bold text-primary">৳{(order.price || 0).toLocaleString()}</span>
                   </TableCell>
                   <TableCell>
                     {order.startDate && order.endDate ? (
@@ -499,10 +597,10 @@ export default function OrdersAdminPage() {
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <h3 className="font-semibold mb-2 text-sm">ব্যবহারকারীর তথ্য</h3>
                       <p className="text-xs">
-                        <span className="text-gray-600">নাম:</span> <span className="font-medium">{selectedOrder.userId.name}</span>
+                        <span className="text-gray-600">নাম:</span> <span className="font-medium">{selectedOrder.userId?.name || "Unknown User"}</span>
                       </p>
                       <p className="text-xs">
-                        <span className="text-gray-600">ইমেইল:</span> <span className="font-medium line-clamp-1">{selectedOrder.userId.email}</span>
+                        <span className="text-gray-600">ইমেইল:</span> <span className="font-medium line-clamp-1">{selectedOrder.userId?.email || "N/A"}</span>
                       </p>
                     </div>
 
@@ -524,7 +622,7 @@ export default function OrdersAdminPage() {
                         </div>
                         <div>
                           <span className="text-gray-600 font-medium">মূল্য:</span>
-                          <span className="ml-1 font-bold text-primary">৳{selectedOrder.price.toLocaleString()}</span>
+                          <span className="ml-1 font-bold text-primary">৳{(selectedOrder.price || 0).toLocaleString()}</span>
                         </div>
                         <div>
                           <span className="text-gray-600 font-medium">তারিখ:</span>

@@ -44,8 +44,14 @@ export const registerSchema = z.object({
 
 export const loginSchema = z.object({
   body: z.object({
-    email: z.string().email().optional(),
-    phone: z.string().optional(),
+    email: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z.string().email("Invalid email address").optional()
+    ),
+    phone: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z.string().optional()
+    ),
     password: z.string().min(6, "Password must be at least 6 characters"),
   }).refine((data) => data.email || data.phone, {
     message: "Either email or phone is required",
@@ -130,6 +136,6 @@ export const updateProfileSchema = z.object({
 
 export const updateProfilePhotoSchema = z.object({
   body: z.object({
-    profileImage: z.string().min(1, "Profile image is required"),
+    profileImage: z.string().url("Profile image must be a valid URL"),
   }),
 });

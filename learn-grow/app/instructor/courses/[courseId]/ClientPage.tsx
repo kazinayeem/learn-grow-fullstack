@@ -45,6 +45,7 @@ import {
 } from "react-icons/fa";
 import {
     useGetCourseByIdQuery,
+    useGetCourseStatsQuery,
     useCreateModuleMutation,
     useUpdateModuleMutation,
     useDeleteModuleMutation,
@@ -133,6 +134,10 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
     // Fetch course data from backend
     const { data: courseResponse, isLoading: courseLoading, error: courseError, refetch: refetchCourse } = useGetCourseByIdQuery(courseId);
     const courseData = courseResponse?.data || null;
+
+    // Fetch course statistics (optimized endpoint)
+    const { data: statsResponse, isLoading: statsLoading } = useGetCourseStatsQuery(courseId);
+    const courseStats = statsResponse?.data || null;
 
     // Mutations
     const [createModule, { isLoading: moduleCreating }] = useCreateModuleMutation();
@@ -567,22 +572,49 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                         <Card>
                             <CardBody className="p-6">
                                 <h3 className="text-gray-500 font-medium mb-2">Student Engagement</h3>
-                                <div className="text-4xl font-bold mb-4">{courseData?.engagementRate || 87}%</div>
-                                <Progress value={courseData?.engagementRate || 87} color="success" className="h-2" />
+                                {statsLoading ? (
+                                    <div className="animate-pulse">
+                                        <div className="h-10 bg-gray-200 rounded mb-3 w-16"></div>
+                                        <div className="h-2 bg-gray-200 rounded"></div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="text-4xl font-bold mb-4">{courseStats?.engagementRate ?? 0}%</div>
+                                        <Progress value={courseStats?.engagementRate ?? 0} color="success" className="h-2" />
+                                    </>
+                                )}
                             </CardBody>
                         </Card>
                         <Card>
                             <CardBody className="p-6">
                                 <h3 className="text-gray-500 font-medium mb-2">Completion Rate</h3>
-                                <div className="text-4xl font-bold mb-4">{courseData?.completionRate || 12}%</div>
-                                <Progress value={courseData?.completionRate || 12} color="warning" className="h-2" />
+                                {statsLoading ? (
+                                    <div className="animate-pulse">
+                                        <div className="h-10 bg-gray-200 rounded mb-3 w-16"></div>
+                                        <div className="h-2 bg-gray-200 rounded"></div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="text-4xl font-bold mb-4">{courseStats?.completionRate ?? 0}%</div>
+                                        <Progress value={courseStats?.completionRate ?? 0} color="warning" className="h-2" />
+                                    </>
+                                )}
                             </CardBody>
                         </Card>
                         <Card>
                             <CardBody className="p-6">
                                 <h3 className="text-gray-500 font-medium mb-2">Total Revenue</h3>
-                                <div className="text-4xl font-bold text-green-600">৳ {courseData?.revenue || 0}</div>
-                                <p className="text-xs text-gray-400 mt-1">+15% from last month</p>
+                                {statsLoading ? (
+                                    <div className="animate-pulse">
+                                        <div className="h-10 bg-gray-200 rounded mb-3 w-24"></div>
+                                        <div className="h-3 bg-gray-200 rounded w-20"></div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="text-4xl font-bold text-green-600">৳ {courseStats?.revenue ?? 0}</div>
+                                        <p className="text-xs text-gray-400 mt-1">From {courseStats?.enrolledStudents ?? 0} enrolled students</p>
+                                    </>
+                                )}
                             </CardBody>
                         </Card>
                     </div>
@@ -864,14 +896,14 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                                     <DropdownItem
                                         key="mid-exam"
                                         startContent={<FaGraduationCap />}
-                                        onPress={() => router.push(`/instructor/quizzes/create?courseId=${courseId}&type=mid-exam`)}
+                                        onPress={() => router.push(`/instructor/assignments/create?courseId=${courseId}&type=mid-term`)}
                                     >
                                         Mid Exam
                                     </DropdownItem>
                                     <DropdownItem
                                         key="final-exam"
                                         startContent={<FaGraduationCap />}
-                                        onPress={() => router.push(`/instructor/quizzes/create?courseId=${courseId}&type=final-exam`)}
+                                        onPress={() => router.push(`/instructor/assignments/create?courseId=${courseId}&type=final-exam`)}
                                     >
                                         Final Exam
                                     </DropdownItem>
@@ -1144,12 +1176,14 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
 
 // Enrolled Students List Component
 function EnrolledStudentsList({ courseId }: { courseId: string }) {
-    const { data: studentsResp, isLoading, error } = useGetEnrolledStudentsQuery(courseId);
+    const { data: studentsResp, isLoading, error } = useGetEnrolledStudentsQuery({ 
+        courseId, 
+        page: 1, 
+        limit: 20 
+    });
 
     const students = studentsResp?.data?.students || [];
-    const totalCount = studentsResp?.data?.totalCount || 0;
-    const singlePurchaseCount = studentsResp?.data?.singlePurchaseCount || 0;
-    const quarterlyCount = studentsResp?.data?.quarterlySubscriptionCount || 0;
+    const totalCount = studentsResp?.data?.pagination?.total || 0;
 
     if (isLoading) {
         return (
@@ -1199,7 +1233,7 @@ function EnrolledStudentsList({ courseId }: { courseId: string }) {
     return (
         <div className="mt-6 space-y-6">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card>
                     <CardBody className="p-4">
                         <div className="flex items-center gap-3">
@@ -1221,22 +1255,8 @@ function EnrolledStudentsList({ courseId }: { courseId: string }) {
                                 <FaBookOpen className="text-2xl text-blue-600" />
                             </div>
                             <div>
-                                <p className="text-sm text-gray-500">Single Purchase</p>
-                                <p className="text-2xl font-bold">{singlePurchaseCount}</p>
-                            </div>
-                        </div>
-                    </CardBody>
-                </Card>
-
-                <Card>
-                    <CardBody className="p-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-green-100 rounded-lg">
-                                <FaGraduationCap className="text-2xl text-green-600" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500">Quarterly Access</p>
-                                <p className="text-2xl font-bold">{quarterlyCount}</p>
+                                <p className="text-sm text-gray-500">Showing</p>
+                                <p className="text-2xl font-bold">{students.length} of {totalCount}</p>
                             </div>
                         </div>
                     </CardBody>

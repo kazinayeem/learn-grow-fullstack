@@ -473,7 +473,11 @@ export const getStudentEnrollmentService = async (userId: string) => {
 /**
  * Get enrolled students for a course (instructor view)
  */
-export const getEnrolledStudentsService = async (courseId: string, instructorId: string) => {
+export const getEnrolledStudentsService = async (
+  courseId: string,
+  instructorId: string,
+  options?: { page?: number; limit?: number }
+) => {
   try {
     // Verify instructor owns the course
     const course = await Course.findById(courseId);
@@ -486,92 +490,113 @@ export const getEnrolledStudentsService = async (courseId: string, instructorId:
     }
 
     const now = new Date();
+    const page = Math.max(1, options?.page || 1);
+    const limit = Math.max(1, Math.min(100, options?.limit || 20)); // Default 20, max 100
+    const skip = (page - 1) * limit;
 
-    // Find all approved orders for this course (single purchase)
-    const singleCourseOrders = await Order.find({
-      courseId: new mongoose.Types.ObjectId(courseId),
-      planType: "single",
-      paymentStatus: "approved",
-      isActive: true,
-      $or: [
-        { endDate: { $gt: now } }, // Not expired
-        { endDate: null },
-      ],
-    })
-      .populate("userId", "name email phone profileImage createdAt")
-      .sort({ createdAt: -1 });
+    // Use aggregation pipeline for efficient pagination and deduplication
+    const studentsAggregation = await Order.aggregate([
+      {
+        $match: {
+          paymentStatus: "approved",
+          isActive: true,
+          $and: [
+            {
+              $or: [
+                { endDate: { $gt: now } },
+                { endDate: null },
+              ],
+            },
+            {
+              $or: [
+                {
+                  courseId: new mongoose.Types.ObjectId(courseId),
+                  planType: "single",
+                },
+                { planType: "quarterly" },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "userInfo",
+        },
+      },
+      {
+        $unwind: "$userInfo",
+      },
+      {
+        $group: {
+          _id: "$userId",
+          name: { $first: "$userInfo.name" },
+          email: { $first: "$userInfo.email" },
+          phone: { $first: "$userInfo.phone" },
+          profileImage: { $first: "$userInfo.profileImage" },
+          enrolledAt: { $min: "$createdAt" },
+          planType: { $first: "$planType" },
+          expiresAt: { $first: "$endDate" },
+          orderId: { $first: "$_id" },
+        },
+      },
+      {
+        $addFields: {
+          accessType: {
+            $cond: [
+              { $eq: ["$planType", "quarterly"] },
+              "quarterly",
+              "single",
+            ] as any,
+          },
+        },
+      },
+      {
+        $sort: { enrolledAt: -1 },
+      },
+      {
+        $facet: {
+          metadata: [
+            { $count: "totalCount" },
+          ],
+          students: [
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                email: 1,
+                phone: 1,
+                profileImage: 1,
+                enrolledAt: 1,
+                accessType: 1,
+                expiresAt: 1,
+                orderId: 1,
+              },
+            },
+          ],
+        },
+      },
+    ]);
 
-    // Find all quarterly subscription orders (access to all courses)
-    const quarterlyOrders = await Order.find({
-      planType: "quarterly",
-      paymentStatus: "approved",
-      isActive: true,
-      $or: [
-        { endDate: { $gt: now } }, // Not expired
-        { endDate: null },
-      ],
-    })
-      .populate("userId", "name email phone profileImage createdAt")
-      .sort({ createdAt: -1 });
-
-    // Combine and deduplicate students
-    const studentMap = new Map();
-
-    // Add single course students
-    singleCourseOrders.forEach((order) => {
-      if (order.userId) {
-        const student = order.userId as any;
-        studentMap.set(student._id.toString(), {
-          _id: student._id,
-          name: student.name,
-          email: student.email,
-          phone: student.phone,
-          profileImage: student.profileImage,
-          enrolledAt: order.createdAt,
-          accessType: "single",
-          expiresAt: order.endDate,
-          orderId: order._id,
-        });
-      }
-    });
-
-    // Add quarterly subscription students
-    quarterlyOrders.forEach((order) => {
-      if (order.userId) {
-        const student = order.userId as any;
-        const studentId = student._id.toString();
-
-        // If student already exists with single purchase, update to quarterly
-        if (studentMap.has(studentId)) {
-          const existing = studentMap.get(studentId);
-          existing.accessType = "quarterly";
-          existing.expiresAt = order.endDate;
-        } else {
-          studentMap.set(studentId, {
-            _id: student._id,
-            name: student.name,
-            email: student.email,
-            phone: student.phone,
-            profileImage: student.profileImage,
-            enrolledAt: order.createdAt,
-            accessType: "quarterly",
-            expiresAt: order.endDate,
-            orderId: order._id,
-          });
-        }
-      }
-    });
-
-    const students = Array.from(studentMap.values());
+    const totalCount = studentsAggregation[0]?.metadata[0]?.totalCount || 0;
+    const students = studentsAggregation[0]?.students || [];
 
     return {
       success: true,
       message: "Enrolled students retrieved",
       data: {
         students,
-        totalCount: students.length,
-        singlePurchaseCount: singleCourseOrders.length,
-        quarterlySubscriptionCount: quarterlyOrders.length,
+        pagination: {
+          total: totalCount,
+          page,
+          limit,
+          totalPages: Math.ceil(totalCount / limit),
+        },
       },
     };
   } catch (error: any) {

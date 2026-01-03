@@ -171,6 +171,48 @@ export const getAllCourses = async (req: Request, res: Response) => {
   }
 };
 
+export const getCoursesCount = async (req: Request, res: Response) => {
+  try {
+    const filters: any = {};
+
+    // Apply filters just like getAllCourses does
+    if (req.query.category) filters.category = req.query.category;
+    if (req.query.type) filters.type = req.query.type;
+    if (req.query.level) filters.level = req.query.level;
+    if (req.query.isPublished !== undefined) filters.isPublished = req.query.isPublished === "true";
+    if (req.query.isFeatured !== undefined) filters.isFeatured = req.query.isFeatured === "true";
+    if (req.query.isRegistrationOpen !== undefined) filters.isRegistrationOpen = req.query.isRegistrationOpen === "true";
+    if (req.query.search) {
+      filters.$or = [
+        { title: { $regex: req.query.search, $options: "i" } },
+        { description: { $regex: req.query.search, $options: "i" } },
+      ];
+    }
+
+    // Instructors see only their courses
+    if (req.userRole === "instructor") {
+      filters.instructorId = req.userId;
+    }
+
+    // Count with filters
+    const total = await Course.countDocuments(filters);
+
+    res.json({
+      success: true,
+      message: "Course count retrieved successfully",
+      data: {
+        total,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve course count",
+      error: error.message,
+    });
+  }
+};
+
 export const getPublishedCourses = async (_: Request, res: Response) => {
   try {
     const courses = await service.getPublishedCourses();
@@ -226,6 +268,38 @@ export const getCourseById = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "Failed to retrieve course",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Get course statistics - optimized endpoint for instructor dashboard
+ * Returns engagement rate, completion rate, revenue, and enrollment count
+ */
+export const getCourseStats = async (req: Request, res: Response) => {
+  try {
+    const courseId = req.params.id;
+    
+    // Optional: Verify user has access to these stats (instructor or admin)
+    if (req.userRole !== "admin" && req.userRole !== "instructor") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Only instructors and admins can view course stats.",
+      });
+    }
+
+    const stats = await service.getCourseStats(courseId);
+    
+    res.json({
+      success: true,
+      message: "Course statistics retrieved successfully",
+      data: stats,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve course statistics",
       error: error.message,
     });
   }

@@ -89,7 +89,7 @@ export default function CreateQuizPage() {
 
     return (
         <div className="container mx-auto px-6 py-8 max-w-5xl">
-            <Button variant="light" onPress={() => router.back()} className="mb-6">
+            <Button variant="light" onPress={() => router.push("/admin")} className="mb-6">
                 ← Back to Admin
             </Button>
 
@@ -249,7 +249,7 @@ export default function CreateQuizPage() {
                             <Button type="submit" color="primary" size="lg" className="flex-1">
                                 Create Quiz
                             </Button>
-                            <Button type="button" variant="bordered" size="lg" onPress={() => router.back()}>
+                            <Button type="button" variant="bordered" size="lg" onPress={() => router.push("/admin")}>
                                 Cancel
                             </Button>
                         </div>

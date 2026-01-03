@@ -92,6 +92,13 @@ function InstructorDashboardContent() {
             href: "/instructor/courses",
         },
         {
+            title: "All Assessments",
+            description: "Manage all quizzes & assignments",
+            icon: <FaClipboard className="text-3xl" />,
+            color: "from-cyan-500 to-cyan-600",
+            href: "/instructor/assessments",
+        },
+        {
             title: "Quizzes",
             description: "Create and manage quizzes",
             icon: <FaClipboard className="text-3xl" />,

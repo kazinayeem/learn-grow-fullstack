@@ -27,6 +27,13 @@ router.get(
     try {
       const user = req.user as any;
 
+      // Safety check
+      if (!user || !user._id) {
+        console.error("Google callback: user object is invalid", user);
+        res.redirect(`${ENV.FRONTEND_URL}/login?error=authentication_failed`);
+        return;
+      }
+
       // Check if this is a new user
       const isNewUser = user.isNewGoogleUser === true;
 

@@ -29,9 +29,8 @@ interface Question {
     id: string;
     questionText: string;
     questionImage?: string;
-    questionType: "multiple-choice" | "short-answer" | "true-false";
-    options?: { text: string; isCorrect: boolean }[];
-    correctAnswer?: string;
+    questionType: "multiple-choice";
+    options: { text: string; image?: string; isCorrect: boolean }[];
     points: number;
 }
 
@@ -115,30 +114,21 @@ function CreateQuizContent() {
             questionErrors["questionText"] = "Question must be at least 5 characters";
         }
 
-        // Validate by question type
-        if (currentQuestion.questionType === "multiple-choice") {
-            if (!currentQuestion.options || currentQuestion.options.length === 0) {
-                questionErrors["options"] = "At least one option is required";
-            } else {
-                // Check all options have text
-                currentQuestion.options.forEach((opt, idx) => {
-                    if (!opt.text || opt.text.trim().length === 0) {
-                        questionErrors[`option_${idx}`] = "Option text required";
-                    }
-                });
-            }
-            // Check at least one correct answer
-            if (!currentQuestion.options?.some(opt => opt.isCorrect)) {
-                questionErrors["correctAnswer"] = "Please select at least one correct answer";
-            }
-        } else if (currentQuestion.questionType === "true-false") {
-            if (!currentQuestion.correctAnswer) {
-                questionErrors["correctAnswer"] = "Please select the correct answer";
-            }
-        } else if (currentQuestion.questionType === "short-answer") {
-            if (!currentQuestion.correctAnswer || currentQuestion.correctAnswer.trim().length === 0) {
-                questionErrors["correctAnswer"] = "Please enter the correct answer";
-            }
+        // Validate multiple-choice options
+        if (!currentQuestion.options || currentQuestion.options.length === 0) {
+            questionErrors["options"] = "At least one option is required";
+        } else {
+            // Check all options have text
+            currentQuestion.options.forEach((opt, idx) => {
+                if (!opt.text || opt.text.trim().length === 0) {
+                    questionErrors[`option_${idx}`] = "Option text required";
+                }
+            });
+        }
+        
+        // Check at least one correct answer
+        if (!currentQuestion.options?.some(opt => opt.isCorrect)) {
+            questionErrors["correctAnswer"] = "Please select at least one correct answer";
         }
 
         // Check points
@@ -659,47 +649,11 @@ function CreateQuizContent() {
                                         </Card>
                                     )}
 
-                                    {/* Question Type */}
-                                    <Select
-                                        label="Question Type"
-                                        selectedKeys={new Set([currentQuestion.questionType])}
-                                        onSelectionChange={(keys) => {
-                                            const key = Array.from(keys as Set<string>)[0];
-                                            if (!key) return;
-                                            if (key === "multiple-choice") {
-                                                const opts = currentQuestion.options && currentQuestion.options.length > 0
-                                                    ? currentQuestion.options
-                                                    : [{ text: "", isCorrect: false }, { text: "", isCorrect: false }, { text: "", isCorrect: false }, { text: "", isCorrect: false }];
-                                                setCurrentQuestion({
-                                                    ...currentQuestion,
-                                                    questionType: "multiple-choice",
-                                                    options: opts,
-                                                    // clear non-MC correctAnswer
-                                                    correctAnswer: undefined,
-                                                });
-                                            } else if (key === "true-false") {
-                                                setCurrentQuestion({
-                                                    ...currentQuestion,
-                                                    questionType: "true-false",
-                                                    options: undefined,
-                                                    correctAnswer: currentQuestion.correctAnswer || "true",
-                                                });
-                                            } else {
-                                                // short-answer
-                                                setCurrentQuestion({
-                                                    ...currentQuestion,
-                                                    questionType: "short-answer",
-                                                    options: undefined,
-                                                    correctAnswer: currentQuestion.correctAnswer || "",
-                                                });
-                                            }
-                                        }}
-                                        disallowEmptySelection
-                                    >
-                                        <SelectItem key="multiple-choice">Multiple Choice</SelectItem>
-                                        <SelectItem key="true-false">True/False</SelectItem>
-                                        <SelectItem key="short-answer">Short Answer</SelectItem>
-                                    </Select>
+                                    {/* Question Type - MCQ Only */}
+                                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                                        <p className="text-sm font-semibold text-blue-900">Question Type: Multiple Choice (MCQ)</p>
+                                        <p className="text-xs text-blue-700 mt-1">Quiz questions are multiple choice with up to 4 options per question</p>
+                                    </div>
 
                                     {/* Question Text */}
                                     <Input
@@ -714,26 +668,20 @@ function CreateQuizContent() {
                                         errorMessage={fieldErrors["questionText"]?.[0]}
                                     />
 
-                                    {/* Question Image */}
+                                    {/* Question Image URL */}
                                     <div>
-                                        <label className="text-sm font-semibold block mb-2">Question Image (Optional)</label>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) => {
-                                                const file = e.target.files?.[0];
-                                                if (file) {
-                                                    const reader = new FileReader();
-                                                    reader.onloadend = () => {
-                                                        setCurrentQuestion({
-                                                            ...currentQuestion,
-                                                            questionImage: reader.result as string,
-                                                        });
-                                                    };
-                                                    reader.readAsDataURL(file);
-                                                }
-                                            }}
-                                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-600 cursor-pointer"
+                                        <label className="text-sm font-semibold block mb-2">Question Image URL (Optional)</label>
+                                        <Input
+                                            type="url"
+                                            placeholder="https://example.com/image.jpg"
+                                            value={currentQuestion.questionImage || ""}
+                                            onChange={(e) =>
+                                                setCurrentQuestion({
+                                                    ...currentQuestion,
+                                                    questionImage: e.target.value,
+                                                })
+                                            }
+                                            className="w-full"
                                         />
                                         {currentQuestion.questionImage && (
                                             <div className="mt-3 relative">
@@ -742,6 +690,9 @@ function CreateQuizContent() {
                                                     alt="Preview"
                                                     className="max-w-full h-auto rounded-lg border-2 border-gray-200"
                                                     style={{ maxHeight: "200px" }}
+                                                    onError={(e) => {
+                                                        (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23f0f0f0' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999' font-family='Arial' font-size='14'%3EImage not found%3C/text%3E%3C/svg%3E";
+                                                    }}
                                                 />
                                                 <Button
                                                     size="sm"
@@ -750,20 +701,20 @@ function CreateQuizContent() {
                                                     className="mt-2"
                                                     onPress={() => setCurrentQuestion({ ...currentQuestion, questionImage: "" })}
                                                 >
-                                                    Remove Image
+                                                    Remove URL
                                                 </Button>
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Multiple Choice Options */}
-                                    {currentQuestion.questionType === "multiple-choice" && (
-                                        <div className="space-y-3">
-                                            <label className="text-sm font-semibold">Answer Options</label>
-                                            {currentQuestion.options?.map((option, index) => (
-                                                <div key={index} className="flex gap-2 items-center">
+                                    {/* Multiple Choice Options (exactly 4 options with image support) */}
+                                    <div className="space-y-3">
+                                        <label className="text-sm font-semibold">Answer Options (up to 4 options)</label>
+                                        {currentQuestion.options?.slice(0, 4).map((option, index) => (
+                                            <div key={index} className="border border-gray-300 rounded-lg p-3 space-y-2">
+                                                <div className="flex gap-2 items-end">
                                                     <Input
-                                                        label={`Option ${String.fromCharCode(65 + index)}`}
+                                                        label={`Option ${String.fromCharCode(65 + index)} Text`}
                                                         placeholder={`Enter option ${String.fromCharCode(65 + index)}`}
                                                         value={option.text}
                                                         onChange={(e) => {
@@ -775,7 +726,7 @@ function CreateQuizContent() {
                                                         isInvalid={!!fieldErrors[`option_${index}`]}
                                                         errorMessage={Array.isArray(fieldErrors[`option_${index}`]) ? fieldErrors[`option_${index}`][0] : (fieldErrors[`option_${index}`] as any)}
                                                     />
-                                                    <label className="flex items-center gap-2 cursor-pointer">
+                                                    <label className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded bg-blue-50 border border-blue-200">
                                                         <input
                                                             type="radio"
                                                             name="correctAnswer"
@@ -788,38 +739,37 @@ function CreateQuizContent() {
                                                                 setCurrentQuestion({ ...currentQuestion, options: newOptions });
                                                             }}
                                                         />
-                                                        <span className="text-sm">Correct</span>
+                                                        <span className="text-sm font-medium">Correct</span>
                                                     </label>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {/* True/False Option */}
-                                    {currentQuestion.questionType === "true-false" && (
-                                        <RadioGroup
-                                            label="Correct Answer"
-                                            value={currentQuestion.correctAnswer || "true"}
-                                            onValueChange={(value) =>
-                                                setCurrentQuestion({ ...currentQuestion, correctAnswer: value })
-                                            }
-                                        >
-                                            <Radio value="true">True</Radio>
-                                            <Radio value="false">False</Radio>
-                                        </RadioGroup>
-                                    )}
-
-                                    {/* Short Answer */}
-                                    {currentQuestion.questionType === "short-answer" && (
-                                        <Input
-                                            label="Correct Answer"
-                                            placeholder="Enter the correct answer"
-                                            value={currentQuestion.correctAnswer || ""}
-                                            onChange={(e) =>
-                                                setCurrentQuestion({ ...currentQuestion, correctAnswer: e.target.value })
-                                            }
-                                        />
-                                    )}
+                                                <Input
+                                                    label={`Option ${String.fromCharCode(65 + index)} Image URL (Optional)`}
+                                                    type="url"
+                                                    placeholder="https://example.com/option-image.jpg"
+                                                    value={option.image || ""}
+                                                    onChange={(e) => {
+                                                        const newOptions = [...(currentQuestion.options || [])];
+                                                        newOptions[index] = { ...newOptions[index], image: e.target.value };
+                                                        setCurrentQuestion({ ...currentQuestion, options: newOptions });
+                                                    }}
+                                                    size="sm"
+                                                />
+                                                {option.image && (
+                                                    <div className="mt-2">
+                                                        <img
+                                                            src={option.image}
+                                                            alt={`Option ${String.fromCharCode(65 + index)}`}
+                                                            className="max-w-full h-auto rounded border border-gray-200"
+                                                            style={{ maxHeight: "120px" }}
+                                                            onError={(e) => {
+                                                                (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23f0f0f0' width='100' height='100'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999' font-family='Arial' font-size='10'%3EImage not found%3C/text%3E%3C/svg%3E";
+                                                            }}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
 
                                     {/* Points */}
                                     <Input

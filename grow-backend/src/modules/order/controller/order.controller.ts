@@ -375,6 +375,8 @@ export const getEnrolledStudents = async (req: Request, res: Response) => {
   try {
     const userId = req.userId;
     const { courseId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
 
     if (!userId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -384,7 +386,7 @@ export const getEnrolledStudents = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: "Invalid course ID" });
     }
 
-    const result = await getEnrolledStudentsService(courseId, userId);
+    const result = await getEnrolledStudentsService(courseId, userId, { page, limit });
 
     if (!result.success) {
       return res.status(400).json(result);

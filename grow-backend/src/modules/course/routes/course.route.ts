@@ -19,6 +19,8 @@ router.post(
 
 router.get("/get-all-courses", optionalAuth, controller.getAllCourses);
 
+router.get("/get-courses-count", optionalAuth, controller.getCoursesCount);
+
 router.get("/get-published-courses", controller.getPublishedCourses);
 
 router.get("/get-featured-courses", controller.getFeaturedCourses);
@@ -28,6 +30,15 @@ router.get(
   optionalAuth,
   validate(schema.courseIdSchema),
   controller.getCourseById
+);
+
+// Course statistics endpoint - optimized for instructor dashboard
+router.get(
+  "/get-course-stats/:id",
+  requireAuth,
+  requireRoles("admin", "instructor"),
+  validate(schema.courseIdSchema),
+  controller.getCourseStats
 );
 
 router.patch(

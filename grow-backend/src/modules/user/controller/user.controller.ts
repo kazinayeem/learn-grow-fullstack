@@ -663,3 +663,18 @@ export const updateProfilePhoto = async (req: Request, res: Response) => {
     });
   }
 };
+
+/**
+ * Get lightweight admin dashboard stats
+ */
+export const getAdminDashboardStats = async (req: Request, res: Response) => {
+  try {
+    const result = await service.getAdminDashboardStats();
+    return res.status(result.success ? 200 : 500).json(result);
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to get dashboard stats",
+    });
+  }
+};

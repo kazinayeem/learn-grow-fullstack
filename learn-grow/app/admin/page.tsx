@@ -15,11 +15,11 @@ import {
   TableCell,
   Chip,
   Avatar,
+  Skeleton,
 } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
-import { useGetUsersAdminQuery } from "@/redux/api/userApi";
-import { useGetAllCoursesQuery } from "@/redux/api/courseApi";
-import { useGetAllOrdersQuery } from "@/redux/api/orderApi";
+import { useGetAdminDashboardStatsQuery, useGetUsersAdminQuery } from "@/redux/api/userApi";
+import { useGetCoursesCountQuery } from "@/redux/api/courseApi";
 import {
   FaUsers,
   FaBook,
@@ -41,44 +41,47 @@ import {
 function AdminDashboardContent() {
   const router = useRouter();
 
-  // Fetch real data
-  const { data: usersData } = useGetUsersAdminQuery({ page: 1, limit: 100 });
-  const { data: coursesData } = useGetAllCoursesQuery({ skip: 0, limit: 1 });
-  const { data: ordersData } = useGetAllOrdersQuery({ planType: "kit" });
-  const { data: allOrdersData } = useGetAllOrdersQuery({ status: "pending" });
+  // Fetch lightweight dashboard stats (single optimized query)
+  const { data: statsData, isLoading: statsLoading } = useGetAdminDashboardStatsQuery();
+  
+  // Fetch users for table display
+  const { data: usersData } = useGetUsersAdminQuery({ page: 1, limit: 10 });
+  const { data: countData } = useGetCoursesCountQuery({});
 
   // Calculate stats from real data
   const stats = useMemo(() => {
-    const totalUsers = usersData?.counts?.totalUsers ?? 0;
-    const totalStudents = usersData?.counts?.students ?? 0;
-    const totalInstructors = usersData?.counts?.instructors ?? 0;
-    const totalCourses = coursesData?.meta?.total ?? 0;
-    const pendingOrders = (allOrdersData?.orders || []).length;
+    const totalUsers = statsData?.data?.totalUsers ?? 0;
+    const totalStudents = statsData?.data?.students ?? 0;
+    const totalInstructors = statsData?.data?.instructors ?? 0;
+    const totalCourses = countData?.data?.total ?? 0;
+    const totalRevenue = statsData?.data?.totalRevenue ?? 0;
+    const thisMonthRevenue = statsData?.data?.thisMonthRevenue ?? 0;
+
+    // Format revenue in BDT
+    const formatRevenue = (amount: number) => {
+      if (amount >= 1000) {
+        return `${(amount / 1000).toFixed(1)}K BDT`;
+      }
+      return `${amount} BDT`;
+    };
 
     return {
       totalUsers,
       totalStudents,
       totalInstructors,
       totalCourses,
-      activeEnrollments: totalStudents * 2, // Estimation
-      totalRevenue: totalCourses * 5000,
-      thisMonthRevenue: Math.floor(totalCourses * 5000 * 0.4),
-      pendingApprovals: 12,
-      pendingOrders,
+      activeEnrollments: totalStudents,
+      totalRevenue: formatRevenue(totalRevenue),
+      thisMonthRevenue: formatRevenue(thisMonthRevenue),
+      pendingApprovals: totalInstructors,
+      pendingOrders: 0,
     };
-  }, [usersData, coursesData, allOrdersData]);
+  }, [statsData, countData]);
 
-  // Get all students
-  const students = useMemo(() => {
-    return (usersData?.users || []).filter(
-      (user: any) => user.role === "student"
-    );
+  // Get recent users for table
+  const recentUsers = useMemo(() => {
+    return (usersData?.data || []).slice(0, 5);
   }, [usersData]);
-
-  // Get kit orders
-  const kitOrders = useMemo(() => {
-    return ordersData?.orders || [];
-  }, [ordersData]);
 
   const quickActions = [
     {
@@ -185,22 +188,20 @@ function AdminDashboardContent() {
   const recentActivity = [
     {
       type: "user",
-      message: "15 new students registered today",
-      time: "2 hours ago",
+      message: `Total ${stats.totalStudents} students registered`,
+      time: "Real-time data",
     },
     {
       type: "course",
-      message: "3 new courses submitted for approval",
-      time: "4 hours ago",
+      message: `${stats.totalCourses} courses available on platform`,
+      time: "Real-time data",
     },
     {
       type: "revenue",
-      message: "Revenue increased by 12% this week",
-      time: "1 day ago",
+      message: `${stats.totalInstructors} instructors enrolled`,
+      time: "Real-time data",
     },
   ];
-
-  const isLoading = !usersData || !coursesData;
 
   return (
     <div className="min-h-screen bg-gray-50 container mx-auto px-4 py-8 max-w-7xl">
@@ -211,71 +212,71 @@ function AdminDashboardContent() {
       </div>
 
       {/* Statistics Cards */}
-      {isLoading ? (
-        <div className="flex justify-center items-center py-12">
-          <Spinner size="lg" label="Loading statistics..." />
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-gradient-to-br from-blue-500 to-blue-600">
-              <CardBody className="text-white p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm opacity-90">Total Users</p>
-                    <p className="text-3xl font-bold mt-1">
-                      {stats.totalUsers}
-                    </p>
-                  </div>
-                  <FaUsers className="text-4xl opacity-50" />
-                </div>
-              </CardBody>
-            </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <Card className="bg-gradient-to-br from-blue-500 to-blue-600">
+          <CardBody className="text-white p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm opacity-90">Total Users</p>
+                <Skeleton isLoaded={!statsLoading} className="mt-2 rounded-lg">
+                  <p className="text-3xl font-bold mt-1">
+                    {stats.totalUsers}
+                  </p>
+                </Skeleton>
+              </div>
+              <FaUsers className="text-4xl opacity-50" />
+            </div>
+          </CardBody>
+        </Card>
 
-            <Card className="bg-gradient-to-br from-green-500 to-green-600">
-              <CardBody className="text-white p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm opacity-90">Total Courses</p>
-                    <p className="text-3xl font-bold mt-1">
-                      {stats.totalCourses}
-                    </p>
-                  </div>
-                  <FaBook className="text-4xl opacity-50" />
-                </div>
-              </CardBody>
-            </Card>
+        <Card className="bg-gradient-to-br from-green-500 to-green-600">
+          <CardBody className="text-white p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm opacity-90">Total Courses</p>
+                <Skeleton isLoaded={!statsLoading} className="mt-2 rounded-lg">
+                  <p className="text-3xl font-bold mt-1">
+                    {stats.totalCourses}
+                  </p>
+                </Skeleton>
+              </div>
+              <FaBook className="text-4xl opacity-50" />
+            </div>
+          </CardBody>
+        </Card>
 
-            <Card className="bg-gradient-to-br from-purple-500 to-purple-600">
-              <CardBody className="text-white p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm opacity-90">Active Enrollments</p>
-                    <p className="text-3xl font-bold mt-1">
-                      {stats.activeEnrollments}
-                    </p>
-                  </div>
-                  <FaChartLine className="text-4xl opacity-50" />
-                </div>
-              </CardBody>
-            </Card>
+        <Card className="bg-gradient-to-br from-purple-500 to-purple-600">
+          <CardBody className="text-white p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm opacity-90">Active Enrollments</p>
+                <Skeleton isLoaded={!statsLoading} className="mt-2 rounded-lg">
+                  <p className="text-3xl font-bold mt-1">
+                    {stats.activeEnrollments}
+                  </p>
+                </Skeleton>
+              </div>
+              <FaChartLine className="text-4xl opacity-50" />
+            </div>
+          </CardBody>
+        </Card>
 
-            <Card className="bg-gradient-to-br from-orange-500 to-orange-600">
-              <CardBody className="text-white p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm opacity-90">Total Revenue</p>
-                    <p className="text-3xl font-bold mt-1">
-                      {(stats.totalRevenue / 1000).toFixed(0)}K BDT
-                    </p>
-                  </div>
-                  <FaMoneyBillWave className="text-4xl opacity-50" />
-                </div>
-              </CardBody>
-            </Card>
-          </div>
-        </>
-      )}
+        <Card className="bg-gradient-to-br from-orange-500 to-orange-600">
+          <CardBody className="text-white p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm opacity-90">Total Revenue</p>
+                <Skeleton isLoaded={!statsLoading} className="mt-2 rounded-lg">
+                  <p className="text-3xl font-bold mt-1">
+                    {stats.totalRevenue}
+                  </p>
+                </Skeleton>
+              </div>
+              <FaMoneyBillWave className="text-4xl opacity-50" />
+            </div>
+          </CardBody>
+        </Card>
+      </div>
 
       {/* Quick Actions */}
       <div className="mb-8">
@@ -300,6 +301,65 @@ function AdminDashboardContent() {
             </Card>
           ))}
         </div>
+      </div>
+
+      {/* Recent Users Table */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold mb-4">Recent Users</h2>
+        <Card>
+          <CardBody className="p-6">
+            {recentUsers.length > 0 ? (
+              <Table aria-label="Recent users table" className="z-0">
+                <TableHeader>
+                  <TableColumn>NAME</TableColumn>
+                  <TableColumn>EMAIL</TableColumn>
+                  <TableColumn>PHONE</TableColumn>
+                  <TableColumn>ROLE</TableColumn>
+                  <TableColumn>STATUS</TableColumn>
+                </TableHeader>
+                <TableBody>
+                  {recentUsers.map((user: any) => (
+                    <TableRow key={user._id}>
+                      <TableCell>{user.name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>{user.phone || "-"}</TableCell>
+                      <TableCell>
+                        <Chip
+                          className="capitalize"
+                          color={
+                            user.role === "admin"
+                              ? "danger"
+                              : user.role === "instructor"
+                              ? "warning"
+                              : user.role === "guardian"
+                              ? "secondary"
+                              : "success"
+                          }
+                          size="sm"
+                          variant="flat"
+                        >
+                          {user.role}
+                        </Chip>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          className="capitalize"
+                          color={user.isVerified ? "success" : "warning"}
+                          size="sm"
+                          variant="flat"
+                        >
+                          {user.isVerified ? "Verified" : "Pending"}
+                        </Chip>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-center text-gray-500">No users found</p>
+            )}
+          </CardBody>
+        </Card>
       </div>
 
       {/* Platform Overview */}

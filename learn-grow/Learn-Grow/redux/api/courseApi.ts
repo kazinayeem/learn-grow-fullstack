@@ -12,6 +12,14 @@ export const courseApi = baseApi.injectEndpoints({
             }),
             providesTags: ["Course"],
         }),
+        getCoursesCount: build.query({
+            query: (params) => ({
+                url: "/course/get-courses-count",
+                method: "GET",
+                params,
+            }),
+            providesTags: ["Course"],
+        }),
         getPublishedCourses: build.query({
             query: () => ({ url: "/course/get-published-courses", method: "GET" }),
             providesTags: ["Course"],
@@ -98,6 +106,7 @@ export const courseApi = baseApi.injectEndpoints({
 export const {
     // Courses
     useGetAllCoursesQuery,
+    useGetCoursesCountQuery,
     useGetPublishedCoursesQuery,
     useGetFeaturedCoursesQuery,
     useGetCourseByIdQuery,
