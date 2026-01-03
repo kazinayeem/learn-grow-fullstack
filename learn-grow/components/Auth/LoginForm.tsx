@@ -24,20 +24,6 @@ export default function LoginForm() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // Demo credentials
-  const demoAccounts = [
-    { label: "👨‍💼 Admin", email: "admin@learngrow.com", password: "admin123", icon: "🔐" },
-    { label: "👨‍🎓 Student", email: "demo@learngrow.com", password: "demo123", icon: "📚" },
-    { label: "👨‍🏫 Instructor", email: "instructor@learngrow.com", password: "demo123", icon: "🎓" },
-    { label: "👔 Manager", email: "manager@learngrow.com", password: "demo123", icon: "💼" },
-  ];
-
-  const fillDemoCredentials = (demoEmail: string, demoPassword: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-    setError("");
-  };
-
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
@@ -137,31 +123,6 @@ export default function LoginForm() {
             <Divider className="flex-1" />
             <span className="text-xs text-gray-500">OR</span>
             <Divider className="flex-1" />
-          </div>
-
-          {/* Demo Credentials */}
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-xs font-semibold text-gray-700 mb-3 text-center">
-              🎯 Quick Login - Click to auto-fill:
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {demoAccounts.map((account, index) => (
-                <Button
-                  key={index}
-                  size="sm"
-                  variant="flat"
-                  color={index === 0 ? "danger" : index === 1 ? "primary" : index === 2 ? "success" : "warning"}
-                  onClick={() => fillDemoCredentials(account.email, account.password)}
-                  className="text-xs font-medium"
-                  disabled={isLoading}
-                >
-                  <span className="flex flex-col items-center gap-1">
-                    <span className="text-lg">{account.icon}</span>
-                    <span>{account.label.split(" ")[1]}</span>
-                  </span>
-                </Button>
-              ))}
-            </div>
           </div>
 
           {/* Login Form */}
