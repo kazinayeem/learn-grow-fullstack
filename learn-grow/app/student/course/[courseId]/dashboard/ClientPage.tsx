@@ -76,6 +76,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
     const [authChecked, setAuthChecked] = useState(false);
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
+    const [activeTab, setActiveTab] = useState("overview");
     const { isOpen, onOpen, onClose } = useDisclosure();
 
     // Auth check - must be logged in
@@ -366,65 +367,476 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-8 px-6 shadow-lg">
-                <div className="container mx-auto max-w-7xl">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
+            {/* Modern Header with Course Info */}
+            <div className="bg-white border-b border-gray-200 shadow-sm">
+                <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-6">
+                    {/* Back Button */}
                     <Button
                         variant="light"
+                        size="sm"
                         startContent={<FaArrowLeft />}
                         onPress={() => router.push("/student/my-courses")}
-                        className="text-white mb-4"
+                        className="mb-4 text-gray-600 hover:text-gray-900"
                     >
                         Back to My Courses
                     </Button>
-                    <div className="flex items-start justify-between gap-4 flex-wrap">
-                        <div className="flex-1 min-w-[300px]">
-                            <h1 className="text-3xl font-bold mb-2">{courseData.title}</h1>
-                            <p className="text-blue-100 mb-4">
-                                Instructor: {courseData.instructorId?.name || "Unknown"}
-                            </p>
-                            <div className="flex items-center gap-4 flex-wrap">
+
+                    {/* Course Header */}
+                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+                        {/* Left: Course Info */}
+                        <div className="flex-1">
+                            <div className="flex items-start gap-4 mb-4">
+                                <Avatar
+                                    src={courseData.instructorId?.avatar}
+                                    name={courseData.instructorId?.name}
+                                    size="lg"
+                                    className="flex-shrink-0"
+                                />
+                                <div>
+                                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+                                        {courseData.title}
+                                    </h1>
+                                    <p className="text-gray-600 flex items-center gap-2 mb-2">
+                                        <FaGraduationCap className="text-blue-600" />
+                                        <span>Instructor: {courseData.instructorId?.name || "Unknown"}</span>
+                                    </p>
+                                    {courseData.description && (
+                                        <div 
+                                            className="text-sm text-gray-500 line-clamp-2 prose prose-sm max-w-none"
+                                            dangerouslySetInnerHTML={{ __html: courseData.description }}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Status Badge */}
+                            <div className="flex items-center gap-3 flex-wrap">
                                 <Chip
-                                    color={isCompleted ? "success" : "warning"}
+                                    color={isCompleted ? "success" : "primary"}
                                     variant="flat"
-                                    startContent={isCompleted ? <FaCheckCircle /> : null}
-                                    className="text-white"
+                                    startContent={isCompleted ? <FaCheckCircle /> : <FaClock />}
+                                    size="lg"
                                 >
                                     {isCompleted ? "Completed" : "In Progress"}
                                 </Chip>
-                                <span className="text-sm">
-                                    {completedLessons} / {totalLessons} Lessons Completed
+                                <span className="text-sm text-gray-600">
+                                    {completedLessons} of {totalLessons} lessons completed
                                 </span>
                             </div>
                         </div>
-                        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 min-w-[200px]">
-                            <p className="text-sm mb-2">Overall Progress</p>
-                            <Progress
-                                value={progressPercentage}
-                                color="success"
-                                className="mb-2"
-                                size="lg"
-                            />
-                            <p className="text-2xl font-bold">{progressPercentage}%</p>
-                        </div>
+
+                        {/* Right: Progress Card */}
+                        <Card className="w-full lg:w-80 shadow-lg border-2 border-blue-100">
+                            <CardBody className="p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <p className="text-sm text-gray-600 mb-1">Overall Progress</p>
+                                        <p className="text-3xl font-bold text-blue-600">{progressPercentage}%</p>
+                                    </div>
+                                    <CircularProgress
+                                        value={progressPercentage}
+                                        size="lg"
+                                        color="primary"
+                                        showValueLabel={false}
+                                        strokeWidth={4}
+                                    />
+                                </div>
+                                <Progress
+                                    value={progressPercentage}
+                                    color="primary"
+                                    size="sm"
+                                    className="mb-3"
+                                />
+                                <div className="grid grid-cols-3 gap-2 mt-4">
+                                    <div className="text-center p-2 bg-blue-50 rounded-lg">
+                                        <p className="text-xs text-gray-600">Modules</p>
+                                        <p className="text-lg font-bold text-blue-600">{modules.length}</p>
+                                    </div>
+                                    <div className="text-center p-2 bg-green-50 rounded-lg">
+                                        <p className="text-xs text-gray-600">Quizzes</p>
+                                        <p className="text-lg font-bold text-green-600">{quizzes.length}</p>
+                                    </div>
+                                    <div className="text-center p-2 bg-purple-50 rounded-lg">
+                                        <p className="text-xs text-gray-600">Tasks</p>
+                                        <p className="text-lg font-bold text-purple-600">{assignments.length}</p>
+                                    </div>
+                                </div>
+                            </CardBody>
+                        </Card>
                     </div>
                 </div>
             </div>
 
-            {/* Course Content */}
-            <div className="container mx-auto max-w-7xl px-6 py-8">
-                <Card>
+            {/* Main Content with Tabs */}
+            <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-8">
+                <Tabs
+                    selectedKey={activeTab}
+                    onSelectionChange={(key) => setActiveTab(key as string)}
+                    size="lg"
+                    variant="underlined"
+                    classNames={{
+                        base: "w-full",
+                        tabList: "gap-2 sm:gap-6 w-full relative rounded-none p-0 border-b border-divider bg-white px-2 sm:px-4 shadow-sm overflow-x-auto flex-nowrap",
+                        cursor: "w-full bg-blue-600",
+                        tab: "max-w-fit px-2 sm:px-4 h-12 font-semibold whitespace-nowrap",
+                        tabContent: "group-data-[selected=true]:text-blue-600 text-xs sm:text-sm"
+                    }}
+                >
+                    {/* Overview Tab */}
+                    <Tab
+                        key="overview"
+                        title={
+                            <div className="flex items-center gap-1 sm:gap-2">
+                                <FaChartLine className="text-sm sm:text-base" />
+                                <span className="text-xs sm:text-sm">Overview</span>
+                            </div>
+                        }
+                    >
+                        {renderOverviewTab()}
+                    </Tab>
+
+                    {/* Lessons Tab */}
+                    <Tab
+                        key="lessons"
+                        title={
+                            <div className="flex items-center gap-1 sm:gap-2">
+                                <FaBook className="text-sm sm:text-base" />
+                                <span className="text-xs sm:text-sm">Lessons</span>
+                            </div>
+                        }
+                    >
+                        {renderLessonsTab()}
+                    </Tab>
+
+                    {/* Quizzes Tab */}
+                    <Tab
+                        key="quizzes"
+                        title={
+                            <div className="flex items-center gap-1 sm:gap-2">
+                                <FaClipboardList className="text-sm sm:text-base" />
+                                <span className="text-xs sm:text-sm">Quizzes</span>
+                            </div>
+                        }
+                    >
+                        {renderQuizzesTab()}
+                    </Tab>
+
+                    {/* Assignments Tab */}
+                    <Tab
+                        key="assignments"
+                        title={
+                            <div className="flex items-center gap-1 sm:gap-2">
+                                <FaTasks className="text-sm sm:text-base" />
+                                <span className="text-xs sm:text-sm">Assignments</span>
+                            </div>
+                        }
+                    >
+                        {renderAssignmentsTab()}
+                    </Tab>
+                </Tabs>
+
+                {/* Course Completion Banner */}
+                {isCompleted && (
+                    <Card className="mt-8 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 shadow-lg">
+                        <CardBody className="p-8 text-center">
+                            <div className="inline-block p-4 bg-green-100 rounded-full mb-4">
+                                <FaAward className="text-5xl text-green-600" />
+                            </div>
+                            <h2 className="text-3xl font-bold text-green-800 mb-2">
+                                🎉 Course Completed!
+                            </h2>
+                            <p className="text-green-700 mb-6 text-lg">
+                                Congratulations! You've successfully completed this course.
+                            </p>
+                            <Button
+                                color="success"
+                                size="lg"
+                                startContent={<FaAward />}
+                                className="font-semibold"
+                            >
+                                Download Certificate
+                            </Button>
+                        </CardBody>
+                    </Card>
+                )}
+            </div>
+
+            {/* Lesson Content Modal */}
+            <Modal isOpen={isOpen} onClose={onClose} size="5xl" scrollBehavior="inside">
+                <ModalContent>
+                    <ModalHeader>
+                        <div>
+                            <h3 className="text-xl font-bold">{currentLesson?.title}</h3>
+                            {currentLesson?.description && (
+                                <p className="text-sm text-gray-500 font-normal mt-1">
+                                    {currentLesson.description}
+                                </p>
+                            )}
+                        </div>
+                    </ModalHeader>
+                    <ModalBody className="p-6">
+                        {renderLessonContent()}
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button color="danger" variant="light" onPress={onClose}>
+                            Close
+                        </Button>
+                        {currentLesson && !currentLesson.isCompleted && (
+                            <Button color="success" onPress={async () => {
+                                try {
+                                    const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
+                                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/course/complete-lesson/${currentLesson.id}`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Authorization': `Bearer ${token}`,
+                                            'Content-Type': 'application/json'
+                                        }
+                                    });
+                                    
+                                    if (response.ok) {
+                                        toast.success("Lesson marked as complete!");
+                                        onClose();
+                                        refetch();
+                                    } else {
+                                        const error = await response.json();
+                                        toast.error(error.message || "Failed to mark lesson as complete");
+                                    }
+                                } catch (error) {
+                                    console.error("Error marking lesson complete:", error);
+                                    toast.error("Failed to mark lesson as complete");
+                                }
+                            }}>
+                                Mark as Complete
+                            </Button>
+                        )}
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+        </div>
+    );
+
+    // Render Functions for Each Tab
+    function renderOverviewTab() {
+        const nextLesson = modules
+            .flatMap(m => m.lessons)
+            .find(l => !l.isCompleted && !l.isLocked);
+        
+        const upcomingQuiz = quizzes.find((q: any) =>
+            q.status === "published" && !localStorage.getItem(`quiz_attempt_${q._id}`)
+        );
+
+        const upcomingAssignment = assignments.find((a: any) =>
+            a.status === "published" && new Date(a.dueDate) > new Date()
+        );
+
+        return (
+            <div className="space-y-6 py-6">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card className="border-l-4 border-blue-500 shadow-md hover:shadow-lg transition-shadow">
+                        <CardBody className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-gray-600 mb-1">Total Lessons</p>
+                                    <p className="text-3xl font-bold text-blue-600">{totalLessons}</p>
+                                </div>
+                                <div className="p-3 bg-blue-100 rounded-lg">
+                                    <FaBook className="text-2xl text-blue-600" />
+                                </div>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">
+                                {completedLessons} completed
+                            </p>
+                        </CardBody>
+                    </Card>
+
+                    <Card className="border-l-4 border-green-500 shadow-md hover:shadow-lg transition-shadow">
+                        <CardBody className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-gray-600 mb-1">Quizzes</p>
+                                    <p className="text-3xl font-bold text-green-600">{quizzes.length}</p>
+                                </div>
+                                <div className="p-3 bg-green-100 rounded-lg">
+                                    <FaClipboardList className="text-2xl text-green-600" />
+                                </div>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">
+                                {quizzes.filter((q: any) => localStorage.getItem(`quiz_attempt_${q._id}`)).length} completed
+                            </p>
+                        </CardBody>
+                    </Card>
+
+                    <Card className="border-l-4 border-purple-500 shadow-md hover:shadow-lg transition-shadow">
+                        <CardBody className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-gray-600 mb-1">Assignments</p>
+                                    <p className="text-3xl font-bold text-purple-600">{assignments.length}</p>
+                                </div>
+                                <div className="p-3 bg-purple-100 rounded-lg">
+                                    <FaTasks className="text-2xl text-purple-600" />
+                                </div>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">
+                                View all tasks
+                            </p>
+                        </CardBody>
+                    </Card>
+
+                    <Card className="border-l-4 border-orange-500 shadow-md hover:shadow-lg transition-shadow">
+                        <CardBody className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-gray-600 mb-1">Progress</p>
+                                    <p className="text-3xl font-bold text-orange-600">{progressPercentage}%</p>
+                                </div>
+                                <div className="p-3 bg-orange-100 rounded-lg">
+                                    <FaChartLine className="text-2xl text-orange-600" />
+                                </div>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">
+                                Keep going!
+                            </p>
+                        </CardBody>
+                    </Card>
+                </div>
+
+                {/* Continue Learning Section */}
+                <Card className="shadow-lg border-2 border-blue-100">
                     <CardBody className="p-6">
-                        <h2 className="text-2xl font-bold mb-6">Course Content</h2>
+                        <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                            <FaPlay className="text-blue-600" />
+                            Continue Learning
+                        </h2>
+
+                        {nextLesson ? (
+                            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border-2 border-blue-200">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1">
+                                        <Chip size="sm" color="primary" variant="flat" className="mb-3">
+                                            Up Next
+                                        </Chip>
+                                        <h3 className="text-xl font-bold mb-2">{nextLesson.title}</h3>
+                                        {nextLesson.description && (
+                                            <p className="text-gray-600 mb-4">{nextLesson.description}</p>
+                                        )}
+                                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
+                                            {getLessonIcon(nextLesson.type)}
+                                            <span className="capitalize">{nextLesson.type}</span>
+                                            {nextLesson.duration && (
+                                                <>
+                                                    <span>•</span>
+                                                    <span>{nextLesson.duration} min</span>
+                                                </>
+                                            )}
+                                        </div>
+                                        <Button
+                                            color="primary"
+                                            size="lg"
+                                            startContent={<FaPlay />}
+                                            onPress={() => handleLessonClick(nextLesson)}
+                                            className="font-semibold"
+                                        >
+                                            Continue Lesson
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-gray-500">
+                                <FaCheckCircle className="text-5xl mx-auto mb-3 text-green-500" />
+                                <p className="text-lg">All lessons completed! Great job! 🎉</p>
+                            </div>
+                        )}
+                    </CardBody>
+                </Card>
+
+                {/* Upcoming Items */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Upcoming Quiz */}
+                    {upcomingQuiz && (
+                        <Card className="shadow-md border-2 border-green-100">
+                            <CardBody className="p-6">
+                                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                    <FaClipboardList className="text-green-600" />
+                                    Upcoming Quiz
+                                </h3>
+                                <div className="bg-green-50 rounded-lg p-4 mb-4">
+                                    <h4 className="font-semibold mb-2">{upcomingQuiz.title}</h4>
+                                    <p className="text-sm text-gray-600 mb-3">{upcomingQuiz.description}</p>
+                                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                                        <span>{upcomingQuiz.questions?.length || 0} Questions</span>
+                                        <span>•</span>
+                                        <span>{upcomingQuiz.timeLimit || 30} minutes</span>
+                                    </div>
+                                </div>
+                                <Button
+                                    color="success"
+                                    variant="flat"
+                                    fullWidth
+                                    startContent={<FaPlay />}
+                                    onPress={() => router.push(`/quiz/${upcomingQuiz._id}`)}
+                                >
+                                    Start Quiz
+                                </Button>
+                            </CardBody>
+                        </Card>
+                    )}
+
+                    {/* Upcoming Assignment */}
+                    {upcomingAssignment && (
+                        <Card className="shadow-md border-2 border-purple-100">
+                            <CardBody className="p-6">
+                                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                    <FaTasks className="text-purple-600" />
+                                    Upcoming Assignment
+                                </h3>
+                                <div className="bg-purple-50 rounded-lg p-4 mb-4">
+                                    <h4 className="font-semibold mb-2">{upcomingAssignment.title}</h4>
+                                    <p className="text-sm text-gray-600 mb-3">{upcomingAssignment.description}</p>
+                                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                                        <FaCalendar className="text-purple-600" />
+                                        <span>
+                                            Due: {new Date(upcomingAssignment.dueDate).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                </div>
+                                <Button
+                                    color="secondary"
+                                    variant="flat"
+                                    fullWidth
+                                    startContent={<FaPlay />}
+                                    onPress={() => router.push(`/assignment/${upcomingAssignment._id}`)}
+                                >
+                                    View Assignment
+                                </Button>
+                            </CardBody>
+                        </Card>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    function renderLessonsTab() {
+        return (
+            <div className="py-6">
+                <Card className="shadow-lg">
+                    <CardBody className="p-6">
+                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                            <FaBook className="text-blue-600" />
+                            Course Curriculum
+                        </h2>
 
                         {modules.length === 0 ? (
                             <div className="text-center py-12 text-gray-500">
                                 <FaBook className="text-6xl mx-auto mb-4 text-gray-300" />
-                                <p>No modules available yet</p>
+                                <p className="text-lg">No modules available yet</p>
                             </div>
                         ) : (
-                            <Accordion variant="bordered" selectionMode="multiple">
+                            <Accordion variant="splitted" selectionMode="multiple" className="px-0">
                                 {modules.map((module, moduleIndex) => (
                                     <AccordionItem
                                         key={module.id}
@@ -543,11 +955,19 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                         )}
                     </CardBody>
                 </Card>
+            </div>
+        );
+    }
 
-                {/* Quizzes & Assessments Section */}
-                <Card className="mt-6">
+    function renderQuizzesTab() {
+        return (
+            <div className="py-6">
+                <Card className="shadow-lg">
                     <CardBody className="p-6">
-                        <h2 className="text-2xl font-bold mb-6">Quizzes & Assessments</h2>
+                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                            <FaClipboardList className="text-blue-600" />
+                            Quizzes & Assessments
+                        </h2>
                         
                         {quizzesLoading ? (
                             <div className="text-center py-8">
@@ -556,7 +976,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                         ) : quizzes.length === 0 ? (
                             <div className="text-center py-12 text-gray-500">
                                 <FaClipboardList className="text-6xl mx-auto mb-4 text-gray-300" />
-                                <p>No quizzes or assessments available yet</p>
+                                <p className="text-lg">No quizzes or assessments available yet</p>
                             </div>
                         ) : (
                             <div className="space-y-6">
@@ -742,11 +1162,19 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                         )}
                     </CardBody>
                 </Card>
+            </div>
+        );
+    }
 
-                {/* Assignments & Projects Section */}
-                <Card className="mt-6">
+    function renderAssignmentsTab() {
+        return (
+            <div className="py-6">
+                <Card className="shadow-lg">
                     <CardBody className="p-6">
-                        <h2 className="text-2xl font-bold mb-6">Assignments & Projects</h2>
+                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                            <FaTasks className="text-purple-600" />
+                            Assignments & Projects
+                        </h2>
                         
                         {assignmentsLoading ? (
                             <div className="text-center py-8">
@@ -755,7 +1183,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                         ) : assignments.length === 0 ? (
                             <div className="text-center py-12 text-gray-500">
                                 <FaTasks className="text-6xl mx-auto mb-4 text-gray-300" />
-                                <p>No assignments or projects available yet</p>
+                                <p className="text-lg">No assignments or projects available yet</p>
                             </div>
                         ) : (
                             <div className="space-y-6">
@@ -804,7 +1232,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                                             fullWidth
                                                             startContent={<FaPlay />}
                                                             isDisabled={assignment.status !== "published"}
-                                                            onPress={() => assignment.status === "published" && router.push(`/student/assignment/${assignment._id}`)}
+                                                            onPress={() => assignment.status === "published" && router.push(`/assignment/${assignment._id}`)}
                                                         >
                                                             {assignment.status === "published" ? "Start Assignment" : "Not Available"}
                                                         </Button>
@@ -860,7 +1288,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                                             fullWidth
                                                             startContent={<FaPlay />}
                                                             isDisabled={assignment.status !== "published"}
-                                                            onPress={() => assignment.status === "published" && router.push(`/student/assignment/${assignment._id}`)}
+                                                            onPress={() => assignment.status === "published" && router.push(`/assignment/${assignment._id}`)}
                                                         >
                                                             {assignment.status === "published" ? "Start Mid-Term" : "Not Available"}
                                                         </Button>
@@ -972,7 +1400,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                                             fullWidth
                                                             startContent={<FaPlay />}
                                                             isDisabled={assignment.status !== "published"}
-                                                            onPress={() => assignment.status === "published" && router.push(`/student/assignment/${assignment._id}`)}
+                                                            onPress={() => assignment.status === "published" && router.push(`/assignment/${assignment._id}`)}
                                                         >
                                                             {assignment.status === "published" ? "Start Project" : "Not Available"}
                                                         </Button>
@@ -986,77 +1414,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                         )}
                     </CardBody>
                 </Card>
-
-                {/* Course Completion Card */}
-                {isCompleted && (
-                    <Card className="mt-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200">
-                        <CardBody className="p-8 text-center">
-                            <FaCheckCircle className="text-6xl text-green-600 mx-auto mb-4" />
-                            <h2 className="text-2xl font-bold text-green-800 mb-2">
-                                🎉 Congratulations!
-                            </h2>
-                            <p className="text-green-700 mb-6">
-                                You have completed this course. Great job!
-                            </p>
-                            <Button color="success" size="lg">
-                                Download Certificate
-                            </Button>
-                        </CardBody>
-                    </Card>
-                )}
             </div>
-
-            {/* Lesson Content Modal */}
-            <Modal isOpen={isOpen} onClose={onClose} size="5xl" scrollBehavior="inside">
-                <ModalContent>
-                    <ModalHeader>
-                        <div>
-                            <h3 className="text-xl font-bold">{currentLesson?.title}</h3>
-                            {currentLesson?.description && (
-                                <p className="text-sm text-gray-500 font-normal mt-1">
-                                    {currentLesson.description}
-                                </p>
-                            )}
-                        </div>
-                    </ModalHeader>
-                    <ModalBody className="p-6">
-                        {renderLessonContent()}
-                    </ModalBody>
-                    <ModalFooter>
-                        <Button color="danger" variant="light" onPress={onClose}>
-                            Close
-                        </Button>
-                        {currentLesson && !currentLesson.isCompleted && (
-                            <Button color="success" onPress={async () => {
-                                try {
-                                    const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
-                                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/course/complete-lesson/${currentLesson.id}`, {
-                                        method: 'POST',
-                                        headers: {
-                                            'Authorization': `Bearer ${token}`,
-                                            'Content-Type': 'application/json'
-                                        }
-                                    });
-                                    
-                                    if (response.ok) {
-                                        toast.success("Lesson marked as complete!");
-                                        onClose();
-                                        refetch();
-                                    } else {
-                                        const error = await response.json();
-                                        toast.error(error.message || "Failed to mark lesson as complete");
-                                    }
-                                } catch (error) {
-                                    console.error("Error marking lesson complete:", error);
-                                    toast.error("Failed to mark lesson as complete");
-                                }
-                            }}>
-                                Mark as Complete
-                            </Button>
-                        )}
-                    </ModalFooter>
-                </ModalContent>
-            </Modal>
-        </div>
-    );
+        );
+    }
 }

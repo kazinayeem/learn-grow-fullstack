@@ -254,7 +254,11 @@ function CreateQuizContent() {
                 questionText: q.questionText,
                 questionImage: q.questionImage,
                 questionType: q.questionType,
-                options: q.questionType === "multiple-choice" ? q.options : undefined,
+                options: q.questionType === "multiple-choice" ? q.options?.map(opt => ({
+                    text: opt.text,
+                    isCorrect: opt.isCorrect,
+                    imageUrl: opt.image || "",
+                })) : undefined,
                 correctAnswer: q.questionType === "multiple-choice" ? undefined : q.correctAnswer,
                 points: q.points,
                 order: idx,

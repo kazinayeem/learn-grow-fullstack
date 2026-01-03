@@ -8,6 +8,7 @@ export interface IQuizQuestion {
   options?: {
     _id?: Types.ObjectId;
     text: string;
+    imageUrl?: string;
     isCorrect: boolean;
   }[];
   correctAnswer?: string; // for short-answer and true-false
@@ -51,6 +52,7 @@ const quizQuestionSchema = new Schema<IQuizQuestion>(
     options: [
       {
         text: { type: String, required: true },
+        imageUrl: { type: String },
         isCorrect: { type: Boolean, default: false },
       },
     ],

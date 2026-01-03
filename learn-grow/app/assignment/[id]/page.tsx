@@ -179,7 +179,7 @@ export default function AssignmentDetailsPage({
       <Button
         variant="light"
         startContent={<FaArrowLeft />}
-        onPress={() => router.back()}
+        onPress={() => router.push(`/student/course/${assignment.courseId}/dashboard`)}
         className="mb-6"
       >
         Back to Course

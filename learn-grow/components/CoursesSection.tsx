@@ -167,9 +167,20 @@ const CoursesSection = () => {
                   )}
                 </CardBody>
 
-                <CardFooter className="p-6 pt-0">
+                <CardFooter className="p-6 pt-0 flex items-center justify-between border-t border-gray-100">
+                  {/* Price Display */}
+                  <div className="flex flex-col">
+                    <span className="text-xs text-gray-500 mb-1">
+                      {language === "en" ? "Price" : "মূল্য"}
+                    </span>
+                    <span className="text-2xl font-bold text-primary">
+                      ৳{course.price || 0}
+                    </span>
+                  </div>
+
+                  {/* Enroll Button */}
                   <Button
-                    className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white font-bold shadow-md hover:shadow-lg transition-shadow"
+                    className="bg-gradient-to-r from-primary-500 to-primary-600 text-white font-bold shadow-md hover:shadow-lg transition-shadow"
                     size="lg"
                     onPress={() => {
                       // Check if user is logged in

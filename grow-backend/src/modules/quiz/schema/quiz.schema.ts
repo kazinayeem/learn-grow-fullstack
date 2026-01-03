@@ -8,6 +8,7 @@ export const questionSchema = z.object({
     .array(
       z.object({
         text: z.string().min(1, "Option text required"),
+        imageUrl: z.string().optional(),
         isCorrect: z.boolean(),
       })
     )

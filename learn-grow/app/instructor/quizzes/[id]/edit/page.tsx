@@ -30,7 +30,7 @@ interface Question {
     questionText: string;
     questionImage?: string;
     questionType: "multiple-choice" | "short-answer" | "true-false";
-    options?: { text: string; isCorrect: boolean }[];
+    options?: { text: string; image?: string; isCorrect: boolean }[];
     correctAnswer?: string;
     points: number;
 }
@@ -84,9 +84,12 @@ function EditQuizContent() {
     // Fetch quiz data
     const { data: quizData, isLoading: isLoadingQuiz } = useGetQuizByIdQuery(quizId);
 
-    const { data: coursesResp } = useGetInstructorCoursesQuery(instructorId as string, {
-        skip: !instructorId,
-    });
+    const { data: coursesResp } = useGetInstructorCoursesQuery(
+        { instructorId: instructorId || "", page: 1, limit: 100 },
+        {
+            skip: !instructorId,
+        }
+    );
 
     const courses = Array.isArray(coursesResp?.data) ? coursesResp!.data : [];
 
@@ -113,7 +116,11 @@ function EditQuizContent() {
                     questionText: q.questionText || "",
                     questionImage: q.questionImage || "",
                     questionType: q.questionType || "multiple-choice",
-                    options: q.options || [],
+                    options: (q.options || []).map((opt: any) => ({
+                        text: opt.text || "",
+                        isCorrect: opt.isCorrect || false,
+                        image: opt.image || opt.imageUrl || "",
+                    })),
                     correctAnswer: q.correctAnswer || "",
                     points: q.points || 1,
                 })),
@@ -129,7 +136,7 @@ function EditQuizContent() {
         questionText: "",
         questionImage: "",
         questionType: "multiple-choice",
-        options: [{ text: "", isCorrect: false }, { text: "", isCorrect: false }, { text: "", isCorrect: false }, { text: "", isCorrect: false }],
+        options: [{ text: "", image: "", isCorrect: false }, { text: "", image: "", isCorrect: false }, { text: "", image: "", isCorrect: false }, { text: "", image: "", isCorrect: false }],
         points: 1,
     });
 
@@ -215,7 +222,7 @@ function EditQuizContent() {
             questionText: "",
             questionImage: "",
             questionType: "multiple-choice",
-            options: [{ text: "", isCorrect: false }, { text: "", isCorrect: false }, { text: "", isCorrect: false }, { text: "", isCorrect: false }],
+            options: [{ text: "", image: "", isCorrect: false }, { text: "", image: "", isCorrect: false }, { text: "", image: "", isCorrect: false }, { text: "", image: "", isCorrect: false }],
             points: 1,
         });
         setEditingQuestion(null);
@@ -224,7 +231,15 @@ function EditQuizContent() {
 
     const handleEditQuestion = (question: Question) => {
         setEditingQuestion(question);
-        setCurrentQuestion(question);
+        // Ensure options have image field
+        const questionWithImages = {
+            ...question,
+            options: question.options?.map(opt => ({
+                ...opt,
+                image: opt.image || ""
+            }))
+        };
+        setCurrentQuestion(questionWithImages);
         onOpen();
     };
 
@@ -290,7 +305,11 @@ function EditQuizContent() {
                 questionText: q.questionText,
                 questionImage: q.questionImage,
                 questionType: q.questionType,
-                options: q.questionType === "multiple-choice" ? q.options : undefined,
+                options: q.questionType === "multiple-choice" ? q.options?.map(opt => ({
+                    text: opt.text,
+                    isCorrect: opt.isCorrect,
+                    imageUrl: opt.image || "",
+                })) : undefined,
                 correctAnswer: q.questionType === "multiple-choice" ? undefined : q.correctAnswer,
                 points: q.points,
                 order: idx,
@@ -679,8 +698,8 @@ function EditQuizContent() {
                                             if (!key) return;
                                             if (key === "multiple-choice") {
                                                 const opts = currentQuestion.options && currentQuestion.options.length > 0
-                                                    ? currentQuestion.options
-                                                    : [{ text: "", isCorrect: false }, { text: "", isCorrect: false }, { text: "", isCorrect: false }, { text: "", isCorrect: false }];
+                                                    ? currentQuestion.options.map(opt => ({ ...opt, image: opt.image || "" }))
+                                                    : [{ text: "", image: "", isCorrect: false }, { text: "", image: "", isCorrect: false }, { text: "", image: "", isCorrect: false }, { text: "", image: "", isCorrect: false }];
                                                 setCurrentQuestion({
                                                     ...currentQuestion,
                                                     questionType: "multiple-choice",
@@ -768,37 +787,64 @@ function EditQuizContent() {
                                     {/* Multiple Choice Options */}
                                     {currentQuestion.questionType === "multiple-choice" && (
                                         <div className="space-y-3">
-                                            <label className="text-sm font-semibold">Answer Options</label>
-                                            {currentQuestion.options?.map((option, index) => (
-                                                <div key={index} className="flex gap-2 items-center">
-                                                    <Input
-                                                        label={`Option ${String.fromCharCode(65 + index)}`}
-                                                        placeholder={`Enter option ${String.fromCharCode(65 + index)}`}
-                                                        value={option.text}
-                                                        onChange={(e) => {
-                                                            const newOptions = [...(currentQuestion.options || [])];
-                                                            newOptions[index] = { ...newOptions[index], text: e.target.value };
-                                                            setCurrentQuestion({ ...currentQuestion, options: newOptions });
-                                                        }}
-                                                        className="flex-1"
-                                                        isInvalid={!!fieldErrors[`option_${index}`]}
-                                                        errorMessage={Array.isArray(fieldErrors[`option_${index}`]) ? fieldErrors[`option_${index}`][0] : (fieldErrors[`option_${index}`] as any)}
-                                                    />
-                                                    <label className="flex items-center gap-2 cursor-pointer">
-                                                        <input
-                                                            type="radio"
-                                                            name="correctAnswer"
-                                                            checked={option.isCorrect}
-                                                            onChange={() => {
-                                                                const newOptions = currentQuestion.options?.map((opt, i) => ({
-                                                                    ...opt,
-                                                                    isCorrect: i === index,
-                                                                })) || [];
+                                            <label className="text-sm font-semibold">Answer Options (up to 4 options)</label>
+                                            {currentQuestion.options?.slice(0, 4).map((option, index) => (
+                                                <div key={index} className="border border-gray-300 rounded-lg p-3 space-y-2">
+                                                    <div className="flex gap-2 items-end">
+                                                        <Input
+                                                            label={`Option ${String.fromCharCode(65 + index)} Text`}
+                                                            placeholder={`Enter option ${String.fromCharCode(65 + index)}`}
+                                                            value={option.text}
+                                                            onChange={(e) => {
+                                                                const newOptions = [...(currentQuestion.options || [])];
+                                                                newOptions[index] = { ...newOptions[index], text: e.target.value };
                                                                 setCurrentQuestion({ ...currentQuestion, options: newOptions });
                                                             }}
+                                                            className="flex-1"
+                                                            isInvalid={!!fieldErrors[`option_${index}`]}
+                                                            errorMessage={Array.isArray(fieldErrors[`option_${index}`]) ? fieldErrors[`option_${index}`][0] : (fieldErrors[`option_${index}`] as any)}
                                                         />
-                                                        <span className="text-sm">Correct</span>
-                                                    </label>
+                                                        <label className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded bg-blue-50 border border-blue-200">
+                                                            <input
+                                                                type="radio"
+                                                                name="correctAnswer"
+                                                                checked={option.isCorrect}
+                                                                onChange={() => {
+                                                                    const newOptions = currentQuestion.options?.map((opt, i) => ({
+                                                                        ...opt,
+                                                                        isCorrect: i === index,
+                                                                    })) || [];
+                                                                    setCurrentQuestion({ ...currentQuestion, options: newOptions });
+                                                                }}
+                                                            />
+                                                            <span className="text-sm font-medium">Correct</span>
+                                                        </label>
+                                                    </div>
+                                                    <Input
+                                                        label={`Option ${String.fromCharCode(65 + index)} Image URL (Optional)`}
+                                                        type="url"
+                                                        placeholder="https://example.com/option-image.jpg"
+                                                        value={option.image || ""}
+                                                        onChange={(e) => {
+                                                            const newOptions = [...(currentQuestion.options || [])];
+                                                            newOptions[index] = { ...newOptions[index], image: e.target.value };
+                                                            setCurrentQuestion({ ...currentQuestion, options: newOptions });
+                                                        }}
+                                                        size="sm"
+                                                    />
+                                                    {option.image && (
+                                                        <div className="mt-2">
+                                                            <img
+                                                                src={option.image}
+                                                                alt={`Option ${String.fromCharCode(65 + index)}`}
+                                                                className="max-w-full h-auto rounded border border-gray-200"
+                                                                style={{ maxHeight: "120px" }}
+                                                                onError={(e) => {
+                                                                    (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23f0f0f0' width='100' height='100'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999' font-family='Arial' font-size='10'%3EImage not found%3C/text%3E%3C/svg%3E";
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>

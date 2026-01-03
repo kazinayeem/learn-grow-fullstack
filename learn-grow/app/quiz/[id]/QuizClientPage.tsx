@@ -12,7 +12,7 @@ import {
     Spinner,
 } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
-import { FaClock, FaCheck, FaTimes, FaTrophy } from "react-icons/fa";
+import { FaClock, FaCheck, FaTimes, FaTrophy, FaArrowLeft } from "react-icons/fa";
 import { useGetQuizByIdQuery } from "@/redux/api/quizApi";
 
 interface Question {
@@ -21,7 +21,7 @@ interface Question {
     questionText: string;
     questionImage?: string;
     questionType: "multiple-choice" | "short-answer" | "true-false";
-    options?: { text: string; isCorrect: boolean }[];
+    options?: { text: string; isCorrect: boolean; imageUrl?: string }[];
     correctAnswer?: string;
     points: number;
 }
@@ -182,6 +182,19 @@ export default function TakeQuizPage({ params }: { params: Promise<{ id: string 
 
         return (
             <div className="container mx-auto px-4 py-8 max-w-4xl">
+                {/* Back Button */}
+                {quiz?.courseId && (
+                    <Button
+                        variant="light"
+                        size="sm"
+                        startContent={<FaArrowLeft />}
+                        onPress={() => router.push(`/student/course/${quiz.courseId}/dashboard`)}
+                        className="mb-4 text-gray-600 hover:text-gray-900"
+                    >
+                        Back to Course
+                    </Button>
+                )}
+                
                 {previousAttempt && (
                     <Card className="mb-4 border-2 border-warning">
                         <CardBody className="p-4 bg-warning-50">
@@ -277,20 +290,32 @@ export default function TakeQuizPage({ params }: { params: Promise<{ id: string 
                                                                         return (
                                                                             <div
                                                                                 key={optIndex}
-                                                                                className={`p-2 rounded-lg ${isCorrectAnswer
+                                                                                className={`p-3 rounded-lg ${isCorrectAnswer
                                                                                     ? "bg-green-100 border-2 border-green-500"
                                                                                     : isUserAnswer
                                                                                         ? "bg-red-100 border-2 border-red-500"
                                                                                         : "bg-gray-50"
                                                                                     }`}
                                                                             >
-                                                                                <div className="flex items-center gap-2">
-                                                                                    {isCorrectAnswer && <FaCheck className="text-green-600" />}
-                                                                                    {isUserAnswer && !isCorrectAnswer && <FaTimes className="text-red-600" />}
-                                                                                    <span className="font-semibold">{String.fromCharCode(65 + optIndex)}.</span>
-                                                                                    <span>{option.text}</span>
-                                                                                    {isCorrectAnswer && <Chip size="sm" color="success">Correct</Chip>}
-                                                                                    {isUserAnswer && !isCorrectAnswer && <Chip size="sm" color="danger">Your Answer</Chip>}
+                                                                                <div className="flex flex-col gap-2">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        {isCorrectAnswer && <FaCheck className="text-green-600" />}
+                                                                                        {isUserAnswer && !isCorrectAnswer && <FaTimes className="text-red-600" />}
+                                                                                        <span className="font-semibold">{String.fromCharCode(65 + optIndex)}.</span>
+                                                                                        <span>{option.text}</span>
+                                                                                        {isCorrectAnswer && <Chip size="sm" color="success">Correct</Chip>}
+                                                                                        {isUserAnswer && !isCorrectAnswer && <Chip size="sm" color="danger">Your Answer</Chip>}
+                                                                                    </div>
+                                                                                    {option.imageUrl && (
+                                                                                        <div className="ml-6 mt-2">
+                                                                                            <img
+                                                                                                src={option.imageUrl}
+                                                                                                alt={`Option ${String.fromCharCode(65 + optIndex)}`}
+                                                                                                className="max-w-xs h-auto rounded-lg border-2 border-gray-200"
+                                                                                                style={{ maxHeight: "150px" }}
+                                                                                            />
+                                                                                        </div>
+                                                                                    )}
                                                                                 </div>
                                                                             </div>
                                                                         );
@@ -326,9 +351,16 @@ export default function TakeQuizPage({ params }: { params: Promise<{ id: string 
                             <Button
                                 color="primary"
                                 size="lg"
-                                onPress={() => router.push("/student/my-courses")}
+                                startContent={<FaArrowLeft />}
+                                onPress={() => {
+                                    if (quiz?.courseId) {
+                                        router.push(`/student/course/${quiz.courseId}/dashboard`);
+                                    } else {
+                                        router.push("/student/my-courses");
+                                    }
+                                }}
                             >
-                                Back to My Courses
+                                Back to Course
                             </Button>
                             {!previousAttempt && (
                                 <Button
@@ -353,6 +385,19 @@ export default function TakeQuizPage({ params }: { params: Promise<{ id: string 
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
+            {/* Back Button */}
+            {quiz?.courseId && (
+                <Button
+                    variant="light"
+                    size="sm"
+                    startContent={<FaArrowLeft />}
+                    onPress={() => router.push(`/student/course/${quiz.courseId}/dashboard`)}
+                    className="mb-4 text-gray-600 hover:text-gray-900"
+                >
+                    Back to Course
+                </Button>
+            )}
+
             {/* Header */}
             <Card className="mb-6">
                 <CardBody className="p-6">
@@ -403,12 +448,34 @@ export default function TakeQuizPage({ params }: { params: Promise<{ id: string 
                         <RadioGroup
                             value={answers[currentQuestionIndex]?.toString() || ""}
                             onValueChange={(value) => handleAnswerSelect(currentQuestionIndex, parseInt(value))}
+                            classNames={{
+                                wrapper: "gap-3"
+                            }}
                         >
-                            {currentQuestion.options.map((option: { text: string; isCorrect: boolean }, index: number) => (
-                                <Radio key={index} value={index.toString()} className="mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-semibold">{String.fromCharCode(65 + index)}.</span>
-                                        <span className="text-lg">{option.text}</span>
+                            {currentQuestion.options.map((option: { text: string; isCorrect: boolean; imageUrl?: string }, index: number) => (
+                                <Radio 
+                                    key={index} 
+                                    value={index.toString()} 
+                                    classNames={{
+                                        base: "max-w-full m-0",
+                                        wrapper: "group-data-[selected=true]:border-primary"
+                                    }}
+                                >
+                                    <div className="flex flex-col gap-2 w-full">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-lg">{String.fromCharCode(65 + index)}.</span>
+                                            <span className="text-base">{option.text}</span>
+                                        </div>
+                                        {option.imageUrl && (
+                                            <div className="ml-6 mt-2">
+                                                <img
+                                                    src={option.imageUrl}
+                                                    alt={`Option ${String.fromCharCode(65 + index)}`}
+                                                    className="max-w-xs h-auto rounded-lg border-2 border-gray-200 hover:border-primary transition-colors"
+                                                    style={{ maxHeight: "200px" }}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 </Radio>
                             ))}
