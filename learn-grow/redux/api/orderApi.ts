@@ -135,11 +135,19 @@ export const orderApi = baseApi.injectEndpoints({
             duration: number;
           };
           accessUntil: string;
+          accessType: string;
         }>;
+        pagination: {
+          total: number;
+          page: number;
+          limit: number;
+          totalPages: number;
+        };
+        hasQuarterlyAccess: boolean;
       },
-      void
+      number | void
     >({
-      query: () => "/orders/purchased-courses",
+      query: (page = 1) => `/orders/purchased-courses?page=${page}`,
       providesTags: ["Order"],
     }),
 

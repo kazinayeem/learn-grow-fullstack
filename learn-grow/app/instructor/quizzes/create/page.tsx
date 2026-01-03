@@ -79,17 +79,22 @@ function CreateQuizContent() {
 
     const [createQuiz] = useCreateQuizMutation();
 
-    const { data: coursesResp } = useGetInstructorCoursesQuery(instructorId as string, {
-        skip: !instructorId,
-    });
+    const { data: coursesResp } = useGetInstructorCoursesQuery(
+        instructorId ? { instructorId, page: 1, limit: 100 } : null,
+        {
+            skip: !instructorId,
+        }
+    );
 
     const courses = Array.isArray(coursesResp?.data) ? coursesResp!.data : [];
 
     useEffect(() => {
-        const userStr = localStorage.getItem("user");
-        if (userStr) {
-            const user = JSON.parse(userStr);
-            setInstructorId(user._id || user.id || null);
+        if (typeof window !== 'undefined') {
+            const userStr = localStorage.getItem("user");
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                setInstructorId(user._id || user.id || null);
+            }
         }
     }, []);
 

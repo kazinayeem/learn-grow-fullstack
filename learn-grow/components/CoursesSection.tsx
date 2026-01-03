@@ -3,6 +3,7 @@ import React, { useMemo, useState } from "react";
 import { Card, CardBody, CardFooter, Button, Chip, Spinner, Image } from "@nextui-org/react";
 import { useGetFeaturedCoursesQuery } from "@/redux/api/courseApi";
 import { useRouter } from "next/navigation";
+import DOMPurify from "isomorphic-dompurify";
 
 const CoursesSection = () => {
   const [language] = useState<"en" | "bn">("bn");
@@ -81,16 +82,16 @@ const CoursesSection = () => {
         </div>
 
         {/* Course Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="flex flex-wrap justify-center gap-8">
           {displayCourses.length === 0 ? (
-            <div className="col-span-full text-center text-gray-500">
+            <div className="w-full text-center text-gray-500">
               No courses available at the moment.
             </div>
           ) : (
             displayCourses.map((course: any, index: number) => (
               <Card
                 key={course._id || index}
-                className={`group cursor-pointer transition-all duration-300 hover:-translate-y-2 ${shadows[index % shadows.length]} shadow-card animate-slideUp border-0`}
+                className={`group cursor-pointer transition-all duration-300 hover:-translate-y-2 ${shadows[index % shadows.length]} shadow-card animate-slideUp border-0 w-full max-w-sm lg:max-w-xs`}
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 {/* Course Image Header */}
@@ -126,12 +127,16 @@ const CoursesSection = () => {
                     </p>
                   )}
 
-                  {/* Description */}
-                  <p
+                  {/* Description - Parse HTML with basic tags only (h1, h2, p) */}
+                  <div
                     className={`text-gray-600 text-sm mb-4 line-clamp-3 ${language === "bn" ? "font-siliguri" : ""}`}
-                  >
-                    {course.description}
-                  </p>
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(String(course.description || ""), {
+                        ALLOWED_TAGS: ["h1", "h2", "h3", "p", "br"],
+                        ALLOWED_ATTR: [],
+                      }),
+                    }}
+                  />
 
                   {/* Duration & Age Range */}
                   <div className="flex gap-4 mb-4">

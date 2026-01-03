@@ -1,4 +1,10 @@
 import React from "react";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "Learn Grow privacy policy - how we collect, use, and protect your information.",
+};
 
 async function fetchPolicyHtml() {
     const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";

@@ -232,367 +232,452 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
 
     return (
         <>
-            <div className="container mx-auto px-4 py-6 max-w-7xl">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Left Column: Main Content */}
-                    <div className="lg:col-span-2 space-y-4">
-                        {/* Hero Image */}
-                        <div className="relative w-full h-[250px] md:h-[350px] rounded-xl overflow-hidden shadow-lg">
-                            <img
-                                src={
-                                    course.thumbnail ||
-                                    course.img ||
-                                    "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=1000&auto=format&fit=crop"
-                                }
-                                alt={course.title}
-                                className="object-cover w-full h-full"
-                                onError={(e) => {
-                                    e.currentTarget.src = "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=1000&auto=format&fit=crop";
-                                }}
-                            />
-                        </div>
-
-                        {/* Title & Badges */}
-                        <div>
-                            <div className="flex flex-wrap gap-2 mb-4">
-                                <Chip color="primary" variant="flat">
-                                    {course.level || "Beginner"}
-                                </Chip>
-                                <Chip color="secondary" variant="flat">
-                                    {course.category?.name || "Programming"}
-                                </Chip>
-                                {hasPaid && (
-                                    <Chip color="warning" variant="flat">
-                                        💳 Paid
-                                    </Chip>
-                                )}
-                                {isEnrolled && (
-                                    <Chip color="success" variant="flat">
-                                        ✓ Enrolled
-                                    </Chip>
-                                )}
+            {/* Responsive container with proper padding and max-width */}
+            <div className="w-full bg-default-50 min-h-screen">
+                {/* Top navigation spacing */}
+                <div className="pt-4 sm:pt-6 md:pt-8"></div>
+                
+                <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 max-w-7xl">
+                    {/* Main grid: Responsive column layout */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+                        {/* Left Column: Main Content - Full width on mobile, 2 cols on tablet, 2 cols on desktop */}
+                        <div className="md:col-span-2 space-y-4 sm:space-y-6">
+                            {/* Hero Image - Responsive height and aspect ratio */}
+                            <div className="relative w-full overflow-hidden shadow-md sm:shadow-lg rounded-lg sm:rounded-xl">
+                                {/* Aspect ratio container for responsive image */}
+                                <div className="relative w-full pt-[56.25%]">
+                                    <img
+                                        src={
+                                            course.thumbnail ||
+                                            course.img ||
+                                            "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=1000&auto=format&fit=crop"
+                                        }
+                                        alt={course.title}
+                                        className="absolute inset-0 w-full h-full object-cover"
+                                        onError={(e) => {
+                                            e.currentTarget.src = "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=1000&auto=format&fit=crop";
+                                        }}
+                                    />
+                                </div>
                             </div>
-                            <h1 className="text-2xl md:text-3xl font-bold mb-3">
-                                {course.title}
-                            </h1>
-                        </div>
 
-                        {/* Tabs for different sections */}
-                        <Tabs
-                            selectedKey={selectedTab}
-                            onSelectionChange={(key) => setSelectedTab(key as string)}
-                            size="md"
-                            color="primary"
-                            className="mb-3"
-                        >
-                            <Tab key="overview" title="📖 Overview">
-                                <Card>
-                                    <CardBody>
-                                        <h3 className="text-xl font-semibold mb-3">Description</h3>
-                                        <div
-                                            className="prose max-w-none text-default-600"
-                                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(String(course.description || "")) }}
+                            {/* Title & Badges - Responsive typography */}
+                            <div className="space-y-3 sm:space-y-4">
+                                {/* Badges with responsive wrapping */}
+                                <div className="flex flex-wrap gap-2">
+                                    <Chip 
+                                        color="primary" 
+                                        variant="flat"
+                                        className="text-xs sm:text-sm"
+                                    >
+                                        {course.level || "Beginner"}
+                                    </Chip>
+                                    <Chip 
+                                        color="secondary" 
+                                        variant="flat"
+                                        className="text-xs sm:text-sm"
+                                    >
+                                        {course.category?.name || "Programming"}
+                                    </Chip>
+                                    {hasPaid && (
+                                        <Chip 
+                                            color="warning" 
+                                            variant="flat"
+                                            className="text-xs sm:text-sm"
+                                        >
+                                            💳 Paid
+                                        </Chip>
+                                    )}
+                                    {isEnrolled && (
+                                        <Chip 
+                                            color="success" 
+                                            variant="flat"
+                                            className="text-xs sm:text-sm"
+                                        >
+                                            ✓ Enrolled
+                                        </Chip>
+                                    )}
+                                </div>
+                                
+                                {/* Responsive title with clamp() for fluid typography */}
+                                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight">
+                                    {course.title}
+                                </h1>
+                            </div>
+
+                            {/* Responsive tabs: vertical mobile, horizontal desktop */}
+                            <Tabs
+                                selectedKey={selectedTab}
+                                onSelectionChange={(key) => setSelectedTab(key as string)}
+                                size="md"
+                                color="primary"
+                                variant="light"
+                                className="mb-4 sm:mb-6"
+                                classNames={{
+                                    base: "w-full",
+                                    tabList: "flex flex-col sm:flex-row sm:justify-start gap-0 bg-default-100 rounded-lg sm:rounded-xl p-1 w-full sm:w-auto",
+                                    tab: "w-full sm:w-auto justify-start sm:justify-center px-4 sm:px-6 py-3 sm:py-2 text-sm sm:text-base font-medium",
+                                    cursor: "bg-primary rounded-lg"
+                                }}
+                            >
+                                <Tab 
+                                    key="overview" 
+                                    title={
+                                        <div className="flex items-center gap-2">
+                                            <span>📖</span>
+                                            <span>Overview</span>
+                                        </div>
+                                    }
+                                >
+                                    <Card className="shadow-md mt-4">
+                                        <CardBody className="px-3 sm:px-4 md:px-6 py-4 sm:py-6">
+                                            <h3 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">Description</h3>
+                                            <div
+                                                className="prose prose-sm sm:prose-base max-w-none text-default-600 overflow-x-hidden"
+                                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(String(course.description || "")) }}
+                                            />
+                                        </CardBody>
+                                    </Card>
+                                </Tab>
+
+                                <Tab 
+                                    key="content" 
+                                    title={
+                                        <div className="flex items-center gap-2">
+                                            <span>📚</span>
+                                            <span>Content</span>
+                                        </div>
+                                    }
+                                >
+                                    <div className="mt-4">
+                                        <CourseModules
+                                            courseId={courseId}
+                                            isEnrolled={isEnrolled}
+                                            modulesFromApi={course.modules}
+                                            hasAccess={hasAccess}
+                                            canViewPreview={canViewPreview}
                                         />
-                                    </CardBody>
-                                </Card>
-                            </Tab>
+                                    </div>
+                                </Tab>
 
-                            <Tab key="content" title="📚 Content">
-                                <CourseModules
-                                    courseId={courseId}
-                                    isEnrolled={isEnrolled}
-                                    modulesFromApi={course.modules}
-                                    hasAccess={hasAccess}
-                                    canViewPreview={canViewPreview}
-                                />
-                            </Tab>
-
-                            <Tab key="instructor" title="👨‍🏫 Instructor">
-                                <Card>
-                                    <CardBody className="space-y-6">
-                                        <div className="flex items-start gap-4">
-                                            {course.instructorId?.profileImage ? (
-                                                <img
-                                                    src={course.instructorId.profileImage}
-                                                    alt={course.instructorId.name || "Instructor"}
-                                                    className="w-24 h-24 rounded-full object-cover border-3 border-primary shadow-lg"
-                                                />
-                                            ) : (
-                                                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-4xl shadow-lg">
-                                                    {(course.instructorId?.name || "U")[0]?.toUpperCase()}
-                                                </div>
-                                            )}
-                                            <div className="flex-1">
-                                                <h3 className="text-2xl font-bold mb-2">
-                                                    {course.instructorId?.name || "Unknown Instructor"}
-                                                </h3>
-                                                <p className="text-default-500 mb-4">
-                                                    {course.instructorId?.role || "Instructor"}
-                                                </p>
-                                            </div>
+                                <Tab 
+                                    key="instructor" 
+                                    title={
+                                        <div className="flex items-center gap-2">
+                                            <span>👨‍🏫</span>
+                                            <span>Instructor</span>
                                         </div>
-
-                                        <Divider />
-
-                                        <div className="space-y-4">
-                                            <h4 className="text-lg font-semibold">Contact Information</h4>
-                                            <div className="space-y-3">
-                                                {course.instructorId?.email && (
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                                            <span className="text-xl">📧</span>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-sm text-default-500">Email</p>
-                                                            <p className="font-medium">{course.instructorId.email}</p>
-                                                        </div>
+                                    }
+                                >
+                                    <Card className="shadow-md mt-4">
+                                        <CardBody className="space-y-4 sm:space-y-6 px-3 sm:px-4 md:px-6 py-4 sm:py-6">
+                                            {/* Responsive instructor info */}
+                                            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                                                {course.instructorId?.profileImage ? (
+                                                    <img
+                                                        src={course.instructorId.profileImage}
+                                                        alt={course.instructorId.name || "Instructor"}
+                                                        className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border-3 border-primary shadow-lg flex-shrink-0 mx-auto sm:mx-0"
+                                                    />
+                                                ) : (
+                                                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-3xl sm:text-4xl shadow-lg flex-shrink-0 mx-auto sm:mx-0">
+                                                        {(course.instructorId?.name || "U")[0]?.toUpperCase()}
                                                     </div>
                                                 )}
-                                                {course.instructorId?.phone && (
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center">
-                                                            <span className="text-xl">📱</span>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-sm text-default-500">Phone</p>
-                                                            <p className="font-medium">{course.instructorId.phone}</p>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {course.instructorId?.bio && (
-                                            <>
-                                                <Divider />
-                                                <div className="space-y-3">
-                                                    <h4 className="text-lg font-semibold">About</h4>
-                                                    <p className="text-default-600 leading-relaxed">
-                                                        {course.instructorId.bio}
+                                                <div className="flex-1 text-center sm:text-left">
+                                                    <h3 className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">
+                                                        {course.instructorId?.name || "Unknown Instructor"}
+                                                    </h3>
+                                                    <p className="text-sm sm:text-base text-default-500 mb-2 sm:mb-4">
+                                                        {course.instructorId?.role || "Instructor"}
                                                     </p>
                                                 </div>
-                                            </>
-                                        )}
-
-                                        {course.instructorId?.expertise && course.instructorId.expertise.length > 0 && (
-                                            <>
-                                                <Divider />
-                                                <div className="space-y-3">
-                                                    <h4 className="text-lg font-semibold">Expertise</h4>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {course.instructorId.expertise.map((skill: string, index: number) => (
-                                                            <Chip key={index} color="primary" variant="flat">
-                                                                {skill}
-                                                            </Chip>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </>
-                                        )}
-
-                                        {(course.instructorId?.experience || course.instructorId?.education) && (
-                                            <>
-                                                <Divider />
-                                                <div className="space-y-4">
-                                                    {course.instructorId?.experience && (
-                                                        <div>
-                                                            <h4 className="text-lg font-semibold mb-2">Experience</h4>
-                                                            <p className="text-default-600">{course.instructorId.experience}</p>
-                                                        </div>
-                                                    )}
-                                                    {course.instructorId?.education && (
-                                                        <div>
-                                                            <h4 className="text-lg font-semibold mb-2">Education</h4>
-                                                            <p className="text-default-600">{course.instructorId.education}</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </>
-                                        )}
-                                    </CardBody>
-                                </Card>
-                            </Tab>
-
-                            <Tab key="assessments" title="📚 Assessments">
-                                <UnifiedAssessmentView courseId={courseId} hasAccess={hasAccess} />
-                            </Tab>
-
-                        </Tabs>
-                    </div>
-
-                    {/* Right Column: Enrollment Card */}
-                    <div className="lg:col-span-1">
-                        {/* Certificate Card - Show when course is fully completed (lessons + assessments) */}
-                        {isCourseCompleted && (
-                            <Card className="border-2 border-success bg-gradient-to-br from-success-50 to-success-100 mb-6">
-                                <CardHeader className="flex-col items-start gap-1">
-                                    <div className="flex items-center gap-2">
-                                        <FaTrophy className="text-2xl text-success" />
-                                        <h3 className="font-bold text-lg">Congratulations! 🎉</h3>
-                                    </div>
-                                    <p className="text-sm text-gray-700">
-                                        You've completed all course content!
-                                    </p>
-                                </CardHeader>
-                                <CardBody className="pt-0">
-                                    <Button
-                                        color="success"
-                                        size="lg"
-                                        className="w-full"
-                                        startContent={<FaDownload />}
-                                        onPress={() => {
-                                            const certificateUrl = `/api/certificate/generate?courseId=${courseId}&courseName=${encodeURIComponent(course.title)}`;
-                                            window.open(certificateUrl, '_blank');
-                                        }}
-                                    >
-                                        Download Certificate
-                                    </Button>
-                                </CardBody>
-                            </Card>
-                        )}
-                        <Card className="sticky top-24 p-3 shadow-lg">
-                            <CardBody className="gap-4">
-                                <div className="text-center">
-                                    <p className="text-default-500 text-sm mb-1">Price</p>
-                                    <p className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                                        BDT {course.price}
-                                    </p>
-                                </div>
-
-                                <Divider />
-
-                                {/* Instructor Information */}
-                                <div className="space-y-2">
-                                    <p className="font-semibold text-base">Instructor:</p>
-                                    <div className="flex items-start gap-3">
-                                        {course.instructorId?.profileImage ? (
-                                            <img
-                                                src={course.instructorId.profileImage}
-                                                alt={course.instructorId.name || "Instructor"}
-                                                className="w-16 h-16 rounded-full object-cover border-2 border-primary"
-                                            />
-                                        ) : (
-                                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-2xl flex-shrink-0">
-                                                {(course.instructorId?.name || course.instructorName || "Unknown")[0]?.toUpperCase()}
                                             </div>
-                                        )}
-                                        <div className="flex-1">
-                                            <p className="font-semibold text-lg">
-                                                {course.instructorId?.name || course.instructorName || "Unknown Instructor"}
-                                            </p>
-                                            {course.instructorId?.email && (
-                                                <p className="text-sm text-default-500 flex items-center gap-1">
-                                                    <span>📧</span>
-                                                    {course.instructorId.email}
-                                                </p>
-                                            )}
-                                            {course.instructorId?.phone && (
-                                                <p className="text-sm text-default-500 flex items-center gap-1">
-                                                    <span>📱</span>
-                                                    {course.instructorId.phone}
-                                                </p>
-                                            )}
+
+                                            <Divider className="my-2" />
+
+                                            {/* Contact Information */}
+                                            <div className="space-y-3 sm:space-y-4">
+                                                <h4 className="text-base sm:text-lg font-semibold">Contact Information</h4>
+                                                <div className="space-y-2 sm:space-y-3">
+                                                    {course.instructorId?.email && (
+                                                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                                                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                                                <span className="text-lg">📧</span>
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="text-xs sm:text-sm text-default-500">Email</p>
+                                                                <p className="font-medium text-sm sm:text-base break-all">{course.instructorId.email}</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {course.instructorId?.phone && (
+                                                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                                                            <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
+                                                                <span className="text-lg">📱</span>
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="text-xs sm:text-sm text-default-500">Phone</p>
+                                                                <p className="font-medium text-sm sm:text-base">{course.instructorId.phone}</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
                                             {course.instructorId?.bio && (
-                                                <p className="text-sm text-default-600 mt-2 line-clamp-3">
-                                                    {course.instructorId.bio}
-                                                </p>
+                                                <>
+                                                    <Divider className="my-2" />
+                                                    <div className="space-y-2 sm:space-y-3">
+                                                        <h4 className="text-base sm:text-lg font-semibold">About</h4>
+                                                        <p className="text-sm sm:text-base text-default-600 leading-relaxed">
+                                                            {course.instructorId.bio}
+                                                        </p>
+                                                    </div>
+                                                </>
                                             )}
+
+                                            {course.instructorId?.expertise && course.instructorId.expertise.length > 0 && (
+                                                <>
+                                                    <Divider className="my-2" />
+                                                    <div className="space-y-2 sm:space-y-3">
+                                                        <h4 className="text-base sm:text-lg font-semibold">Expertise</h4>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {course.instructorId.expertise.map((skill: string, index: number) => (
+                                                                <Chip 
+                                                                    key={index} 
+                                                                    color="primary" 
+                                                                    variant="flat"
+                                                                    className="text-xs sm:text-sm"
+                                                                >
+                                                                    {skill}
+                                                                </Chip>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {(course.instructorId?.experience || course.instructorId?.education) && (
+                                                <>
+                                                    <Divider className="my-2" />
+                                                    <div className="space-y-3 sm:space-y-4">
+                                                        {course.instructorId?.experience && (
+                                                            <div>
+                                                                <h4 className="text-base sm:text-lg font-semibold mb-2">Experience</h4>
+                                                                <p className="text-sm sm:text-base text-default-600">{course.instructorId.experience}</p>
+                                                            </div>
+                                                        )}
+                                                        {course.instructorId?.education && (
+                                                            <div>
+                                                                <h4 className="text-base sm:text-lg font-semibold mb-2">Education</h4>
+                                                                <p className="text-sm sm:text-base text-default-600">{course.instructorId.education}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </CardBody>
+                                    </Card>
+                                </Tab>
+
+                                <Tab 
+                                    key="assessments" 
+                                    title={
+                                        <div className="flex items-center gap-2">
+                                            <span>📝</span>
+                                            <span>Assessments</span>
                                         </div>
+                                    }
+                                >
+                                    <div className="mt-4">
+                                        <UnifiedAssessmentView courseId={courseId} hasAccess={hasAccess} />
                                     </div>
-                                </div>
+                                </Tab>
+                            </Tabs>
+                        </div>
 
-                                <Divider />
-
-                                <div className="space-y-2">
-                                    <p className="font-semibold text-base mb-2">
-                                        Course Features:
-                                    </p>
-                                    <ul className="space-y-2">
-                                        <li className="flex items-center gap-2 text-default-600">
-                                            <span className="text-success">✓</span>
-                                            Full lifetime access
-                                        </li>
-                                        <li className="flex items-center gap-2 text-default-600">
-                                            <span className="text-success">✓</span>
-                                            Certificate of completion
-                                        </li>
-                                        <li className="flex items-center gap-2 text-default-600">
-                                            <span className="text-success">✓</span>
-                                            Access on mobile and TV
-                                        </li>
-                                        <li className="flex items-center gap-2 text-default-600">
-                                            <span className="text-success">✓</span>
-                                            Assignments & Quizzes
-                                        </li>
-                                        <li className="flex items-center gap-2 text-default-600">
-                                            <span className="text-success">✓</span>
-                                            Live class sessions
-                                        </li>
-                                    </ul>
-                                </div>
-
-                                <Divider />
-
-                                {/* Registration gating logic */}
-                                {hasAccess ? (
-                                    <Button
-                                        color="success"
-                                        size="md"
-                                        className="w-full font-semibold"
-                                        variant="shadow"
-                                        onPress={() => router.push(`/student/course/${courseId}/dashboard`)}
-                                        startContent={<span>🎓</span>}
-                                    >
-                                        Start Learning
-                                    </Button>
-                                ) : isFree ? (
-                                    <>
-                                        <div className="bg-success-50 border border-success-200 rounded-lg p-3 mb-4">
-                                            <p className="text-success-700 text-sm text-center font-semibold">
-                                                ✨ This is a FREE course!
-                                            </p>
+                        {/* Right Column: Enrollment Card - Sticky on desktop, normal on mobile */}
+                        <div className="lg:col-span-1 flex flex-col gap-4 sm:gap-6">
+                            {/* Certificate Card - Show when course is fully completed */}
+                            {isCourseCompleted && (
+                                <Card className="border-2 border-success bg-gradient-to-br from-success-50 to-success-100 shadow-md">
+                                    <CardHeader className="flex-col items-start gap-2 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+                                        <div className="flex items-center gap-2 w-full flex-wrap">
+                                            <FaTrophy className="text-xl sm:text-2xl text-success flex-shrink-0" />
+                                            <h3 className="font-bold text-base sm:text-lg">Congratulations! 🎉</h3>
                                         </div>
+                                        <p className="text-xs sm:text-sm text-gray-700">
+                                            You've completed all course content!
+                                        </p>
+                                    </CardHeader>
+                                    <CardBody className="pt-0 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
                                         <Button
                                             color="success"
-                                            size="md"
-                                            className="w-full font-semibold"
-                                            variant="shadow"
-                                            onPress={handleEnrollClick}
-                                            isDisabled={!isEnrollmentOpen(course)}
+                                            size="lg"
+                                            className="w-full text-sm sm:text-base"
+                                            startContent={<FaDownload />}
+                                            onPress={() => {
+                                                const certificateUrl = `/api/certificate/generate?courseId=${courseId}&courseName=${encodeURIComponent(course.title)}`;
+                                                window.open(certificateUrl, '_blank');
+                                            }}
                                         >
-                                            {isEnrollmentOpen(course) ? "🎓 Enroll Now" : "Enrollment Closed"}
+                                            Download Certificate
                                         </Button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <RegistrationInfo course={course} />
-                                        <Button
-                                            color="primary"
-                                            size="md"
-                                            className="w-full font-semibold"
-                                            variant="shadow"
-                                            onPress={handleEnrollClick}
-                                            isDisabled={!isEnrollmentOpen(course)}
-                                        >
-                                            {isEnrollmentOpen(course) ? "💳 Buy Now" : "Enrollment Closed"}
-                                        </Button>
-                                    </>
-                                )}
+                                    </CardBody>
+                                </Card>
+                            )}
+                            
+                            {/* Main enrollment card - Sticky on large screens, fixed position on mobile */}
+                            <Card className="lg:sticky lg:top-24 shadow-md sm:shadow-lg p-3 sm:p-4 md:p-6">
+                                <CardBody className="gap-3 sm:gap-4 md:gap-6">
+                                    {/* Price section */}
+                                    <div className="text-center">
+                                        <p className="text-default-500 text-xs sm:text-sm mb-1">Price</p>
+                                        <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                                            BDT {course.price}
+                                        </p>
+                                    </div>
 
-                                <Button
-                                    variant="bordered"
-                                    className="w-full"
-                                    onPress={() => router.back()}
-                                >
-                                    ← Back to Courses
-                                </Button>
-                            </CardBody>
-                        </Card>
+                                    <Divider className="my-2" />
+
+                                    {/* Instructor Information - Responsive layout */}
+                                    <div className="space-y-2 sm:space-y-3">
+                                        <p className="font-semibold text-sm sm:text-base">Instructor:</p>
+                                        <div className="flex flex-col sm:flex-row sm:gap-3 gap-2">
+                                            <div className="flex justify-center sm:justify-start">
+                                                {course.instructorId?.profileImage ? (
+                                                    <img
+                                                        src={course.instructorId.profileImage}
+                                                        alt={course.instructorId.name || "Instructor"}
+                                                        className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-primary flex-shrink-0"
+                                                    />
+                                                ) : (
+                                                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-lg sm:text-2xl flex-shrink-0">
+                                                        {(course.instructorId?.name || course.instructorName || "Unknown")[0]?.toUpperCase()}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 text-center sm:text-left min-w-0">
+                                                <p className="font-semibold text-sm sm:text-base truncate">
+                                                    {course.instructorId?.name || course.instructorName || "Unknown Instructor"}
+                                                </p>
+                                                {course.instructorId?.email && (
+                                                    <p className="text-xs sm:text-sm text-default-500 flex items-center gap-1 justify-center sm:justify-start truncate">
+                                                        <span>📧</span>
+                                                        <span className="truncate">{course.instructorId.email}</span>
+                                                    </p>
+                                                )}
+                                                {course.instructorId?.phone && (
+                                                    <p className="text-xs sm:text-sm text-default-500 flex items-center gap-1 justify-center sm:justify-start">
+                                                        <span>📱</span>
+                                                        {course.instructorId.phone}
+                                                    </p>
+                                                )}
+                                                {course.instructorId?.bio && (
+                                                    <p className="text-xs sm:text-sm text-default-600 mt-1 sm:mt-2 line-clamp-2">
+                                                        {course.instructorId.bio}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <Divider className="my-2" />
+
+                                    {/* Course Features - Responsive grid */}
+                                    <div className="space-y-2 sm:space-y-3">
+                                        <p className="font-semibold text-sm sm:text-base mb-2 sm:mb-3">
+                                            Course Features:
+                                        </p>
+                                        <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
+                                            <li className="flex items-center gap-2 text-default-600">
+                                                <span className="text-success font-bold flex-shrink-0">✓</span>
+                                                <span className="leading-snug">Full lifetime access</span>
+                                            </li>
+                                            <li className="flex items-center gap-2 text-default-600">
+                                                <span className="text-success font-bold flex-shrink-0">✓</span>
+                                                <span className="leading-snug">Certificate of completion</span>
+                                            </li>
+                                            <li className="flex items-center gap-2 text-default-600">
+                                                <span className="text-success font-bold flex-shrink-0">✓</span>
+                                                <span className="leading-snug">Access on mobile and TV</span>
+                                            </li>
+                                            <li className="flex items-center gap-2 text-default-600">
+                                                <span className="text-success font-bold flex-shrink-0">✓</span>
+                                                <span className="leading-snug">Assignments & Quizzes</span>
+                                            </li>
+                                            <li className="flex items-center gap-2 text-default-600">
+                                                <span className="text-success font-bold flex-shrink-0">✓</span>
+                                                <span className="leading-snug">Live class sessions</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    <Divider className="my-2" />
+
+                                    {/* Action Buttons - Full width and responsive */}
+                                    <div className="flex flex-col gap-2 sm:gap-3">
+                                        {/* Registration gating logic */}
+                                        {hasAccess ? (
+                                            <Button
+                                                color="success"
+                                                size="md"
+                                                className="w-full font-semibold text-sm sm:text-base"
+                                                variant="shadow"
+                                                onPress={() => router.push(`/student/course/${courseId}/dashboard`)}
+                                                startContent={<span>🎓</span>}
+                                            >
+                                                Start Learning
+                                            </Button>
+                                        ) : isFree ? (
+                                            <>
+                                                <div className="bg-success-50 border border-success-200 rounded-lg p-2 sm:p-3">
+                                                    <p className="text-success-700 text-xs sm:text-sm text-center font-semibold">
+                                                        ✨ This is a FREE course!
+                                                    </p>
+                                                </div>
+                                                <Button
+                                                    color="success"
+                                                    size="md"
+                                                    className="w-full font-semibold text-sm sm:text-base"
+                                                    variant="shadow"
+                                                    onPress={handleEnrollClick}
+                                                    isDisabled={!isEnrollmentOpen(course)}
+                                                >
+                                                    {isEnrollmentOpen(course) ? "🎓 Enroll Now" : "Enrollment Closed"}
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <RegistrationInfo course={course} />
+                                                <Button
+                                                    color="primary"
+                                                    size="md"
+                                                    className="w-full font-semibold text-sm sm:text-base"
+                                                    variant="shadow"
+                                                    onPress={handleEnrollClick}
+                                                    isDisabled={!isEnrollmentOpen(course)}
+                                                >
+                                                    {isEnrollmentOpen(course) ? "💳 Buy Now" : "Enrollment Closed"}
+                                                </Button>
+                                            </>
+                                        )}
+
+                                        <Button
+                                            variant="bordered"
+                                            className="w-full text-sm sm:text-base"
+                                            onPress={() => router.back()}
+                                        >
+                                            ← Back to Courses
+                                        </Button>
+                                    </div>
+                                </CardBody>
+                            </Card>
+                        </div>
                     </div>
                 </div>
             </div>
-
-
         </>
     );
 }

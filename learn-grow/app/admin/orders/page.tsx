@@ -80,6 +80,7 @@ export default function OrdersAdminPage() {
   
   // Get user role
   const [userRole, setUserRole] = React.useState<string>("");
+  const [autoRefreshInterval, setAutoRefreshInterval] = React.useState<number>(0); // 0 = disabled, value in seconds
   
   React.useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -103,6 +104,17 @@ export default function OrdersAdminPage() {
   });
   const [approveOrderMutation, { isLoading: approving }] = useApproveOrderMutation();
   const [rejectOrderMutation, { isLoading: rejecting }] = useRejectOrderMutation();
+
+  // Auto-refresh effect
+  React.useEffect(() => {
+    if (autoRefreshInterval <= 0) return;
+
+    const interval = setInterval(() => {
+      refetch();
+    }, autoRefreshInterval * 1000);
+
+    return () => clearInterval(interval);
+  }, [autoRefreshInterval, refetch]);
 
   const orders = data?.orders || [];
   const pagination = data?.pagination;
@@ -239,8 +251,8 @@ export default function OrdersAdminPage() {
         <p className="text-gray-600">পেন্ডিং অর্ডার অনুমোদন করুন এবং পরিচালনা করুন</p>
       </div>
 
-      {/* Filters */}
-      <div className="mb-6 flex gap-4 flex-wrap">
+      {/* Filters & Auto-Refresh */}
+      <div className="mb-6 flex gap-4 flex-wrap items-end">
         <Select
           label="স্ট্যাটাস ফিল্টার"
           selectedKeys={[filterStatus]}
@@ -261,6 +273,29 @@ export default function OrdersAdminPage() {
           onValueChange={setSearchTerm}
           className="max-w-md"
         />
+
+        <Select
+          label="অটো রিফ্রেশ | Auto Refresh"
+          selectedKeys={[String(autoRefreshInterval)]}
+          onSelectionChange={(keys) => {
+            setAutoRefreshInterval(Number(Array.from(keys)[0]));
+          }}
+          className="max-w-xs"
+        >
+          <SelectItem key="0">বন্ধ | Disabled</SelectItem>
+          <SelectItem key="5">৫ সেকেন্ড | 5 seconds</SelectItem>
+          <SelectItem key="10">১০ সেকেন্ড | 10 seconds</SelectItem>
+          <SelectItem key="30">৩০ সেকেন্ড | 30 seconds</SelectItem>
+          <SelectItem key="60">১ মিনিট | 1 minute</SelectItem>
+        </Select>
+
+        <Button 
+          color="primary"
+          onPress={() => refetch()}
+          isLoading={isLoading}
+        >
+          🔄 রিফ্রেশ | Refresh
+        </Button>
       </div>
 
       {/* Stats */}

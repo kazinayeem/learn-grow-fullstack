@@ -922,14 +922,18 @@ export const getUserProfile = async (userId: string): Promise<AuthResponse> => {
         guardianInfo = studentProfile.guardianId;
       }
     } else if (user.role === "guardian") {
-      // Get guardian's student (1:1 relationship)
-      const guardianProfile = await GuardianProfile.findOne({ userId }).populate({
-        path: "studentId",
-        select: "name email phone role isVerified createdAt",
-      });
+      // Get guardian's student from GuardianProfile (authoritative source)
+      // A guardian may have multiple students, but typically uses the first
+      const guardianProfiles = await GuardianProfile.find({ userId })
+        .populate({
+          path: "studentId",
+          select: "name email phone role isVerified createdAt",
+        })
+        .lean();
 
-      if (guardianProfile?.studentId) {
-        studentInfo = guardianProfile.studentId;
+      if (guardianProfiles && guardianProfiles.length > 0) {
+        // Return first student (most common case)
+        studentInfo = guardianProfiles[0].studentId;
       }
     }
 

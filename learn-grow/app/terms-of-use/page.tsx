@@ -1,4 +1,10 @@
 import React from "react";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description: "Terms and conditions for using Learn Grow platform and services.",
+};
 
 async function fetchTermsHtml() {
     const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";

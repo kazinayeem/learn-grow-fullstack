@@ -144,16 +144,25 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
     }
 
     return (
-        <div className="space-y-4">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold">Course Content</h2>
-                <div className="text-sm text-default-500">
-                    {modules.length} Module{modules.length > 1 ? "s" : ""} •{" "}
-                    {modules.reduce((acc, m) => acc + m.lectures.length, 0)} Lessons
+        <div className="w-full space-y-3 sm:space-y-4 md:space-y-6">
+            {/* Header section - Responsive layout */}
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-4 mb-3 sm:mb-4 md:mb-6">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold">Course Content</h2>
+                <div className="text-xs sm:text-sm text-default-500 flex gap-2 sm:gap-4 flex-wrap">
+                    <span className="whitespace-nowrap">{modules.length} Module{modules.length > 1 ? "s" : ""}</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="whitespace-nowrap">
+                        {modules.reduce((acc, m) => acc + m.lectures.length, 0)} Lessons
+                    </span>
                 </div>
             </div>
 
-            <Accordion variant="splitted" defaultExpandedKeys={["0"]}>
+            {/* Accordion for modules - Responsive */}
+            <Accordion 
+                variant="splitted" 
+                defaultExpandedKeys={["0"]}
+                className="gap-2 sm:gap-3"
+            >
                 {modules.map((module, idx) => {
                     const totalDuration = module.lectures.reduce((acc, l) => acc + (l.duration || 0), 0);
                     const completedCount = module.lectures.filter(l => l.isCompleted).length;
@@ -165,21 +174,22 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                         <AccordionItem
                             key={idx.toString()}
                             aria-label={module.title}
+                            className="text-xs sm:text-sm md:text-base"
                             title={
-                                <div className="flex justify-between items-center w-full pr-4">
-                                    <div className="flex-1">
-                                        <h3 className="font-semibold text-lg">{module.title}</h3>
-                                        <p className="text-sm text-default-500">{module.description}</p>
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full gap-2 sm:gap-3 sm:pr-4">
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-semibold text-sm sm:text-base md:text-lg line-clamp-2">{module.title}</h3>
+                                        <p className="text-xs sm:text-sm text-default-500 line-clamp-1 mt-0.5 sm:mt-1">{module.description}</p>
                                     </div>
-                                    <div className="flex items-center gap-4">
-                                        <Chip size="sm" variant="flat">
-                                            {module.lectures.length} Lessons
+                                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap flex-shrink-0">
+                                        <Chip size="sm" variant="flat" className="text-xs sm:text-sm">
+                                            {module.lectures.length}L
                                         </Chip>
-                                        <Chip size="sm" variant="flat">
+                                        <Chip size="sm" variant="flat" className="text-xs sm:text-sm">
                                             {formatDuration(totalDuration)}
                                         </Chip>
                                         {hasAccess && (
-                                            <Chip color="success" size="sm" variant="flat">
+                                            <Chip color="success" size="sm" variant="flat" className="text-xs sm:text-sm">
                                                 {moduleProgress}%
                                             </Chip>
                                         )}
@@ -187,65 +197,68 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                 </div>
                             }
                         >
-                            <div className="space-y-3 pb-4">
-                                {hasAccess && <Progress value={moduleProgress} color="success" size="sm" className="mb-2" />}
+                            <div className="space-y-2 sm:space-y-3 pb-3 sm:pb-4 px-2 sm:px-0">
+                                {hasAccess && <Progress value={moduleProgress} color="success" size="sm" className="mb-2 sm:mb-3" />}
 
                                 {module.lectures.map((lesson) => {
                                     // Logic for display
-                                    // If user can preview (free course or has access), show free preview + full content if has access
-                                    // If cannot preview and not free preview, show locked
                                     const isRealLocked = canViewPreview ? !!lesson.isLocked : (!lesson.isFreePreview);
                                     const lockReason = canViewPreview ? lesson.lockReason : "Enroll to access this lesson";
                                     const isCompleted = !!lesson.isCompleted;
 
                                     return (
-                                        <Tooltip key={lesson.id} content={isRealLocked ? lockReason : "Click to view"} isDisabled={!isRealLocked} placement="top">
+                                        <Tooltip 
+                                            key={lesson.id} 
+                                            content={isRealLocked ? lockReason : "Click to view"} 
+                                            isDisabled={!isRealLocked} 
+                                            placement="top"
+                                        >
                                             <div
-                                                className={`flex items-center gap-4 p-4 rounded-lg border transition-all ${isRealLocked
+                                                className={`flex items-start sm:items-center gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 rounded-lg border transition-all text-xs sm:text-sm md:text-base ${isRealLocked
                                                     ? "bg-gray-50 border-gray-200 opacity-70 cursor-not-allowed"
                                                     : "bg-white border-gray-200 hover:border-primary hover:shadow-md cursor-pointer"
                                                     } ${isCompleted ? "bg-green-50 border-green-200" : ""}`}
                                                 onClick={() => !isRealLocked && handleLessonClick(lesson as any)}
                                             >
-                                                {/* Status Icon */}
-                                                <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${isRealLocked
+                                                {/* Status Icon - Smaller on mobile */}
+                                                <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg sm:text-xl ${isRealLocked
                                                     ? "bg-gray-200"
                                                     : isCompleted
                                                         ? "bg-success-100"
                                                         : "bg-primary-100"
                                                     }`}>
                                                     {isRealLocked ? (
-                                                        <FaLock className="text-gray-500" />
+                                                        <FaLock className="text-gray-500 text-sm sm:text-base" />
                                                     ) : isCompleted ? (
-                                                        <FaCheckCircle className="text-success" />
+                                                        <FaCheckCircle className="text-success text-sm sm:text-base" />
                                                     ) : (
-                                                        getLessonIcon(lesson.type || "article")
+                                                        <span className="text-sm sm:text-base">{getLessonIcon(lesson.type || "article")}</span>
                                                     )}
                                                 </div>
 
-                                                {/* Lesson Content */}
+                                                {/* Lesson Content - Responsive layout */}
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <h4 className={`font-semibold text-base ${isRealLocked ? "text-gray-500" : "text-gray-900"}`}>
+                                                    <div className="flex items-center gap-1 sm:gap-2 mb-0.5 sm:mb-1 flex-wrap">
+                                                        <h4 className={`font-semibold line-clamp-2 sm:line-clamp-1 text-xs sm:text-sm md:text-base ${isRealLocked ? "text-gray-500" : "text-gray-900"}`}>
                                                             {lesson.title}
                                                         </h4>
                                                         {lesson.isFreePreview && (
-                                                            <Chip size="sm" color="primary" variant="flat">
+                                                            <Chip size="sm" color="primary" variant="flat" className="text-xs">
                                                                 Preview
                                                             </Chip>
                                                         )}
                                                     </div>
 
                                                     {lesson.description && (
-                                                        <p className="text-sm text-gray-600 mb-2 line-clamp-1">
+                                                        <p className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2 line-clamp-1">
                                                             {lesson.description}
                                                         </p>
                                                     )}
 
-                                                    <div className="flex items-center gap-3 text-xs">
+                                                    <div className="flex items-center gap-2 sm:gap-3 text-xs">
                                                         <span className={`flex items-center gap-1 ${isRealLocked ? "text-gray-400" : "text-gray-500"}`}>
-                                                            <FaClock />
-                                                            {formatDuration(lesson.duration)}
+                                                            <FaClock className="flex-shrink-0" />
+                                                            <span className="whitespace-nowrap">{formatDuration(lesson.duration)}</span>
                                                         </span>
 
                                                         <Chip

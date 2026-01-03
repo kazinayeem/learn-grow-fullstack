@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import RequireAuth from "@/components/Auth/RequireAuth";
 import { getProfile } from "@/lib/auth";
+import Cookies from "js-cookie";
 import {
     Card,
     CardBody,
@@ -27,6 +28,7 @@ import {
     Tabs,
     Tab,
     Avatar,
+    Pagination,
 } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
@@ -91,12 +93,26 @@ function GuardianDashboardContent() {
     const [student, setStudent] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+    const [allEnrollments, setAllEnrollments] = useState<Enrollment[]>([]);
+    const [hasQuarterlyAccess, setHasQuarterlyAccess] = useState(false);
     const [payments, setPayments] = useState<Payment[]>([]);
     const [reports, setReports] = useState<Report[]>([]);
     const [activeTab, setActiveTab] = useState("overview");
     const [uploading, setUploading] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const coursesPerPage = 9;
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [selectedItem, setSelectedItem] = useState<any>(null);
+
+    // Pagination logic
+    const totalPages = Math.ceil(allEnrollments.length / coursesPerPage);
+    
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+        const startIndex = (page - 1) * coursesPerPage;
+        const endIndex = startIndex + coursesPerPage;
+        setEnrollments(allEnrollments.slice(startIndex, endIndex));
+    };
 
     useEffect(() => {
         loadGuardianProfile();
@@ -140,7 +156,7 @@ function GuardianDashboardContent() {
 
     const loadStudentData = async (studentId?: string) => {
         try {
-            const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') || '' : '';
+            const token = Cookies.get('accessToken') || (typeof window !== 'undefined' ? localStorage.getItem('token') : '') || '';
             
             console.log("[Guardian] ========== loadStudentData START ==========");
             console.log("[Guardian] Received studentId parameter:", studentId);
@@ -167,10 +183,12 @@ function GuardianDashboardContent() {
                 if (result.success && result.data) {
                     // Set payments from orders
                     setPayments(result.data.orders || []);
+                    setHasQuarterlyAccess(result.data.hasQuarterlyAccess || false);
                     
                     console.log("[Guardian] API Response:", result);
                     console.log("[Guardian] Guardian student ID:", result.data.student?._id);
                     console.log("[Guardian] Enrollments received:", result.data.enrollments?.length, "courses");
+                    console.log("[Guardian] Has quarterly access:", result.data.hasQuarterlyAccess);
                     
                     // Transform enrollments to include course data
                     const enrollmentData = (result.data.enrollments || []).map((enrollment: any) => {
@@ -191,10 +209,12 @@ function GuardianDashboardContent() {
                             enrolledAt: enrollment.createdAt,
                             completedLessons: completedLessonsCount,
                             totalLessons: totalLessonsInCourse,
+                            accessType: enrollment.accessType || "enrollment",
                         };
                     });
                     
-                    setEnrollments(enrollmentData);
+                    setAllEnrollments(enrollmentData);
+                    setEnrollments(enrollmentData.slice(0, coursesPerPage));
                 }
             } else {
                 console.error('Failed to fetch student data:', response.status);
@@ -264,9 +284,9 @@ function GuardianDashboardContent() {
     };
 
     const studentStats = student ? {
-        courses: enrollments.length,
-        progress: enrollments.length > 0 
-            ? Math.round(enrollments.reduce((sum, e) => sum + (e.progress || 0), 0) / enrollments.length)
+        courses: allEnrollments.length,
+        progress: allEnrollments.length > 0 
+            ? Math.round(allEnrollments.reduce((sum, e) => sum + (e.progress || 0), 0) / allEnrollments.length)
             : 0,
         completedLessons: enrollments.reduce((sum, e) => sum + (e.completedLessons || 0), 0),
         totalPayments: payments.length,
@@ -502,6 +522,26 @@ function GuardianDashboardContent() {
                                                                 ))}
                                                             </TableBody>
                                                         </Table>
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Pagination */}
+                                                {hasQuarterlyAccess && totalPages > 1 && (
+                                                    <div className="px-4 py-4 flex flex-col items-center gap-4">
+                                                        <Chip color="success" variant="flat" size="sm">
+                                                            Premium All-Access: {allEnrollments.length} Courses
+                                                        </Chip>
+                                                        <Pagination
+                                                            total={totalPages}
+                                                            page={currentPage}
+                                                            onChange={handlePageChange}
+                                                            showControls
+                                                            color="primary"
+                                                            size="lg"
+                                                        />
+                                                        <p className="text-xs text-gray-500">
+                                                            Showing {((currentPage - 1) * coursesPerPage) + 1} - {Math.min(currentPage * coursesPerPage, allEnrollments.length)} of {allEnrollments.length} courses
+                                                        </p>
                                                     </div>
                                                 )}
                                             </CardBody>

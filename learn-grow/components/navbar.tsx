@@ -145,8 +145,8 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
     console.log("🚪 Navbar: Updated local state");
 
     // Single redirect using router.replace (NO window.location.href)
-    console.log("🚪 Navbar: Redirecting to /login");
-    router.replace("/login");
+    console.log("🚪 Navbar: Redirecting to home page");
+    router.replace("/");
   };
 
 
@@ -191,36 +191,38 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
   // ... (previous imports remain, no change needed)
 
   return (
-    <div className="flex gap-3 items-center">
+    <div className="flex gap-2 sm:gap-3 items-center">
       <Button
         as={Link}
         className={clsx(
-          "text-sm font-bold border-2 px-6 bg-transparent",
+          "text-sm font-bold px-4 sm:px-6 py-2 border-2 transition-all duration-300",
           isScrolled
-            ? "text-white border-white/40 hover:bg-white/10"
-            : "text-[#121064] border-[#121064]/40 hover:bg-[#121064]/5"
+            ? "text-blue-600 border-blue-600/40 bg-white hover:bg-blue-50 hover:border-blue-600"
+            : "text-white border-white/60 bg-transparent hover:bg-white/20 hover:border-white"
         )}
         href="/login"
         size="md"
         variant="bordered"
-        radius="full"
+        radius="lg"
+        startContent={<span className="text-base sm:text-lg">👤</span>}
       >
-        লগইন
+        <span className="hidden sm:inline">লগইন</span>
       </Button>
       <Button
         as={Link}
         className={clsx(
-          "text-sm font-bold px-6",
+          "text-sm font-bold px-4 sm:px-6 py-2 transition-all duration-300 shadow-lg",
           isScrolled
-            ? "text-[#121064] bg-white hover:bg-white/90"
-            : "text-white bg-[#121064] hover:bg-[#121064]/90"
+            ? "text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl"
+            : "text-blue-900 bg-white hover:bg-gray-50 hover:shadow-xl"
         )}
         href="/register"
         size="md"
         variant="solid"
-        radius="full"
+        radius="lg"
+        startContent={<span className="text-base sm:text-lg">✨</span>}
       >
-        রেজিস্ট্রেশন
+        <span className="hidden sm:inline">রেজিস্ট্রেশন</span>
       </Button>
     </div>
   );
@@ -269,53 +271,78 @@ export const Navbar = () => {
       isBlurred={false}
       classNames={{
         base: clsx(
-          "py-3 transition-all duration-300",
+          "py-2 transition-all duration-500",
           isScrolled
-            ? "bg-[#121064]/95 backdrop-blur-xl border-b border-white/20 shadow-lg"
-            : "bg-transparent"
+            ? "bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-lg"
+            : "bg-gradient-to-r from-blue-900/40 via-teal-800/40 to-amber-900/40 backdrop-blur-md"
         ),
-        wrapper: "bg-transparent",
+        wrapper: "px-4 sm:px-6 lg:px-8",
       }}
       height="70px"
-      maxWidth="xl"
+      maxWidth="full"
       position="sticky"
       isMenuOpen={isMenuOpen}
       onMenuOpenChange={setIsMenuOpen}
     >
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
         <NavbarBrand as="li" className="gap-2 sm:gap-3 max-w-fit">
-          <NextLink className="flex justify-start items-center gap-2 sm:gap-3" href="/">
-            <Image
-              priority
-              alt="Learn & Grow Logo"
-              className="w-8 h-8 sm:w-11 sm:h-11 object-contain"
-              src={Logo}
-              width={44}
-              height={44}
-            />
-            <p
-              className={clsx(
-                "font-bold text-base sm:text-lg tracking-wide",
-                isScrolled ? "text-white" : "text-[#121064]"
-              )}
-            >
-              {siteConfig.name}
-            </p>
+          <NextLink className="flex justify-start items-center gap-2 sm:gap-3 group" href="/">
+            <div className="relative flex-shrink-0">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl blur-lg opacity-60 group-hover:opacity-90 transition-opacity duration-300"></div>
+              <Image
+                priority
+                alt="Learn & Grow Logo"
+                className="relative w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 object-contain rounded-xl transform group-hover:scale-105 transition-transform duration-300"
+                src={Logo}
+                width={64}
+                height={64}
+              />
+            </div>
+            <div className="hidden sm:flex flex-col min-w-0">
+              <p
+                className={clsx(
+                  "font-extrabold text-lg sm:text-xl lg:text-2xl tracking-tight whitespace-nowrap",
+                  isScrolled 
+                    ? "bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"
+                    : "text-white drop-shadow-lg"
+                )}
+              >
+                {siteConfig.name}
+              </p>
+              <p className={clsx(
+                "text-[10px] sm:text-xs font-medium -mt-0.5 whitespace-nowrap",
+                isScrolled ? "text-gray-600" : "text-white/90"
+              )}>
+                Empowering Education
+              </p>
+            </div>
           </NextLink>
         </NavbarBrand>
-        <ul className="hidden lg:flex gap-8 justify-start ml-16">
+        <ul className="hidden md:flex gap-1 lg:gap-2 justify-start ml-4 lg:ml-12">
           {siteConfig.navItems.map((item) => (
             <NavbarItem key={item.href}>
               <NextLink
                 className={clsx(
-                  "text-[15px] font-semibold transition-all duration-200 px-1",
+                  "relative text-sm lg:text-base font-semibold transition-all duration-300 px-3 lg:px-4 py-2 rounded-lg group whitespace-nowrap",
                   isScrolled
-                    ? "text-white hover:text-white/90"
-                    : "text-[#121064] hover:text-[#121064]/80"
+                    ? "text-gray-700 hover:text-blue-600"
+                    : "text-white hover:text-white/80"
                 )}
                 href={item.href}
               >
-                {item.label}
+                <span className="relative z-10">{item.label}</span>
+                <span className={clsx(
+                  "absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+                  isScrolled 
+                    ? "bg-gradient-to-r from-blue-500/10 to-purple-500/10"
+                    : "bg-white/20"
+                )}></span>
+                <span className={clsx(
+                  "absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 group-hover:w-3/4 transition-all duration-300",
+                  isScrolled 
+                    ? "bg-gradient-to-r from-blue-600 to-purple-600"
+                    : "bg-white"
+                )}></span>
               </NextLink>
             </NavbarItem>
           ))}
@@ -333,64 +360,58 @@ export const Navbar = () => {
 
       <NavbarContent className="sm:hidden" justify="end">
         <NavbarMenuToggle
-          className={clsx("ml-2", isScrolled ? "text-white" : "text-[#121064]")}
+          className={clsx("ml-2", isScrolled ? "text-gray-700" : "text-white")}
         />
       </NavbarContent>
 
       <NavbarMenu 
-        className="pt-6" 
+        className="pt-8" 
         style={{
-          background: 'rgba(255, 255, 255, 0.15)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)'
+          background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.95) 0%, rgba(20, 83, 136, 0.95) 50%, rgba(180, 83, 9, 0.95) 100%)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)'
         }}
       >
-        {siteConfig.navItems.map((item, index) => (
-          <NavbarMenuItem key={`${item.label}-${index}`}>
-            <NextLink
-              className="w-full text-white text-lg font-semibold py-2 block"
-              href={item.href}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {item.label}
-            </NextLink>
-          </NavbarMenuItem>
-        ))}
+        <div className="px-2">
+          {siteConfig.navItems.map((item, index) => (
+            <NavbarMenuItem key={`${item.label}-${index}`}>
+              <NextLink
+                className="w-full text-white text-lg font-semibold py-3 px-4 block rounded-lg hover:bg-white/20 transition-all duration-300 mb-2"
+                href={item.href}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {item.label}
+              </NextLink>
+            </NavbarMenuItem>
+          ))}
+        </div>
         <NavbarMenuItem>
-          <div className="flex flex-col gap-3 mt-4 w-full">
+          <div className="flex flex-col gap-3 mt-6 w-full px-2">
             {mobileAuth.authed ? (
               <>
                 <Button
                   as={NextLink}
-                  className={clsx(
-                    "text-sm font-bold border-2 bg-transparent",
-                    isScrolled
-                      ? "text-white border-white/40 hover:bg-white/10"
-                      : "text-[#121064] border-[#121064]/40 hover:bg-[#121064]/5"
-                  )}
+                  className="text-sm font-bold border-2 bg-white/10 backdrop-blur-md text-white border-white/60 hover:bg-white/30"
                   href={getDashboardUrl(mobileAuth.user?.role)}
                   size="lg"
                   variant="bordered"
-                  radius="full"
+                  radius="lg"
                   fullWidth
                   onPress={() => setIsMenuOpen(false)}
+                  startContent={<span className="text-xl">📊</span>}
                 >
                   Dashboard
                 </Button>
                 <Button
                   as={NextLink}
-                  className={clsx(
-                    "text-sm font-bold",
-                    isScrolled
-                      ? "text-[#121064] bg-white hover:bg-white/90"
-                      : "text-white bg-[#121064] hover:bg-[#121064]/90"
-                  )}
+                  className="text-sm font-bold bg-white text-blue-900 hover:bg-gray-100 shadow-lg"
                   href="/profile"
                   size="lg"
                   variant="solid"
-                  radius="full"
+                  radius="lg"
                   fullWidth
                   onPress={() => setIsMenuOpen(false)}
+                  startContent={<span className="text-xl">👤</span>}
                 >
                   Profile
                 </Button>
@@ -399,35 +420,27 @@ export const Navbar = () => {
               <>
                 <Button
                   as={NextLink}
-                  className={clsx(
-                    "text-sm font-bold border-2 bg-transparent",
-                    isScrolled
-                      ? "text-white border-white/40 hover:bg-white/10"
-                      : "text-[#121064] border-[#121064]/40 hover:bg-[#121064]/5"
-                  )}
+                  className="text-sm font-bold border-2 bg-white/10 backdrop-blur-md text-white border-white/60 hover:bg-white/30"
                   href="/login"
                   size="lg"
                   variant="bordered"
-                  radius="full"
+                  radius="lg"
                   fullWidth
                   onPress={() => setIsMenuOpen(false)}
+                  startContent={<span className="text-xl">👤</span>}
                 >
                   লগইন
                 </Button>
                 <Button
                   as={Link}
-                  className={clsx(
-                    "text-sm font-bold",
-                    isScrolled
-                      ? "text-[#121064] bg-white hover:bg-white/90"
-                      : "text-white bg-[#121064] hover:bg-[#121064]/90"
-                  )}
+                  className="text-sm font-bold bg-white text-blue-900 hover:bg-gray-100 shadow-lg"
                   href="/register"
                   size="lg"
                   variant="solid"
-                  radius="full"
+                  radius="lg"
                   fullWidth
                   onPress={() => setIsMenuOpen(false)}
+                  startContent={<span className="text-xl">✨</span>}
                 >
                   রেজিস্ট্রেশন
                 </Button>

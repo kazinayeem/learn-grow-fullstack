@@ -5,6 +5,7 @@ import { Lesson, ILesson } from "../model/lesson.model";
 import { Enrollment } from "../../enrollment/model/enrollment.model";
 import { Assignment } from "../../assignment/model/assignment.model";
 import { Quiz } from "../../quiz/model/quiz.model";
+import { Order } from "../../order/model/order.model";
 import { sendCourseApprovalEmail } from "@/utils/otp";
 
 // ===== COURSE SERVICES =====
@@ -152,6 +153,7 @@ export const getCourseById = async (
   let isEnrolled = false;
   let completedLessonIds: string[] = [];
   let completedModuleIds: string[] = [];
+  let hasQuarterlyAccess = false;
 
   if (options?.userId) {
     // Debug Log
@@ -169,6 +171,22 @@ export const getCourseById = async (
       completedModuleIds = enrollment.completedModules?.map(id => id.toString()) || [];
     } else {
       console.log(`[getCourseById] No enrollment found.`);
+    }
+
+    // Check for quarterly (all-access) subscription
+    const now = new Date();
+    const quarterlyOrder = await Order.findOne({
+      userId: new Types.ObjectId(options.userId),
+      planType: "quarterly",
+      paymentStatus: "approved",
+      isActive: true,
+      endDate: { $gte: now },
+    }).lean();
+
+    if (quarterlyOrder) {
+      console.log(`[getCourseById] Quarterly subscription found for user ${options.userId}`);
+      isEnrolled = true;
+      hasQuarterlyAccess = true;
     }
   } else {
     console.log(`[getCourseById] No User ID provided in options.`);

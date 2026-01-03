@@ -1,6 +1,12 @@
 import React from "react";
+import { Metadata } from "next";
 import { defaultAboutData } from "@/lib/aboutData";
 import AboutClient from "@/components/AboutClient";
+
+export const metadata: Metadata = {
+  title: "About Us",
+  description: "Learn more about Learn Grow - our mission, vision, and commitment to quality STEM education.",
+};
 
 async function getAboutContent() {
     try {

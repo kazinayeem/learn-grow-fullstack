@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Order } from "../model/order.model";
 import mongoose from "mongoose";
 import nodemailer from "nodemailer";
+import { Course } from "../../course/model/course.model";
 import {
   createOrderService,
   getUserOrdersService,
@@ -285,6 +286,9 @@ export const checkActiveSubscription = async (req: Request, res: Response) => {
 export const getUserPurchasedCourses = async (req: Request, res: Response) => {
   try {
     const userId = req.userId;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = 9;
+    const skip = (page - 1) * limit;
 
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -292,7 +296,7 @@ export const getUserPurchasedCourses = async (req: Request, res: Response) => {
 
     const now = new Date();
 
-    const purchasedCourses = await Order.find({
+    const singleCourses = await Order.find({
       userId,
       planType: "single",
       paymentStatus: "approved",
@@ -300,13 +304,65 @@ export const getUserPurchasedCourses = async (req: Request, res: Response) => {
       endDate: { $gte: now },
     })
       .populate("courseId", "title thumbnail instructor duration")
-      .select("courseId startDate endDate");
+      .select("courseId startDate endDate planType");
 
-    res.json({
-      courses: purchasedCourses.map(order => ({
+    const quarterlyOrder = await Order.findOne({
+      userId,
+      planType: "quarterly",
+      paymentStatus: "approved",
+      isActive: true,
+      endDate: { $gte: now },
+    });
+
+    let allCourses: any[] = [];
+    let totalCourses = 0;
+
+    if (quarterlyOrder) {
+      totalCourses = await Course.countDocuments({
+        isPublished: true,
+        isAdminApproved: true,
+      });
+
+      const allPublishedCourses = await Course.find({
+        isPublished: true,
+        isAdminApproved: true,
+      })
+        .populate("instructorId", "name email")
+        .select("_id title thumbnail instructorId duration")
+        .limit(limit)
+        .skip(skip)
+        .lean();
+
+      allCourses = allPublishedCourses.map((course: any) => ({
+        course: {
+          _id: course._id,
+          title: course.title,
+          thumbnail: course.thumbnail,
+          instructor: course.instructorId,
+          duration: course.duration,
+        },
+        accessUntil: quarterlyOrder.endDate,
+        accessType: "quarterly",
+      }));
+    } else {
+      totalCourses = singleCourses.length;
+      const paginatedCourses = singleCourses.slice(skip, skip + limit);
+      allCourses = paginatedCourses.map(order => ({
         course: order.courseId,
         accessUntil: order.endDate,
-      })),
+        accessType: "single",
+      }));
+    }
+
+    res.json({
+      courses: allCourses,
+      pagination: {
+        total: totalCourses,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCourses / limit),
+      },
+      hasQuarterlyAccess: !!quarterlyOrder,
     });
   } catch (error: any) {
     console.error("Get purchased courses error:", error);
@@ -520,16 +576,18 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
 
     console.log(`[GuardianAPI] userId: ${userId}, userRole: ${userRole}, queryStudentId: ${queryStudentId}`);
 
-    // If guardian, get their linked child (student)
+    // If guardian, get their linked child (student) from GuardianProfile
     if (userRole === "guardian") {
-      // First, get the guardian user to check their linked children
-      const guardianUser = await User.findById(userId).populate('children');
+      const { GuardianProfile } = await import("../../user/model/guardianProfile.model");
       
-      console.log(`[GuardianAPI] guardianUser ID:`, guardianUser?._id);
-      console.log(`[GuardianAPI] guardianUser children count:`, guardianUser?.children?.length);
-      console.log(`[GuardianAPI] guardianUser.children:`, guardianUser?.children?.map((c: any) => ({ _id: c._id, name: c.name, email: c.email })));
+      // Query GuardianProfile to get the authoritative student link
+      const guardianProfiles = await GuardianProfile.find({ userId }).select("studentId");
+      
+      console.log(`[GuardianAPI] guardianId: ${userId}`);
+      console.log(`[GuardianAPI] Found ${guardianProfiles.length} guardian profile(s)`);
+      console.log(`[GuardianAPI] Guardian profile studentIds:`, guardianProfiles.map((gp: any) => gp.studentId?.toString()));
 
-      if (!guardianUser || !guardianUser.children || guardianUser.children.length === 0) {
+      if (!guardianProfiles || guardianProfiles.length === 0) {
         return res.json({ 
           success: true, 
           data: { 
@@ -540,28 +598,29 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
         });
       }
 
-      // If studentId is provided as query param, verify it's one of their children
+      // If studentId is provided as query param, verify it belongs to this guardian
       if (queryStudentId && typeof queryStudentId === 'string') {
-        const childrenIds = guardianUser.children.map((c: any) => 
-          (c._id?.toString() || c.toString())
+        const linkedStudentIds = guardianProfiles.map((gp: any) => 
+          gp.studentId?.toString()
         );
         
-        console.log(`[GuardianAPI] Checking if ${queryStudentId} is in guardian's children:`, childrenIds);
+        console.log(`[GuardianAPI] Verifying if ${queryStudentId} is linked to guardian ${userId}`);
+        console.log(`[GuardianAPI] Guardian's linked students:`, linkedStudentIds);
         
-        if (childrenIds.includes(queryStudentId)) {
+        if (linkedStudentIds.includes(queryStudentId)) {
           studentIdToFetch = queryStudentId;
-          console.log(`[GuardianAPI] Guardian ${userId} requesting verified student: ${studentIdToFetch}`);
+          console.log(`[GuardianAPI] Guardian ${userId} verified access to student: ${studentIdToFetch}`);
         } else {
           return res.status(403).json({ 
             success: false, 
-            message: "You do not have permission to view this student's data" 
+            message: "You do not have permission to view this student's data. This student is not linked to your account." 
           });
         }
       } else {
-        // Otherwise, get their first linked child (student)
-        const firstChild = guardianUser.children[0] as any;
-        studentIdToFetch = firstChild._id?.toString() || firstChild.toString();
-        console.log(`[GuardianAPI] Guardian ${userId} accessing default student child: ${studentIdToFetch}`);
+        // Otherwise, get their first linked student from GuardianProfile
+        const firstProfile = guardianProfiles[0];
+        studentIdToFetch = firstProfile.studentId?.toString() || firstProfile.studentId;
+        console.log(`[GuardianAPI] Guardian ${userId} accessing default linked student: ${studentIdToFetch}`);
       }
     }
     // If student, verify they're trying to access their own data
@@ -604,11 +663,60 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
       })));
     }
 
+    // Check for quarterly (all-access) subscription
+    const now = new Date();
+    const quarterlyOrder = await Order.findOne({
+      userId: studentIdToFetch,
+      planType: "quarterly",
+      paymentStatus: "approved",
+      isActive: true,
+      endDate: { $gte: now },
+    }).lean();
+
+    let allCourseEnrollments = [...enrollments];
+    let hasQuarterlyAccess = false;
+
+    // If student has quarterly subscription, fetch all published courses
+    if (quarterlyOrder) {
+      hasQuarterlyAccess = true;
+      console.log(`[GuardianAPI] Student has quarterly subscription, fetching all courses`);
+      
+      const allPublishedCourses = await Course.find({
+        isPublished: true,
+        isAdminApproved: true,
+      })
+        .select("_id title thumbnail price level")
+        .lean();
+
+      // Filter out courses already in enrollments
+      const enrolledCourseIds = enrollments.map((e: any) => e.courseId._id.toString());
+      const additionalCourses = allPublishedCourses.filter(
+        (c: any) => !enrolledCourseIds.includes(c._id.toString())
+      );
+
+      // Add courses without enrollment records (quarterly access)
+      const quarterlyEnrollments = additionalCourses.map((course: any) => ({
+        _id: `quarterly-${course._id}`,
+        studentId: studentIdToFetch,
+        courseId: course,
+        progress: 0,
+        completionPercentage: 0,
+        isCompleted: false,
+        completedLessons: [],
+        createdAt: quarterlyOrder.createdAt,
+        updatedAt: quarterlyOrder.updatedAt,
+        accessType: "quarterly",
+      }));
+
+      allCourseEnrollments = [...enrollments, ...quarterlyEnrollments];
+      console.log(`[GuardianAPI] Total courses with quarterly access: ${allCourseEnrollments.length}`);
+    }
+
     // Fetch module data for each course to calculate progress
     const { Module } = await import("../../course/model/module.model");
     
     const enrichedEnrollments = await Promise.all(
-      enrollments.map(async (enrollment: any) => {
+      allCourseEnrollments.map(async (enrollment: any) => {
         try {
           const modules = await Module.find({ courseId: enrollment.courseId._id }).lean();
           
@@ -641,7 +749,8 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
             isCompleted: enrollment.isCompleted || false,
             completedLessons: enrollment.completedLessons || [],
             createdAt: enrollment.createdAt,
-            updatedAt: enrollment.updatedAt
+            updatedAt: enrollment.updatedAt,
+            accessType: enrollment.accessType || "enrollment",
           };
         } catch (enrollmentError) {
           console.error("Error processing enrollment:", enrollmentError);
@@ -658,6 +767,7 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
       data: {
         orders,
         enrollments: validEnrollments,
+        hasQuarterlyAccess,
         student: {
           _id: studentIdToFetch,
         },

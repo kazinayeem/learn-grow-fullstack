@@ -13,6 +13,7 @@ import {
   getStudentOrdersForGuardian,
 } from "../controller/order.controller";
 import { requireAuth, requireRoles } from "../../../middleware/auth";
+import { validateGuardianStudentAccess } from "../../../middleware/guardian-validation";
 
 const router = express.Router();
 
@@ -25,34 +26,51 @@ router.get("/course/:courseId/students", requireAuth, getEnrolledStudents);
 
 // Guardian routes - allow both guardian and student to view student data
 // (student views own data, guardian views linked student's data)
-router.get("/student-data", requireAuth, getStudentOrdersForGuardian);
+// Add validation to ensure guardians can only access their linked students
+router.get("/student-data", requireAuth, validateGuardianStudentAccess, getStudentOrdersForGuardian);
 
 // Get list of guardian's children
 router.get("/guardian/children", requireAuth, async (req, res) => {
   try {
     const { User } = await import("../../user/model/user.model");
+    const { GuardianProfile } = await import("../../user/model/guardianProfile.model");
     
     if (req.userRole !== "guardian") {
       return res.status(403).json({ success: false, message: "Only guardians can access this endpoint" });
     }
     
-    const guardian = await User.findById(req.userId).populate('children', 'name email _id role');
+    // Query GuardianProfile to get authoritative student links
+    const guardianProfiles = await GuardianProfile.find({ userId: req.userId })
+      .populate({
+        path: "studentId",
+        select: "name email _id role",
+      })
+      .lean();
     
-    if (!guardian) {
-      return res.status(404).json({ success: false, message: "Guardian not found" });
+    if (!guardianProfiles || guardianProfiles.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          guardianId: req.userId,
+          children: []
+        }
+      });
     }
+    
+    // Extract student data from GuardianProfile records
+    const children = guardianProfiles.map((profile: any) => ({
+      _id: profile.studentId?._id,
+      name: profile.studentId?.name,
+      email: profile.studentId?.email,
+      role: profile.studentId?.role,
+      relationship: profile.relationship
+    }));
     
     res.json({
       success: true,
       data: {
-        guardianId: guardian._id,
-        guardianName: guardian.name,
-        children: (guardian.children || []).map((child: any) => ({
-          _id: child._id,
-          name: child.name,
-          email: child.email,
-          role: child.role
-        }))
+        guardianId: req.userId,
+        children: children
       }
     });
   } catch (error: any) {

@@ -55,6 +55,7 @@ interface Quiz {
 export default function InstructorQuizzesPage() {
   const router = useRouter();
   const [instructorId, setInstructorId] = useState<string | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -65,16 +66,22 @@ export default function InstructorQuizzesPage() {
   const [publishQuiz] = usePublishQuizMutation();
 
   useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      setInstructorId(user._id || user.id || null);
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        setInstructorId(user._id || user.id || null);
+      }
+      setIsHydrated(true);
     }
   }, []);
 
-  const { data: coursesResp } = useGetInstructorCoursesQuery(instructorId as string, {
-    skip: !instructorId,
-  });
+  const { data: coursesResp } = useGetInstructorCoursesQuery(
+    instructorId ? { instructorId, page: 1, limit: 100 } : null,
+    {
+      skip: !instructorId,
+    }
+  );
 
   const courses = Array.isArray(coursesResp?.data) ? coursesResp!.data : [];
 
@@ -151,20 +158,22 @@ export default function InstructorQuizzesPage() {
         <CardBody className="gap-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Course Selection */}
-            <Select
-              label="Select Course"
-              selectedKeys={selectedCourse ? [selectedCourse] : []}
-              onChange={(e) => setSelectedCourse(e.target.value)}
-              className="w-full"
-              isDisabled={courses.length === 0}
-              disableAnimation
-            >
-              {courses.map((course: any) => (
-                <SelectItem key={course._id} value={course._id}>
-                  {course.title}
-                </SelectItem>
-              ))}
-            </Select>
+            {isHydrated && (
+              <Select
+                label="Select Course"
+                selectedKeys={selectedCourse ? [selectedCourse] : []}
+                onChange={(e) => setSelectedCourse(e.target.value)}
+                className="w-full"
+                isDisabled={courses.length === 0}
+                disableAnimation
+              >
+                {courses.map((course: any) => (
+                  <SelectItem key={course._id} value={course._id}>
+                    {course.title}
+                  </SelectItem>
+                ))}
+              </Select>
+            )}
 
             {/* Search */}
             <Input
@@ -178,18 +187,20 @@ export default function InstructorQuizzesPage() {
             />
 
             {/* Status Filter */}
-            <Select
-              label="Filter by Status"
-              selectedKeys={statusFilter ? [statusFilter] : []}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full"
-              disableAnimation
-            >
-              <SelectItem key="">All</SelectItem>
-              <SelectItem key="draft">Draft</SelectItem>
-              <SelectItem key="active">Active</SelectItem>
-              <SelectItem key="published">Published</SelectItem>
-            </Select>
+            {isHydrated && (
+              <Select
+                label="Filter by Status"
+                selectedKeys={statusFilter ? [statusFilter] : []}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full"
+                disableAnimation
+              >
+                <SelectItem key="">All</SelectItem>
+                <SelectItem key="draft">Draft</SelectItem>
+                <SelectItem key="active">Active</SelectItem>
+                <SelectItem key="published">Published</SelectItem>
+              </Select>
+            )}
           </div>
         </CardBody>
       </Card>

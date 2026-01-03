@@ -1,4 +1,10 @@
 import React from "react";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Refund Policy",
+  description: "Learn Grow refund and cancellation policy for courses and subscriptions.",
+};
 
 async function fetchRefundHtml() {
     const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";

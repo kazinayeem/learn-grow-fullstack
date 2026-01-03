@@ -1,4 +1,5 @@
 import CourseDetails from "@/components/courses/CourseDetails";
+import { Metadata } from "next";
 
 interface Props {
     params: {
@@ -9,6 +10,15 @@ interface Props {
 // Dynamic/SSR route now
 // Dynamic Render used
 import { courses } from "@/lib/coursesData";
+
+export async function generateMetadata(props: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const params = await props.params;
+  const course = courses.find(c => String(c.id) === params.id);
+  return {
+    title: course ? `${course.title} - Course Details` : "Course Details",
+    description: course ? course.description : "View course details and enroll now.",
+  };
+}
 
 export function generateStaticParams() {
     // Ensure courses is available and has data

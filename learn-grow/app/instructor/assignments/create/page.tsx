@@ -46,7 +46,7 @@ function CreateAssignmentContent() {
   }, []);
 
   const { data: coursesResp, isLoading: isLoadingCourses } = useGetInstructorCoursesQuery(
-    instructorId as string,
+    { instructorId: instructorId as string, page: 1, limit: 12 },
     {
       skip: !instructorId,
     }

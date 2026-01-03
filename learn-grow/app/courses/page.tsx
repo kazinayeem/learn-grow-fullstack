@@ -1,4 +1,10 @@
 import CourseList from "@/components/courses/CourseList";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "All Courses",
+  description: "Explore all our courses in robotics, coding, and STEM education.",
+};
 
 export default function CoursesPage() {
     return (
