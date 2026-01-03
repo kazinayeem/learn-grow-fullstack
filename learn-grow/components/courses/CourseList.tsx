@@ -20,8 +20,6 @@ import { useGetPublishedCoursesQuery } from "@/redux/api/courseApi";
 import { useGetAllCategoriesQuery } from "@/redux/api/categoryApi";
 import { useRouter } from "next/navigation";
 import { FaSearch, FaClock, FaBook, FaUser, FaStar, FaPlayCircle } from "react-icons/fa";
-import "@/styles/prose.css";
-import DOMPurify from "dompurify";
 
 // Skeleton Loader Component
 const CourseCardSkeleton = () => (
@@ -159,12 +157,12 @@ export default function CourseList() {
           }}
           isLoading={isCategoriesLoading}
         >
-          <SelectItem key="" value="">All Categories</SelectItem>
-          {categories.map((cat: any) => (
+          {[<SelectItem key="" value="">All Categories</SelectItem>,
+          ...categories.map((cat: any) => (
             <SelectItem key={cat._id} value={cat._id}>
               {cat.name}
             </SelectItem>
-          ))}
+          ))]}
         </Select>
       </div>
       
