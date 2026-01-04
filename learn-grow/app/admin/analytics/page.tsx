@@ -200,15 +200,27 @@ export default function AnalyticsPage() {
     
     const currentMonthRevenue = approvedOrders
       .filter((o: any) => {
-        const orderDate = new Date(o.createdAt);
-        return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
+        try {
+          if (!o?.createdAt) return false;
+          const orderDate = new Date(o.createdAt);
+          if (isNaN(orderDate.getTime())) return false;
+          return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
+        } catch (e) {
+          return false;
+        }
       })
       .reduce((sum: number, order: any) => sum + (order.price || 0), 0);
     
     const lastMonthRevenue = approvedOrders
       .filter((o: any) => {
-        const orderDate = new Date(o.createdAt);
-        return orderDate.getMonth() === lastMonth && orderDate.getFullYear() === lastMonthYear;
+        try {
+          if (!o?.createdAt) return false;
+          const orderDate = new Date(o.createdAt);
+          if (isNaN(orderDate.getTime())) return false;
+          return orderDate.getMonth() === lastMonth && orderDate.getFullYear() === lastMonthYear;
+        } catch (e) {
+          return false;
+        }
       })
       .reduce((sum: number, order: any) => sum + (order.price || 0), 0);
     
@@ -230,15 +242,26 @@ export default function AnalyticsPage() {
   const calculatePlanTypeRevenue = () => {
     const approvedOrders = recentActivity?.orders?.filter((o: any) => o.paymentStatus === "approved") || [];
     
+    // Plan type name mapping
+    const getPlanName = (planId: string) => {
+      const names: Record<string, string> = {
+        'single': 'Single Course',
+        'quarterly': 'Quarterly Plan',
+        'kit': 'Kit Only',
+        'school': 'School Plan'
+      };
+      return names[planId] || planId;
+    };
+    
     return distributions.planTypes.map((plan: any) => {
       const planRevenue = approvedOrders
         .filter((o: any) => o.planType === plan._id)
         .reduce((sum: number, order: any) => sum + (order.price || 0), 0);
       
       return {
-        name: plan._id === "single" ? "Single Course" : plan._id === "quarterly" ? "All Access" : plan._id === "kit" ? "Kit" : plan._id,
-        value: plan.count,
-        revenue: planRevenue || plan.revenue
+        name: getPlanName(plan._id),
+        value: plan.count || 0,
+        revenue: planRevenue || plan.revenue || 0
       };
     });
   };
@@ -248,30 +271,59 @@ export default function AnalyticsPage() {
   // Format revenue trend data with actual calculations
   const revenueTrendData = trends.revenue.map((item: any) => {
     const trendOrders = recentActivity?.orders?.filter((o: any) => {
-      const orderDate = new Date(o.createdAt).toISOString().split('T')[0];
-      return orderDate === item._id && o.paymentStatus === "approved";
+      try {
+        // Validate date before parsing
+        if (!o?.createdAt) return false;
+        const orderDate = new Date(o.createdAt);
+        // Check if date is valid
+        if (isNaN(orderDate.getTime())) return false;
+        const dateStr = orderDate.toISOString().split('T')[0];
+        return dateStr === item._id && o.paymentStatus === "approved";
+      } catch (e) {
+        console.warn("Invalid date in order:", o);
+        return false;
+      }
     }) || [];
     
     const trendRevenue = trendOrders.reduce((sum: number, order: any) => sum + (order.price || 0), 0);
     
-    return {
-      date: new Date(item._id).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      }),
-      revenue: trendRevenue || item.revenue,
-      orders: item.orders,
-    };
+    try {
+      const date = new Date(item._id);
+      return {
+        date: isNaN(date.getTime()) ? item._id : date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        }),
+        revenue: trendRevenue || item.revenue,
+        orders: item.orders,
+      };
+    } catch (e) {
+      return {
+        date: item._id,
+        revenue: trendRevenue || item.revenue,
+        orders: item.orders,
+      };
+    }
   });
 
   // Format enrollment trend data
-  const enrollmentTrendData = trends.enrollments.map((item: any) => ({
-    date: new Date(item._id).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    }),
-    enrollments: item.count,
-  }));
+  const enrollmentTrendData = trends.enrollments.map((item: any) => {
+    try {
+      const date = new Date(item._id);
+      return {
+        date: isNaN(date.getTime()) ? item._id : date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        }),
+        enrollments: item.count,
+      };
+    } catch (e) {
+      return {
+        date: item._id,
+        enrollments: item.count,
+      };
+    }
+  });
 
   // Format category distribution - show proper names instead of IDs
   const categoryData = distributions.categories.map((item: any) => ({
@@ -593,27 +645,33 @@ export default function AnalyticsPage() {
             <h3 className="text-xl font-bold">Course Categories</h3>
           </CardHeader>
           <CardBody className="px-6 pb-6">
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {categoryData.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            {categoryData && categoryData.length > 0 ? (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {categoryData.map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="text-center py-10 text-gray-500">
+                <p>No categories available</p>
+              </div>
+            )}
           </CardBody>
         </Card>
 
@@ -642,18 +700,18 @@ export default function AnalyticsPage() {
                         <span className="font-bold text-gray-800">{plan.name}</span>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm text-gray-600 font-medium">{plan.value} orders</div>
-                        <div className="text-success-600 font-bold text-lg">৳{plan.revenue.toLocaleString()}</div>
+                        <div className="text-sm text-gray-600 font-medium">{plan.value || 0} orders</div>
+                        <div className="text-success-600 font-bold text-lg">৳{(plan.revenue || 0).toLocaleString()}</div>
                       </div>
                     </div>
                     <Progress
-                      value={revenue.total > 0 ? (plan.revenue / revenue.total) * 100 : 0}
+                      value={revenue.total > 0 ? ((plan.revenue || 0) / revenue.total) * 100 : 0}
                       color={index === 0 ? "primary" : index === 1 ? "success" : "warning"}
                       size="md"
                       className="mt-2"
                     />
                     <div className="text-xs text-gray-600 text-right mt-1">
-                      {revenue.total > 0 ? ((plan.revenue / revenue.total) * 100).toFixed(1) : 0}% of total revenue
+                      {revenue.total > 0 ? (((plan.revenue || 0) / revenue.total) * 100).toFixed(1) : 0}% of total revenue
                     </div>
                   </div>
                 ))}
@@ -739,11 +797,11 @@ export default function AnalyticsPage() {
                         {order.userId?.name || order.userName || "Unknown Customer"}
                       </p>
                       <p className="text-xs text-gray-600 mt-1">
-                        {order.courseId?.title || order.planType || "N/A"}
+                        {order.courseId?.title || (order.planType ? `${order.planType.charAt(0).toUpperCase() + order.planType.slice(1)} Plan` : "All Courses Access")}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-success text-lg">৳{(order.amount || 0).toLocaleString()}</p>
+                      <p className="font-bold text-success text-lg">৳{(order.price || 0).toLocaleString()}</p>
                       <Chip
                         size="sm"
                         color={order.paymentStatus === "approved" ? "success" : order.paymentStatus === "pending" ? "warning" : "danger"}

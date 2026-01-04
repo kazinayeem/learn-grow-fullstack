@@ -28,6 +28,13 @@ export default function ManagerLayout({
 
   useEffect(() => {
     try {
+      // 🚨 Check if logout is in progress - if so, don't redirect yet
+      const loggingOut = sessionStorage.getItem("loggingOut") === "1";
+      if (loggingOut) {
+        console.log("🚪 Manager Layout: Logout in progress, skipping auth check");
+        return;
+      }
+
       const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
       if (!userStr) {
         router.replace("/login");
@@ -69,9 +76,9 @@ export default function ManagerLayout({
       console.log("🚪 Manager Layout: Cleared localStorage");
     }
 
-    // Single redirect using router.replace
-    console.log("🚪 Manager Layout: Redirecting to /login");
-    router.replace("/login");
+    // Single redirect using router.replace to home page (not login) to avoid blinking
+    console.log("🚪 Manager Layout: Redirecting to home");
+    router.replace("/");
   };
 
   if (checking) {

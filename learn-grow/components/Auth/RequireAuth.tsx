@@ -16,6 +16,14 @@ export default function RequireAuth({ children, allowedRoles }: RequireAuthProps
     useEffect(() => {
         if (hasChecked.current) return;
         
+        // 🚨 Check if logout is in progress - if so, don't redirect yet
+        const loggingOut = sessionStorage.getItem("loggingOut") === "1";
+        if (loggingOut) {
+            console.log("🔐 RequireAuth: Logout in progress, skipping redirect");
+            hasChecked.current = true;
+            return;
+        }
+        
         const token = Cookies.get("accessToken") || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
         let userRole = Cookies.get("userRole");
         if (!userRole && typeof window !== "undefined") {

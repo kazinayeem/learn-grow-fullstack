@@ -29,6 +29,13 @@ export default function AdminLayout({
 
   useEffect(() => {
     try {
+      // 🚨 Check if logout is in progress - if so, don't redirect yet
+      const loggingOut = sessionStorage.getItem("loggingOut") === "1";
+      if (loggingOut) {
+        console.log("🚪 Admin Layout: Logout in progress, skipping auth check");
+        return;
+      }
+
       const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
       if (!userStr) {
         router.replace("/login");
@@ -50,11 +57,24 @@ export default function AdminLayout({
     setChecking(false);
   }, [router]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Set logout flag FIRST to prevent race conditions
+    sessionStorage.setItem("loggingOut", "1");
+    console.log("🚪 Admin Layout: Set loggingOut flag");
+
+    // Clear all auth data
     localStorage.removeItem("user");
     localStorage.removeItem("token");
-    Cookies.remove("token");
-    router.push("/login");
+    localStorage.removeItem("userRole");
+    Cookies.remove("accessToken", { path: "/" });
+    Cookies.remove("refreshToken", { path: "/" });
+    Cookies.remove("userRole", { path: "/" });
+    Cookies.remove("token", { path: "/" });
+    console.log("🚪 Admin Layout: Cleared auth data");
+
+    // Redirect to home page (not login) to avoid blinking
+    console.log("🚪 Admin Layout: Redirecting to home");
+    router.replace("/");
   };
 
   if (checking) {

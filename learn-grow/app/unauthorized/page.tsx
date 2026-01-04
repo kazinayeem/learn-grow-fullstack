@@ -21,6 +21,28 @@ export default function UnauthorizedPage() {
     return roleRedirects[role || "student"] || "/student";
   };
 
+  const handleLogout = async () => {
+    // Set logout flag
+    sessionStorage.setItem("loggingOut", "1");
+
+    // Clear all auth data
+    Cookies.remove("accessToken", { path: "/" });
+    Cookies.remove("refreshToken", { path: "/" });
+    Cookies.remove("userRole", { path: "/" });
+    Cookies.remove("token", { path: "/" });
+
+    // Clear localStorage
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("refreshToken");
+    }
+
+    // Redirect to login
+    router.replace("/login");
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-orange-50 to-red-50 p-4">
       <Card className="w-full max-w-md">
@@ -61,6 +83,15 @@ export default function UnauthorizedPage() {
               className="w-full"
             >
               Go Back
+            </Button>
+            <Button
+              color="danger"
+              variant="flat"
+              size="lg"
+              onClick={handleLogout}
+              className="w-full font-semibold"
+            >
+              Logout & Go to Login
             </Button>
           </div>
 

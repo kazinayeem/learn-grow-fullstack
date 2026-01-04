@@ -589,6 +589,23 @@ export default function OrdersAdminPage() {
         <ModalContent>
           {(onClose) => (
             <>
+              {/* Loading Overlay - Shown when processing order status change */}
+              {isProcessing && (
+                <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
+                  <div className="flex flex-col items-center gap-4 p-6">
+                    <Spinner size="lg" color="primary" />
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-gray-800 animate-pulse mb-1">
+                        প্রসেসিং করা হচ্ছে...
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        অনুগ্রহ করে অপেক্ষা করুন
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <ModalHeader className="text-base">অর্ডার বিস্তারিত | Order Details</ModalHeader>
               <ModalBody className="space-y-3 text-sm">
                 {selectedOrder && (
