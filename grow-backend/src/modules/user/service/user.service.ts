@@ -1170,6 +1170,103 @@ export const updateUserRoleAdmin = async (id: string, role: "student" | "instruc
   }
 };
 
+/** Instructor: Get enrolled students */
+export const getInstructorStudents = async (instructorId: string, params: { page?: number; limit?: number; search?: string }) => {
+  try {
+    const { Course } = await import("@/modules/course/model/course.model");
+    const { Enrollment } = await import("@/modules/enrollment/model/enrollment.model");
+
+    const page = params.page || 1;
+    const limit = params.limit || 20;
+    const skip = (page - 1) * limit;
+
+    // Get instructor's courses
+    const courses = await Course.find({ instructorId: instructorId });
+    const courseIds = courses.map(c => c._id);
+
+    // Get unique student IDs from enrollments
+    const enrollments = await Enrollment.find({ courseId: { $in: courseIds } }).distinct("studentId");
+
+    // Build search query for students
+    const searchQuery: any = {
+      _id: { $in: enrollments },
+      role: "student"
+    };
+
+    if (params.search) {
+      searchQuery.$or = [
+        { name: { $regex: params.search, $options: "i" } },
+        { email: { $regex: params.search, $options: "i" } }
+      ];
+    }
+
+    // Get students with pagination
+    const students = await User.find(searchQuery)
+      .select("-password -otp -otpExpiresAt -refreshToken -verificationToken")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await User.countDocuments(searchQuery);
+
+    return {
+      success: true,
+      data: students,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message || "Failed to get students" };
+  }
+};
+
+/** Instructor: Get individual student details */
+export const getInstructorStudentById = async (instructorId: string, studentId: string) => {
+  try {
+    const { Course } = await import("@/modules/course/model/course.model");
+    const { Enrollment } = await import("@/modules/enrollment/model/enrollment.model");
+
+    // Get instructor's courses
+    const courses = await Course.find({ instructorId: instructorId });
+    const courseIds = courses.map(c => c._id);
+
+    // Check if student is enrolled in any of instructor's courses
+    const enrollment = await Enrollment.findOne({ 
+      courseId: { $in: courseIds },
+      studentId: studentId 
+    });
+
+    if (!enrollment) {
+      return {
+        success: false,
+        message: "Student not found or not enrolled in your courses"
+      };
+    }
+
+    // Get student details
+    const student = await User.findById(studentId)
+      .select("-password -otp -otpExpiresAt -refreshToken -verificationToken");
+
+    if (!student) {
+      return {
+        success: false,
+        message: "Student not found"
+      };
+    }
+
+    return {
+      success: true,
+      data: student
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message || "Failed to get student details" };
+  }
+};
+
 /**
  * Get instructor dashboard stats
  */

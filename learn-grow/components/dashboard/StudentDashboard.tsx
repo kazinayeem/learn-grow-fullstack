@@ -5,7 +5,7 @@ import { Card, CardBody, CardHeader, Button, Progress, Chip, Avatar, Spinner, Di
 import { useRouter } from "next/navigation";
 import { useGetMyOrdersQuery } from "@/redux/api/orderApi";
 import { useGetAllCoursesQuery } from "@/redux/api/courseApi";
-import { FaBook, FaCheckCircle, FaClock, FaTrophy, FaRocket, FaCalendar, FaShoppingCart } from "react-icons/fa";
+import { FaBook, FaCheckCircle, FaClock, FaTrophy, FaRocket, FaCalendar, FaShoppingCart, FaTicketAlt } from "react-icons/fa";
 import StudentLiveClasses from "./StudentLiveClasses";
 
 export default function StudentDashboard() {
@@ -363,10 +363,10 @@ export default function StudentDashboard() {
                                     className="h-20 flex-col"
                                     variant="flat"
                                     color="danger"
-                                    onPress={() => router.push("/checkout?plan=quarterly")}
+                                    onPress={() => router.push("/student/tickets")}
                                 >
-                                    <span className="text-2xl mb-1">⭐</span>
-                                    <span className="text-xs">Get Premium</span>
+                                    <FaTicketAlt className="text-2xl mb-1" />
+                                    <span className="text-xs">Support Tickets</span>
                                 </Button>
                                 <Button
                                     className="h-20 flex-col"

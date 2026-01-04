@@ -12,6 +12,11 @@ node_modules
 coverage
 .next
 build
+out
+hostinger-build-fix.js
+*-old.*
+*.backup.*
+*.temp.*
 !.commitlintrc.cjs
 !.lintstagedrc.cjs
 !jest.config.js

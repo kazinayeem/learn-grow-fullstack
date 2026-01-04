@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Card, CardBody, Button, Input, Chip, Spinner } from "@nextui-org/react";
+import { Card, CardBody, Button, Input, Chip, Spinner, Skeleton } from "@nextui-org/react";
 import { FaVideo, FaClock, FaCalendar, FaCheckCircle, FaBan, FaArrowLeft, FaTrash } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
@@ -123,8 +123,77 @@ export default function AdminLiveClassesPage() {
 
     if (isLoading) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
-                <Spinner size="lg" label="Loading live classes..." />
+            <div className="container mx-auto px-4 py-8 max-w-7xl">
+                <div className="flex justify-between items-center mb-8">
+                    <div>
+                        <div className="flex items-center gap-3 mb-2">
+                            <Skeleton className="h-10 w-32 rounded-lg" />
+                            <Skeleton className="h-10 w-64 rounded-lg" />
+                        </div>
+                        <Skeleton className="h-6 w-96 rounded-lg" />
+                    </div>
+                </div>
+
+                {/* Statistics Skeleton */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                    {[1, 2, 3, 4].map((i) => (
+                        <Card key={i}>
+                            <CardBody className="p-6">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex-1">
+                                        <Skeleton className="h-4 w-32 rounded-lg mb-2" />
+                                        <Skeleton className="h-8 w-20 rounded-lg" />
+                                    </div>
+                                    <Skeleton className="h-10 w-10 rounded-full" />
+                                </div>
+                            </CardBody>
+                        </Card>
+                    ))}
+                </div>
+
+                {/* Search and Filters Skeleton */}
+                <div className="mb-6 space-y-4">
+                    <Skeleton className="h-12 w-full rounded-lg" />
+                    <div className="flex flex-wrap gap-4">
+                        {[1, 2, 3].map((i) => (
+                            <Skeleton key={i} className="h-10 w-40 rounded-lg" />
+                        ))}
+                    </div>
+                </div>
+
+                {/* Classes List Skeleton */}
+                <div className="space-y-4">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <Card key={i}>
+                            <CardBody className="p-6">
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div className="flex-1 w-full">
+                                        <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                            <Skeleton className="h-6 w-48 rounded-lg" />
+                                            <Skeleton className="h-6 w-20 rounded-lg" />
+                                            <Skeleton className="h-6 w-20 rounded-lg" />
+                                            <Skeleton className="h-6 w-32 rounded-lg" />
+                                        </div>
+                                        <Skeleton className="h-4 w-64 rounded-lg mb-2" />
+                                        <Skeleton className="h-4 w-56 rounded-lg mb-2" />
+                                        <Skeleton className="h-4 w-48 rounded-lg" />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Skeleton className="h-10 w-28 rounded-lg" />
+                                        <Skeleton className="h-10 w-28 rounded-lg" />
+                                    </div>
+                                </div>
+                            </CardBody>
+                        </Card>
+                    ))}
+                </div>
+
+                {/* Pagination Skeleton */}
+                <div className="flex justify-center items-center gap-2 mt-8">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <Skeleton key={i} className="h-10 w-10 rounded-lg" />
+                    ))}
+                </div>
             </div>
         );
     }
@@ -154,7 +223,9 @@ export default function AdminLiveClassesPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm opacity-90">Pending Approval</p>
-                                <p className="text-3xl font-bold mt-1">{pendingCount}</p>
+                                <p className="text-3xl font-bold mt-1">
+                                    {isLoading ? <Skeleton className="h-10 w-20 rounded-lg" /> : pendingCount}
+                                </p>
                             </div>
                             <FaClock className="text-4xl opacity-50" />
                         </div>
@@ -167,7 +238,7 @@ export default function AdminLiveClassesPage() {
                             <div>
                                 <p className="text-sm opacity-90">Scheduled</p>
                                 <p className="text-3xl font-bold mt-1">
-                                    {classes.filter((c: any) => c.status === "Scheduled").length}
+                                    {isLoading ? <Skeleton className="h-10 w-20 rounded-lg" /> : classes.filter((c: any) => c.status === "Scheduled").length}
                                 </p>
                             </div>
                             <FaCalendar className="text-4xl opacity-50" />
@@ -179,7 +250,9 @@ export default function AdminLiveClassesPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm opacity-90">Approved Classes</p>
-                                <p className="text-3xl font-bold mt-1">{approvedCount}</p>
+                                <p className="text-3xl font-bold mt-1">
+                                    {isLoading ? <Skeleton className="h-10 w-20 rounded-lg" /> : approvedCount}
+                                </p>
                             </div>
                             <FaCheckCircle className="text-4xl opacity-80" />
                         </div>
@@ -190,7 +263,9 @@ export default function AdminLiveClassesPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm opacity-90">Total Classes</p>
-                                <p className="text-3xl font-bold mt-1">{totalCount}</p>
+                                <p className="text-3xl font-bold mt-1">
+                                    {isLoading ? <Skeleton className="h-10 w-20 rounded-lg" /> : totalCount}
+                                </p>
                             </div>
                             <FaVideo className="text-4xl opacity-50" />
                         </div>

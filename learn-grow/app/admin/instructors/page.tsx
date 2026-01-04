@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardBody, Button, Chip, Input, Select, SelectItem, Pagination, Tabs, Tab } from "@nextui-org/react";
+import { Card, CardBody, Button, Chip, Input, Select, SelectItem, Pagination, Tabs, Tab, Skeleton } from "@nextui-org/react";
 import { FaCheckCircle, FaTimesCircle, FaUserCheck, FaUserClock, FaArrowLeft } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import {
@@ -83,10 +83,71 @@ export default function InstructorApprovalPage() {
 
     if (isLoading) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p>Loading instructors...</p>
+            <div className="container mx-auto px-4 py-8 max-w-7xl">
+                <div className="mb-6">
+                    <Skeleton className="h-10 w-32 rounded-lg mb-6" />
+                </div>
+                
+                <div className="mb-8">
+                    <Skeleton className="h-10 w-64 rounded-lg mb-2" />
+                    <Skeleton className="h-6 w-96 rounded-lg" />
+                </div>
+
+                {/* Stats Skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    {[1, 2, 3].map((i) => (
+                        <Card key={i}>
+                            <CardBody className="p-6">
+                                <Skeleton className="h-12 w-32 rounded-lg mb-4" />
+                                <Skeleton className="h-8 w-20 rounded-lg" />
+                            </CardBody>
+                        </Card>
+                    ))}
+                </div>
+
+                {/* Search Skeleton */}
+                <Skeleton className="h-12 w-full rounded-lg mb-6" />
+
+                {/* Filter Tabs Skeleton */}
+                <div className="flex gap-4 mb-6">
+                    {[1, 2, 3].map((i) => (
+                        <Skeleton key={i} className="h-10 w-24 rounded-lg" />
+                    ))}
+                </div>
+
+                {/* Cards Skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <Card key={i}>
+                            <CardBody className="p-6">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="flex-1">
+                                        <Skeleton className="h-6 w-40 rounded-lg mb-2" />
+                                        <Skeleton className="h-4 w-48 rounded-lg mb-2" />
+                                        <Skeleton className="h-4 w-44 rounded-lg mb-2" />
+                                        <Skeleton className="h-3 w-32 rounded-lg" />
+                                    </div>
+                                    <Skeleton className="h-6 w-20 rounded-lg" />
+                                </div>
+                                <div className="flex gap-2 mt-4">
+                                    <Skeleton className="h-10 flex-1 rounded-lg" />
+                                    <Skeleton className="h-10 flex-1 rounded-lg" />
+                                </div>
+                            </CardBody>
+                        </Card>
+                    ))}
+                </div>
+
+                {/* Pagination Skeleton */}
+                <div className="flex flex-col items-center gap-4 mt-8 mb-6">
+                    <div className="flex items-center gap-2 flex-wrap justify-center">
+                        <Skeleton className="h-10 w-20 rounded-lg" />
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <Skeleton key={i} className="h-10 w-10 rounded-lg" />
+                        ))}
+                        <Skeleton className="h-10 w-20 rounded-lg" />
+                    </div>
+                    <Skeleton className="h-4 w-64 rounded-lg" />
                 </div>
             </div>
         );
@@ -138,7 +199,7 @@ export default function InstructorApprovalPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm opacity-90">Pending Approval</p>
-                                <p className="text-3xl font-bold">{pending.length}</p>
+                                <p className="text-3xl font-bold">{isLoading ? <Skeleton className="h-10 w-20 rounded-lg" /> : pending.length}</p>
                             </div>
                             <FaUserClock className="text-4xl opacity-50" />
                         </div>
@@ -150,7 +211,7 @@ export default function InstructorApprovalPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm opacity-90">Approved</p>
-                                <p className="text-3xl font-bold">{approved.length}</p>
+                                <p className="text-3xl font-bold">{isLoading ? <Skeleton className="h-10 w-20 rounded-lg" /> : approved.length}</p>
                             </div>
                             <FaCheckCircle className="text-4xl opacity-50" />
                         </div>

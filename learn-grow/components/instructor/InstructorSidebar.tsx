@@ -6,20 +6,18 @@ import { usePathname } from "next/navigation";
 import { Badge, Tooltip } from "@nextui-org/react";
 import {
   FaHome,
-  FaTicketAlt,
-  FaUsers,
-  FaChalkboardTeacher,
-  FaUserTie,
   FaBook,
+  FaClipboardList,
+  FaUsers,
+  FaChartLine,
   FaVideo,
-  FaChartBar,
-  FaCog,
+  FaFileAlt,
+  FaTicketAlt,
+  FaUpload,
   FaBars,
   FaTimes,
   FaChevronLeft,
   FaChevronRight,
-  FaShoppingCart,
-  FaBlog,
 } from "react-icons/fa";
 
 interface NavItem {
@@ -29,7 +27,7 @@ interface NavItem {
   badge?: number;
 }
 
-export default function AdminSidebar() {
+export default function InstructorSidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -51,22 +49,23 @@ export default function AdminSidebar() {
   }, []);
 
   const navItems: NavItem[] = [
-    { label: "Dashboard", icon: FaHome, href: "/admin" },
-    { label: "Tickets", icon: FaTicketAlt, href: "/admin/tickets" },
-    { label: "Students", icon: FaUsers, href: "/admin/students" },
-    { label: "Instructors", icon: FaChalkboardTeacher, href: "/admin/instructors" },
-    { label: "Managers", icon: FaUserTie, href: "/admin/managers" },
-    { label: "Courses", icon: FaBook, href: "/admin/courses" },
-    { label: "Orders", icon: FaShoppingCart, href: "/admin/orders" },
-    { label: "Live Classes", icon: FaVideo, href: "/admin/live-classes" },
-    { label: "Blogs", icon: FaBlog, href: "/admin/blog" },
-    { label: "Analytics", icon: FaChartBar, href: "/admin/analytics" },
-    { label: "Settings", icon: FaCog, href: "/admin/settings" },
+    { label: "Dashboard", icon: FaHome, href: "/instructor" },
+    { label: "My Courses", icon: FaBook, href: "/instructor/courses" },
+    {
+      label: "Assessments",
+      icon: FaClipboardList,
+      href: "/instructor/assessments",
+    },
+    { label: "Live Classes", icon: FaVideo, href: "/instructor/live-classes" },
+    { label: "Students", icon: FaUsers, href: "/instructor/students" },
+    { label: "Analytics", icon: FaChartLine, href: "/instructor/analytics" },
+    { label: "My Blogs", icon: FaFileAlt, href: "/instructor/blogs" },
+    { label: "Upload Content", icon: FaUpload, href: "/instructor/upload" },
   ];
 
   const isActive = (href: string) => {
-    if (href === "/admin") {
-      return pathname === "/admin";
+    if (href === "/instructor") {
+      return pathname === "/instructor";
     }
     return pathname.startsWith(href);
   };
@@ -76,10 +75,14 @@ export default function AdminSidebar() {
       {/* Mobile Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 bg-primary-500 text-white p-3 rounded-lg shadow-lg hover:bg-primary-600 transition-colors"
+        className="lg:hidden fixed top-4 left-4 z-50 bg-green-600 text-white p-3 rounded-lg shadow-lg hover:bg-green-700 transition-colors"
         aria-label="Toggle sidebar"
       >
-        {isOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
+        {isOpen ? (
+          <FaTimes className="text-xl" />
+        ) : (
+          <FaBars className="text-xl" />
+        )}
       </button>
 
       {/* Desktop Collapse Toggle Button */}
@@ -105,19 +108,23 @@ export default function AdminSidebar() {
         } w-64 flex flex-col shadow-xl lg:shadow-none`}
       >
         {/* Sidebar Header */}
-        <div className={`p-4 border-b border-gray-200 flex items-center justify-between ${
-          isCollapsed ? "lg:justify-center" : ""
-        }`}>
-          <div className={`flex items-center gap-2 ${
-            isCollapsed ? "lg:hidden" : ""
-          }`}>
-            <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+        <div
+          className={`p-4 border-b border-gray-200 flex items-center justify-between ${
+            isCollapsed ? "lg:justify-center" : ""
+          }`}
+        >
+          <div
+            className={`flex items-center gap-2 ${
+              isCollapsed ? "lg:hidden" : ""
+            }`}
+          >
+            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
               LG
             </div>
-            <span className="font-bold text-lg">Admin Panel</span>
+            <span className="font-bold text-lg">Instructor</span>
           </div>
           <div className={isCollapsed ? "lg:block" : "lg:hidden"}>
-            <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
               LG
             </div>
           </div>
@@ -141,33 +148,45 @@ export default function AdminSidebar() {
                 <div
                   className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all cursor-pointer group relative ${
                     active
-                      ? "bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-md"
-                      : "hover:bg-gray-100 text-gray-700 hover:text-primary-600"
-                  } ${
-                    isCollapsed ? "lg:justify-center" : ""
-                  }`}
+                      ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md"
+                      : "hover:bg-gray-100 text-gray-700 hover:text-green-600"
+                  } ${isCollapsed ? "lg:justify-center" : ""}`}
                 >
-                  <Icon className={`text-xl flex-shrink-0 ${
-                    active ? "" : "group-hover:scale-110 transition-transform"
-                  }`} />
-                  <span className={`font-medium flex-1 ${
-                    isCollapsed ? "lg:hidden" : ""
-                  }`}>{item.label}</span>
+                  <Icon
+                    className={`text-xl flex-shrink-0 ${
+                      active ? "" : "group-hover:scale-110 transition-transform"
+                    }`}
+                  />
+                  <span
+                    className={`font-medium flex-1 ${
+                      isCollapsed ? "lg:hidden" : ""
+                    }`}
+                  >
+                    {item.label}
+                  </span>
                   {item.badge && item.badge > 0 && (
-                    <Badge
-                      content={item.badge}
-                      color="danger"
-                      size="sm"
+                    <span
                       className={`${
-                        active ? "bg-white text-primary-500 font-semibold" : ""
-                      } ${
-                        isCollapsed ? "lg:text-[10px] lg:min-w-[20px] lg:h-5" : ""
+                        isCollapsed
+                          ? "lg:absolute lg:top-1 lg:right-1 lg:w-5 lg:h-5 lg:flex lg:items-center lg:justify-center"
+                          : ""
                       }`}
                     >
-                      <span className={`${
-                        isCollapsed ? "lg:absolute lg:top-1 lg:right-1 lg:w-5 lg:h-5 lg:flex lg:items-center lg:justify-center" : ""
-                      }`} />
-                    </Badge>
+                      <Badge
+                        content={item.badge}
+                        color="danger"
+                        size="sm"
+                        className={`${
+                          active ? "bg-white text-green-500 font-semibold" : ""
+                        } ${
+                          isCollapsed
+                            ? "lg:text-[10px] lg:min-w-[20px] lg:h-5"
+                            : ""
+                        }`}
+                      >
+                        {""}
+                      </Badge>
+                    </span>
                   )}
                 </div>
               </Link>
@@ -191,12 +210,14 @@ export default function AdminSidebar() {
         </nav>
 
         {/* Sidebar Footer */}
-        <div className={`p-4 border-t border-gray-200 ${
-          isCollapsed ? "lg:hidden" : ""
-        }`}>
+        <div
+          className={`p-4 border-t border-gray-200 ${
+            isCollapsed ? "lg:hidden" : ""
+          }`}
+        >
           <div className="text-xs text-gray-500 text-center">
             <p>Learn & Grow</p>
-            <p className="text-[10px] mt-1">v1.0.0</p>
+            <p className="text-[10px] mt-1">Instructor Panel</p>
           </div>
         </div>
       </aside>

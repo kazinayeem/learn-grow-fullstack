@@ -128,6 +128,8 @@ export const baseApi = createApi({
         "EmailHistory",
         "LatestEmail",
         "Analytics",
+        "Tickets",
+        "TicketStats",
     ],
     endpoints: () => ({}),
 });

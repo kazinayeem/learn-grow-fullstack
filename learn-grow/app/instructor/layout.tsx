@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import AdminSidebar from "@/components/admin/AdminSidebar";
+import InstructorSidebar from "@/components/instructor/InstructorSidebar";
 import { useRouter } from "next/navigation";
 import { 
   Dropdown, 
@@ -15,17 +15,17 @@ import {
 import { FaHome, FaUser, FaSignOutAlt, FaBell } from "react-icons/fa";
 import Cookies from "js-cookie";
 
-export default function AdminLayout({
+export default function InstructorLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
-  const [userRole, setUserRole] = useState<"admin" | "manager" | "instructor" | "student" | "guardian">("admin");
-  const [userName, setUserName] = useState("Admin");
+  const [userName, setUserName] = useState("Instructor");
   const [userEmail, setUserEmail] = useState("");
   const [profileImage, setProfileImage] = useState("");
+  const [isApproved, setIsApproved] = useState(true);
 
   useEffect(() => {
     try {
@@ -36,16 +36,15 @@ export default function AdminLayout({
       }
 
       const user = JSON.parse(userStr);
-      // Allow both admin and manager roles to access admin pages
-      if (!user?.role || (user.role !== "admin" && user.role !== "manager")) {
+      if (!user?.role || user.role !== "instructor") {
         router.replace("/unauthorized");
         return;
       }
 
-      setUserRole(user.role);
-      setUserName(user.name || "Admin");
+      setUserName(user.name || "Instructor");
       setUserEmail(user.email || "");
       setProfileImage(user.profileImage || "");
+      setIsApproved(user.isApproved !== undefined ? user.isApproved : true);
     } catch {}
     setChecking(false);
   }, [router]);
@@ -60,7 +59,7 @@ export default function AdminLayout({
   if (checking) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
       </div>
     );
   }
@@ -72,26 +71,28 @@ export default function AdminLayout({
         <div className="flex items-center justify-between px-4 lg:px-6 py-3">
           {/* Left Section - Logo for mobile */}
           <div className="flex items-center gap-3">
-            <div className="lg:hidden w-8 h-8 bg-gradient-to-br from-primary-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+            <div className="lg:hidden w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
               LG
             </div>
             <div className="hidden lg:block">
-              <h1 className="text-xl font-bold text-gray-800">Admin Dashboard</h1>
+              <h1 className="text-xl font-bold text-gray-800">Instructor Dashboard</h1>
               <p className="text-xs text-gray-500">Welcome back, {userName}</p>
             </div>
           </div>
 
           {/* Right Section - User Menu */}
           <div className="flex items-center gap-3">
-            {/* Role Badge */}
-            <Chip 
-              color={userRole === "admin" ? "primary" : "secondary"}
-              variant="flat"
-              size="sm"
-              className="hidden sm:flex"
-            >
-              {userRole === "admin" ? "Admin" : "Manager"}
-            </Chip>
+            {/* Approval Status */}
+            {!isApproved && (
+              <Chip 
+                color="warning" 
+                variant="flat"
+                size="sm"
+                className="hidden sm:flex"
+              >
+                Pending Approval
+              </Chip>
+            )}
 
             {/* Notifications */}
             <Button
@@ -111,13 +112,13 @@ export default function AdminLayout({
                     src={profileImage}
                     name={userName}
                     size="sm"
-                    className="ring-2 ring-primary-500"
+                    className="ring-2 ring-green-500"
                     isBordered
-                    color="primary"
+                    color="success"
                   />
                   <div className="hidden md:block text-left">
                     <p className="text-sm font-semibold text-gray-800">{userName}</p>
-                    <p className="text-xs text-gray-500 capitalize">{userRole}</p>
+                    <p className="text-xs text-gray-500">Instructor</p>
                   </div>
                 </div>
               </DropdownTrigger>
@@ -153,7 +154,7 @@ export default function AdminLayout({
       {/* Main Content Area */}
       <div className="flex">
         {/* Sidebar */}
-        <AdminSidebar />
+        <InstructorSidebar />
 
         {/* Main Content */}
         <main className="flex-1 min-h-[calc(100vh-64px)] overflow-x-hidden">

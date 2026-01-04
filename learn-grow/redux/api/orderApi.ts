@@ -158,6 +158,25 @@ export const orderApi = baseApi.injectEndpoints({
       providesTags: ["Order"],
     }),
 
+    // Get orders for a specific student (admin only)
+    getStudentOrders: builder.query<
+      {
+        success: boolean;
+        data: Order[];
+        pagination: {
+          total: number;
+          page: number;
+          limit: number;
+          totalPages: number;
+        };
+      },
+      { studentId: string; page?: number; limit?: number }
+    >({
+      query: ({ studentId, page = 1, limit = 20 }) => 
+        `/admin/student/${studentId}?page=${page}&limit=${limit}`,
+      providesTags: ["Order"],
+    }),
+
     // Get enrolled students for a course (instructor)
     getEnrolledStudents: builder.query<
       {
@@ -202,4 +221,5 @@ export const {
   useCheckActiveSubscriptionQuery,
   useGetUserPurchasedCoursesQuery,
   useGetEnrolledStudentsQuery,
+  useGetStudentOrdersQuery,
 } = orderApi;

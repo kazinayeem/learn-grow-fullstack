@@ -11,15 +11,18 @@ export default function LayoutWrapper({
 }) {
   const pathname = usePathname();
 
-  const isAdminRoute = pathname.startsWith("/admin");
+  // Hide navbar and footer for admin, manager, and instructor dashboard routes
+  const isDashboardRoute = pathname.startsWith("/admin") || 
+                          pathname.startsWith("/instructor") ||
+                          pathname.startsWith("/manager");
 
   return (
     <div className="relative flex flex-col min-h-screen">
-      {!isAdminRoute && <Navbar />}
+      {!isDashboardRoute && <Navbar />}
 
       <main className="flex-grow">{children}</main>
 
-      {!isAdminRoute && <Footer />}
+      {!isDashboardRoute && <Footer />}
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
     FaExclamationTriangle,
     FaClipboard,
     FaFileAlt,
+    FaTicketAlt,
 } from "react-icons/fa";
 import { useGetInstructorCoursesQuery } from "@/redux/api/courseApi";
 import { useGetInstructorStatsQuery } from "@/redux/api/userApi";
@@ -35,9 +36,10 @@ function InstructorDashboardContent() {
         }
     }, []);
 
-    const { data: instructorCoursesResp } = useGetInstructorCoursesQuery(instructorId as string, {
-        skip: !instructorId,
-    });
+    const { data: instructorCoursesResp } = useGetInstructorCoursesQuery(
+        { instructorId: instructorId || "", page: 1, limit: 100 },
+        { skip: !instructorId }
+    );
 
     const { data: statsResp } = useGetInstructorStatsQuery(undefined, {
         skip: !instructorId,
@@ -140,6 +142,13 @@ function InstructorDashboardContent() {
             color: "from-amber-500 to-amber-600",
             href: "/blog/create",
         },
+        {
+            title: "Support Tickets",
+            description: "Get help and support",
+            icon: <FaTicketAlt className="text-3xl" />,
+            color: "from-pink-500 to-pink-600",
+            href: "/instructor/tickets",
+        },
     ];
 
     const recentActivity = [
@@ -188,12 +197,6 @@ function InstructorDashboardContent() {
             {/* Header */}
             <div className="mb-8">
                 <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-4xl font-bold mb-2">
-                            Welcome back, {userName}! 👋
-                        </h1>
-                        <p className="text-gray-600">Here's your teaching overview</p>
-                    </div>
                     {isApproved !== null && (
                         <Chip 
                             color={isApproved ? "success" : "warning"} 

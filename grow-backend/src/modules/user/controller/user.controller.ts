@@ -421,6 +421,52 @@ export const updateUserRoleAdmin = async (req: Request, res: Response) => {
 };
 
 /**
+ * Get instructor's enrolled students
+ */
+export const getInstructorStudents = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "User not authenticated" });
+    }
+
+    const { page, limit, search } = req.query;
+    const result = await service.getInstructorStudents(userId, {
+      page: Number(page) || 1,
+      limit: Number(limit) || 20,
+      search: (search as string) || undefined,
+    });
+
+    return res.status(result.success ? 200 : 400).json(result);
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message || "Failed to get students" });
+  }
+};
+
+/**
+ * Get individual student details for instructor
+ */
+export const getInstructorStudentById = async (req: Request, res: Response) => {
+  try {
+    const instructorId = req.userId;
+    const { id: studentId } = req.params;
+    
+    if (!instructorId) {
+      return res.status(401).json({ success: false, message: "User not authenticated" });
+    }
+
+    if (!studentId) {
+      return res.status(400).json({ success: false, message: "Student ID is required" });
+    }
+
+    const result = await service.getInstructorStudentById(instructorId, studentId);
+    return res.status(result.success ? 200 : 404).json(result);
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message || "Failed to get student details" });
+  }
+};
+
+/**
  * Get instructor dashboard stats
  */
 export const getInstructorDashboardStats = async (req: Request, res: Response) => {

@@ -41,8 +41,8 @@ export const getAnalytics = async (req: Request, res: Response) => {
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: '$amount' },
-          averageOrderValue: { $avg: '$amount' }
+          totalRevenue: { $sum: '$price' },
+          averageOrderValue: { $avg: '$price' }
         }
       }
     ]);
@@ -61,7 +61,7 @@ export const getAnalytics = async (req: Request, res: Response) => {
       {
         $group: {
           _id: null,
-          total: { $sum: '$amount' }
+          total: { $sum: '$price' }
         }
       }
     ]);
@@ -76,7 +76,7 @@ export const getAnalytics = async (req: Request, res: Response) => {
       {
         $group: {
           _id: null,
-          total: { $sum: '$amount' }
+          total: { $sum: '$price' }
         }
       }
     ]);
@@ -115,7 +115,7 @@ export const getAnalytics = async (req: Request, res: Response) => {
           _id: {
             $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
           },
-          revenue: { $sum: '$amount' },
+          revenue: { $sum: '$price' },
           orders: { $sum: 1 }
         }
       },
@@ -139,8 +139,17 @@ export const getAnalytics = async (req: Request, res: Response) => {
         }
       },
       {
+        $lookup: {
+          from: 'categories',
+          localField: 'category',
+          foreignField: '_id',
+          as: 'categoryInfo'
+        }
+      },
+      {
         $addFields: {
-          enrollmentCount: { $size: '$enrollments' }
+          enrollmentCount: { $size: '$enrollments' },
+          categoryId: { $arrayElemAt: ['$categoryInfo', 0] }
         }
       },
       {
@@ -156,12 +165,16 @@ export const getAnalytics = async (req: Request, res: Response) => {
           rating: 1,
           studentsEnrolled: 1,
           price: 1,
-          category: 1
+          category: 1,
+          categoryId: {
+            _id: 1,
+            name: 1
+          }
         }
       }
     ]);
 
-    // Category distribution
+    // Category distribution with names
     const categoryDistribution = await Course.aggregate([
       {
         $match: {
@@ -170,9 +183,18 @@ export const getAnalytics = async (req: Request, res: Response) => {
         }
       },
       {
+        $lookup: {
+          from: 'categories',
+          localField: 'category',
+          foreignField: '_id',
+          as: 'categoryInfo'
+        }
+      },
+      {
         $group: {
           _id: '$category',
-          count: { $sum: 1 }
+          count: { $sum: 1 },
+          categoryName: { $first: { $arrayElemAt: ['$categoryInfo.name', 0] } }
         }
       },
       {
@@ -199,7 +221,7 @@ export const getAnalytics = async (req: Request, res: Response) => {
         $group: {
           _id: '$planType',
           count: { $sum: 1 },
-          revenue: { $sum: '$amount' }
+          revenue: { $sum: '$price' }
         }
       }
     ]);

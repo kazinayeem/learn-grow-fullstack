@@ -123,6 +123,24 @@ export const userApi = createApi({
             providesTags: ["Users"],
         }),
 
+        // Instructor: Get enrolled students with pagination
+        getInstructorStudents: builder.query({
+            query: ({ page = 1, limit = 20, search = "" } = {}) => {
+                const params = new URLSearchParams();
+                params.set("page", String(page));
+                params.set("limit", String(limit));
+                if (search) params.set("search", search);
+                return `/instructor/students?${params.toString()}`;
+            },
+            providesTags: ["Users"],
+        }),
+
+        // Instructor: Get individual student details
+        getInstructorStudentById: builder.query({
+            query: (id) => `/instructor/students/${id}`,
+            providesTags: ["Users"],
+        }),
+
         // Send OTP for password change
         sendPasswordChangeOtp: builder.mutation({
             query: (data) => ({
@@ -164,6 +182,8 @@ export const {
     useApproveInstructorMutation,
     useRejectInstructorMutation,
     useGetInstructorStatsQuery,
+    useGetInstructorStudentsQuery,
+    useGetInstructorStudentByIdQuery,
     useSendPasswordChangeOtpMutation,
     useVerifyPasswordChangeOtpMutation,
     useUpdatePhoneNumberMutation,

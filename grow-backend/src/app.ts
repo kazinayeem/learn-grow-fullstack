@@ -24,6 +24,7 @@ import orderRoutes from "./modules/order/routes/order.route.js";
 import teamRoutes from "./modules/team/routes/team.routes.js";
 import googleRoutes from "./modules/user/routes/google.routes.js";
 import analyticsRoutes from "./modules/analytics/analytics.route.js";
+import ticketRoutes from "./modules/ticket/route/ticket.route.js";
 import { ENV } from "./config/env.js";
 import "./config/passport.js";
 // Security middleware imports
@@ -164,6 +165,7 @@ export const createApp = () => {
   app.use("/api/status", statusRoutes);
   app.use("/api/v1/status", statusRoutes);
   app.use("/api/analytics", analyticsRoutes);
+  app.use("/api/tickets", ticketRoutes); // Ticket system routes
   // Site Content (public + admin upsert)
   app.use("/api/site-content", siteContentRoutes);
   app.use("/api/v1/site-content", siteContentRoutes);

@@ -25,6 +25,8 @@ router.get("/profile", requireAuth, controller.getProfile);
 router.patch("/profile", requireAuth, validate(schema.updateProfileSchema), controller.updateProfile);
 router.patch("/profile/photo", requireAuth, validate(schema.updateProfilePhotoSchema), controller.updateProfilePhoto);
 router.get("/instructor-stats", requireAuth, requireRoles("instructor"), controller.getInstructorDashboardStats);
+router.get("/instructor/students", requireAuth, requireRoles("instructor"), controller.getInstructorStudents);
+router.get("/instructor/students/:id", requireAuth, requireRoles("instructor"), controller.getInstructorStudentById);
 router.post("/change-password", requireAuth, validate(schema.changePasswordSchema), controller.changePassword);
 router.post("/send-password-change-otp", requireAuth, validate(schema.sendPasswordChangeOtpSchema), controller.sendPasswordChangeOtp);
 router.post("/verify-password-change-otp", requireAuth, validate(schema.verifyPasswordChangeOtpSchema), controller.verifyPasswordChangeOtp);
