@@ -481,19 +481,21 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                     </Card>
                                 </Tab>
 
-                                <Tab 
-                                    key="assessments" 
-                                    title={
-                                        <div className="flex items-center gap-2">
-                                            <span>📝</span>
-                                            <span>Assessments</span>
+                                {isLoggedIn && (
+                                    <Tab 
+                                        key="assessments" 
+                                        title={
+                                            <div className="flex items-center gap-2">
+                                                <span>📝</span>
+                                                <span>Assessments</span>
+                                            </div>
+                                        }
+                                    >
+                                        <div className="mt-4">
+                                            <UnifiedAssessmentView courseId={courseId} hasAccess={hasAccess} />
                                         </div>
-                                    }
-                                >
-                                    <div className="mt-4">
-                                        <UnifiedAssessmentView courseId={courseId} hasAccess={hasAccess} />
-                                    </div>
-                                </Tab>
+                                    </Tab>
+                                )}
                             </Tabs>
                         </div>
 

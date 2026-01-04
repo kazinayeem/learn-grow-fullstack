@@ -59,6 +59,19 @@ export default function CourseList() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const pageSize = 9;
 
+  // Normalize rich-text/HTML descriptions for display and search
+  const sanitizeDescription = (value: string) => {
+    if (!value) return "";
+    return value
+      .replace(/<[^>]*>/g, " ") // strip HTML tags
+      .replace(/&nbsp;|&#160;/g, " ") // decode non-breaking spaces
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
   const categories: any[] = Array.isArray(categoriesData) ? categoriesData : [];
 
   const courses = useMemo(() => {
@@ -80,7 +93,7 @@ export default function CourseList() {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter((c: any) => {
         const title = (c.title || "").toLowerCase();
-        const description = (c.description || "").toLowerCase();
+        const description = sanitizeDescription(c.description || "").toLowerCase();
         return title.includes(searchLower) || description.includes(searchLower);
       });
     }
@@ -277,7 +290,11 @@ export default function CourseList() {
 
                 {/* Description */}
                 <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
-                  {String(course.description || "").replace(/<[^>]*>/g, '').substring(0, 100)}...
+                  {(() => {
+                    const clean = sanitizeDescription(String(course.description || ""));
+                    if (!clean) return "No description available";
+                    return clean.length > 120 ? `${clean.substring(0, 120)}...` : clean;
+                  })()}
                 </p>
 
                 {/* Meta Information */}
@@ -300,12 +317,7 @@ export default function CourseList() {
                       <span className="font-medium">{course.enrolled}</span>
                     </div>
                   )}
-                  {course.rating && (
-                    <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-2.5 py-1.5 rounded-lg">
-                      <FaStar className="text-yellow-500" />
-                      <span className="font-medium">{course.rating}</span>
-                    </div>
-                  )}
+                 
                 </div>
               </CardBody>
 

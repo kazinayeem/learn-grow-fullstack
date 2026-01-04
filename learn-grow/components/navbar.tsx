@@ -40,77 +40,90 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
   const [dashboardUrl, setDashboardUrl] = React.useState("/dashboard");
   const [mounted, setMounted] = React.useState(false);
 
-  React.useEffect(() => {
-    // Mark component as mounted
-    setMounted(true);
+  const syncAuth = React.useCallback(() => {
+    setIsLoading(true);
+    const loggingOut = sessionStorage.getItem("loggingOut");
 
-    const syncAuth = () => {
-      console.log("🔄 Navbar: Auth sync triggered");
+    const tokenCookie = Cookies.get("accessToken");
+    const tokenLocal = localStorage.getItem("token") || localStorage.getItem("accessToken");
+    const token = tokenCookie || tokenLocal;
+    const userStr = localStorage.getItem("user");
+    const role = Cookies.get("userRole") || localStorage.getItem("userRole");
 
-      // 🚨 logout চললে কিছুই করো না
-      const loggingOut = sessionStorage.getItem("loggingOut");
-      console.log("🔄 Navbar: loggingOut flag =", loggingOut);
+    // If logout flag is set but new auth data exists (e.g., Google login), clear the stale flag
+    if (loggingOut === "1" && (token || userStr)) {
+      sessionStorage.removeItem("loggingOut");
+    }
 
-      if (loggingOut === "1") {
-        console.log("🔄 Navbar: Logout in progress, stopping auth sync");
-        setIsAuthenticated(false);
-        setUser(null);
-        setIsLoading(false);
-        return;
-      }
-
-      const tokenCookie = Cookies.get("accessToken");
-      const tokenLocal = localStorage.getItem("token") || localStorage.getItem("accessToken");
-      const token = tokenCookie || tokenLocal;
-      const userStr = localStorage.getItem("user");
-      const role = Cookies.get("userRole") || localStorage.getItem("userRole");
-
-      console.log("🔄 Navbar: Checking auth...");
-      console.log("🔄 Navbar: tokenCookie =", tokenCookie ? "EXISTS" : "MISSING");
-      console.log("🔄 Navbar: tokenLocal =", tokenLocal ? "EXISTS" : "MISSING");
-      console.log("🔄 Navbar: token =", token ? "EXISTS" : "MISSING");
-      console.log("🔄 Navbar: userStr =", userStr ? "EXISTS" : "MISSING");
-      console.log("🔄 Navbar: role =", role);
-
-      if (!token && !userStr) {
-        console.log("🔄 Navbar: No auth data, setting unauthenticated");
-        setIsAuthenticated(false);
-        setUser(null);
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        console.log("🔄 Navbar: Auth data found, setting authenticated");
-        const parsed = userStr ? JSON.parse(userStr) : null;
-        console.log("🔄 Navbar: Parsed user =", parsed);
-        setIsAuthenticated(true);
-        setUser(parsed);
-        const resolvedRole = parsed?.role || role || undefined;
-        console.log("🔄 Navbar: Resolved role =", resolvedRole);
-        setDashboardUrl(getDashboardUrl(resolvedRole));
-      } catch (e) {
-        console.error("🔄 Navbar: Error parsing user:", e);
-        setIsAuthenticated(false);
-        setUser(null);
-      }
+    // If logout is truly in progress and no auth data is present, short-circuit
+    if (loggingOut === "1" && !token && !userStr) {
+      setIsAuthenticated(false);
+      setUser(null);
       setIsLoading(false);
-    };
+      return;
+    }
 
-    // Immediate sync on mount
+    console.log("🔄 Navbar: Checking auth...");
+    console.log("🔄 Navbar: tokenCookie =", tokenCookie ? "EXISTS" : "MISSING");
+    console.log("🔄 Navbar: tokenLocal =", tokenLocal ? "EXISTS" : "MISSING");
+    console.log("🔄 Navbar: token =", token ? "EXISTS" : "MISSING");
+    console.log("🔄 Navbar: userStr =", userStr ? "EXISTS" : "MISSING");
+    console.log("🔄 Navbar: role =", role);
+
+    if (!token && !userStr) {
+      console.log("🔄 Navbar: No auth data, setting unauthenticated");
+      setIsAuthenticated(false);
+      setUser(null);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      console.log("🔄 Navbar: Auth data found, setting authenticated");
+      const parsed = userStr ? JSON.parse(userStr) : null;
+      console.log("🔄 Navbar: Parsed user =", parsed);
+      setIsAuthenticated(true);
+      setUser(parsed);
+      const resolvedRole = parsed?.role || role || undefined;
+      console.log("🔄 Navbar: Resolved role =", resolvedRole);
+      setDashboardUrl(getDashboardUrl(resolvedRole));
+    } catch (e) {
+      console.error("🔄 Navbar: Error parsing user:", e);
+      setIsAuthenticated(false);
+      setUser(null);
+    }
+    setIsLoading(false);
+  }, []);
+
+  React.useEffect(() => {
+    setMounted(true);
     syncAuth();
 
-    // Listen for custom auth change event
     const onAuthChange = () => {
       console.log("🔄 Navbar: Auth change event received");
       syncAuth();
     };
+    const onStorage = () => {
+      console.log("🔄 Navbar: Storage event detected");
+      syncAuth();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        console.log("🔄 Navbar: Visibility change sync");
+        syncAuth();
+      }
+    };
+
     window.addEventListener("auth-change", onAuthChange);
-    
+    window.addEventListener("storage", onStorage);
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       window.removeEventListener("auth-change", onAuthChange);
+      window.removeEventListener("storage", onStorage);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, []);
+  }, [syncAuth]);
 
   const handleLogout = async () => {
     console.log("🚪 Navbar: Logout initiated");
@@ -245,10 +258,20 @@ export const Navbar = () => {
 
   React.useEffect(() => {
     const syncMobile = () => {
+      const loggingOut = sessionStorage.getItem("loggingOut");
       const tokenCookie = Cookies.get("accessToken");
       const tokenLocal = typeof window !== "undefined" ? localStorage.getItem("token") || localStorage.getItem("accessToken") : null;
       const token = tokenCookie || tokenLocal;
       const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+
+      if (loggingOut === "1" && (token || userStr)) {
+        sessionStorage.removeItem("loggingOut");
+      }
+
+      if (loggingOut === "1" && !token && !userStr) {
+        setMobileAuth({ authed: false });
+        return;
+      }
 
       if (token || userStr) {
         try {
@@ -263,7 +286,13 @@ export const Navbar = () => {
 
     syncMobile();
     window.addEventListener("auth-change", syncMobile);
-    return () => window.removeEventListener("auth-change", syncMobile);
+    window.addEventListener("storage", syncMobile);
+    document.addEventListener("visibilitychange", syncMobile);
+    return () => {
+      window.removeEventListener("auth-change", syncMobile);
+      window.removeEventListener("storage", syncMobile);
+      document.removeEventListener("visibilitychange", syncMobile);
+    };
   }, []);
 
   return (
