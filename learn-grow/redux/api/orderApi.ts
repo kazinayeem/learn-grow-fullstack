@@ -172,8 +172,10 @@ export const orderApi = baseApi.injectEndpoints({
       },
       { studentId: string; page?: number; limit?: number }
     >({
-      query: ({ studentId, page = 1, limit = 20 }) => 
-        `/admin/student/${studentId}?page=${page}&limit=${limit}`,
+      query: ({ studentId, page = 1, limit = 20 }) => ({
+        url: '/orders',
+        params: { userId: studentId, page, limit }
+      }),
       providesTags: ["Order"],
     }),
 

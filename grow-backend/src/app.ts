@@ -25,6 +25,7 @@ import teamRoutes from "./modules/team/routes/team.routes.js";
 import googleRoutes from "./modules/user/routes/google.routes.js";
 import analyticsRoutes from "./modules/analytics/analytics.route.js";
 import ticketRoutes from "./modules/ticket/route/ticket.route.js";
+import certificateRoutes from "./modules/certificate/routes/certificate.routes.js";
 import { ENV } from "./config/env.js";
 import "./config/passport.js";
 // Security middleware imports
@@ -62,6 +63,7 @@ export const createApp = () => {
         "http://174.129.111.162:3001",
         "http://174.129.111.162:3002",
         "http://174.129.111.162",
+        "https://learn-grow-fullstack-t7az.vercel.app"
       ];
       
       // Allow requests with no origin (like mobile apps or Postman)
@@ -166,6 +168,7 @@ export const createApp = () => {
   app.use("/api/v1/status", statusRoutes);
   app.use("/api/analytics", analyticsRoutes);
   app.use("/api/tickets", ticketRoutes); // Ticket system routes
+  app.use("/api/certificates", certificateRoutes); // Certificate system routes
   // Site Content (public + admin upsert)
   app.use("/api/site-content", siteContentRoutes);
   app.use("/api/v1/site-content", siteContentRoutes);

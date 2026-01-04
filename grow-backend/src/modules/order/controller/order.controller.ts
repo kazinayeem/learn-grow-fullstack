@@ -80,11 +80,12 @@ export const createOrder = async (req: Request, res: Response) => {
 // Get all orders (Admin only)
 export const getAllOrders = async (req: Request, res: Response) => {
   try {
-    const { status, planType, page = 1, limit = 10 } = req.query;
+    const { status, planType, userId, page = 1, limit = 10 } = req.query;
 
     const result = await getAllOrdersService({
       status: status as string,
       planType: planType as string,
+      userId: userId as string,
       page: parseInt(page as string) || 1,
       limit: parseInt(limit as string) || 10,
     });

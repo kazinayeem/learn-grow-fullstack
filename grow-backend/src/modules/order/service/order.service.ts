@@ -232,11 +232,12 @@ export const getUserOrdersService = async (userId: string) => {
 /**
  * Get all orders (admin)
  */
-export const getAllOrdersService = async (filter?: { status?: string; planType?: string; page?: number; limit?: number }) => {
+export const getAllOrdersService = async (filter?: { status?: string; planType?: string; userId?: string; page?: number; limit?: number }) => {
   try {
     const query: any = {};
     if (filter?.status) query.paymentStatus = filter.status;
     if (filter?.planType) query.planType = filter.planType;
+    if (filter?.userId) query.userId = filter.userId;
 
     const page = filter?.page || 1;
     const limit = filter?.limit || 10;

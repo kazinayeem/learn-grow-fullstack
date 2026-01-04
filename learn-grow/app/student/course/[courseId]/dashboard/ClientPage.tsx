@@ -43,6 +43,11 @@ import {
 import { useGetCourseByIdQuery } from "@/redux/api/courseApi";
 import { useGetQuizzesByCourseQuery } from "@/redux/api/quizApi";
 import { useGetAssignmentsByCourseQuery } from "@/redux/api/assignmentApi";
+import {
+    useGenerateCertificateMutation,
+    useGetCertificateQuery,
+} from "@/redux/api/certificateApi";
+import CertificateComponent from "@/components/certificate/CertificateComponent";
 import { toast } from "react-toastify";
 
 interface Lesson {
@@ -157,6 +162,13 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
     const { data: assignmentsResponse, isLoading: assignmentsLoading } = useGetAssignmentsByCourseQuery(courseId);
     const assignments = assignmentsResponse?.data || [];
 
+    // Certificate management
+    const [generateCertificate, { isLoading: generatingCertificate }] = useGenerateCertificateMutation();
+    const { data: certificateResponse, refetch: refetchCertificate } = useGetCertificateQuery(courseId, {
+        skip: !authChecked || !isAuthorized,
+    });
+    const certificate = certificateResponse?.data || null;
+
     // Log course fetch status
     useEffect(() => {
         if (authChecked && isAuthorized) {
@@ -171,7 +183,6 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
     }, [isLoading, courseData, error, authChecked, isAuthorized]);
 
     const modules: Module[] = courseData?.modules || [];
-    const isCompleted = courseData?.isCompleted || false;
 
     // Calculate progress
     const totalLessons = modules.reduce((sum, mod) => sum + mod.lessons.length, 0);
@@ -180,6 +191,9 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
         0
     );
     const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+    
+    // Course is completed when progress reaches 100%
+    const isCompleted = progressPercentage === 100;
 
     const getLessonIcon = (type: string) => {
         switch (type) {
@@ -537,7 +551,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                 </Tabs>
 
                 {/* Course Completion Banner */}
-                {isCompleted && (
+                {isCompleted && !certificate && (
                     <Card className="mt-8 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 shadow-lg">
                         <CardBody className="p-8 text-center">
                             <div className="inline-block p-4 bg-green-100 rounded-full mb-4">
@@ -552,13 +566,45 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                             <Button
                                 color="success"
                                 size="lg"
-                                startContent={<FaAward />}
+                                startContent={generatingCertificate ? <Spinner size="sm" color="white" /> : <FaAward />}
                                 className="font-semibold"
+                                isDisabled={generatingCertificate}
+                                onPress={async () => {
+                                    try {
+                                        const result = await generateCertificate(courseId).unwrap();
+                                        if (result.success) {
+                                            toast.success("Certificate generated successfully!");
+                                            refetchCertificate();
+                                        }
+                                    } catch (err: any) {
+                                        toast.error(err?.data?.message || "Failed to generate certificate");
+                                    }
+                                }}
                             >
-                                Download Certificate
+                                {generatingCertificate ? "Generating..." : "Generate Certificate"}
                             </Button>
                         </CardBody>
                     </Card>
+                )}
+
+                {/* Certificate Display */}
+                {isCompleted && certificate && (
+                    <div className="mt-8">
+                        <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-2 border-yellow-300 shadow-lg mb-6">
+                            <CardBody className="p-6 text-center">
+                                <div className="inline-block p-3 bg-yellow-100 rounded-full mb-3">
+                                    <FaAward className="text-4xl text-yellow-600" />
+                                </div>
+                                <h2 className="text-2xl font-bold text-yellow-800 mb-2">
+                                    Your Certificate is Ready!
+                                </h2>
+                                <p className="text-yellow-700 text-sm">
+                                    Download your certificate and share your achievement
+                                </p>
+                            </CardBody>
+                        </Card>
+                        <CertificateComponent certificate={certificate} />
+                    </div>
                 )}
             </div>
 

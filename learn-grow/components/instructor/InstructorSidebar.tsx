@@ -60,7 +60,12 @@ export default function InstructorSidebar() {
     { label: "Students", icon: FaUsers, href: "/instructor/students" },
     { label: "Analytics", icon: FaChartLine, href: "/instructor/analytics" },
     { label: "My Blogs", icon: FaFileAlt, href: "/instructor/blogs" },
-    { label: "Upload Content", icon: FaUpload, href: "/instructor/upload" },
+
+    {
+      label: "Support Tickets",
+      icon: FaTicketAlt,
+      href: "/instructor/tickets",
+    },
   ];
 
   const isActive = (href: string) => {
@@ -184,7 +189,7 @@ export default function InstructorSidebar() {
                             : ""
                         }`}
                       >
-                        {""}
+                        <span />
                       </Badge>
                     </span>
                   )}

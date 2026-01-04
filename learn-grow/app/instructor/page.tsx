@@ -288,69 +288,6 @@ function InstructorDashboardContent() {
                     ))}
                 </div>
             </div>
-
-            {/* Two Column Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Recent Activity */}
-                <div className="lg:col-span-2">
-                    <h2 className="text-2xl font-bold mb-4">Recent Activity</h2>
-                    <Card>
-                        <CardBody className="p-6">
-                            <div className="space-y-4">
-                                {recentActivity.map((activity, index) => (
-                                    <div key={index} className="flex items-start gap-4 pb-4 border-b last:border-b-0 last:pb-0">
-                                        <div className="p-3 bg-primary-100 rounded-lg">
-                                            {activity.type === "enrollment" && <FaUsers className="text-primary text-xl" />}
-                                            {activity.type === "completion" && <FaChartLine className="text-green-600 text-xl" />}
-                                            {activity.type === "revenue" && <FaMoneyBillWave className="text-orange-600 text-xl" />}
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="font-medium">{activity.message}</p>
-                                            <p className="text-sm text-gray-500">{activity.time}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardBody>
-                    </Card>
-                </div>
-
-                {/* Earnings Summary */}
-                <div>
-                    <h2 className="text-2xl font-bold mb-4">Earnings</h2>
-                    <Card>
-                        <CardBody className="p-6">
-                            <div className="text-center mb-6">
-                                <p className="text-sm text-gray-600 mb-2">Total Earnings</p>
-                                <p className="text-4xl font-bold text-green-600">
-                                    {stats.totalEarnings.toLocaleString()} BDT
-                                </p>
-                            </div>
-                            <div className="space-y-3">
-                                <div className="flex justify-between py-2 border-b">
-                                    <span className="text-sm text-gray-600">This Month</span>
-                                    <span className="font-semibold">{stats.thisMonthEarnings.toLocaleString()} BDT</span>
-                                </div>
-                                <div className="flex justify-between py-2 border-b">
-                                    <span className="text-sm text-gray-600">Last Month</span>
-                                    <span className="font-semibold">10,500 BDT</span>
-                                </div>
-                                <div className="flex justify-between py-2">
-                                    <span className="text-sm text-gray-600">Pending</span>
-                                    <span className="font-semibold text-orange-600">2,000 BDT</span>
-                                </div>
-                            </div>
-                            <Button
-                                color="primary"
-                                className="w-full mt-6"
-                                onPress={() => router.push("/instructor/earnings")}
-                            >
-                                View Detailed Report
-                            </Button>
-                        </CardBody>
-                    </Card>
-                </div>
-            </div>
         </div>
     );
 }
