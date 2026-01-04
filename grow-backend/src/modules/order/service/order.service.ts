@@ -492,7 +492,7 @@ export const getEnrolledStudentsService = async (
 
     const now = new Date();
     const page = Math.max(1, options?.page || 1);
-    const limit = Math.max(1, Math.min(100, options?.limit || 20)); // Default 20, max 100
+    const limit = Math.max(1, Math.min(10, options?.limit || 10));
     const skip = (page - 1) * limit;
 
     // Use aggregation pipeline for efficient pagination and deduplication

@@ -6,7 +6,7 @@ export const generateCertificate = async (req: Request, res: Response) => {
     const { courseId } = req.params;
     const studentId = req.userId; // From auth middleware
 
-    const result = await certificateService.generateCertificate(studentId, courseId);
+    const result = await certificateService.generateCertificate(studentId, courseId, req);
 
     if (!result.success) {
       return res.status(400).json(result);
@@ -27,7 +27,7 @@ export const getCertificate = async (req: Request, res: Response) => {
     const { courseId } = req.params;
     const studentId = req.userId;
 
-    const result = await certificateService.getCertificate(studentId, courseId);
+    const result = await certificateService.getCertificate(studentId, courseId, req);
 
     if (!result.success) {
       return res.status(404).json(result);

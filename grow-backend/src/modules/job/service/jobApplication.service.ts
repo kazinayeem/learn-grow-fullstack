@@ -1,5 +1,6 @@
 import { JobApplication, IJobApplication } from "../model/jobApplication.model";
 import { JobPost } from "../model/jobPost.model";
+import { parsePagination } from "@/utils/pagination";
 
 interface GetApplicationsQuery {
   jobId?: string;
@@ -40,9 +41,7 @@ export const getApplications = async (query: GetApplicationsQuery = {}) => {
       filter.status = query.status;
     }
 
-    const page = Math.max(1, parseInt(query.page || "1"));
-    const limit = Math.max(1, Math.min(100, parseInt(query.limit || "10")));
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePagination(query, { defaultLimit: 10, maxLimit: 10 });
 
     const applications = await JobApplication.find(filter)
       .populate("jobId", "title department jobType location")

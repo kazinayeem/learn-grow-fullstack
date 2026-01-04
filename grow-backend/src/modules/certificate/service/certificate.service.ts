@@ -3,8 +3,16 @@ import { User } from "../../user/model/user.model";
 import { Enrollment } from "../../enrollment/model/enrollment.model";
 import QRCode from "qrcode";
 import { v4 as uuidv4 } from "uuid";
+import { Request } from "express";
 
-export const generateCertificate = async (studentId: string, courseId: string) => {
+const getBaseUrl = (req: Request): string => {
+  // Try to get base URL from request headers (for proper proxy/deployment support)
+  const protocol = req.get("x-forwarded-proto") || req.protocol || "http";
+  const host = req.get("x-forwarded-host") || req.get("host") || "localhost:5000";
+  return `${protocol}://${host}`;
+};
+
+export const generateCertificate = async (studentId: string, courseId: string, req: Request) => {
   try {
     // Verify enrollment and completion (fallback to allow if missing)
     const enrollment = await Enrollment.findOne({ studentId, courseId });
@@ -31,8 +39,8 @@ export const generateCertificate = async (studentId: string, courseId: string) =
     // Generate unique certificate ID
     const certificateId = `CERT-${Date.now()}-${uuidv4().split("-")[0].toUpperCase()}`;
 
-    // Generate verification URL
-    const baseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    // Generate verification URL with dynamic base URL
+    const baseUrl = getBaseUrl(req);
     const verificationUrl = `${baseUrl}/certificate/verify/${certificateId}`;
 
     // Generate QR code
@@ -71,7 +79,7 @@ export const generateCertificate = async (studentId: string, courseId: string) =
   }
 };
 
-export const getCertificate = async (studentId: string, courseId: string) => {
+export const getCertificate = async (studentId: string, courseId: string, req: Request) => {
   try {
     // Check if course is completed (fallback to allow if missing)
     const enrollment = await Enrollment.findOne({ studentId, courseId });
@@ -97,7 +105,7 @@ export const getCertificate = async (studentId: string, courseId: string) => {
 
     // Generate certificate ID based on student and course
     const certificateId = `CERT-${studentId.slice(-6)}-${courseId.slice(-6)}`.toUpperCase();
-    const baseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const baseUrl = getBaseUrl(req);
     const verificationUrl = `${baseUrl}/certificate/verify/${certificateId}`;
 
     const qrCodeData = await QRCode.toDataURL(verificationUrl, {

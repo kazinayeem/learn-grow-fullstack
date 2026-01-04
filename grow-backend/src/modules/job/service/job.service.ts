@@ -1,4 +1,5 @@
 import { JobPost, IJobPost } from "../model/jobPost.model";
+import { parsePagination } from "@/utils/pagination";
 
 interface GetJobPostsQuery {
   department?: string;
@@ -33,9 +34,7 @@ export const getAllJobPosts = async (query: GetJobPostsQuery = {}) => {
       filter.isPublished = query.isPublished === "true";
     }
     
-    const page = Math.max(1, parseInt(query.page || "1"));
-    const limit = Math.max(1, Math.min(100, parseInt(query.limit || "10")));
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePagination(query, { defaultLimit: 10, maxLimit: 10 });
     
     const jobs = await JobPost.find(filter)
       .sort({ postedAt: -1 })

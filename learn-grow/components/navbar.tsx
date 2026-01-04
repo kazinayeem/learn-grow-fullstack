@@ -313,7 +313,7 @@ export const Navbar = () => {
       isMenuOpen={isMenuOpen}
       onMenuOpenChange={setIsMenuOpen}
     >
-      <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
+      <NavbarContent className="basis-1/5 sm:basis-auto" justify="start">
         <NavbarBrand as="li" className="gap-2 sm:gap-3 max-w-fit">
           <NextLink className="flex justify-start items-center gap-2 sm:gap-3 group" href="/">
             <div className="relative flex-shrink-0">
@@ -327,10 +327,10 @@ export const Navbar = () => {
                 height={64}
               />
             </div>
-            <div className="hidden sm:flex flex-col min-w-0">
+            <div className="flex flex-col min-w-0">
               <p
                 className={clsx(
-                  "font-extrabold text-lg sm:text-xl lg:text-2xl tracking-tight whitespace-nowrap",
+                  "font-extrabold text-base sm:text-lg lg:text-xl tracking-tight",
                   isScrolled 
                     ? "bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"
                     : "text-white drop-shadow-lg"
@@ -339,7 +339,7 @@ export const Navbar = () => {
                 {siteConfig.name}
               </p>
               <p className={clsx(
-                "text-[10px] sm:text-xs font-medium -mt-0.5 whitespace-nowrap",
+                "text-[9px] sm:text-xs font-medium -mt-0.5",
                 isScrolled ? "text-gray-600" : "text-white/90"
               )}>
                 Empowering Education
@@ -347,14 +347,17 @@ export const Navbar = () => {
             </div>
           </NextLink>
         </NavbarBrand>
-        <ul className="hidden md:flex gap-1 lg:gap-2 justify-start ml-4 lg:ml-12">
+      </NavbarContent>
+
+      <NavbarContent className="hidden md:flex basis-full" justify="center">
+        <ul className="flex gap-1 lg:gap-2">
           {siteConfig.navItems.map((item) => (
             <NavbarItem key={item.href}>
               <NextLink
                 className={clsx(
                   "relative text-sm lg:text-base font-semibold transition-all duration-300 px-3 lg:px-4 py-2 rounded-lg group whitespace-nowrap",
                   isScrolled
-                    ? "text-gray-700 hover:text-blue-600"
+                    ? "text-gray-800 hover:text-blue-600"
                     : "text-white hover:text-white/80"
                 )}
                 href={item.href}
@@ -379,7 +382,7 @@ export const Navbar = () => {
       </NavbarContent>
 
       <NavbarContent
-        className="hidden sm:flex basis-1/5 sm:basis-full"
+        className="hidden sm:flex basis-auto"
         justify="end"
       >
         <NavbarItem>

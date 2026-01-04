@@ -2,6 +2,7 @@ import { Event, IEvent } from "../model/event.model";
 import { EventGuest } from "../model/event-guest.model";
 import { EventRegistration } from "../model/event-registration.model";
 import { Types } from "mongoose";
+import { parsePagination } from "@/utils/pagination";
 
 // ===== EVENT SERVICES =====
 
@@ -43,9 +44,7 @@ export const getAllEvents = async (filters: any = {}) => {
     }
   }
   
-  const page = Math.max(1, parseInt(filters.page || "1"));
-  const limit = Math.max(1, Math.min(100, parseInt(filters.limit || "10")));
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = parsePagination(filters, { defaultLimit: 10, maxLimit: 10 });
   
   const events = await Event.find(query)
     .populate("guests", "fullName role profileImage organization")
@@ -143,9 +142,7 @@ export const getAllGuests = async (filters: any = {}) => {
     query.role = filters.role;
   }
   
-  const page = Math.max(1, parseInt(filters.page || "1"));
-  const limit = Math.max(1, Math.min(100, parseInt(filters.limit || "10")));
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = parsePagination(filters, { defaultLimit: 10, maxLimit: 10 });
   
   const guests = await EventGuest.find(query)
     .sort({ createdAt: -1 })
@@ -241,9 +238,7 @@ export const getEventRegistrations = async (eventId: string, filters: any = {}) 
     ];
   }
   
-  const page = Math.max(1, parseInt(filters.page || "1"));
-  const limit = Math.max(1, Math.min(100, parseInt(filters.limit || "10")));
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = parsePagination(filters, { defaultLimit: 10, maxLimit: 10 });
   
   const registrations = await EventRegistration.find(query)
     .sort({ registeredAt: -1 })

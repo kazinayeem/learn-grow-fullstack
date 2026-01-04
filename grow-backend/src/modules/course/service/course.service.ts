@@ -7,6 +7,7 @@ import { Assignment } from "../../assignment/model/assignment.model";
 import { Quiz } from "../../quiz/model/quiz.model";
 import { Order } from "../../order/model/order.model";
 import { sendCourseApprovalEmail } from "@/utils/otp";
+import { parsePagination } from "@/utils/pagination";
 
 // ===== COURSE SERVICES =====
 
@@ -84,9 +85,8 @@ export const getAllCourses = async (filters: any = {}) => {
       }
     }
 
-    const page = Math.max(1, parseInt(filters.page || "1"));
-    const limit = filters.enrolledOnly ? 6 : Math.max(1, Math.min(100, parseInt(filters.limit || "10")));
-    const skip = (page - 1) * limit;
+    const { page, skip, limit: boundedLimit } = parsePagination(filters, { defaultLimit: 10, maxLimit: 10 });
+    const limit = filters.enrolledOnly ? 6 : boundedLimit;
 
     const courses = await Course.find(query)
       .populate("instructorId", "name email profileImage")

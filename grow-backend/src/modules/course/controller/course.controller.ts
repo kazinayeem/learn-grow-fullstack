@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as service from "../service/course.service";
+import { parsePagination } from "@/utils/pagination";
 import { Course } from "../model/course.model";
 import { Module } from "../model/module.model";
 import { Lesson } from "../model/lesson.model";
@@ -367,9 +368,7 @@ export const getCoursesByInstructor = async (req: Request, res: Response) => {
     const targetInstructorId =
       req.userRole === "instructor" ? req.userId! : req.params.instructorId;
 
-    const page = Math.max(1, parseInt(req.query.page as string || "1"));
-    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit as string || "10")));
-
+    const { page, limit } = parsePagination(req.query, { defaultLimit: 10, maxLimit: 10 });
     const result = await service.getCoursesByInstructor(targetInstructorId, { page, limit });
     res.json({
       success: true,
