@@ -214,9 +214,9 @@ export const getCoursesCount = async (req: Request, res: Response) => {
   }
 };
 
-export const getPublishedCourses = async (_: Request, res: Response) => {
+export const getPublishedCourses = async (req: Request, res: Response) => {
   try {
-    const courses = await service.getPublishedCourses();
+    const courses = await service.getPublishedCourses(req.query || {});
     res.json({
       success: true,
       message: "Published courses retrieved successfully",

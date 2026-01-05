@@ -22,7 +22,7 @@ function PaymentProcessingContent() {
   const [state, setState] = useState<ProcessingState>({
     stage: "processing",
     message: "Processing your payment securely...",
-    countdown: 10,
+    countdown: 5,
   });
   const [orderDetails, setOrderDetails] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +71,7 @@ function PaymentProcessingContent() {
         setState({
           stage: "success",
           message: "Order submitted successfully! Admin will review your payment.",
-          countdown: 10,
+          countdown: 5,
         });
         toast.success("Order submitted! Wait for admin approval.");
       } catch (error: any) {

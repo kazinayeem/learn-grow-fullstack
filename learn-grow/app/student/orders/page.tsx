@@ -34,12 +34,13 @@ const STATUS_ICONS = {
 
 export default function StudentOrdersPage() {
   const router = useRouter();
-  const { data, isLoading, refetch } = useGetMyOrdersQuery();
+  const [page, setPage] = React.useState(1);
+  const { data, isLoading, refetch } = useGetMyOrdersQuery({ page, limit: 6 });
 
-  // Force refetch on mount to ensure data loads
+  // Force refetch when page changes
   React.useEffect(() => {
     refetch();
-  }, [refetch]);
+  }, [page, refetch]);
 
   if (isLoading) {
     return (
@@ -50,6 +51,7 @@ export default function StudentOrdersPage() {
   }
 
   const orders = data?.orders || [];
+  const pagination = data?.pagination || { total: orders.length, page: 1, limit: 6, totalPages: 1 };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -58,7 +60,9 @@ export default function StudentOrdersPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">My Orders</h1>
-            <p className="text-sm text-gray-600 mt-1">{orders.length} order{orders.length !== 1 ? 's' : ''} found</p>
+            <p className="text-sm text-gray-600 mt-1">
+              {pagination.total} order{pagination.total !== 1 ? 's' : ''} found
+            </p>
           </div>
           <Button
             color="primary"
@@ -204,6 +208,29 @@ export default function StudentOrdersPage() {
                 </Card>
               );
             })}
+            {pagination.totalPages > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-8 flex-col">
+                <Button
+                  size="sm"
+                  variant="flat"
+                  onPress={() => setPage((prev) => Math.max(1, prev - 1))}
+                  isDisabled={page <= 1}
+                >
+                  Previous
+                </Button>
+                <div className="text-sm text-gray-600">
+                  Page {page} of {pagination.totalPages}
+                </div>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  onPress={() => setPage((prev) => Math.min(pagination.totalPages, prev + 1))}
+                  isDisabled={page >= pagination.totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

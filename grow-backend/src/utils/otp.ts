@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { ENV } from "@/config/env";
+import { getSMTPTransporter } from "@/modules/settings/service/smtp.service";
 
 /**
  * Send Course Approval Email to Instructor
@@ -11,15 +12,7 @@ export const sendCourseApprovalEmail = async (
   courseId: string
 ): Promise<boolean> => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: ENV.EMAIL_HOST,
-      port: ENV.EMAIL_PORT,
-      secure: ENV.EMAIL_PORT === 465,
-      auth: {
-        user: ENV.EMAIL_USER,
-        pass: ENV.EMAIL_PASSWORD,
-      },
-    });
+    const transporter = await getSMTPTransporter();
 
     const mailOptions = {
       from: ENV.EMAIL_USER,
@@ -89,15 +82,7 @@ export const sendOTPEmail = async (
   name: string = "User"
 ): Promise<boolean> => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: ENV.EMAIL_HOST,
-      port: ENV.EMAIL_PORT,
-      secure: ENV.EMAIL_PORT === 465,
-      auth: {
-        user: ENV.EMAIL_USER,
-        pass: ENV.EMAIL_PASSWORD,
-      },
-    });
+    const transporter = await getSMTPTransporter();
 
     const mailOptions = {
       from: ENV.EMAIL_USER,
@@ -169,15 +154,7 @@ export const sendWelcomeEmail = async (
   role: string
 ): Promise<boolean> => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: ENV.EMAIL_HOST,
-      port: ENV.EMAIL_PORT,
-      secure: ENV.EMAIL_PORT === 465,
-      auth: {
-        user: ENV.EMAIL_USER,
-        pass: ENV.EMAIL_PASSWORD,
-      },
-    });
+    const transporter = await getSMTPTransporter();
 
     const roleMessages: Record<string, string> = {
       student: "Start learning with our wide range of courses!",
@@ -236,15 +213,7 @@ export const sendGuardianCredentialsEmail = async (
   guardianPassword: string
 ): Promise<boolean> => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: ENV.EMAIL_HOST,
-      port: ENV.EMAIL_PORT,
-      secure: ENV.EMAIL_PORT === 465,
-      auth: {
-        user: ENV.EMAIL_USER,
-        pass: ENV.EMAIL_PASSWORD,
-      },
-    });
+    const transporter = await getSMTPTransporter();
 
     const mailOptions = {
       from: ENV.EMAIL_USER,
@@ -290,15 +259,7 @@ export const sendInstructorApprovalEmail = async (
   isApproved: boolean
 ): Promise<boolean> => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: ENV.EMAIL_HOST,
-      port: ENV.EMAIL_PORT,
-      secure: ENV.EMAIL_PORT === 465,
-      auth: {
-        user: ENV.EMAIL_USER,
-        pass: ENV.EMAIL_PASSWORD,
-      },
-    });
+    const transporter = await getSMTPTransporter();
 
     const subject = isApproved 
       ? "🎉 Your Instructor Account Has Been Approved!"

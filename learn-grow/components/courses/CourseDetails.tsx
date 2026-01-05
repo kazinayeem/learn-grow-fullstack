@@ -250,12 +250,14 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                         src={
                                             course.thumbnail ||
                                             course.img ||
-                                            "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=1000&auto=format&fit=crop"
+                                            "/images/course-placeholder.jpg"
                                         }
                                         alt={course.title}
                                         className="absolute inset-0 w-full h-full object-cover"
                                         onError={(e) => {
-                                            e.currentTarget.src = "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=1000&auto=format&fit=crop";
+                                            const img = e.currentTarget;
+                                            img.onerror = null;
+                                            img.src = "/logo.png";
                                         }}
                                     />
                                 </div>
@@ -374,11 +376,22 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                             {/* Responsive instructor info */}
                                             <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                                                 {course.instructorId?.profileImage ? (
-                                                    <img
-                                                        src={course.instructorId.profileImage}
-                                                        alt={course.instructorId.name || "Instructor"}
-                                                        className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border-3 border-primary shadow-lg flex-shrink-0 mx-auto sm:mx-0"
-                                                    />
+                                                    <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full border-3 border-primary shadow-lg flex-shrink-0 mx-auto sm:mx-0 overflow-hidden">
+                                                        <img
+                                                            src={course.instructorId.profileImage}
+                                                            alt={course.instructorId.name || "Instructor"}
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                const img = e.currentTarget;
+                                                                img.onerror = null;
+                                                                img.style.display = 'none';
+                                                                const parent = img.parentElement;
+                                                                if (parent) {
+                                                                    parent.innerHTML = `<div class="w-full h-full rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-3xl sm:text-4xl">${(course.instructorId?.name || "U")[0]?.toUpperCase()}</div>`;
+                                                                }
+                                                            }}
+                                                        />
+                                                    </div>
                                                 ) : (
                                                     <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-3xl sm:text-4xl shadow-lg flex-shrink-0 mx-auto sm:mx-0">
                                                         {(course.instructorId?.name || "U")[0]?.toUpperCase()}
@@ -549,11 +562,22 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                         <div className="flex flex-col sm:flex-row sm:gap-3 gap-2">
                                             <div className="flex justify-center sm:justify-start">
                                                 {course.instructorId?.profileImage ? (
-                                                    <img
-                                                        src={course.instructorId.profileImage}
-                                                        alt={course.instructorId.name || "Instructor"}
-                                                        className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-primary flex-shrink-0"
-                                                    />
+                                                    <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-primary flex-shrink-0 overflow-hidden">
+                                                        <img
+                                                            src={course.instructorId.profileImage}
+                                                            alt={course.instructorId.name || "Instructor"}
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                const img = e.currentTarget;
+                                                                img.onerror = null;
+                                                                img.style.display = 'none';
+                                                                const parent = img.parentElement;
+                                                                if (parent) {
+                                                                    parent.innerHTML = `<div class="w-full h-full rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-lg sm:text-2xl">${(course.instructorId?.name || course.instructorName || "U")[0]?.toUpperCase()}</div>`;
+                                                                }
+                                                            }}
+                                                        />
+                                                    </div>
                                                 ) : (
                                                     <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-lg sm:text-2xl flex-shrink-0">
                                                         {(course.instructorId?.name || course.instructorName || "Unknown")[0]?.toUpperCase()}
@@ -595,7 +619,7 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                         <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                                             <li className="flex items-center gap-2 text-default-600">
                                                 <span className="text-success font-bold flex-shrink-0">✓</span>
-                                                <span className="leading-snug">Full lifetime access</span>
+                                                <span className="leading-snug">3 month access</span>
                                             </li>
                                             <li className="flex items-center gap-2 text-default-600">
                                                 <span className="text-success font-bold flex-shrink-0">✓</span>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Card, CardBody, CardHeader, Button, Progress, Chip, Avatar, Spinner, Divider } from "@nextui-org/react";
+import { Card, CardBody, CardHeader, Button, Progress, Chip, Avatar, Spinner, Divider, Pagination } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import { useGetMyOrdersQuery } from "@/redux/api/orderApi";
 import { useGetAllCoursesQuery } from "@/redux/api/courseApi";
@@ -280,34 +280,27 @@ export default function StudentDashboard() {
                                         
                                         {/* Pagination */}
                                         {totalPages > 1 && (
-                                            <div className="flex justify-center items-center gap-2 mt-6 pt-4 border-t">
-                                                <Button
-                                                    isIconOnly
-                                                    variant="light"
-                                                    isDisabled={currentPage === 1}
-                                                    onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                                                >
-                                                    ←
-                                                </Button>
-                                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                                    <Button
-                                                        key={page}
-                                                        variant={currentPage === page ? "solid" : "light"}
-                                                        color={currentPage === page ? "primary" : "default"}
-                                                        size="sm"
-                                                        onPress={() => setCurrentPage(page)}
-                                                    >
-                                                        {page}
-                                                    </Button>
-                                                ))}
-                                                <Button
-                                                    isIconOnly
-                                                    variant="light"
-                                                    isDisabled={currentPage === totalPages}
-                                                    onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                                                >
-                                                    →
-                                                </Button>
+                                            <div className="flex flex-col items-center gap-3 mt-6 pt-4 border-t">
+                                                <Pagination
+                                                    total={totalPages}
+                                                    page={currentPage}
+                                                    onChange={setCurrentPage}
+                                                    showControls
+                                                    color="primary"
+                                                    size="md"
+                                                    className="gap-1"
+                                                    radius="lg"
+                                                    classNames={{
+                                                        wrapper: "gap-1 flex-wrap justify-center",
+                                                        item: "w-8 h-8 min-w-8 sm:w-10 sm:h-10 sm:min-w-10 text-sm",
+                                                        cursor: "bg-primary text-white font-medium",
+                                                        prev: "w-8 h-8 min-w-8 sm:w-10 sm:h-10 sm:min-w-10",
+                                                        next: "w-8 h-8 min-w-8 sm:w-10 sm:h-10 sm:min-w-10"
+                                                    }}
+                                                />
+                                                <p className="text-xs text-gray-500 text-center px-2">
+                                                    Showing {purchasedCourses.length} of {totalPurchasedCourses} courses • Page {currentPage} of {totalPages}
+                                                </p>
                                             </div>
                                         )}
                                     </>

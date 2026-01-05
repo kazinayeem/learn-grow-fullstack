@@ -84,6 +84,7 @@ export default function CheckoutPage() {
     city: "",
     postalCode: "",
   });
+  const [existingSubscription, setExistingSubscription] = useState<any>(null);
 
   // Pricing based on plan type
   const PLAN_PRICES = {
@@ -151,6 +152,34 @@ export default function CheckoutPage() {
           name: user?.name || "",
           phone: user?.phone || "",
         }));
+
+        // Check if user already has an active quarterly subscription
+        if (planType === "quarterly") {
+          try {
+            const ordersResponse = await axios.get(
+              `${API_CONFIG.BASE_URL}/orders/my`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+            const userOrders = ordersResponse.data?.orders || ordersResponse.data?.data || [];
+            
+            // Find active quarterly subscription
+            const now = new Date();
+            const activeSubscription = userOrders.find((order: any) => 
+              order.planType === "quarterly" && 
+              order.paymentStatus === "approved" &&
+              order.isActive === true &&
+              new Date(order.endDate) > now
+            );
+
+            if (activeSubscription) {
+              setExistingSubscription(activeSubscription);
+            }
+          } catch (error) {
+            console.error("Error checking existing subscription:", error);
+          }
+        }
 
         // Fetch payment methods
         const paymentResponse = await axios.get(
@@ -311,6 +340,88 @@ export default function CheckoutPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content - Left */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Subscription Extension Notice */}
+            {existingSubscription && planType === "quarterly" && (
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-6">
+                <div className="flex items-start gap-4">
+                  <div className="bg-green-600 text-white rounded-full p-3 flex-shrink-0">
+                    <Check size={24} />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-green-900 mb-2">
+                      🎉 Subscription Extension / সাবস্ক্রিপশন এক্সটেনশন
+                    </h3>
+                    <p className="text-sm text-green-800 mb-3">
+                      You already have an active quarterly subscription! This purchase will extend your subscription by 3 more months.
+                    </p>
+                    <p className="text-sm text-green-800 mb-3">
+                      আপনার ইতিমধ্যে একটি সক্রিয় ত্রৈমাসিক সাবস্ক্রিপশন আছে! এই ক্রয়টি আপনার সাবস্ক্রিপশন আরও ৩ মাস বৃদ্ধি করবে।
+                    </p>
+                    <div className="bg-white rounded-lg p-4 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600">Time Remaining / বাকি সময়:</span>
+                        <span className="font-semibold text-blue-700">
+                          {(() => {
+                            const now = new Date();
+                            const endDate = new Date(existingSubscription.endDate);
+                            const diffTime = endDate.getTime() - now.getTime();
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            const diffMonths = Math.floor(diffDays / 30);
+                            const remainingDays = diffDays % 30;
+                            
+                            if (diffMonths > 0) {
+                              return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ${remainingDays > 0 ? `${remainingDays} days` : ''}`;
+                            }
+                            return `${diffDays} days`;
+                          })()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600">Current End Date / বর্তমান শেষ তারিখ:</span>
+                        <span className="font-semibold text-slate-900">
+                          {new Date(existingSubscription.endDate).toLocaleDateString('en-GB')}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm pt-2 border-t border-green-200">
+                        <span className="text-green-700 font-medium">New End Date (+ 3 months) / নতুন শেষ তারিখ:</span>
+                        <span className="font-bold text-green-700">
+                          {(() => {
+                            const newEndDate = new Date(existingSubscription.endDate);
+                            newEndDate.setMonth(newEndDate.getMonth() + 3);
+                            return newEndDate.toLocaleDateString('en-GB');
+                          })()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-green-700">Total Time After Extension / মোট সময়:</span>
+                        <span className="font-bold text-green-700">
+                          {(() => {
+                            const now = new Date();
+                            const newEndDate = new Date(existingSubscription.endDate);
+                            newEndDate.setMonth(newEndDate.getMonth() + 3);
+                            const diffTime = newEndDate.getTime() - now.getTime();
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            const diffMonths = Math.floor(diffDays / 30);
+                            const remainingDays = diffDays % 30;
+                            
+                            if (diffMonths > 0) {
+                              return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ${remainingDays > 0 ? `${remainingDays} days` : ''}`;
+                            }
+                            return `${diffDays} days`;
+                          })()}
+                        </span>
+                      </div>
+                      <div className="pt-2 border-t border-slate-200">
+                        <p className="text-xs text-slate-600">
+                          ✓ Your subscription will be automatically extended after payment approval
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Order Summary Card */}
             <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 md:p-8">
               <h2 className="text-xl font-bold text-slate-900 mb-6">Order Summary / অর্ডার সারাংশ</h2>
@@ -325,7 +436,9 @@ export default function CheckoutPage() {
                       fill
                       className="object-cover"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://via.placeholder.com/150";
+                        const img = e.target as HTMLImageElement;
+                        img.onerror = null;
+                        img.src = "/logo.png";
                       }}
                     />
                   ) : (
@@ -516,58 +629,68 @@ export default function CheckoutPage() {
             <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 md:p-8">
               <h2 className="text-xl font-bold text-slate-900 mb-6">Payment Method / পেমেন্ট পদ্ধতি</h2>
 
-              <div className="space-y-3">
-                {paymentMethods.map((method) => (
-                  <label
-                    key={method._id}
-                    className={`flex items-start gap-4 p-4 rounded-lg border-2 transition cursor-pointer ${
-                      selectedPaymentMethod === method._id
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-slate-200 bg-white hover:border-slate-300"
-                    }`}
-                  >
-                    <div className="flex items-center h-6 mt-0.5">
-                      <input
-                        type="radio"
-                        name="payment-method"
-                        value={method._id}
-                        checked={selectedPaymentMethod === method._id}
-                        onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                        className="w-4 h-4 accent-blue-600"
-                      />
-                    </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Select Payment Method / পেমেন্ট পদ্ধতি নির্বাচন করুন
+                </label>
+                <select
+                  value={selectedPaymentMethod}
+                  onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition"
+                >
+                  <option value="">Choose a payment method / একটি পদ্ধতি নির্বাচন করুন</option>
+                  {paymentMethods.map((method) => (
+                    <option key={method._id} value={method._id}>
+                      {method.name} {method.accountNumber ? `- ${method.accountNumber}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        {method.name.toLowerCase().includes("card") && (
-                          <CreditCard size={18} className="text-blue-600" />
-                        )}
-                        {method.name.toLowerCase().includes("mobile") && (
-                          <Smartphone size={18} className="text-green-600" />
-                        )}
-                        {method.name.toLowerCase().includes("cash") && (
-                          <Banknote size={18} className="text-amber-600" />
-                        )}
-                        <span className="font-semibold text-slate-900">{method.name}</span>
-                      </div>
-
-                      {method.paymentNote && (
-                        <p className="text-sm text-slate-600">{method.paymentNote}</p>
-                      )}
-
-                      {method.accountNumber && (
-                        <p className="text-xs text-slate-500 mt-1">
-                          Account: {method.accountNumber}
+              {/* Show selected payment method details */}
+              {selectedPaymentMethod && paymentMethods.find(m => m._id === selectedPaymentMethod) && (
+                <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-3 mb-3">
+                    {paymentMethods.find(m => m._id === selectedPaymentMethod)?.name.toLowerCase().includes("rocket") && (
+                      <CreditCard size={20} className="text-blue-600" />
+                    )}
+                    {paymentMethods.find(m => m._id === selectedPaymentMethod)?.name.toLowerCase().includes("bkash") && (
+                      <Smartphone size={20} className="text-pink-600" />
+                    )}
+                    {paymentMethods.find(m => m._id === selectedPaymentMethod)?.name.toLowerCase().includes("bank") && (
+                      <Banknote size={20} className="text-green-600" />
+                    )}
+                    <div>
+                      <h3 className="font-bold text-slate-900">
+                        {paymentMethods.find(m => m._id === selectedPaymentMethod)?.name}
+                      </h3>
+                      {paymentMethods.find(m => m._id === selectedPaymentMethod)?.accountNumber && (
+                        <p className="text-sm text-slate-600">
+                          Account: {paymentMethods.find(m => m._id === selectedPaymentMethod)?.accountNumber}
                         </p>
                       )}
                     </div>
+                    <Check size={20} className="text-blue-600 ml-auto flex-shrink-0" />
+                  </div>
+                </div>
+              )}
 
-                    {selectedPaymentMethod === method._id && (
-                      <Check size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
-                    )}
-                  </label>
-                ))}
-              </div>
+              {/* Show detailed payment note when method selected */}
+              {selectedPaymentMethod && paymentMethods.find(m => m._id === selectedPaymentMethod)?.paymentNote && (
+                <div className="mt-6 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-blue-600 text-white rounded-full p-2 flex-shrink-0">
+                      <Shield size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-blue-900 mb-2 text-base">Payment Instructions / পেমেন্ট নির্দেশনা</h3>
+                      <div className="text-sm text-slate-700 space-y-2 whitespace-pre-line">
+                        {paymentMethods.find(m => m._id === selectedPaymentMethod)?.paymentNote}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Payment Details Card */}

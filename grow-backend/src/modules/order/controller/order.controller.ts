@@ -3,6 +3,7 @@ import { Order } from "../model/order.model";
 import mongoose from "mongoose";
 import nodemailer from "nodemailer";
 import { Course } from "../../course/model/course.model";
+import { getSMTPTransporter } from "../../settings/service/smtp.service";
 import {
   createOrderService,
   getUserOrdersService,
@@ -135,18 +136,20 @@ export const getOrderById = async (req: Request, res: Response) => {
 export const getUserOrders = async (req: Request, res: Response) => {
   try {
     const userId = req.userId;
+    const page = parseInt((req.query.page as string) || "1", 10) || 1;
+    const limit = parseInt((req.query.limit as string) || "6", 10) || 6;
 
     if (!userId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    const result = await getUserOrdersService(userId);
+    const result = await getUserOrdersService(userId, page, limit);
 
     if (!result.success) {
       return res.status(400).json(result);
     }
 
-    return res.json({ success: true, orders: result.data, data: result.data });
+    return res.json({ success: true, orders: result.data, data: result.data, pagination: result.pagination });
   } catch (error: any) {
     console.error("Get user orders error:", error);
     res.status(500).json({ success: false, message: "Failed to fetch orders", error: error.message });
@@ -416,13 +419,7 @@ export const sendOrderEmail = async (req: Request, res: Response) => {
       });
     }
 
-    const transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE || "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    });
+    const transporter = await getSMTPTransporter();
 
     let htmlContent = "";
 

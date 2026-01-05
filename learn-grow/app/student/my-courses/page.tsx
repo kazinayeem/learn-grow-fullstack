@@ -11,6 +11,7 @@ export default function MyCoursesPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const { data, isLoading, refetch } = useGetUserPurchasedCoursesQuery(currentPage);
     const courses = data?.courses || [];
+    const safeCourses = courses.filter((item: any) => item && item.course);
     const pagination = data?.pagination || { total: 0, page: 1, limit: 9, totalPages: 1 };
     const hasQuarterlyAccess = data?.hasQuarterlyAccess || false;
 
@@ -23,13 +24,13 @@ export default function MyCoursesPage() {
     React.useEffect(() => {
         if (data) {
             console.log("[MyCoursesPage] Data received:", {
-                coursesCount: courses.length,
+                coursesCount: safeCourses.length,
                 hasQuarterlyAccess,
                 pagination,
-                firstCourse: courses[0]
+                firstCourse: safeCourses[0]
             });
         }
-    }, [data, courses, hasQuarterlyAccess, pagination]);
+    }, [data, courses, safeCourses, hasQuarterlyAccess, pagination]);
 
     if (isLoading) {
         return (
@@ -66,7 +67,7 @@ export default function MyCoursesPage() {
             <div className="container mx-auto max-w-7xl px-6 -mt-8">
                 <Card className="min-h-[400px]">
                     <CardBody className="p-8">
-                        {courses.length === 0 ? (
+                        {safeCourses.length === 0 ? (
                             <div className="text-center py-12">
                                 <FaBook className="text-6xl text-gray-300 mx-auto mb-4" />
                                 <h3 className="text-xl font-semibold text-gray-700 mb-2">
@@ -90,15 +91,15 @@ export default function MyCoursesPage() {
                                         <p className="text-gray-800 font-semibold">
                                             🎓 You have access to all {pagination.total} published courses through your Premium subscription!
                                         </p>
-                                        {courses.length > 0 && (
+                                        {safeCourses.length > 0 && safeCourses[0]?.accessUntil && (
                                             <p className="text-gray-600 text-sm mt-1">
-                                                Your access expires on {new Date(courses[0]?.accessUntil).toLocaleDateString()}
+                                                Your access expires on {new Date(safeCourses[0]?.accessUntil).toLocaleDateString()}
                                             </p>
                                         )}
                                     </div>
                                 )}
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                                    {courses.map((item: any) => (
+                                    {safeCourses.map((item: any) => (
                                         <Card
                                             key={item.course._id}
                                             className="hover:scale-[1.02] transition-all border border-transparent hover:border-primary"
@@ -108,8 +109,8 @@ export default function MyCoursesPage() {
                                                 onClick={() => router.push(`/courses/${item.course._id}`)}
                                             >
                                                 <img
-                                                    src={item.course.thumbnail || "/images/course-placeholder.jpg"}
-                                                    alt={item.course.title}
+                                                    src={item.course?.thumbnail || "/images/course-placeholder.jpg"}
+                                                    alt={item.course?.title || "Course thumbnail"}
                                                     className="object-cover w-full h-full"
                                                 />
                                                 <div className="absolute inset-0 bg-black/20 hover:bg-black/10 transition-colors" />

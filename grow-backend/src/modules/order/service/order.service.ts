@@ -6,6 +6,7 @@ import { Enrollment } from "../../enrollment/model/enrollment.model";
 import { ENV } from "@/config/env";
 import mongoose from "mongoose";
 import nodemailer from "nodemailer";
+import { getSMTPTransporter } from "@/modules/settings/service/smtp.service";
 
 // ENROLLMENT PRICING
 export const ENROLLMENT_PRICES = {
@@ -18,15 +19,7 @@ const formatPrice = (amount: number) => `৳${Number(amount || 0).toLocaleString
 
 const sendOrderEmail = async (order: any) => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: ENV.EMAIL_HOST,
-      port: ENV.EMAIL_PORT,
-      secure: ENV.EMAIL_PORT === 465,
-      auth: {
-        user: ENV.EMAIL_USER,
-        pass: ENV.EMAIL_PASSWORD,
-      },
-    });
+    const transporter = await getSMTPTransporter();
 
     const user = order.userId || {};
     const course = order.courseId || {};
@@ -216,14 +209,34 @@ export const createOrderService = async (
 /**
  * Get orders for a user
  */
-export const getUserOrdersService = async (userId: string) => {
+export const getUserOrdersService = async (userId: string, page = 1, limit = 6) => {
   try {
-    const orders = await Order.find({ userId: new mongoose.Types.ObjectId(userId) })
-      .populate("courseId", "title thumbnail")
-      .populate("paymentMethodId", "name")
-      .sort({ createdAt: -1 });
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(Math.max(1, limit), 50);
+    const skip = (safePage - 1) * safeLimit;
 
-    return { success: true, data: orders };
+    const [orders, total] = await Promise.all([
+      Order.find({ userId: new mongoose.Types.ObjectId(userId) })
+        .populate("courseId", "title thumbnail")
+        .populate("paymentMethodId", "name")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(safeLimit),
+      Order.countDocuments({ userId: new mongoose.Types.ObjectId(userId) }),
+    ]);
+
+    const totalPages = Math.max(1, Math.ceil(total / safeLimit));
+
+    return {
+      success: true,
+      data: orders,
+      pagination: {
+        total,
+        page: safePage,
+        limit: safeLimit,
+        totalPages,
+      },
+    };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
@@ -287,8 +300,28 @@ export const approveOrderService = async (orderId: string) => {
     let startDate = now;
     let endDate: Date | undefined;
 
-    if (order.planType === "single" || order.planType === "quarterly") {
-      // 3 months access
+    // For quarterly plan, check if user has existing active subscription
+    if (order.planType === "quarterly") {
+      const existingActiveOrder = await Order.findOne({
+        userId: order.userId,
+        planType: "quarterly",
+        paymentStatus: "approved",
+        isActive: true,
+        endDate: { $gt: now },
+        _id: { $ne: orderId }, // Exclude current order
+      }).sort({ endDate: -1 });
+
+      if (existingActiveOrder && existingActiveOrder.endDate) {
+        // Extend from existing end date
+        startDate = existingActiveOrder.endDate;
+        endDate = new Date(existingActiveOrder.endDate.getTime() + 90 * 24 * 60 * 60 * 1000);
+        console.log(`Extending quarterly subscription from ${existingActiveOrder.endDate} to ${endDate}`);
+      } else {
+        // New subscription - 3 months from now
+        endDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+      }
+    } else if (order.planType === "single") {
+      // Single course - 3 months access
       endDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
     }
     // Kit only: no end date needed (one-time delivery)

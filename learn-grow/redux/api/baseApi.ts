@@ -112,6 +112,7 @@ export const baseApi = createApi({
         "Course",
         "Category",
         "SiteContent",
+        "Settings",
         "Job",
         "Module",
         "Lesson",

@@ -33,7 +33,13 @@ export default function AllLiveClassesPage() {
     // Calculate skip based on current page
     const skip = (currentPage - 1) * itemsPerPage;
     const { data: classesData, isLoading: classesLoading } = useGetAllLiveClassesQuery({ skip, limit: itemsPerPage });
-    const allClasses = classesData?.data || [];
+    const allClasses = (classesData?.data || []).filter((cls: any) => {
+        if (!cls) return false;
+        if (!cls.courseId) return false;
+        // Allow string courseId or object with _id
+        if (typeof cls.courseId === "string") return true;
+        return Boolean(cls.courseId?._id);
+    });
     const totalCount = classesData?.pagination?.total || 0;
 
     // Filter classes based on student enrollment
@@ -50,8 +56,8 @@ export default function AllLiveClassesPage() {
         );
 
         if (hasQuarterly) {
-            // Premium: show all classes
-            return allClasses;
+            // Premium: show all classes with valid course reference
+            return allClasses.filter((cls: any) => cls && cls.courseId);
         }
 
         // Get enrolled course IDs from single purchases
@@ -64,9 +70,10 @@ export default function AllLiveClassesPage() {
                     order.courseId
             )
             .map(order => {
-                const id = typeof order.courseId === 'object' ? order.courseId._id : order.courseId;
+                const id = typeof order.courseId === "object" && order.courseId ? order.courseId._id : order.courseId;
                 return id;
-            });
+            })
+            .filter(id => id != null);
 
         if (enrolledCourseIds.length === 0) {
             // No enrollment, show no classes
@@ -75,8 +82,9 @@ export default function AllLiveClassesPage() {
 
         // Filter classes to only those from enrolled courses
         return allClasses.filter((cls: any) => {
-            const courseId = typeof cls.courseId === 'object' ? cls.courseId._id : cls.courseId;
-            return enrolledCourseIds.includes(courseId);
+            if (!cls || !cls.courseId) return false;
+            const courseId = typeof cls.courseId === "object" && cls.courseId ? cls.courseId._id : cls.courseId;
+            return courseId && enrolledCourseIds.includes(courseId);
         });
     }, [allClasses, orders]);
 
@@ -97,7 +105,7 @@ export default function AllLiveClassesPage() {
     if (searchQuery) {
         filteredClasses = filteredClasses.filter((cls: any) => 
             cls.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (typeof cls.courseId === "object" ? cls.courseId.title : "").toLowerCase().includes(searchQuery.toLowerCase())
+            (typeof cls.courseId === "object" && cls.courseId ? cls.courseId.title : "").toLowerCase().includes(searchQuery.toLowerCase())
         );
     }
 
@@ -305,8 +313,8 @@ export default function AllLiveClassesPage() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                     {paginatedClasses.map((cls: any) => {
                                         const classDate = new Date(cls.scheduledAt);
-                                        const courseName = typeof cls.courseId === "object" ? cls.courseId.title : "Course";
-                                        const instructorName = typeof cls.instructorId === "object" ? cls.instructorId.name : "Instructor";
+                                        const courseName = typeof cls.courseId === "object" && cls.courseId ? cls.courseId.title : "Course";
+                                        const instructorName = typeof cls.instructorId === "object" && cls.instructorId ? cls.instructorId.name : "Instructor";
                                         const timeStatus = getTimeStatus(cls.scheduledAt);
                                         const isUpcoming = classDate > currentTime && cls.status === "Scheduled";
 
@@ -387,11 +395,12 @@ export default function AllLiveClassesPage() {
                                                             size="sm"
                                                             variant="flat"
                                                             className="text-[11px]"
-                                                            onPress={() =>
-                                                                router.push(
-                                                                    `/courses/${typeof cls.courseId === "object" ? cls.courseId._id : cls.courseId}`
-                                                                )
-                                                            }
+                                                            onPress={() => {
+                                                                const courseId = typeof cls.courseId === "object" && cls.courseId ? cls.courseId._id : cls.courseId;
+                                                                if (courseId) {
+                                                                    router.push(`/courses/${courseId}`);
+                                                                }
+                                                            }}
                                                         >
                                                             Course
                                                         </Button>

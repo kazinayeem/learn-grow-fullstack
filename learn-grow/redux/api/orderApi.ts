@@ -61,8 +61,20 @@ export const orderApi = baseApi.injectEndpoints({
       invalidatesTags: ["Order"],
     }),
 
-    getMyOrders: builder.query<{ orders: Order[] }, void>({
-      query: () => "/orders/my",
+    getMyOrders: builder.query<
+      {
+        orders: Order[];
+        pagination?: { total: number; page: number; limit: number; totalPages: number };
+      },
+      { page?: number; limit?: number } | void
+    >({
+      query: (params = {}) => ({
+        url: "/orders/my",
+        params: {
+          page: (params as any).page || 1,
+          limit: (params as any).limit || 6,
+        },
+      }),
       providesTags: ["Order"],
     }),
 

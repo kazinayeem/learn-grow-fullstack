@@ -10,9 +10,10 @@ export const metadata: Metadata = {
 
 async function getAboutContent() {
     try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-        const res = await fetch(`${baseUrl}/site-content/about`, {
-            cache: 'no-store', // SSR with fresh data
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://learnandgrow.io/api";
+        const res = await fetch(`${apiBase}/site-content/about`, {
+            // Allow ISR so /about can be pre-rendered
+            next: { revalidate: 3600 },
         });
         if (!res.ok) return defaultAboutData;
         const data = await res.json();

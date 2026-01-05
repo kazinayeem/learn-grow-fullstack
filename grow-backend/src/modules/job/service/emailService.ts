@@ -2,22 +2,15 @@ import nodemailer, { Transporter } from "nodemailer";
 import { EmailLog } from "../model/emailLog.model";
 import { ENV } from "@/config/env";
 import mongoose from "mongoose";
+import { getSMTPTransporter } from "@/modules/settings/service/smtp.service";
 
 // Create reusable transporter
 let transporter: Transporter;
 
 // Initialize nodemailer
-function getTransporter(): Transporter {
+async function getTransporter(): Promise<Transporter> {
   if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: ENV.EMAIL_HOST,
-      port: ENV.EMAIL_PORT,
-      secure: ENV.EMAIL_PORT === 465, // true for 465, false for other ports
-      auth: {
-        user: ENV.EMAIL_USER,
-        pass: ENV.EMAIL_PASSWORD,
-      },
-    });
+    transporter = await getSMTPTransporter();
   }
   return transporter;
 }
@@ -44,7 +37,7 @@ export const emailService = {
         status: "pending",
       });
 
-      const transporter = getTransporter();
+      const transporter = await getTransporter();
 
       // Convert HTML message to email-friendly format
       const htmlMessage = message.replace(/\n/g, "<br>");
@@ -138,7 +131,7 @@ export const emailService = {
    */
   async testEmailConnection(): Promise<boolean> {
     try {
-      const transporter = getTransporter();
+      const transporter = await getTransporter();
       await transporter.verify();
       return true;
     } catch (error) {

@@ -2,16 +2,17 @@ import * as nodemailer from "nodemailer";
 import { Event } from "../model/event.model";
 import { EventRegistration } from "../model/event-registration.model";
 import { EventGuest } from "../model/event-guest.model";
+import { getSMTPTransporter } from "@/modules/settings/service/smtp.service";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.EMAIL_PORT || "587"),
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
+// Transporter will be initialized on first use
+let transporter: nodemailer.Transporter | null = null;
+
+async function getTransporter() {
+  if (!transporter) {
+    transporter = await getSMTPTransporter();
+  }
+  return transporter;
+}
 
 // Send registration confirmation email
 export const sendRegistrationConfirmation = async (
@@ -115,6 +116,7 @@ export const sendRegistrationConfirmation = async (
     </html>
   `;
   
+  const transporter = await getTransporter();
   await transporter.sendMail({
     from: process.env.EMAIL_FROM || '"Learn & Grow" <noreply@learngrow.com>',
     to: registration.email,
@@ -219,6 +221,7 @@ export const sendMeetingLinkToAllAttendees = async (eventId: string) => {
     </html>
   `;
   
+  const transporter = await getTransporter();
   const emailPromises = registrations.map((registration) =>
     transporter.sendMail({
       from: process.env.EMAIL_FROM || '"Learn & Grow" <noreply@learngrow.com>',
@@ -261,6 +264,8 @@ export const sendCustomEmailToRegistrations = async ({
     return { sent: 0, failed: 0, message: "No registrations found", details: [] };
   }
 
+  const transporter = await getTransporter();
+  
   // Send emails individually to track success/failure per registrant
   const emailResults = await Promise.allSettled(
     registrations.map((registration) =>

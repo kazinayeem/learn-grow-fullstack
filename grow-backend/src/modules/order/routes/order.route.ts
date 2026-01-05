@@ -83,6 +83,47 @@ router.get("/", requireAuth, requireRoles("admin", "manager"), getAllOrders);
 router.get("/:id", requireAuth, requireRoles("admin", "manager"), getOrderById);
 router.patch("/:id/approve", requireAuth, requireRoles("admin", "manager"), approveOrder);
 router.patch("/:id/reject", requireAuth, requireRoles("admin", "manager"), rejectOrder);
+router.patch("/:id/extend", requireAuth, requireRoles("admin", "manager"), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { months } = req.body;
+
+    if (!months || months < 1 || months > 12) {
+      return res.status(400).json({ success: false, message: "Invalid months. Must be between 1 and 12." });
+    }
+
+    const { Order } = await import("../model/order.model");
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    if (order.planType !== "quarterly") {
+      return res.status(400).json({ success: false, message: "Only quarterly subscriptions can be extended" });
+    }
+
+    if (!order.endDate) {
+      return res.status(400).json({ success: false, message: "Order has no end date" });
+    }
+
+    // Extend the end date
+    const newEndDate = new Date(order.endDate);
+    newEndDate.setMonth(newEndDate.getMonth() + Number(months));
+    
+    order.endDate = newEndDate;
+    await order.save();
+
+    res.json({
+      success: true,
+      message: `Subscription extended by ${months} month(s)`,
+      data: order,
+    });
+  } catch (error: any) {
+    console.error("Extend subscription error:", error);
+    res.status(500).json({ success: false, message: "Failed to extend subscription", error: error.message });
+  }
+});
 router.post("/send-email", sendOrderEmail);
 
 // Debug endpoint - admin only

@@ -50,14 +50,18 @@ const CourseCardSkeleton = () => (
 );
 
 export default function CourseList() {
-  const { data, isLoading, error } = useGetPublishedCoursesQuery(undefined);
+  const [page, setPage] = useState(1);
+  const { data, isLoading, error } = useGetPublishedCoursesQuery({ page, limit: 6 });
   const { data: categoriesData, isLoading: isCategoriesLoading } = useGetAllCategoriesQuery(undefined);
   const router = useRouter();
   const [language] = useState<"en" | "bn">("bn");
-  const [page, setPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const pageSize = 9;
+  const pageSize = data?.data?.pagination?.limit || 6;
+  const totalPages = data?.data?.pagination?.totalPages || 1;
+  const totalCourses = data?.data?.pagination?.total || 0;
+
+  const apiCourses = data?.data?.courses || [];
 
   // Normalize rich-text/HTML descriptions for display and search
   const sanitizeDescription = (value: string) => {
@@ -75,8 +79,7 @@ export default function CourseList() {
   const categories: any[] = Array.isArray(categoriesData) ? categoriesData : [];
 
   const courses = useMemo(() => {
-    const fromApi = data?.data || [];
-    let filtered = fromApi.filter(
+    let filtered = apiCourses.filter(
       (c: any) => c.isPublished && c.isAdminApproved
     );
     
@@ -99,10 +102,7 @@ export default function CourseList() {
     }
     
     return filtered.length > 0 ? filtered : [];
-  }, [data, selectedCategory, searchTerm]);
-
-  const totalPages = Math.max(1, Math.ceil(courses.length / pageSize));
-  const pagedCourses = courses.slice((page - 1) * pageSize, page * pageSize);
+  }, [apiCourses, selectedCategory, searchTerm]);
 
   // Get level badge color
   const getLevelColor = (level: string) => {
@@ -124,7 +124,7 @@ export default function CourseList() {
         </div>
         {/* Cards skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
+          {[...Array(pageSize || 6)].map((_, i) => (
             <CourseCardSkeleton key={i} />
           ))}
         </div>
@@ -183,7 +183,7 @@ export default function CourseList() {
       {courses.length > 0 && (
         <div className="flex items-center justify-between px-2">
           <p className="text-gray-600 text-sm">
-            Showing <span className="font-semibold text-gray-900">{pagedCourses.length}</span> of <span className="font-semibold text-gray-900">{courses.length}</span> courses
+            Showing <span className="font-semibold text-gray-900">{courses.length}</span> of <span className="font-semibold text-gray-900">{totalCourses || courses.length}</span> courses
           </p>
         </div>
       )}
@@ -211,7 +211,7 @@ export default function CourseList() {
             </Button>
           </div>
         ) : (
-          pagedCourses.map((course: any, index: number) => {
+          courses.map((course: any, index: number) => {
             const categoryName = typeof course.category === "object" ? course.category?.name : null;
             const instructorName = typeof course.instructor === "object" ? course.instructor?.name : "Instructor";
             
@@ -344,7 +344,7 @@ export default function CourseList() {
       </div>
 
       {/* Pagination */}
-      {courses.length > pageSize && (
+      {totalPages > 1 && (
         <div className="flex justify-center pt-8">
           <Pagination
             page={page}

@@ -21,6 +21,7 @@ import {
     Avatar,
     Divider,
     CircularProgress,
+    ScrollShadow,
 } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import {
@@ -39,6 +40,11 @@ import {
     FaGraduationCap,
     FaCalendar,
     FaAward,
+    FaExpand,
+    FaCompress,
+    FaBars,
+    FaTimes,
+    FaChevronRight,
 } from "react-icons/fa";
 import { useGetCourseByIdQuery } from "@/redux/api/courseApi";
 import { useGetQuizzesByCourseQuery } from "@/redux/api/quizApi";
@@ -82,6 +88,8 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
     const [activeTab, setActiveTab] = useState("overview");
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const { isOpen, onOpen, onClose } = useDisclosure();
 
     // Auth check - must be logged in
@@ -227,18 +235,37 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
             }
         } else if (lesson.contentUrl) {
             setCurrentLesson(lesson);
-            onOpen();
+            setActiveTab("lessons"); // Switch to lessons tab to show preview
         } else {
             toast.info("No content available for this lesson yet");
         }
     };
 
+    const toggleFullscreen = () => {
+        setIsFullscreen(!isFullscreen);
+    };
+
+    const toggleSidebar = () => {
+        setIsSidebarOpen(!isSidebarOpen);
+    };
+
     const renderLessonContent = () => {
-        if (!currentLesson) return null;
+        if (!currentLesson) {
+            return (
+                <div className="h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-lg">
+                    <div className="text-center p-8">
+                        <FaBook className="text-6xl text-gray-300 mx-auto mb-4" />
+                        <p className="text-lg text-gray-500 mb-2">Select a lesson to begin</p>
+                        <p className="text-sm text-gray-400">Choose from the curriculum on the left</p>
+                    </div>
+                </div>
+            );
+        }
 
         if (currentLesson.type === "video") {
-            // Check if YouTube or other video URL
+            // Check if YouTube or Google Drive or other video URL
             const isYouTube = currentLesson.contentUrl?.includes("youtube.com") || currentLesson.contentUrl?.includes("youtu.be");
+            const isGoogleDrive = currentLesson.contentUrl?.includes("drive.google.com");
             
             if (isYouTube) {
                 // Extract YouTube video ID
@@ -248,27 +275,50 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                     videoId = url.split("v=")[1]?.split("&")[0] || "";
                 } else if (url.includes("youtu.be/")) {
                     videoId = url.split("youtu.be/")[1]?.split("?")[0] || "";
+                } else if (url.includes("youtube.com/embed/")) {
+                    videoId = url.split("embed/")[1]?.split("?")[0] || "";
                 }
 
                 return (
-                    <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                    <div className="h-full w-full bg-black rounded-lg overflow-hidden flex items-center justify-center">
                         <iframe
-                            width="100%"
-                            height="100%"
-                            src={`https://www.youtube.com/embed/${videoId}`}
+                            className="w-full h-full"
+                            src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
                             title={currentLesson.title}
                             frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                             allowFullScreen
                         ></iframe>
                     </div>
                 );
-            } else {
-                // Direct video or Google Drive link
+            } else if (isGoogleDrive) {
+                // Convert Google Drive view link to preview link
+                let embedUrl = currentLesson.contentUrl || "";
+                if (embedUrl.includes("/file/d/")) {
+                    const fileId = embedUrl.split("/file/d/")[1]?.split("/")[0];
+                    embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+                } else if (embedUrl.includes("open?id=")) {
+                    const fileId = embedUrl.split("open?id=")[1]?.split("&")[0];
+                    embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+                }
+
                 return (
-                    <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                    <div className="h-full w-full bg-black rounded-lg overflow-hidden">
+                        <iframe
+                            src={embedUrl}
+                            className="w-full h-full"
+                            allow="autoplay; fullscreen"
+                            frameBorder="0"
+                        ></iframe>
+                    </div>
+                );
+            } else {
+                // Direct video link
+                return (
+                    <div className="h-full w-full bg-black rounded-lg overflow-hidden flex items-center justify-center">
                         <video
                             controls
+                            controlsList="nodownload"
                             className="w-full h-full"
                             src={currentLesson.contentUrl}
                         >
@@ -287,32 +337,51 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                 if (embedUrl.includes("/file/d/")) {
                     const fileId = embedUrl.split("/file/d/")[1]?.split("/")[0];
                     embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+                } else if (embedUrl.includes("open?id=")) {
+                    const fileId = embedUrl.split("open?id=")[1]?.split("&")[0];
+                    embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
                 }
 
                 return (
-                    <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                    <div className="h-full w-full bg-gray-100 rounded-lg overflow-hidden">
                         <iframe
                             src={embedUrl}
-                            width="100%"
-                            height="100%"
+                            className="w-full h-full"
                             allow="autoplay"
-                            className="border-0"
+                            frameBorder="0"
+                        ></iframe>
+                    </div>
+                );
+            } else if (currentLesson.contentUrl?.endsWith('.pdf')) {
+                // Direct PDF link
+                return (
+                    <div className="h-full w-full bg-gray-100 rounded-lg overflow-hidden">
+                        <iframe
+                            src={currentLesson.contentUrl}
+                            className="w-full h-full"
+                            title={currentLesson.title}
+                            frameBorder="0"
                         ></iframe>
                     </div>
                 );
             } else {
                 return (
-                    <div className="p-8 bg-gray-50 rounded-lg text-center">
-                        <FaFileAlt className="text-6xl text-gray-400 mx-auto mb-4" />
-                        <p className="text-lg font-medium mb-4">{currentLesson.title}</p>
-                        <Button
-                            color="primary"
-                            size="lg"
-                            startContent={<FaExternalLinkAlt />}
-                            onPress={() => window.open(currentLesson.contentUrl, "_blank")}
-                        >
-                            Open Document
-                        </Button>
+                    <div className="h-full flex items-center justify-center p-8 bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-lg">
+                        <div className="text-center">
+                            <FaFileAlt className="text-6xl text-blue-400 mx-auto mb-4" />
+                            <p className="text-lg font-medium mb-4">{currentLesson.title}</p>
+                            {currentLesson.description && (
+                                <p className="text-sm text-gray-600 mb-6 max-w-md">{currentLesson.description}</p>
+                            )}
+                            <Button
+                                color="primary"
+                                size="lg"
+                                startContent={<FaExternalLinkAlt />}
+                                onPress={() => window.open(currentLesson.contentUrl, "_blank")}
+                            >
+                                Open Document in New Tab
+                            </Button>
+                        </div>
                     </div>
                 );
             }
@@ -381,43 +450,44 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/30">
             {/* Modern Header with Course Info */}
-            <div className="bg-white border-b border-gray-200 shadow-sm">
-                <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-6">
+            <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200/80 shadow-sm">
+                <div className="container mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 py-3 md:py-4">
                     {/* Back Button */}
                     <Button
                         variant="light"
                         size="sm"
-                        startContent={<FaArrowLeft />}
+                        startContent={<FaArrowLeft className="text-sm" />}
                         onPress={() => router.push("/student/my-courses")}
-                        className="mb-4 text-gray-600 hover:text-gray-900"
+                        className="mb-2 md:mb-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors font-medium"
                     >
-                        Back to My Courses
+                        <span className="hidden sm:inline">Back to My Courses</span>
+                        <span className="sm:hidden">Back</span>
                     </Button>
 
                     {/* Course Header */}
-                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 md:gap-5">
                         {/* Left: Course Info */}
-                        <div className="flex-1">
-                            <div className="flex items-start gap-4 mb-4">
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-start gap-3 mb-3">
                                 <Avatar
                                     src={courseData.instructorId?.avatar}
                                     name={courseData.instructorId?.name}
                                     size="lg"
-                                    className="flex-shrink-0"
+                                    className="flex-shrink-0 ring-2 ring-blue-100"
                                 />
-                                <div>
-                                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+                                <div className="flex-1 min-w-0">
+                                    <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-1.5 line-clamp-2 leading-tight">
                                         {courseData.title}
                                     </h1>
-                                    <p className="text-gray-600 flex items-center gap-2 mb-2">
-                                        <FaGraduationCap className="text-blue-600" />
-                                        <span>Instructor: {courseData.instructorId?.name || "Unknown"}</span>
+                                    <p className="text-xs sm:text-sm text-gray-600 flex items-center gap-1.5 mb-2">
+                                        <FaGraduationCap className="text-blue-600 flex-shrink-0 text-sm" />
+                                        <span className="truncate font-medium">{courseData.instructorId?.name || "Unknown"}</span>
                                     </p>
                                     {courseData.description && (
                                         <div 
-                                            className="text-sm text-gray-500 line-clamp-2 prose prose-sm max-w-none"
+                                            className="text-xs sm:text-sm text-gray-500 line-clamp-2 prose prose-sm max-w-none hidden md:block"
                                             dangerouslySetInnerHTML={{ __html: courseData.description }}
                                         />
                                     )}
@@ -425,54 +495,69 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                             </div>
 
                             {/* Status Badge */}
-                            <div className="flex items-center gap-3 flex-wrap">
+                            <div className="flex items-center gap-2 flex-wrap">
                                 <Chip
                                     color={isCompleted ? "success" : "primary"}
                                     variant="flat"
-                                    startContent={isCompleted ? <FaCheckCircle /> : <FaClock />}
-                                    size="lg"
+                                    startContent={isCompleted ? <FaCheckCircle className="text-sm" /> : <FaClock className="text-sm" />}
+                                    size="sm"
+                                    className="font-semibold"
                                 >
-                                    {isCompleted ? "Completed" : "In Progress"}
+                                    {isCompleted ? "✓ Completed" : "In Progress"}
                                 </Chip>
-                                <span className="text-sm text-gray-600">
-                                    {completedLessons} of {totalLessons} lessons completed
+                                <Divider orientation="vertical" className="h-4 hidden sm:block" />
+                                <span className="text-xs sm:text-sm text-gray-600 font-medium">
+                                    {completedLessons} / {totalLessons} lessons
                                 </span>
                             </div>
                         </div>
 
                         {/* Right: Progress Card */}
-                        <Card className="w-full lg:w-80 shadow-lg border-2 border-blue-100">
-                            <CardBody className="p-6">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div>
-                                        <p className="text-sm text-gray-600 mb-1">Overall Progress</p>
-                                        <p className="text-3xl font-bold text-blue-600">{progressPercentage}%</p>
+                        <Card className="w-full lg:w-80 shadow-xl border-2 border-blue-100 bg-gradient-to-br from-white to-blue-50/30">
+                            <CardBody className="p-4 md:p-5">
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="flex-1">
+                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Your Progress</p>
+                                        <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                                            {progressPercentage}%
+                                        </p>
+                                        <p className="text-xs text-gray-600 mt-1">of course completed</p>
                                     </div>
                                     <CircularProgress
                                         value={progressPercentage}
                                         size="lg"
-                                        color="primary"
+                                        color={progressPercentage === 100 ? "success" : "primary"}
                                         showValueLabel={false}
-                                        strokeWidth={4}
+                                        strokeWidth={5}
+                                        classNames={{
+                                            svg: "drop-shadow-md",
+                                            track: "stroke-gray-200",
+                                        }}
                                     />
                                 </div>
                                 <Progress
                                     value={progressPercentage}
-                                    color="primary"
-                                    size="sm"
-                                    className="mb-3"
+                                    color={progressPercentage === 100 ? "success" : "primary"}
+                                    size="md"
+                                    className="mb-4"
+                                    classNames={{
+                                        indicator: "bg-gradient-to-r from-blue-500 to-indigo-600",
+                                    }}
                                 />
-                                <div className="grid grid-cols-3 gap-2 mt-4">
-                                    <div className="text-center p-2 bg-blue-50 rounded-lg">
-                                        <p className="text-xs text-gray-600">Modules</p>
+                                <div className="grid grid-cols-3 gap-2">
+                                    <div className="text-center p-2.5 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl border border-blue-200/50 hover:scale-105 transition-transform cursor-default">
+                                        <FaBook className="text-blue-600 mx-auto mb-1 text-sm" />
+                                        <p className="text-xs text-gray-600 font-medium">Modules</p>
                                         <p className="text-lg font-bold text-blue-600">{modules.length}</p>
                                     </div>
-                                    <div className="text-center p-2 bg-green-50 rounded-lg">
-                                        <p className="text-xs text-gray-600">Quizzes</p>
+                                    <div className="text-center p-2.5 bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl border border-green-200/50 hover:scale-105 transition-transform cursor-default">
+                                        <FaClipboardList className="text-green-600 mx-auto mb-1 text-sm" />
+                                        <p className="text-xs text-gray-600 font-medium">Quizzes</p>
                                         <p className="text-lg font-bold text-green-600">{quizzes.length}</p>
                                     </div>
-                                    <div className="text-center p-2 bg-purple-50 rounded-lg">
-                                        <p className="text-xs text-gray-600">Tasks</p>
+                                    <div className="text-center p-2.5 bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl border border-purple-200/50 hover:scale-105 transition-transform cursor-default">
+                                        <FaTasks className="text-purple-600 mx-auto mb-1 text-sm" />
+                                        <p className="text-xs text-gray-600 font-medium">Tasks</p>
                                         <p className="text-lg font-bold text-purple-600">{assignments.length}</p>
                                     </div>
                                 </div>
@@ -483,7 +568,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
             </div>
 
             {/* Main Content with Tabs */}
-            <div className="container mx-auto max-w-7xl px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
+            <div className="container mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 py-3 sm:py-4 md:py-6">
                 <Tabs
                     selectedKey={activeTab}
                     onSelectionChange={(key) => setActiveTab(key as string)}
@@ -491,19 +576,19 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                     variant="underlined"
                     classNames={{
                         base: "w-full",
-                        tabList: "gap-1 sm:gap-2 md:gap-6 w-full relative rounded-none p-0 border-b border-divider bg-white px-1 sm:px-2 md:px-4 shadow-sm overflow-x-auto flex-nowrap scrollbar-hide",
-                        cursor: "w-full bg-blue-600",
-                        tab: "max-w-fit px-2 sm:px-3 md:px-4 h-10 sm:h-12 font-semibold whitespace-nowrap min-w-fit",
-                        tabContent: "group-data-[selected=true]:text-blue-600 text-[10px] sm:text-xs md:text-sm"
+                        tabList: "gap-2 sm:gap-3 md:gap-6 w-full relative rounded-none p-0 border-b-2 border-gray-200 bg-white/80 backdrop-blur-sm px-2 sm:px-3 md:px-4 py-1 shadow-sm overflow-x-auto flex-nowrap scrollbar-hide",
+                        cursor: "w-full bg-gradient-to-r from-blue-600 to-indigo-600 h-0.5",
+                        tab: "max-w-fit px-3 sm:px-4 md:px-5 h-11 sm:h-12 md:h-14 font-semibold whitespace-nowrap min-w-fit hover:bg-blue-50/50 data-[selected=true]:text-blue-600 transition-all",
+                        tabContent: "group-data-[selected=true]:text-blue-600 group-data-[selected=true]:font-bold text-gray-600 text-xs sm:text-sm md:text-base"
                     }}
                 >
                     {/* Overview Tab */}
                     <Tab
                         key="overview"
                         title={
-                            <div className="flex items-center gap-1 sm:gap-2">
-                                <FaChartLine className="text-sm sm:text-base" />
-                                <span className="text-xs sm:text-sm">Overview</span>
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                <FaChartLine className="text-base sm:text-lg" />
+                                <span>Overview</span>
                             </div>
                         }
                     >
@@ -514,9 +599,9 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                     <Tab
                         key="lessons"
                         title={
-                            <div className="flex items-center gap-1 sm:gap-2">
-                                <FaBook className="text-sm sm:text-base" />
-                                <span className="text-xs sm:text-sm">Lessons</span>
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                <FaBook className="text-base sm:text-lg" />
+                                <span>Lessons</span>
                             </div>
                         }
                     >
@@ -527,9 +612,9 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                     <Tab
                         key="quizzes"
                         title={
-                            <div className="flex items-center gap-1 sm:gap-2">
-                                <FaClipboardList className="text-sm sm:text-base" />
-                                <span className="text-xs sm:text-sm">Quizzes</span>
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                <FaClipboardList className="text-base sm:text-lg" />
+                                <span>Quizzes</span>
                             </div>
                         }
                     >
@@ -540,9 +625,9 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                     <Tab
                         key="assignments"
                         title={
-                            <div className="flex items-center gap-1 sm:gap-2">
-                                <FaTasks className="text-sm sm:text-base" />
-                                <span className="text-xs sm:text-sm">Assignments</span>
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                <FaTasks className="text-base sm:text-lg" />
+                                <span>Assignments</span>
                             </div>
                         }
                     >
@@ -552,22 +637,29 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
 
                 {/* Course Completion Banner */}
                 {isCompleted && !certificate && (
-                    <Card className="mt-8 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 shadow-lg">
-                        <CardBody className="p-8 text-center">
-                            <div className="inline-block p-4 bg-green-100 rounded-full mb-4">
-                                <FaAward className="text-5xl text-green-600" />
+                    <Card className="mt-6 md:mt-8 bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 border-2 border-green-300 shadow-2xl overflow-hidden relative">
+                        {/* Decorative Background */}
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(16,185,129,0.1),transparent_50%)]" />
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(5,150,105,0.1),transparent_50%)]" />
+                        
+                        <CardBody className="p-6 md:p-10 text-center relative z-10">
+                            <div className="inline-flex p-4 md:p-5 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full mb-4 md:mb-5 shadow-lg ring-4 ring-green-200/50">
+                                <FaAward className="text-4xl md:text-6xl text-green-600" />
                             </div>
-                            <h2 className="text-3xl font-bold text-green-800 mb-2">
-                                🎉 Course Completed!
+                            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-700 via-emerald-600 to-teal-600 mb-3">
+                                🎉 Congratulations!
                             </h2>
-                            <p className="text-green-700 mb-6 text-lg">
-                                Congratulations! You've successfully completed this course.
+                            <p className="text-base sm:text-lg md:text-xl text-green-800 font-semibold mb-2">
+                                You've Successfully Completed This Course
+                            </p>
+                            <p className="text-sm text-green-700/80 mb-6 md:mb-8 max-w-md mx-auto">
+                                Celebrate your achievement by generating your certificate
                             </p>
                             <Button
                                 color="success"
                                 size="lg"
-                                startContent={generatingCertificate ? <Spinner size="sm" color="white" /> : <FaAward />}
-                                className="font-semibold"
+                                startContent={generatingCertificate ? <Spinner size="sm" color="white" /> : <FaAward className="text-lg" />}
+                                className="font-bold text-base px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-all hover:scale-105"
                                 isDisabled={generatingCertificate}
                                 onPress={async () => {
                                     try {
@@ -581,7 +673,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                     }
                                 }}
                             >
-                                {generatingCertificate ? "Generating..." : "Generate Certificate"}
+                                {generatingCertificate ? "Generating Your Certificate..." : "Generate My Certificate"}
                             </Button>
                         </CardBody>
                     </Card>
@@ -589,17 +681,24 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
 
                 {/* Certificate Display */}
                 {isCompleted && certificate && (
-                    <div className="mt-8">
-                        <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-2 border-yellow-300 shadow-lg mb-6">
-                            <CardBody className="p-6 text-center">
-                                <div className="inline-block p-3 bg-yellow-100 rounded-full mb-3">
-                                    <FaAward className="text-4xl text-yellow-600" />
+                    <div className="mt-6 md:mt-8">
+                        <Card className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 border-2 border-amber-300 shadow-xl mb-6 overflow-hidden relative">
+                            {/* Decorative Elements */}
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(251,191,36,0.15),transparent_50%)]" />
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_50%,rgba(245,158,11,0.15),transparent_50%)]" />
+                            
+                            <CardBody className="p-5 md:p-7 text-center relative z-10">
+                                <div className="inline-flex p-3 md:p-4 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-full mb-3 md:mb-4 shadow-md ring-4 ring-amber-200/50">
+                                    <FaAward className="text-3xl md:text-5xl text-amber-600" />
                                 </div>
-                                <h2 className="text-2xl font-bold text-yellow-800 mb-2">
-                                    Your Certificate is Ready!
+                                <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-700 via-yellow-600 to-orange-600 mb-2">
+                                    🏆 Your Certificate is Ready!
                                 </h2>
-                                <p className="text-yellow-700 text-sm">
-                                    Download your certificate and share your achievement
+                                <p className="text-sm md:text-base text-amber-800 font-semibold mb-1">
+                                    Download and share your achievement
+                                </p>
+                                <p className="text-xs md:text-sm text-amber-700/70 max-w-lg mx-auto">
+                                    Show the world what you've learned and accomplished
                                 </p>
                             </CardBody>
                         </Card>
@@ -677,74 +776,88 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
         );
 
         return (
-            <div className="space-y-6 py-6">
+            <div className="space-y-5 md:space-y-6 py-4 md:py-6">
                 {/* Summary Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card className="border-l-4 border-blue-500 shadow-md hover:shadow-lg transition-shadow">
-                        <CardBody className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-600 mb-1">Total Lessons</p>
-                                    <p className="text-3xl font-bold text-blue-600">{totalLessons}</p>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                    <Card className="border-l-4 border-blue-500 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] bg-gradient-to-br from-white to-blue-50/30">
+                        <CardBody className="p-3 md:p-4">
+                            <div className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex-1">
+                                        <p className="text-xs md:text-sm text-gray-600 font-medium mb-1">Total Lessons</p>
+                                        <p className="text-2xl md:text-3xl font-black text-blue-600">{totalLessons}</p>
+                                    </div>
+                                    <div className="p-2 md:p-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl shadow-sm">
+                                        <FaBook className="text-lg md:text-2xl text-blue-600" />
+                                    </div>
                                 </div>
-                                <div className="p-3 bg-blue-100 rounded-lg">
-                                    <FaBook className="text-2xl text-blue-600" />
+                                <div className="pt-2 border-t border-blue-100">
+                                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                                        <FaCheckCircle className="text-blue-500 text-xs" />
+                                        <span>{completedLessons} completed</span>
+                                    </p>
                                 </div>
                             </div>
-                            <p className="text-xs text-gray-500 mt-2">
-                                {completedLessons} completed
-                            </p>
                         </CardBody>
                     </Card>
 
-                    <Card className="border-l-4 border-green-500 shadow-md hover:shadow-lg transition-shadow">
-                        <CardBody className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-600 mb-1">Quizzes</p>
-                                    <p className="text-3xl font-bold text-green-600">{quizzes.length}</p>
+                    <Card className="border-l-4 border-green-500 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] bg-gradient-to-br from-white to-green-50/30">
+                        <CardBody className="p-3 md:p-4">
+                            <div className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex-1">
+                                        <p className="text-xs md:text-sm text-gray-600 font-medium mb-1">Quizzes</p>
+                                        <p className="text-2xl md:text-3xl font-black text-green-600">{quizzes.length}</p>
+                                    </div>
+                                    <div className="p-2 md:p-3 bg-gradient-to-br from-green-100 to-green-200 rounded-xl shadow-sm">
+                                        <FaClipboardList className="text-lg md:text-2xl text-green-600" />
+                                    </div>
                                 </div>
-                                <div className="p-3 bg-green-100 rounded-lg">
-                                    <FaClipboardList className="text-2xl text-green-600" />
+                                <div className="pt-2 border-t border-green-100">
+                                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                                        <FaCheckCircle className="text-green-500 text-xs" />
+                                        <span>{quizzes.filter((q: any) => localStorage.getItem(`quiz_attempt_${q._id}`)).length} completed</span>
+                                    </p>
                                 </div>
                             </div>
-                            <p className="text-xs text-gray-500 mt-2">
-                                {quizzes.filter((q: any) => localStorage.getItem(`quiz_attempt_${q._id}`)).length} completed
-                            </p>
                         </CardBody>
                     </Card>
 
-                    <Card className="border-l-4 border-purple-500 shadow-md hover:shadow-lg transition-shadow">
-                        <CardBody className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-600 mb-1">Assignments</p>
-                                    <p className="text-3xl font-bold text-purple-600">{assignments.length}</p>
+                    <Card className="border-l-4 border-purple-500 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] bg-gradient-to-br from-white to-purple-50/30">
+                        <CardBody className="p-3 md:p-4">
+                            <div className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex-1">
+                                        <p className="text-xs md:text-sm text-gray-600 font-medium mb-1">Assignments</p>
+                                        <p className="text-2xl md:text-3xl font-black text-purple-600">{assignments.length}</p>
+                                    </div>
+                                    <div className="p-2 md:p-3 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl shadow-sm">
+                                        <FaTasks className="text-lg md:text-2xl text-purple-600" />
+                                    </div>
                                 </div>
-                                <div className="p-3 bg-purple-100 rounded-lg">
-                                    <FaTasks className="text-2xl text-purple-600" />
+                                <div className="pt-2 border-t border-purple-100">
+                                    <p className="text-xs text-gray-500">View all tasks</p>
                                 </div>
                             </div>
-                            <p className="text-xs text-gray-500 mt-2">
-                                View all tasks
-                            </p>
                         </CardBody>
                     </Card>
 
-                    <Card className="border-l-4 border-orange-500 shadow-md hover:shadow-lg transition-shadow">
-                        <CardBody className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-600 mb-1">Progress</p>
-                                    <p className="text-3xl font-bold text-orange-600">{progressPercentage}%</p>
+                    <Card className="border-l-4 border-orange-500 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] bg-gradient-to-br from-white to-orange-50/30">
+                        <CardBody className="p-3 md:p-4">
+                            <div className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex-1">
+                                        <p className="text-xs md:text-sm text-gray-600 font-medium mb-1">Progress</p>
+                                        <p className="text-2xl md:text-3xl font-black text-orange-600">{progressPercentage}%</p>
+                                    </div>
+                                    <div className="p-2 md:p-3 bg-gradient-to-br from-orange-100 to-orange-200 rounded-xl shadow-sm">
+                                        <FaChartLine className="text-lg md:text-2xl text-orange-600" />
+                                    </div>
                                 </div>
-                                <div className="p-3 bg-orange-100 rounded-lg">
-                                    <FaChartLine className="text-2xl text-orange-600" />
+                                <div className="pt-2 border-t border-orange-100">
+                                    <p className="text-xs text-gray-500 font-medium">Keep going!</p>
                                 </div>
                             </div>
-                            <p className="text-xs text-gray-500 mt-2">
-                                Keep going!
-                            </p>
                         </CardBody>
                     </Card>
                 </div>
@@ -869,138 +982,263 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
     function renderLessonsTab() {
         return (
             <div className="py-4 sm:py-6">
-                <Card className="shadow-lg w-full overflow-hidden">
-                    <CardBody className="p-3 sm:p-4 md:p-6">
-                        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2">
-                            <FaBook className="text-blue-600 text-lg sm:text-xl" />
-                            Course Curriculum
-                        </h2>
+                {/* Mobile: Toggle Sidebar Button */}
+                <div className="lg:hidden mb-4">
+                    <Button
+                        size="sm"
+                        color="primary"
+                        variant="flat"
+                        startContent={isSidebarOpen ? <FaTimes /> : <FaBars />}
+                        onPress={toggleSidebar}
+                        className="w-full"
+                    >
+                        {isSidebarOpen ? "Hide" : "Show"} Curriculum
+                    </Button>
+                </div>
 
-                        {modules.length === 0 ? (
-                            <div className="text-center py-12 text-gray-500">
-                                <FaBook className="text-6xl mx-auto mb-4 text-gray-300" />
-                                <p className="text-lg">No modules available yet</p>
-                            </div>
-                        ) : (
-                            <Accordion variant="splitted" selectionMode="multiple" className="px-0">
-                                {modules.map((module, moduleIndex) => (
-                                    <AccordionItem
-                                        key={module.id}
-                                        aria-label={module.title}
-                                        title={
-                                            <div className="flex items-center justify-between w-full pr-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                                                        module.isCompleted ? "bg-green-100 text-green-600" :
-                                                        module.isLocked ? "bg-gray-100 text-gray-400" :
-                                                        "bg-blue-100 text-blue-600"
-                                                    }`}>
-                                                        {moduleIndex + 1}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-semibold text-lg">{module.title}</p>
-                                                        {module.description && (
-                                                            <p className="text-xs text-gray-500 mt-1">{module.description}</p>
+                {/* Sidebar + Preview Layout */}
+                <div className="flex flex-col lg:flex-row gap-4 md:gap-6 min-h-[600px] md:min-h-[700px]">
+                    {/* Sidebar: Course Curriculum */}
+                    <div className={`
+                        ${isSidebarOpen ? 'block' : 'hidden lg:block'}
+                        w-full lg:w-1/3 xl:w-1/4
+                    `}>
+                        <Card className="shadow-lg h-full">
+                            <CardBody className="p-3 md:p-4">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-lg md:text-xl font-bold flex items-center gap-2">
+                                        <FaBook className="text-blue-600" />
+                                        <span className="hidden sm:inline">Curriculum</span>
+                                    </h2>
+                                    <Chip size="sm" variant="flat">
+                                        {completedLessons}/{totalLessons}
+                                    </Chip>
+                                </div>
+
+                                {modules.length === 0 ? (
+                                    <div className="text-center py-8 text-gray-500">
+                                        <FaBook className="text-4xl mx-auto mb-3 text-gray-300" />
+                                        <p className="text-sm">No modules yet</p>
+                                    </div>
+                                ) : (
+                                    <ScrollShadow className="h-[calc(100vh-400px)] md:h-[calc(100vh-350px)]">
+                                        <Accordion 
+                                            variant="splitted" 
+                                            selectionMode="multiple"
+                                            defaultExpandedKeys={modules.length > 0 ? [modules[0].id] : []}
+                                            className="px-0"
+                                        >
+                                            {modules.map((module, moduleIndex) => (
+                                                <AccordionItem
+                                                    key={module.id}
+                                                    aria-label={module.title}
+                                                    title={
+                                                        <div className="flex items-start justify-between w-full gap-2">
+                                                            <div className="flex items-start gap-2 flex-1 min-w-0">
+                                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                                                                    module.isCompleted ? "bg-green-100 text-green-600" :
+                                                                    module.isLocked ? "bg-gray-100 text-gray-400" :
+                                                                    "bg-blue-100 text-blue-600"
+                                                                }`}>
+                                                                    {moduleIndex + 1}
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="font-semibold text-sm line-clamp-2">{module.title}</p>
+                                                                    <p className="text-xs text-gray-500 mt-0.5">
+                                                                        {module.lessons.filter(l => l.isCompleted).length}/{module.lessons.length} lessons
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            {module.isCompleted && (
+                                                                <FaCheckCircle className="text-green-600 text-sm flex-shrink-0" />
+                                                            )}
+                                                        </div>
+                                                    }
+                                                    className={module.isLocked ? "opacity-60" : ""}
+                                                >
+                                                    <div className="space-y-1 py-2">
+                                                        {module.isLocked ? (
+                                                            <div className="text-center py-6 text-gray-500">
+                                                                <FaLock className="text-3xl mx-auto mb-2 text-gray-300" />
+                                                                <p className="text-xs">{module.lockReason || "Locked"}</p>
+                                                            </div>
+                                                        ) : (
+                                                            module.lessons.map((lesson) => (
+                                                                <div
+                                                                    key={lesson.id}
+                                                                    className={`
+                                                                        flex items-center gap-2 p-2 rounded-lg border transition-all
+                                                                        ${lesson.isLocked 
+                                                                            ? "bg-gray-50 border-gray-200 cursor-not-allowed opacity-60" 
+                                                                            : lesson.isCompleted
+                                                                            ? "bg-green-50 border-green-200 hover:bg-green-100 cursor-pointer"
+                                                                            : currentLesson?.id === lesson.id
+                                                                            ? "bg-blue-100 border-blue-400 shadow-sm"
+                                                                            : "bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer"
+                                                                        }
+                                                                    `}
+                                                                    onClick={() => handleLessonClick(lesson)}
+                                                                >
+                                                                    <div className={`p-1.5 rounded ${
+                                                                        lesson.isCompleted ? "bg-green-200 text-green-700" :
+                                                                        lesson.isLocked ? "bg-gray-200 text-gray-500" :
+                                                                        "bg-blue-100 text-blue-600"
+                                                                    }`}>
+                                                                        {lesson.isLocked ? <FaLock size={12} /> : getLessonIcon(lesson.type)}
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="text-xs font-medium line-clamp-1">{lesson.title}</p>
+                                                                        {lesson.duration && (
+                                                                            <p className="text-xs text-gray-400">{lesson.duration} min</p>
+                                                                        )}
+                                                                    </div>
+                                                                    {lesson.isCompleted && (
+                                                                        <FaCheckCircle className="text-green-600 text-xs flex-shrink-0" />
+                                                                    )}
+                                                                    {!lesson.isLocked && !lesson.isCompleted && currentLesson?.id !== lesson.id && (
+                                                                        <FaChevronRight className="text-gray-400 text-xs flex-shrink-0" />
+                                                                    )}
+                                                                </div>
+                                                            ))
                                                         )}
                                                     </div>
-                                                </div>
-                                                <div className="flex items-center gap-3">
-                                                    {module.isLocked && (
-                                                        <Chip size="sm" color="default" startContent={<FaLock />}>
-                                                            Locked
+                                                </AccordionItem>
+                                            ))}
+                                        </Accordion>
+                                    </ScrollShadow>
+                                )}
+                            </CardBody>
+                        </Card>
+                    </div>
+
+                    {/* Preview Area */}
+                    <div className="flex-1 min-w-0">
+                        <Card className="shadow-lg h-full">
+                            <CardBody className="p-0 h-full flex flex-col">
+                                {/* Preview Header */}
+                                {currentLesson && (
+                                    <div className="p-3 md:p-4 border-b border-gray-200 bg-white">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="text-base md:text-lg font-bold mb-1 line-clamp-1">
+                                                    {currentLesson.title}
+                                                </h3>
+                                                {currentLesson.description && (
+                                                    <p className="text-xs md:text-sm text-gray-600 line-clamp-2">
+                                                        {currentLesson.description}
+                                                    </p>
+                                                )}
+                                                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                                    <Chip size="sm" variant="flat" className="capitalize">
+                                                        {currentLesson.type}
+                                                    </Chip>
+                                                    {currentLesson.duration && (
+                                                        <Chip size="sm" variant="flat" startContent={<FaClock />}>
+                                                            {currentLesson.duration} min
                                                         </Chip>
                                                     )}
-                                                    {module.isCompleted && (
-                                                        <Chip size="sm" color="success" startContent={<FaCheckCircle />}>
+                                                    {currentLesson.isCompleted && (
+                                                        <Chip size="sm" color="success" variant="flat" startContent={<FaCheckCircle />}>
                                                             Completed
                                                         </Chip>
                                                     )}
-                                                    <span className="text-sm text-gray-500">
-                                                        {module.lessons.filter(l => l.isCompleted).length}/{module.lessons.length} lessons
-                                                    </span>
                                                 </div>
                                             </div>
-                                        }
-                                        className={module.isLocked ? "opacity-60" : ""}
-                                    >
-                                        <div className="p-4 space-y-2">
-                                            {module.isLocked ? (
-                                                <div className="text-center py-8 text-gray-500">
-                                                    <FaLock className="text-4xl mx-auto mb-3 text-gray-300" />
-                                                    <p>{module.lockReason || "This module is locked"}</p>
-                                                </div>
-                                            ) : (
-                                                module.lessons.map((lesson) => (
-                                                    <div
-                                                        key={lesson.id}
-                                                        className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all ${
-                                                            lesson.isLocked
-                                                                ? "bg-gray-50 border-gray-200 cursor-not-allowed opacity-60"
-                                                                : lesson.isCompleted
-                                                                ? "bg-green-50 border-green-200 hover:bg-green-100 cursor-pointer"
-                                                                : "bg-white border-gray-200 hover:border-blue-300 hover:shadow-md cursor-pointer"
-                                                        }`}
-                                                        onClick={() => handleLessonClick(lesson)}
+                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                {!currentLesson.isCompleted && (
+                                                    <Button
+                                                        size="sm"
+                                                        color="success"
+                                                        variant="flat"
+                                                        isIconOnly
+                                                        className="hidden md:flex"
+                                                        onPress={async () => {
+                                                            try {
+                                                                const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
+                                                                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/course/complete-lesson/${currentLesson.id}`, {
+                                                                    method: 'POST',
+                                                                    headers: {
+                                                                        'Authorization': `Bearer ${token}`,
+                                                                        'Content-Type': 'application/json'
+                                                                    }
+                                                                });
+                                                                
+                                                                if (response.ok) {
+                                                                    toast.success("Lesson marked as complete!");
+                                                                    refetch();
+                                                                } else {
+                                                                    const error = await response.json();
+                                                                    toast.error(error.message || "Failed to mark lesson as complete");
+                                                                }
+                                                            } catch (error) {
+                                                                console.error("Error marking lesson complete:", error);
+                                                                toast.error("Failed to mark lesson as complete");
+                                                            }
+                                                        }}
                                                     >
-                                                        <div className="flex items-center gap-4 flex-1">
-                                                            <div className={`p-3 rounded-lg ${
-                                                                lesson.isCompleted ? "bg-green-200 text-green-700" :
-                                                                lesson.isLocked ? "bg-gray-200 text-gray-500" :
-                                                                "bg-blue-100 text-blue-600"
-                                                            }`}>
-                                                                {lesson.isLocked ? <FaLock /> : getLessonIcon(lesson.type)}
-                                                            </div>
-                                                            <div className="flex-1">
-                                                                <div className="flex items-center gap-2 mb-1">
-                                                                    <p className="font-semibold">{lesson.title}</p>
-                                                                    <Chip size="sm" variant="flat" className="capitalize">
-                                                                        {lesson.type}
-                                                                    </Chip>
-                                                                    {lesson.isFreePreview && (
-                                                                        <Chip size="sm" color="primary" variant="flat">
-                                                                            Free Preview
-                                                                        </Chip>
-                                                                    )}
-                                                                </div>
-                                                                {lesson.description && (
-                                                                    <p className="text-sm text-gray-500">{lesson.description}</p>
-                                                                )}
-                                                                {lesson.duration && (
-                                                                    <p className="text-xs text-gray-400 mt-1">{lesson.duration} min</p>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            {lesson.isCompleted && (
-                                                                <Chip size="sm" color="success" startContent={<FaCheckCircle />}>
-                                                                    Completed
-                                                                </Chip>
-                                                            )}
-                                                            {lesson.isLocked ? (
-                                                                <Chip size="sm" color="default" startContent={<FaLock />}>
-                                                                    Locked
-                                                                </Chip>
-                                                            ) : (
-                                                                <Button
-                                                                    size="sm"
-                                                                    color="primary"
-                                                                    variant="flat"
-                                                                    startContent={<FaPlay />}
-                                                                >
-                                                                    {lesson.type === "quiz" || lesson.type === "assignment" ? "Start" : "View"}
-                                                                </Button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            )}
+                                                        <FaCheckCircle />
+                                                    </Button>
+                                                )}
+                                                <Button
+                                                    size="sm"
+                                                    color="default"
+                                                    variant="flat"
+                                                    isIconOnly
+                                                    onPress={toggleFullscreen}
+                                                >
+                                                    <FaExpand />
+                                                </Button>
+                                            </div>
                                         </div>
-                                    </AccordionItem>
-                                ))}
-                            </Accordion>
-                        )}
-                    </CardBody>
-                </Card>
+                                        {/* Mobile Mark Complete Button */}
+                                        {!currentLesson.isCompleted && (
+                                            <Button
+                                                size="sm"
+                                                color="success"
+                                                variant="flat"
+                                                fullWidth
+                                                className="mt-3 md:hidden"
+                                                startContent={<FaCheckCircle />}
+                                                onPress={async () => {
+                                                    try {
+                                                        const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
+                                                        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/course/complete-lesson/${currentLesson.id}`, {
+                                                            method: 'POST',
+                                                            headers: {
+                                                                'Authorization': `Bearer ${token}`,
+                                                                'Content-Type': 'application/json'
+                                                            }
+                                                        });
+                                                        
+                                                        if (response.ok) {
+                                                            toast.success("Lesson marked as complete!");
+                                                            refetch();
+                                                        } else {
+                                                            const error = await response.json();
+                                                            toast.error(error.message || "Failed to mark lesson as complete");
+                                                        }
+                                                    } catch (error) {
+                                                        console.error("Error marking lesson complete:", error);
+                                                        toast.error("Failed to mark lesson as complete");
+                                                    }
+                                                }}
+                                            >
+                                                Mark as Complete
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Preview Content */}
+                                <div className="flex-1 p-3 md:p-4 overflow-hidden">
+                                    <div className="h-full rounded-lg overflow-hidden">
+                                        {renderLessonContent()}
+                                    </div>
+                                </div>
+                            </CardBody>
+                        </Card>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -1037,37 +1275,46 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                             {quizzes.filter((q: any) => q.assessmentType === "quiz").map((quiz: any) => (
                                                 <Card 
                                                     key={quiz._id}
-                                                    className="border-2 border-blue-200 hover:border-blue-400 hover:shadow-lg transition-all w-full"
+                                                    className="w-full shadow-xl border border-blue-200/70 bg-gradient-to-br from-white to-blue-50/40 hover:shadow-2xl transition-all hover:-translate-y-0.5"
                                                 >
-                                                    <CardBody className="p-3 sm:p-4">
-                                                        <div className="flex items-start justify-between mb-2 gap-2">
+                                                    <CardBody className="p-3 sm:p-5 space-y-3">
+                                                        <div className="flex items-start justify-between gap-2">
                                                             <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                                <div className="p-1.5 sm:p-2 rounded-lg bg-blue-100 text-blue-600 flex-shrink-0">
-                                                                    <FaClipboardList className="text-base sm:text-xl" />
+                                                                <div className="p-2 sm:p-2.5 rounded-xl bg-blue-100 text-blue-700 flex-shrink-0 shadow-inner">
+                                                                    <FaClipboardList className="text-sm sm:text-lg" />
                                                                 </div>
                                                                 <div className="min-w-0 flex-1">
-                                                                    <h4 className="font-semibold text-xs sm:text-sm truncate">{quiz.title}</h4>
+                                                                    <h4 className="font-semibold text-sm sm:text-base truncate text-gray-900">{quiz.title}</h4>
                                                                 </div>
                                                             </div>
                                                             {quiz.status === "published" ? (
-                                                                <Chip size="sm" color="success" variant="flat">Published</Chip>
+                                                                <Chip size="sm" color="success" variant="flat" className="font-semibold">Published</Chip>
                                                             ) : (
-                                                                <Chip size="sm" color="warning" variant="flat">Draft</Chip>
+                                                                <Chip size="sm" color="warning" variant="flat" className="font-semibold">Draft</Chip>
                                                             )}
                                                         </div>
                                                         {quiz.description && (
-                                                            <p className="text-xs text-gray-600 mb-3 line-clamp-2">{quiz.description}</p>
+                                                            <p className="text-xs sm:text-sm text-gray-600 mb-1.5 line-clamp-2">{quiz.description}</p>
                                                         )}
-                                                        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                                                            <span>{quiz.questions?.length || 0} Questions</span>
-                                                            {quiz.timeLimit && <span>{quiz.timeLimit} mins</span>}
+                                                        <div className="flex items-center justify-between text-[11px] sm:text-xs text-gray-600 mb-2">
+                                                            <div className="flex items-center gap-1.5 bg-white/70 px-2 py-1 rounded-lg">
+                                                                <FaClipboardList className="text-blue-600" />
+                                                                <span className="font-medium">{quiz.questions?.length || 0} Questions</span>
+                                                            </div>
+                                                            {quiz.timeLimit && (
+                                                                <div className="flex items-center gap-1.5 bg-white/70 px-2 py-1 rounded-lg">
+                                                                    <FaClock className="text-blue-600" />
+                                                                    <span className="font-medium">{quiz.timeLimit} mins</span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                         <Button 
-                                                            size="sm" 
+                                                            size="md" 
                                                             color="primary" 
                                                             variant="flat"
                                                             fullWidth
-                                                            startContent={<FaPlay />}
+                                                            startContent={<FaPlay className="text-sm" />}
+                                                            className="font-semibold h-11"
                                                             isDisabled={quiz.status !== "published"}
                                                             onPress={() => {
                                                                 if (quiz.status === "published") {
@@ -1104,37 +1351,46 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                             {quizzes.filter((q: any) => q.assessmentType === "mid-exam").map((quiz: any) => (
                                                 <Card 
                                                     key={quiz._id}
-                                                    className="border-2 border-orange-200 hover:border-orange-400 hover:shadow-lg transition-all w-full"
+                                                    className="w-full shadow-xl border border-orange-200/70 bg-gradient-to-br from-white to-orange-50/40 hover:shadow-2xl transition-all hover:-translate-y-0.5"
                                                 >
-                                                    <CardBody className="p-3 sm:p-4">
-                                                        <div className="flex items-start justify-between mb-2 gap-2">
+                                                    <CardBody className="p-3 sm:p-5 space-y-3">
+                                                        <div className="flex items-start justify-between gap-2">
                                                             <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                                <div className="p-1.5 sm:p-2 rounded-lg bg-orange-100 text-orange-600 flex-shrink-0">
+                                                                <div className="p-2 sm:p-2.5 rounded-xl bg-orange-100 text-orange-700 flex-shrink-0 shadow-inner">
                                                                     <FaTasks size={16} className="sm:w-5 sm:h-5" />
                                                                 </div>
                                                                 <div className="min-w-0 flex-1">
-                                                                    <h4 className="font-semibold text-xs sm:text-sm truncate">{quiz.title}</h4>
+                                                                    <h4 className="font-semibold text-sm sm:text-base truncate text-gray-900">{quiz.title}</h4>
                                                                 </div>
                                                             </div>
                                                             {quiz.status === "published" ? (
-                                                                <Chip size="sm" color="success" variant="flat">Published</Chip>
+                                                                <Chip size="sm" color="success" variant="flat" className="font-semibold">Published</Chip>
                                                             ) : (
-                                                                <Chip size="sm" color="warning" variant="flat">Draft</Chip>
+                                                                <Chip size="sm" color="warning" variant="flat" className="font-semibold">Draft</Chip>
                                                             )}
                                                         </div>
                                                         {quiz.description && (
-                                                            <p className="text-xs text-gray-600 mb-3 line-clamp-2">{quiz.description}</p>
+                                                            <p className="text-xs sm:text-sm text-gray-600 mb-1.5 line-clamp-2">{quiz.description}</p>
                                                         )}
-                                                        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                                                            <span>{quiz.questions?.length || 0} Questions</span>
-                                                            {quiz.timeLimit && <span>{quiz.timeLimit} mins</span>}
+                                                        <div className="flex items-center justify-between text-[11px] sm:text-xs text-gray-600 mb-2">
+                                                            <div className="flex items-center gap-1.5 bg-white/70 px-2 py-1 rounded-lg">
+                                                                <FaTasks className="text-orange-600" />
+                                                                <span className="font-medium">{quiz.questions?.length || 0} Questions</span>
+                                                            </div>
+                                                            {quiz.timeLimit && (
+                                                                <div className="flex items-center gap-1.5 bg-white/70 px-2 py-1 rounded-lg">
+                                                                    <FaClock className="text-orange-600" />
+                                                                    <span className="font-medium">{quiz.timeLimit} mins</span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                         <Button 
-                                                            size="sm" 
+                                                            size="md" 
                                                             color="warning" 
                                                             variant="flat"
                                                             fullWidth
-                                                            startContent={<FaPlay />}
+                                                            startContent={<FaPlay className="text-sm" />}
+                                                            className="font-semibold h-11"
                                                             isDisabled={quiz.status !== "published"}
                                                             onPress={() => quiz.status === "published" && router.push(`/quiz/${quiz._id}`)}
                                                         >
@@ -1160,37 +1416,46 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                             {quizzes.filter((q: any) => q.assessmentType === "final-exam").map((quiz: any) => (
                                                 <Card 
                                                     key={quiz._id}
-                                                    className="border-2 border-purple-200 hover:border-purple-400 hover:shadow-lg transition-all w-full"
+                                                    className="w-full shadow-xl border border-purple-200/70 bg-gradient-to-br from-white to-purple-50/40 hover:shadow-2xl transition-all hover:-translate-y-0.5"
                                                 >
-                                                    <CardBody className="p-3 sm:p-4">
-                                                        <div className="flex items-start justify-between mb-2 gap-2">
+                                                    <CardBody className="p-3 sm:p-5 space-y-3">
+                                                        <div className="flex items-start justify-between gap-2">
                                                             <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                                <div className="p-1.5 sm:p-2 rounded-lg bg-purple-100 text-purple-600 flex-shrink-0">
+                                                                <div className="p-2 sm:p-2.5 rounded-xl bg-purple-100 text-purple-700 flex-shrink-0 shadow-inner">
                                                                     <FaCheckCircle size={16} className="sm:w-5 sm:h-5" />
                                                                 </div>
                                                                 <div className="min-w-0 flex-1">
-                                                                    <h4 className="font-semibold text-xs sm:text-sm truncate">{quiz.title}</h4>
+                                                                    <h4 className="font-semibold text-sm sm:text-base truncate text-gray-900">{quiz.title}</h4>
                                                                 </div>
                                                             </div>
                                                             {quiz.status === "published" ? (
-                                                                <Chip size="sm" color="success" variant="flat">Published</Chip>
+                                                                <Chip size="sm" color="success" variant="flat" className="font-semibold">Published</Chip>
                                                             ) : (
-                                                                <Chip size="sm" color="warning" variant="flat">Draft</Chip>
+                                                                <Chip size="sm" color="warning" variant="flat" className="font-semibold">Draft</Chip>
                                                             )}
                                                         </div>
                                                         {quiz.description && (
-                                                            <p className="text-xs text-gray-600 mb-3 line-clamp-2">{quiz.description}</p>
+                                                            <p className="text-xs sm:text-sm text-gray-600 mb-1.5 line-clamp-2">{quiz.description}</p>
                                                         )}
-                                                        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                                                            <span>{quiz.questions?.length || 0} Questions</span>
-                                                            {quiz.timeLimit && <span>{quiz.timeLimit} mins</span>}
+                                                        <div className="flex items-center justify-between text-[11px] sm:text-xs text-gray-600 mb-2">
+                                                            <div className="flex items-center gap-1.5 bg-white/70 px-2 py-1 rounded-lg">
+                                                                <FaCheckCircle className="text-purple-600" />
+                                                                <span className="font-medium">{quiz.questions?.length || 0} Questions</span>
+                                                            </div>
+                                                            {quiz.timeLimit && (
+                                                                <div className="flex items-center gap-1.5 bg-white/70 px-2 py-1 rounded-lg">
+                                                                    <FaClock className="text-purple-600" />
+                                                                    <span className="font-medium">{quiz.timeLimit} mins</span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                         <Button 
-                                                            size="sm" 
+                                                            size="md" 
                                                             color="secondary" 
                                                             variant="flat"
                                                             fullWidth
-                                                            startContent={<FaPlay />}
+                                                            startContent={<FaPlay className="text-sm" />}
+                                                            className="font-semibold h-11"
                                                             isDisabled={quiz.status !== "published"}
                                                             onPress={() => quiz.status === "published" && router.push(`/quiz/${quiz._id}`)}
                                                         >
@@ -1244,39 +1509,46 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                             {assignments.filter((a: any) => a.assessmentType === "assignment").map((assignment: any) => (
                                                 <Card 
                                                     key={assignment._id}
-                                                    className="border-2 border-blue-200 hover:border-blue-400 hover:shadow-lg transition-all w-full"
+                                                    className="w-full shadow-xl border border-blue-200/70 bg-gradient-to-br from-white to-blue-50/40 hover:shadow-2xl transition-all hover:-translate-y-0.5"
                                                 >
-                                                    <CardBody className="p-3 sm:p-4">
-                                                        <div className="flex items-start justify-between mb-2 gap-2">
+                                                    <CardBody className="p-3 sm:p-5 space-y-3">
+                                                        <div className="flex items-start justify-between gap-2">
                                                             <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                                <div className="p-1.5 sm:p-2 rounded-lg bg-blue-100 text-blue-600 flex-shrink-0">
+                                                                <div className="p-2 sm:p-2.5 rounded-xl bg-blue-100 text-blue-700 flex-shrink-0 shadow-inner">
                                                                     <FaTasks size={16} className="sm:w-5 sm:h-5" />
                                                                 </div>
                                                                 <div className="min-w-0 flex-1">
-                                                                    <h4 className="font-semibold text-xs sm:text-sm truncate">{assignment.title}</h4>
+                                                                    <h4 className="font-semibold text-sm sm:text-base truncate text-gray-900">{assignment.title}</h4>
                                                                 </div>
                                                             </div>
                                                             {assignment.status === "published" ? (
-                                                                <Chip size="sm" color="success" variant="flat">Published</Chip>
+                                                                <Chip size="sm" color="success" variant="flat" className="font-semibold">Published</Chip>
                                                             ) : (
-                                                                <Chip size="sm" color="warning" variant="flat">Draft</Chip>
+                                                                <Chip size="sm" color="warning" variant="flat" className="font-semibold">Draft</Chip>
                                                             )}
                                                         </div>
                                                         {assignment.description && (
-                                                            <p className="text-xs text-gray-600 mb-3 line-clamp-2">{assignment.description}</p>
+                                                            <p className="text-xs sm:text-sm text-gray-600 mb-1.5 line-clamp-2">{assignment.description}</p>
                                                         )}
-                                                        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                                                            <span>Max Score: {assignment.maxScore || 100}</span>
+                                                        <div className="flex items-center justify-between text-[11px] sm:text-xs text-gray-600 mb-2">
+                                                            <div className="flex items-center gap-1.5 bg-white/70 px-2 py-1 rounded-lg">
+                                                                <FaTasks className="text-blue-600" />
+                                                                <span className="font-medium">Max Score: {assignment.maxScore || 100}</span>
+                                                            </div>
                                                             {assignment.dueDate && (
-                                                                <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
+                                                                <div className="flex items-center gap-1.5 bg-white/70 px-2 py-1 rounded-lg">
+                                                                    <FaCalendar className="text-blue-600" />
+                                                                    <span className="font-medium">{new Date(assignment.dueDate).toLocaleDateString()}</span>
+                                                                </div>
                                                             )}
                                                         </div>
                                                         <Button 
-                                                            size="sm" 
+                                                            size="md" 
                                                             color="primary" 
                                                             variant="flat"
                                                             fullWidth
-                                                            startContent={<FaPlay />}
+                                                            startContent={<FaPlay className="text-sm" />}
+                                                            className="font-semibold h-11"
                                                             isDisabled={assignment.status !== "published"}
                                                             onPress={() => assignment.status === "published" && router.push(`/assignment/${assignment._id}`)}
                                                         >
@@ -1300,39 +1572,46 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                             {assignments.filter((a: any) => a.assessmentType === "mid-term").map((assignment: any) => (
                                                 <Card 
                                                     key={assignment._id}
-                                                    className="border-2 border-orange-200 hover:border-orange-400 hover:shadow-lg transition-all w-full"
+                                                    className="w-full shadow-xl border border-orange-200/70 bg-gradient-to-br from-white to-orange-50/40 hover:shadow-2xl transition-all hover:-translate-y-0.5"
                                                 >
-                                                    <CardBody className="p-3 sm:p-4">
-                                                        <div className="flex items-start justify-between mb-2 gap-2">
+                                                    <CardBody className="p-3 sm:p-5 space-y-3">
+                                                        <div className="flex items-start justify-between gap-2">
                                                             <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                                <div className="p-1.5 sm:p-2 rounded-lg bg-orange-100 text-orange-600 flex-shrink-0">
+                                                                <div className="p-2 sm:p-2.5 rounded-xl bg-orange-100 text-orange-700 flex-shrink-0 shadow-inner">
                                                                     <FaTasks size={16} className="sm:w-5 sm:h-5" />
                                                                 </div>
                                                                 <div className="min-w-0 flex-1">
-                                                                    <h4 className="font-semibold text-xs sm:text-sm truncate">{assignment.title}</h4>
+                                                                    <h4 className="font-semibold text-sm sm:text-base truncate text-gray-900">{assignment.title}</h4>
                                                                 </div>
                                                             </div>
                                                             {assignment.status === "published" ? (
-                                                                <Chip size="sm" color="success" variant="flat">Published</Chip>
+                                                                <Chip size="sm" color="success" variant="flat" className="font-semibold">Published</Chip>
                                                             ) : (
-                                                                <Chip size="sm" color="warning" variant="flat">Draft</Chip>
+                                                                <Chip size="sm" color="warning" variant="flat" className="font-semibold">Draft</Chip>
                                                             )}
                                                         </div>
                                                         {assignment.description && (
-                                                            <p className="text-xs text-gray-600 mb-3 line-clamp-2">{assignment.description}</p>
+                                                            <p className="text-xs sm:text-sm text-gray-600 mb-1.5 line-clamp-2">{assignment.description}</p>
                                                         )}
-                                                        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                                                            <span>Max Score: {assignment.maxScore || 100}</span>
+                                                        <div className="flex items-center justify-between text-[11px] sm:text-xs text-gray-600 mb-2">
+                                                            <div className="flex items-center gap-1.5 bg-white/70 px-2 py-1 rounded-lg">
+                                                                <FaTasks className="text-orange-600" />
+                                                                <span className="font-medium">Max Score: {assignment.maxScore || 100}</span>
+                                                            </div>
                                                             {assignment.dueDate && (
-                                                                <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
+                                                                <div className="flex items-center gap-1.5 bg-white/70 px-2 py-1 rounded-lg">
+                                                                    <FaCalendar className="text-orange-600" />
+                                                                    <span className="font-medium">{new Date(assignment.dueDate).toLocaleDateString()}</span>
+                                                                </div>
                                                             )}
                                                         </div>
                                                         <Button 
-                                                            size="sm" 
+                                                            size="md" 
                                                             color="warning" 
                                                             variant="flat"
                                                             fullWidth
-                                                            startContent={<FaPlay />}
+                                                            startContent={<FaPlay className="text-sm" />}
+                                                            className="font-semibold h-11"
                                                             isDisabled={assignment.status !== "published"}
                                                             onPress={() => assignment.status === "published" && router.push(`/assignment/${assignment._id}`)}
                                                         >
@@ -1356,39 +1635,46 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                             {assignments.filter((a: any) => a.assessmentType === "final").map((assignment: any) => (
                                                 <Card 
                                                     key={assignment._id}
-                                                    className="border-2 border-purple-200 hover:border-purple-400 hover:shadow-lg transition-all w-full"
+                                                    className="w-full shadow-xl border border-purple-200/70 bg-gradient-to-br from-white to-purple-50/40 hover:shadow-2xl transition-all hover:-translate-y-0.5"
                                                 >
-                                                    <CardBody className="p-3 sm:p-4">
-                                                        <div className="flex items-start justify-between mb-2 gap-2">
+                                                    <CardBody className="p-3 sm:p-5 space-y-3">
+                                                        <div className="flex items-start justify-between gap-2">
                                                             <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                                <div className="p-1.5 sm:p-2 rounded-lg bg-purple-100 text-purple-600 flex-shrink-0">
+                                                                <div className="p-2 sm:p-2.5 rounded-xl bg-purple-100 text-purple-700 flex-shrink-0 shadow-inner">
                                                                     <FaCheckCircle size={16} className="sm:w-5 sm:h-5" />
                                                                 </div>
                                                                 <div className="min-w-0 flex-1">
-                                                                    <h4 className="font-semibold text-xs sm:text-sm truncate">{assignment.title}</h4>
+                                                                    <h4 className="font-semibold text-sm sm:text-base truncate text-gray-900">{assignment.title}</h4>
                                                                 </div>
                                                             </div>
                                                             {assignment.status === "published" ? (
-                                                                <Chip size="sm" color="success" variant="flat">Published</Chip>
+                                                                <Chip size="sm" color="success" variant="flat" className="font-semibold">Published</Chip>
                                                             ) : (
-                                                                <Chip size="sm" color="warning" variant="flat">Draft</Chip>
+                                                                <Chip size="sm" color="warning" variant="flat" className="font-semibold">Draft</Chip>
                                                             )}
                                                         </div>
                                                         {assignment.description && (
-                                                            <p className="text-xs text-gray-600 mb-3 line-clamp-2">{assignment.description}</p>
+                                                            <p className="text-xs sm:text-sm text-gray-600 mb-1.5 line-clamp-2">{assignment.description}</p>
                                                         )}
-                                                        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                                                            <span>Max Score: {assignment.maxScore || 100}</span>
+                                                        <div className="flex items-center justify-between text-[11px] sm:text-xs text-gray-600 mb-2">
+                                                            <div className="flex items-center gap-1.5 bg-white/70 px-2 py-1 rounded-lg">
+                                                                <FaCheckCircle className="text-purple-600" />
+                                                                <span className="font-medium">Max Score: {assignment.maxScore || 100}</span>
+                                                            </div>
                                                             {assignment.dueDate && (
-                                                                <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
+                                                                <div className="flex items-center gap-1.5 bg-white/70 px-2 py-1 rounded-lg">
+                                                                    <FaCalendar className="text-purple-600" />
+                                                                    <span className="font-medium">{new Date(assignment.dueDate).toLocaleDateString()}</span>
+                                                                </div>
                                                             )}
                                                         </div>
                                                         <Button 
-                                                            size="sm" 
+                                                            size="md" 
                                                             color="secondary" 
                                                             variant="flat"
                                                             fullWidth
-                                                            startContent={<FaPlay />}
+                                                            startContent={<FaPlay className="text-sm" />}
+                                                            className="font-semibold h-11"
                                                             isDisabled={assignment.status !== "published"}
                                                             onPress={() => assignment.status === "published" && router.push(`/student/assignment/${assignment._id}`)}
                                                         >
@@ -1412,39 +1698,46 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                             {assignments.filter((a: any) => a.assessmentType === "project").map((assignment: any) => (
                                                 <Card 
                                                     key={assignment._id}
-                                                    className="border-2 border-green-200 hover:border-green-400 hover:shadow-lg transition-all w-full"
+                                                    className="w-full shadow-xl border border-green-200/70 bg-gradient-to-br from-white to-green-50/40 hover:shadow-2xl transition-all hover:-translate-y-0.5"
                                                 >
-                                                    <CardBody className="p-3 sm:p-4">
-                                                        <div className="flex items-start justify-between mb-2 gap-2">
+                                                    <CardBody className="p-3 sm:p-5 space-y-3">
+                                                        <div className="flex items-start justify-between gap-2">
                                                             <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                                <div className="p-1.5 sm:p-2 rounded-lg bg-green-100 text-green-600 flex-shrink-0">
+                                                                <div className="p-2 sm:p-2.5 rounded-xl bg-green-100 text-green-700 flex-shrink-0 shadow-inner">
                                                                     <FaBook size={16} className="sm:w-5 sm:h-5" />
                                                                 </div>
                                                                 <div className="min-w-0 flex-1">
-                                                                    <h4 className="font-semibold text-xs sm:text-sm truncate">{assignment.title}</h4>
+                                                                    <h4 className="font-semibold text-sm sm:text-base truncate text-gray-900">{assignment.title}</h4>
                                                                 </div>
                                                             </div>
                                                             {assignment.status === "published" ? (
-                                                                <Chip size="sm" color="success" variant="flat">Published</Chip>
+                                                                <Chip size="sm" color="success" variant="flat" className="font-semibold">Published</Chip>
                                                             ) : (
-                                                                <Chip size="sm" color="warning" variant="flat">Draft</Chip>
+                                                                <Chip size="sm" color="warning" variant="flat" className="font-semibold">Draft</Chip>
                                                             )}
                                                         </div>
                                                         {assignment.description && (
-                                                            <p className="text-xs text-gray-600 mb-3 line-clamp-2">{assignment.description}</p>
+                                                            <p className="text-xs sm:text-sm text-gray-600 mb-1.5 line-clamp-2">{assignment.description}</p>
                                                         )}
-                                                        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                                                            <span>Max Score: {assignment.maxScore || 100}</span>
+                                                        <div className="flex items-center justify-between text-[11px] sm:text-xs text-gray-600 mb-2">
+                                                            <div className="flex items-center gap-1.5 bg-white/70 px-2 py-1 rounded-lg">
+                                                                <FaBook className="text-green-600" />
+                                                                <span className="font-medium">Max Score: {assignment.maxScore || 100}</span>
+                                                            </div>
                                                             {assignment.dueDate && (
-                                                                <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
+                                                                <div className="flex items-center gap-1.5 bg-white/70 px-2 py-1 rounded-lg">
+                                                                    <FaCalendar className="text-green-600" />
+                                                                    <span className="font-medium">{new Date(assignment.dueDate).toLocaleDateString()}</span>
+                                                                </div>
                                                             )}
                                                         </div>
                                                         <Button 
-                                                            size="sm" 
+                                                            size="md" 
                                                             color="success" 
                                                             variant="flat"
                                                             fullWidth
-                                                            startContent={<FaPlay />}
+                                                            startContent={<FaPlay className="text-sm" />}
+                                                            className="font-semibold h-11"
                                                             isDisabled={assignment.status !== "published"}
                                                             onPress={() => assignment.status === "published" && router.push(`/assignment/${assignment._id}`)}
                                                         >

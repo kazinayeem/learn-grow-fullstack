@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   Card,
@@ -11,6 +11,13 @@ import {
   Avatar,
   Skeleton,
   Divider,
+  Input,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
 } from "@nextui-org/react";
 import {
   FaArrowLeft,
@@ -26,24 +33,82 @@ import {
   FaEdit,
   FaShoppingCart,
   FaCheckDouble,
+  FaPlus,
+  FaCrown,
+  FaBox,
 } from "react-icons/fa";
 import { useGetUserByIdQuery } from "@/redux/api/userApi";
 import { useGetStudentOrdersQuery } from "@/redux/api/orderApi";
+import axios from "axios";
+import { API_CONFIG } from "@/config/apiConfig";
+import Cookies from "js-cookie";
+import { toast } from "react-toastify";
 
 export default function AdminStudentDetailPage() {
   const params = useParams();
   const router = useRouter();
   const studentId = params.id as string;
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [extensionMonths, setExtensionMonths] = useState(3);
+  const [extending, setExtending] = useState(false);
 
-  const { data, isLoading, error } = useGetUserByIdQuery(studentId);
+  const { data, isLoading, error, refetch } = useGetUserByIdQuery(studentId);
   const student = data?.data;
 
   // Fetch student's orders
-  const { data: ordersData, isLoading: ordersLoading } = useGetStudentOrdersQuery({
+  const { data: ordersData, isLoading: ordersLoading, refetch: refetchOrders } = useGetStudentOrdersQuery({
     studentId,
     page: 1,
     limit: 10,
   });
+
+  const orders = ordersData?.data || [];
+
+  // Find active quarterly subscription
+  const activeQuarterlyOrder = orders.find(
+    (order: any) =>
+      order.planType === "quarterly" &&
+      order.paymentStatus === "approved" &&
+      order.isActive &&
+      new Date(order.endDate) > new Date()
+  );
+
+  // Calculate remaining time
+  const calculateRemainingTime = (endDate: string) => {
+    const now = new Date();
+    const end = new Date(endDate);
+    const diffTime = end.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffMonths = Math.floor(diffDays / 30);
+    const remainingDays = diffDays % 30;
+
+    if (diffMonths > 0) {
+      return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ${remainingDays > 0 ? `${remainingDays} days` : ''}`;
+    }
+    return `${diffDays} days`;
+  };
+
+  // Handle extension
+  const handleExtendSubscription = async () => {
+    try {
+      setExtending(true);
+      const token = Cookies.get("accessToken");
+      
+      await axios.patch(
+        `${API_CONFIG.BASE_URL}/orders/${activeQuarterlyOrder._id}/extend`,
+        { months: extensionMonths },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast.success(`Subscription extended by ${extensionMonths} month(s)`);
+      refetchOrders();
+      onClose();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to extend subscription");
+    } finally {
+      setExtending(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -211,6 +276,54 @@ export default function AdminStudentDetailPage() {
               </div>
             </CardBody>
           </Card>
+
+          {/* Active Subscription Card */}
+          {activeQuarterlyOrder && (
+            <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50">
+              <CardHeader className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <FaCrown className="text-green-600 text-xl" />
+                  <h3 className="font-bold text-green-900">Active Subscription</h3>
+                </div>
+                <Button
+                  size="sm"
+                  color="success"
+                  variant="flat"
+                  startContent={<FaPlus />}
+                  onPress={onOpen}
+                >
+                  Extend
+                </Button>
+              </CardHeader>
+              <Divider />
+              <CardBody className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-700">Plan Type</span>
+                  <Chip size="sm" color="success" variant="solid">
+                    Quarterly - Full Access
+                  </Chip>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-700">Time Remaining</span>
+                  <span className="text-sm font-bold text-green-700">
+                    {calculateRemainingTime(activeQuarterlyOrder.endDate)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-700">End Date</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {new Date(activeQuarterlyOrder.endDate).toLocaleDateString("en-GB")}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-700">Started</span>
+                  <span className="text-sm text-gray-600">
+                    {new Date(activeQuarterlyOrder.startDate).toLocaleDateString("en-GB")}
+                  </span>
+                </div>
+              </CardBody>
+            </Card>
+          )}
         </div>
 
         {/* Right Column - Activity & Progress */}
@@ -260,40 +373,12 @@ export default function AdminStudentDetailPage() {
             </Card>
           </div>
 
-          {/* Course Progress */}
-          <Card>
-            <CardHeader>
-              <h3 className="font-semibold text-lg">Enrolled Courses</h3>
-            </CardHeader>
-            <Divider />
-            <CardBody>
-              <div className="text-center py-12">
-                <FaBook className="text-6xl text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-600">No enrolled courses yet</p>
-              </div>
-            </CardBody>
-          </Card>
-
-          {/* Recent Activity */}
-          <Card>
-            <CardHeader>
-              <h3 className="font-semibold text-lg">Recent Activity</h3>
-            </CardHeader>
-            <Divider />
-            <CardBody>
-              <div className="text-center py-12">
-                <FaClock className="text-6xl text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-600">No recent activity</p>
-              </div>
-            </CardBody>
-          </Card>
-
           {/* Orders/Purchases */}
           <Card>
-            <CardHeader>
-              <h3 className="font-semibold text-lg">Purchase History</h3>
-            </CardHeader>
-            <Divider />
+          <CardHeader>
+            <h3 className="font-semibold text-lg">Purchase History</h3>
+          </CardHeader>
+          <Divider />
             <CardBody>
               {ordersLoading ? (
                 <div className="space-y-3">
@@ -301,31 +386,62 @@ export default function AdminStudentDetailPage() {
                     <Skeleton key={i} className="h-20 w-full rounded-lg" />
                   ))}
                 </div>
-              ) : ordersData?.data && ordersData.data.length > 0 ? (
+              ) : orders && orders.length > 0 ? (
                 <div className="space-y-3">
-                  {ordersData.data.map((order: any) => (
+                  {orders.map((order: any) => (
                     <div
                       key={order._id}
                       className="flex items-start justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
                     >
                       <div className="flex items-start gap-3 flex-1">
-                        <div className="bg-blue-100 p-3 rounded-lg flex-shrink-0">
-                          <FaShoppingCart className="text-blue-600 text-lg" />
+                        <div className={`p-3 rounded-lg flex-shrink-0 ${
+                          order.planType === "quarterly" 
+                            ? "bg-green-100" 
+                            : order.planType === "kit" 
+                            ? "bg-amber-100" 
+                            : "bg-blue-100"
+                        }`}>
+                          {order.planType === "quarterly" ? (
+                            <FaCrown className="text-green-600 text-lg" />
+                          ) : order.planType === "kit" ? (
+                            <FaBox className="text-amber-600 text-lg" />
+                          ) : (
+                            <FaBook className="text-blue-600 text-lg" />
+                          )}
                         </div>
                         <div className="flex-1">
                           <p className="font-semibold text-gray-900">
-                            {order.planType === "single" ? `Course Purchase` : `${order.planType.charAt(0).toUpperCase() + order.planType.slice(1)} Plan`}
+                            {order.planType === "quarterly" 
+                              ? "Quarterly Subscription - Full Access" 
+                              : order.planType === "kit" 
+                              ? "Robotics Kit Only" 
+                              : order.courseId?.title || "Course Purchase"}
                           </p>
+                          {order.planType === "single" && order.courseId && (
+                            <p className="text-xs text-blue-600 mt-1">
+                              Course: {order.courseId.title}
+                            </p>
+                          )}
                           <p className="text-sm text-gray-600">
                             Transaction ID: {order.transactionId.slice(0, 12)}...
                           </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {new Date(order.createdAt).toLocaleDateString("en-US", {
+                          <div className="flex gap-3 mt-2 text-xs text-gray-500">
+                            <span>Purchased: {new Date(order.createdAt).toLocaleDateString("en-US", {
                               year: "numeric",
                               month: "short",
                               day: "numeric",
-                            })}
-                          </p>
+                            })}</span>
+                            {order.endDate && order.paymentStatus === "approved" && (
+                              <span className="text-green-600">
+                                Valid Until: {new Date(order.endDate).toLocaleDateString("en-GB")}
+                              </span>
+                            )}
+                          </div>
+                          {order.deliveryAddress && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              📦 Delivery: {order.deliveryAddress.city}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-4 flex-shrink-0">
@@ -362,13 +478,68 @@ export default function AdminStudentDetailPage() {
               ) : (
                 <div className="text-center py-12">
                   <FaTrophy className="text-6xl text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-600">No purchases yet</p>
-              </div>
+                  <p className="text-gray-600">No purchases yet</p>
+                </div>
               )}
             </CardBody>
           </Card>
         </div>
       </div>
+
+      {/* Extension Modal */}
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalContent>
+          <ModalHeader>Extend Subscription</ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Extend the student's quarterly subscription by adding more months to their current end date.
+              </p>
+              {activeQuarterlyOrder && (
+                <div className="bg-blue-50 p-4 rounded-lg space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Current End Date:</span>
+                    <span className="font-semibold">
+                      {new Date(activeQuarterlyOrder.endDate).toLocaleDateString("en-GB")}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-green-700">New End Date:</span>
+                    <span className="font-bold text-green-700">
+                      {(() => {
+                        const newDate = new Date(activeQuarterlyOrder.endDate);
+                        newDate.setMonth(newDate.getMonth() + extensionMonths);
+                        return newDate.toLocaleDateString("en-GB");
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              )}
+              <Input
+                type="number"
+                label="Months to Add"
+                placeholder="Enter number of months"
+                value={String(extensionMonths)}
+                onChange={(e) => setExtensionMonths(Number(e.target.value) || 1)}
+                min={1}
+                max={12}
+              />
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
+            <Button
+              color="success"
+              onPress={handleExtendSubscription}
+              isLoading={extending}
+            >
+              Extend by {extensionMonths} Month{extensionMonths > 1 ? 's' : ''}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

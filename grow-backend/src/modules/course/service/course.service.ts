@@ -85,7 +85,7 @@ export const getAllCourses = async (filters: any = {}) => {
       }
     }
 
-    const { page, skip, limit: boundedLimit } = parsePagination(filters, { defaultLimit: 10, maxLimit: 10 });
+    const { page, skip, limit: boundedLimit } = parsePagination(filters, { defaultLimit: 6, maxLimit: 50 });
     const limit = filters.enrolledOnly ? 6 : boundedLimit;
 
     const courses = await Course.find(query)
@@ -111,13 +111,31 @@ export const getAllCourses = async (filters: any = {}) => {
   }
 };
 
-export const getPublishedCourses = async () => {
+export const getPublishedCourses = async (filters: any = {}) => {
   try {
     // Only show courses that are both published AND admin approved
-    return await Course.find({ isPublished: true, isAdminApproved: true })
+    const query = { isPublished: true, isAdminApproved: true } as const;
+
+    const { page, skip, limit } = parsePagination(filters, { defaultLimit: 6, maxLimit: 50 });
+
+    const courses = await Course.find(query)
       .populate("instructorId", "name email")
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
       .lean();
+
+    const total = await Course.countDocuments(query);
+
+    return {
+      courses,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      },
+    };
   } catch (error: any) {
     throw new Error(`Failed to get published courses: ${error.message}`);
   }

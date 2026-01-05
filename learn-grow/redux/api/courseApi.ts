@@ -27,7 +27,7 @@ export const courseApi = baseApi.injectEndpoints({
                 method: "GET",
                 params: {
                     page: params.page || 1,
-                    limit: params.limit || 10,
+                    limit: params.limit || 6,
                     search: params.search || undefined,
                     status: params.status || undefined,
                     category: params.category || undefined,
@@ -44,7 +44,14 @@ export const courseApi = baseApi.injectEndpoints({
             providesTags: ["Course"],
         }),
         getPublishedCourses: build.query({
-            query: () => ({ url: "/course/get-published-courses", method: "GET" }),
+            query: (params: { page?: number; limit?: number } = {}) => ({
+                url: "/course/get-published-courses",
+                method: "GET",
+                params: {
+                    page: params.page || 1,
+                    limit: params.limit || 6,
+                },
+            }),
             providesTags: ["Course"],
         }),
         getFeaturedCourses: build.query({

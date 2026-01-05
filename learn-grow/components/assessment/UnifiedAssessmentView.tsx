@@ -175,18 +175,33 @@ export default function UnifiedAssessmentView({ courseId, hasAccess = false }: U
         color="primary"
         variant="underlined"
         className="mb-4"
+        classNames={{
+          tabList: "gap-2 w-full relative rounded-none p-0 border-b border-divider overflow-x-auto",
+          cursor: "w-full bg-primary",
+          tab: "max-w-fit px-2 sm:px-4 h-10 sm:h-12 text-xs sm:text-sm whitespace-nowrap",
+          tabContent: "group-data-[selected=true]:text-primary"
+        }}
       >
-        <Tab key="all" title="📚 All Assessments">
+        <Tab 
+          key="all" 
+          title={
+            <span className="flex items-center gap-1 text-xs sm:text-sm">
+              <span>📚</span>
+              <span className="hidden xs:inline">All Assessments</span>
+              <span className="xs:hidden">All</span>
+            </span>
+          }
+        >
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <h3 className="text-base sm:text-lg font-semibold mb-3 flex items-center gap-2">
                 <span>📝</span> Quizzes & Exams
               </h3>
               <QuizList courseId={courseId} hasAccess={hasAccess} />
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <h3 className="text-base sm:text-lg font-semibold mb-3 flex items-center gap-2">
                 <span>📄</span> Assignments & Projects
               </h3>
               <AssignmentsList />
@@ -194,11 +209,29 @@ export default function UnifiedAssessmentView({ courseId, hasAccess = false }: U
           </div>
         </Tab>
 
-        <Tab key="quizzes" title="📝 Quizzes & Exams">
+        <Tab 
+          key="quizzes" 
+          title={
+            <span className="flex items-center gap-1 text-xs sm:text-sm">
+              <span>📝</span>
+              <span className="hidden xs:inline">Quizzes & Exams</span>
+              <span className="xs:hidden">Quizzes</span>
+            </span>
+          }
+        >
           <QuizList courseId={courseId} hasAccess={hasAccess} />
         </Tab>
 
-        <Tab key="assignments" title="📄 Assignments & Projects">
+        <Tab 
+          key="assignments" 
+          title={
+            <span className="flex items-center gap-1 text-xs sm:text-sm">
+              <span>📄</span>
+              <span className="hidden xs:inline">Assignments & Projects</span>
+              <span className="xs:hidden">Assignments</span>
+            </span>
+          }
+        >
           <AssignmentsList />
         </Tab>
       </Tabs>
