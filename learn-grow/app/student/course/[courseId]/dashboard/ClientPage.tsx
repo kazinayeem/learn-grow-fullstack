@@ -483,7 +483,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
             </div>
 
             {/* Main Content with Tabs */}
-            <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-8">
+            <div className="container mx-auto max-w-7xl px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
                 <Tabs
                     selectedKey={activeTab}
                     onSelectionChange={(key) => setActiveTab(key as string)}
@@ -491,10 +491,10 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                     variant="underlined"
                     classNames={{
                         base: "w-full",
-                        tabList: "gap-2 sm:gap-6 w-full relative rounded-none p-0 border-b border-divider bg-white px-2 sm:px-4 shadow-sm overflow-x-auto flex-nowrap",
+                        tabList: "gap-1 sm:gap-2 md:gap-6 w-full relative rounded-none p-0 border-b border-divider bg-white px-1 sm:px-2 md:px-4 shadow-sm overflow-x-auto flex-nowrap scrollbar-hide",
                         cursor: "w-full bg-blue-600",
-                        tab: "max-w-fit px-2 sm:px-4 h-12 font-semibold whitespace-nowrap",
-                        tabContent: "group-data-[selected=true]:text-blue-600 text-xs sm:text-sm"
+                        tab: "max-w-fit px-2 sm:px-3 md:px-4 h-10 sm:h-12 font-semibold whitespace-nowrap min-w-fit",
+                        tabContent: "group-data-[selected=true]:text-blue-600 text-[10px] sm:text-xs md:text-sm"
                     }}
                 >
                     {/* Overview Tab */}
@@ -868,11 +868,11 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
 
     function renderLessonsTab() {
         return (
-            <div className="py-6">
-                <Card className="shadow-lg">
-                    <CardBody className="p-6">
-                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                            <FaBook className="text-blue-600" />
+            <div className="py-4 sm:py-6">
+                <Card className="shadow-lg w-full overflow-hidden">
+                    <CardBody className="p-3 sm:p-4 md:p-6">
+                        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2">
+                            <FaBook className="text-blue-600 text-lg sm:text-xl" />
                             Course Curriculum
                         </h2>
 
@@ -1007,11 +1007,11 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
 
     function renderQuizzesTab() {
         return (
-            <div className="py-6">
-                <Card className="shadow-lg">
-                    <CardBody className="p-6">
-                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                            <FaClipboardList className="text-blue-600" />
+            <div className="py-4 sm:py-6">
+                <Card className="shadow-lg w-full overflow-hidden">
+                    <CardBody className="p-3 sm:p-4 md:p-6">
+                        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2">
+                            <FaClipboardList className="text-blue-600 text-lg sm:text-xl" />
                             Quizzes & Assessments
                         </h2>
                         
@@ -1029,24 +1029,24 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                 {/* Regular Quizzes */}
                                 {quizzes.filter((q: any) => q.assessmentType === "quiz").length > 0 && (
                                     <div>
-                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                            <FaClipboardList className="text-blue-600" />
+                                        <h3 className="text-base sm:text-lg font-semibold mb-3 flex items-center gap-2">
+                                            <FaClipboardList className="text-blue-600 text-sm sm:text-base" />
                                             Regular Quizzes
                                         </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                                             {quizzes.filter((q: any) => q.assessmentType === "quiz").map((quiz: any) => (
                                                 <Card 
                                                     key={quiz._id}
-                                                    className="border-2 border-blue-200 hover:border-blue-400 hover:shadow-lg transition-all"
+                                                    className="border-2 border-blue-200 hover:border-blue-400 hover:shadow-lg transition-all w-full"
                                                 >
-                                                    <CardBody className="p-4">
-                                                        <div className="flex items-start justify-between mb-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
-                                                                    <FaClipboardList size={20} />
+                                                    <CardBody className="p-3 sm:p-4">
+                                                        <div className="flex items-start justify-between mb-2 gap-2">
+                                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                                <div className="p-1.5 sm:p-2 rounded-lg bg-blue-100 text-blue-600 flex-shrink-0">
+                                                                    <FaClipboardList className="text-base sm:text-xl" />
                                                                 </div>
-                                                                <div>
-                                                                    <h4 className="font-semibold text-sm">{quiz.title}</h4>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <h4 className="font-semibold text-xs sm:text-sm truncate">{quiz.title}</h4>
                                                                 </div>
                                                             </div>
                                                             {quiz.status === "published" ? (
@@ -1096,24 +1096,24 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                 {/* Mid Exams */}
                                 {quizzes.filter((q: any) => q.assessmentType === "mid-exam").length > 0 && (
                                     <div>
-                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                            <FaTasks className="text-orange-600" />
+                                        <h3 className="text-base sm:text-lg font-semibold mb-3 flex items-center gap-2">
+                                            <FaTasks className="text-orange-600 text-sm sm:text-base" />
                                             Mid-Term Exams
                                         </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                                             {quizzes.filter((q: any) => q.assessmentType === "mid-exam").map((quiz: any) => (
                                                 <Card 
                                                     key={quiz._id}
-                                                    className="border-2 border-orange-200 hover:border-orange-400 hover:shadow-lg transition-all"
+                                                    className="border-2 border-orange-200 hover:border-orange-400 hover:shadow-lg transition-all w-full"
                                                 >
-                                                    <CardBody className="p-4">
-                                                        <div className="flex items-start justify-between mb-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="p-2 rounded-lg bg-orange-100 text-orange-600">
-                                                                    <FaTasks size={20} />
+                                                    <CardBody className="p-3 sm:p-4">
+                                                        <div className="flex items-start justify-between mb-2 gap-2">
+                                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                                <div className="p-1.5 sm:p-2 rounded-lg bg-orange-100 text-orange-600 flex-shrink-0">
+                                                                    <FaTasks size={16} className="sm:w-5 sm:h-5" />
                                                                 </div>
-                                                                <div>
-                                                                    <h4 className="font-semibold text-sm">{quiz.title}</h4>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <h4 className="font-semibold text-xs sm:text-sm truncate">{quiz.title}</h4>
                                                                 </div>
                                                             </div>
                                                             {quiz.status === "published" ? (
@@ -1152,24 +1152,24 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                 {/* Final Exams */}
                                 {quizzes.filter((q: any) => q.assessmentType === "final-exam").length > 0 && (
                                     <div>
-                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                            <FaCheckCircle className="text-purple-600" />
+                                        <h3 className="text-base sm:text-lg font-semibold mb-3 flex items-center gap-2">
+                                            <FaCheckCircle className="text-purple-600 text-sm sm:text-base" />
                                             Final Exams
                                         </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                                             {quizzes.filter((q: any) => q.assessmentType === "final-exam").map((quiz: any) => (
                                                 <Card 
                                                     key={quiz._id}
-                                                    className="border-2 border-purple-200 hover:border-purple-400 hover:shadow-lg transition-all"
+                                                    className="border-2 border-purple-200 hover:border-purple-400 hover:shadow-lg transition-all w-full"
                                                 >
-                                                    <CardBody className="p-4">
-                                                        <div className="flex items-start justify-between mb-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="p-2 rounded-lg bg-purple-100 text-purple-600">
-                                                                    <FaCheckCircle size={20} />
+                                                    <CardBody className="p-3 sm:p-4">
+                                                        <div className="flex items-start justify-between mb-2 gap-2">
+                                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                                <div className="p-1.5 sm:p-2 rounded-lg bg-purple-100 text-purple-600 flex-shrink-0">
+                                                                    <FaCheckCircle size={16} className="sm:w-5 sm:h-5" />
                                                                 </div>
-                                                                <div>
-                                                                    <h4 className="font-semibold text-sm">{quiz.title}</h4>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <h4 className="font-semibold text-xs sm:text-sm truncate">{quiz.title}</h4>
                                                                 </div>
                                                             </div>
                                                             {quiz.status === "published" ? (
@@ -1214,11 +1214,11 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
 
     function renderAssignmentsTab() {
         return (
-            <div className="py-6">
-                <Card className="shadow-lg">
-                    <CardBody className="p-6">
-                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                            <FaTasks className="text-purple-600" />
+            <div className="py-4 sm:py-6">
+                <Card className="shadow-lg w-full overflow-hidden">
+                    <CardBody className="p-3 sm:p-4 md:p-6">
+                        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2">
+                            <FaTasks className="text-purple-600 text-lg sm:text-xl" />
                             Assignments & Projects
                         </h2>
                         
@@ -1236,24 +1236,24 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                 {/* Regular Assignments */}
                                 {assignments.filter((a: any) => a.assessmentType === "assignment").length > 0 && (
                                     <div>
-                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                            <FaTasks className="text-blue-600" />
+                                        <h3 className="text-base sm:text-lg font-semibold mb-3 flex items-center gap-2">
+                                            <FaTasks className="text-blue-600 text-sm sm:text-base" />
                                             Regular Assignments
                                         </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                                             {assignments.filter((a: any) => a.assessmentType === "assignment").map((assignment: any) => (
                                                 <Card 
                                                     key={assignment._id}
-                                                    className="border-2 border-blue-200 hover:border-blue-400 hover:shadow-lg transition-all"
+                                                    className="border-2 border-blue-200 hover:border-blue-400 hover:shadow-lg transition-all w-full"
                                                 >
-                                                    <CardBody className="p-4">
-                                                        <div className="flex items-start justify-between mb-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
-                                                                    <FaTasks size={20} />
+                                                    <CardBody className="p-3 sm:p-4">
+                                                        <div className="flex items-start justify-between mb-2 gap-2">
+                                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                                <div className="p-1.5 sm:p-2 rounded-lg bg-blue-100 text-blue-600 flex-shrink-0">
+                                                                    <FaTasks size={16} className="sm:w-5 sm:h-5" />
                                                                 </div>
-                                                                <div>
-                                                                    <h4 className="font-semibold text-sm">{assignment.title}</h4>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <h4 className="font-semibold text-xs sm:text-sm truncate">{assignment.title}</h4>
                                                                 </div>
                                                             </div>
                                                             {assignment.status === "published" ? (
@@ -1292,24 +1292,24 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                 {/* Mid-Term Assignments */}
                                 {assignments.filter((a: any) => a.assessmentType === "mid-term").length > 0 && (
                                     <div>
-                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                            <FaTasks className="text-orange-600" />
+                                        <h3 className="text-base sm:text-lg font-semibold mb-3 flex items-center gap-2">
+                                            <FaTasks className="text-orange-600 text-sm sm:text-base" />
                                             Mid-Term Assignments
                                         </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                                             {assignments.filter((a: any) => a.assessmentType === "mid-term").map((assignment: any) => (
                                                 <Card 
                                                     key={assignment._id}
-                                                    className="border-2 border-orange-200 hover:border-orange-400 hover:shadow-lg transition-all"
+                                                    className="border-2 border-orange-200 hover:border-orange-400 hover:shadow-lg transition-all w-full"
                                                 >
-                                                    <CardBody className="p-4">
-                                                        <div className="flex items-start justify-between mb-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="p-2 rounded-lg bg-orange-100 text-orange-600">
-                                                                    <FaTasks size={20} />
+                                                    <CardBody className="p-3 sm:p-4">
+                                                        <div className="flex items-start justify-between mb-2 gap-2">
+                                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                                <div className="p-1.5 sm:p-2 rounded-lg bg-orange-100 text-orange-600 flex-shrink-0">
+                                                                    <FaTasks size={16} className="sm:w-5 sm:h-5" />
                                                                 </div>
-                                                                <div>
-                                                                    <h4 className="font-semibold text-sm">{assignment.title}</h4>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <h4 className="font-semibold text-xs sm:text-sm truncate">{assignment.title}</h4>
                                                                 </div>
                                                             </div>
                                                             {assignment.status === "published" ? (
@@ -1348,24 +1348,24 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                 {/* Final Assignments */}
                                 {assignments.filter((a: any) => a.assessmentType === "final").length > 0 && (
                                     <div>
-                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                            <FaCheckCircle className="text-purple-600" />
+                                        <h3 className="text-base sm:text-lg font-semibold mb-3 flex items-center gap-2">
+                                            <FaCheckCircle className="text-purple-600 text-sm sm:text-base" />
                                             Final Assignments
                                         </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                                             {assignments.filter((a: any) => a.assessmentType === "final").map((assignment: any) => (
                                                 <Card 
                                                     key={assignment._id}
-                                                    className="border-2 border-purple-200 hover:border-purple-400 hover:shadow-lg transition-all"
+                                                    className="border-2 border-purple-200 hover:border-purple-400 hover:shadow-lg transition-all w-full"
                                                 >
-                                                    <CardBody className="p-4">
-                                                        <div className="flex items-start justify-between mb-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="p-2 rounded-lg bg-purple-100 text-purple-600">
-                                                                    <FaCheckCircle size={20} />
+                                                    <CardBody className="p-3 sm:p-4">
+                                                        <div className="flex items-start justify-between mb-2 gap-2">
+                                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                                <div className="p-1.5 sm:p-2 rounded-lg bg-purple-100 text-purple-600 flex-shrink-0">
+                                                                    <FaCheckCircle size={16} className="sm:w-5 sm:h-5" />
                                                                 </div>
-                                                                <div>
-                                                                    <h4 className="font-semibold text-sm">{assignment.title}</h4>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <h4 className="font-semibold text-xs sm:text-sm truncate">{assignment.title}</h4>
                                                                 </div>
                                                             </div>
                                                             {assignment.status === "published" ? (
@@ -1404,24 +1404,24 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                 {/* Projects */}
                                 {assignments.filter((a: any) => a.assessmentType === "project").length > 0 && (
                                     <div>
-                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                            <FaBook className="text-green-600" />
+                                        <h3 className="text-base sm:text-lg font-semibold mb-3 flex items-center gap-2">
+                                            <FaBook className="text-green-600 text-sm sm:text-base" />
                                             Projects
                                         </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                                             {assignments.filter((a: any) => a.assessmentType === "project").map((assignment: any) => (
                                                 <Card 
                                                     key={assignment._id}
-                                                    className="border-2 border-green-200 hover:border-green-400 hover:shadow-lg transition-all"
+                                                    className="border-2 border-green-200 hover:border-green-400 hover:shadow-lg transition-all w-full"
                                                 >
-                                                    <CardBody className="p-4">
-                                                        <div className="flex items-start justify-between mb-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="p-2 rounded-lg bg-green-100 text-green-600">
-                                                                    <FaBook size={20} />
+                                                    <CardBody className="p-3 sm:p-4">
+                                                        <div className="flex items-start justify-between mb-2 gap-2">
+                                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                                <div className="p-1.5 sm:p-2 rounded-lg bg-green-100 text-green-600 flex-shrink-0">
+                                                                    <FaBook size={16} className="sm:w-5 sm:h-5" />
                                                                 </div>
-                                                                <div>
-                                                                    <h4 className="font-semibold text-sm">{assignment.title}</h4>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <h4 className="font-semibold text-xs sm:text-sm truncate">{assignment.title}</h4>
                                                                 </div>
                                                             </div>
                                                             {assignment.status === "published" ? (

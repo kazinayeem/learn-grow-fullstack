@@ -447,6 +447,34 @@ export const Navbar = () => {
                 >
                   Profile
                 </Button>
+                <Button
+                  className="text-sm font-bold bg-red-500 text-white hover:bg-red-600 shadow-lg"
+                  size="lg"
+                  variant="solid"
+                  radius="lg"
+                  fullWidth
+                  onPress={async () => {
+                    try {
+                      sessionStorage.setItem("loggingOut", "1");
+                      await apiLogout();
+                      Cookies.remove("accessToken");
+                      Cookies.remove("refreshToken");
+                      Cookies.remove("userRole");
+                      localStorage.removeItem("user");
+                      localStorage.removeItem("userRole");
+                      localStorage.removeItem("token");
+                      setMobileAuth({ authed: false });
+                      setIsMenuOpen(false);
+                      window.location.href = "/";
+                    } catch (error) {
+                      console.error("Logout error:", error);
+                      window.location.href = "/";
+                    }
+                  }}
+                  startContent={<span className="text-xl">🚪</span>}
+                >
+                  লগআউট
+                </Button>
               </>
             ) : (
               <>

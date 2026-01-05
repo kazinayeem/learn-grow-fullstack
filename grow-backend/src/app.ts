@@ -63,8 +63,11 @@ export const createApp = () => {
         "http://174.129.111.162:3001",
         "http://174.129.111.162:3002",
         "http://174.129.111.162",
+        "https://174.129.111.162",
         "https://learn-grow-fullstack-t7az.vercel.app",
-        "https://learn-grow-fullstack-t7az-2u0142onf.vercel.app"
+        "https://learn-grow-fullstack-t7az-2u0142onf.vercel.app",
+        "https://learn-grow-fullsta-git-996086-kazinayeem55085gmailcoms-projects.vercel.app",
+        "https://learn-grow-fullstack-t7az-9wt4j22we.vercel.app"
       ];
       
       // Allow requests with no origin (like mobile apps or Postman)

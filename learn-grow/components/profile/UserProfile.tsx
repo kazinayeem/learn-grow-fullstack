@@ -258,67 +258,69 @@ export default function UserProfile() {
     const config = roleConfig[userRole as keyof typeof roleConfig] || roleConfig.student;
 
     return (
-        <div className="max-w-4xl mx-auto p-6">
+        <div className="max-w-4xl mx-auto p-3 sm:p-4 md:p-6">
             <Card className="w-full">
                 {/* Header with Photo and Profile Info */}
-                <CardHeader className="flex gap-6 items-start py-8 px-8">
-                    <div className="relative">
+                <CardHeader className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-center sm:items-start py-4 sm:py-6 md:py-8 px-4 sm:px-6 md:px-8">
+                    <div className="relative flex-shrink-0">
                         <Avatar
                             src={profilePhoto || undefined}
                             name={formData.name || formData.email || "User"}
                             size="lg"
                             isBordered
                             color={config.color}
-                            className="w-24 h-24"
+                            className="w-20 h-20 sm:w-24 sm:h-24"
                         />
                         {/* Camera icon for instructors only */}
                         {userRole === "instructor" && (
                             <button
                                 onClick={onImageModalOpen}
                                 disabled={isUploadingPhoto}
-                                className="absolute bottom-0 right-0 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full transition-colors disabled:opacity-50"
+                                className="absolute bottom-0 right-0 bg-blue-500 hover:bg-blue-600 text-white p-1.5 sm:p-2 rounded-full transition-colors disabled:opacity-50"
                                 title="Change profile photo"
                             >
                                 {isUploadingPhoto ? (
                                     <Spinner size="sm" color="white" />
                                 ) : (
-                                    <FiCamera size={16} />
+                                    <FiCamera size={14} className="sm:w-4 sm:h-4" />
                                 )}
                             </button>
                         )}
                     </div>
 
-                    <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                            <h1 className="text-2xl font-bold">{formData.name || "User"}</h1>
-                            <Chip color={config.color} variant="flat" size="sm">
+                    <div className="flex-1 w-full sm:w-auto text-center sm:text-left">
+                        <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 mb-2">
+                            <h1 className="text-xl sm:text-2xl font-bold truncate max-w-full">{formData.name || "User"}</h1>
+                            <Chip color={config.color} variant="flat" size="sm" className="text-xs">
                                 {config.icon} {config.label}
                             </Chip>
                         </div>
 
                         {/* Profile Completion */}
-                        <div className="mt-4 space-y-2">
-                            <div className="flex justify-between text-sm">
+                        <div className="mt-3 sm:mt-4 space-y-2">
+                            <div className="flex justify-between text-xs sm:text-sm">
                                 <span className="text-gray-600">Profile Completion</span>
                                 <span className="font-semibold text-gray-900">{completionPercentage}%</span>
                             </div>
-                            <Progress value={completionPercentage} className="w-full" color="success" />
+                            <Progress value={completionPercentage} className="w-full" color="success" size="sm" />
                         </div>
                     </div>
 
                     {/* Edit/Save/Cancel Buttons */}
-                    <div>
+                    <div className="w-full sm:w-auto flex justify-center sm:justify-end mt-2 sm:mt-0">
                         {!isEditing ? (
                             <Button
                                 color="primary"
                                 variant="flat"
                                 startContent={<FiEdit2 />}
                                 onPress={() => setIsEditing(true)}
+                                size="sm"
+                                className="w-full sm:w-auto"
                             >
                                 Edit Profile
                             </Button>
                         ) : (
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 w-full sm:w-auto">
                                 <Button
                                     color="danger"
                                     variant="light"
@@ -340,16 +342,19 @@ export default function UserProfile() {
                                         });
                                     }}
                                     title="Cancel changes"
+                                    size="sm"
                                 >
-                                    <FiX size={20} />
+                                    <FiX size={18} />
                                 </Button>
                                 <Button
                                     color="success"
                                     startContent={<FiCheck />}
                                     onPress={handleUpdate}
                                     isLoading={isSaving}
+                                    size="sm"
+                                    className="flex-1 sm:flex-initial"
                                 >
-                                    Save Changes
+                                    Save
                                 </Button>
                             </div>
                         )}
@@ -359,13 +364,13 @@ export default function UserProfile() {
                 <Divider />
 
                 {/* Profile Content */}
-                <CardBody className="gap-8 px-8 py-8">
+                <CardBody className="gap-6 sm:gap-8 px-4 sm:px-6 md:px-8 py-4 sm:py-6 md:py-8">
                     {/* Contact Information */}
                     <div>
-                        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
                             📧 Contact Information
                         </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                             <Input
                                 label="Full Name"
                                 name="name"
@@ -400,7 +405,7 @@ export default function UserProfile() {
 
                     {/* Bio Section */}
                     <div>
-                        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
                             📝 About You
                         </h2>
                         <Textarea
@@ -420,10 +425,10 @@ export default function UserProfile() {
                         <>
                             <Divider />
                             <div>
-                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
                                     🎯 Professional Information
                                 </h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                     <Input
                                         label="Area of Expertise"
                                         name="expertise"
@@ -470,15 +475,16 @@ export default function UserProfile() {
                     {userRole === "admin" && (
                         <>
                             <Divider />
-                            <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded">
-                                <h3 className="font-semibold text-red-800 text-lg">🔐 Administrator Account</h3>
-                                <p className="text-sm text-red-700 mt-2">
+                            <div className="bg-red-50 border-l-4 border-red-500 p-4 sm:p-6 rounded">
+                                <h3 className="font-semibold text-red-800 text-base sm:text-lg">🔐 Administrator Account</h3>
+                                <p className="text-xs sm:text-sm text-red-700 mt-2">
                                     You have full access to the admin control panel. Use it responsibly.
                                 </p>
                                 <Button
                                     color="danger"
                                     variant="flat"
-                                    className="mt-4"
+                                    className="mt-3 sm:mt-4 w-full sm:w-auto"
+                                    size="sm"
                                     onPress={() => window.location.href = "/admin"}
                                 >
                                     Go to Admin Panel →
@@ -491,15 +497,17 @@ export default function UserProfile() {
 
                     {/* Security Settings */}
                     <div>
-                        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
                             🔐 Security Settings
                         </h2>
-                        <div className="flex flex-wrap gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <Button
                                 color="warning"
                                 variant="flat"
                                 startContent={<FiLock />}
                                 onPress={onPasswordModalOpen}
+                                size="sm"
+                                className="w-full"
                             >
                                 Change Password
                             </Button>
@@ -508,6 +516,8 @@ export default function UserProfile() {
                                 variant="flat"
                                 startContent={<FiPhone />}
                                 onPress={onPhoneModalOpen}
+                                size="sm"
+                                className="w-full"
                             >
                                 Update Phone Number
                             </Button>
@@ -517,14 +527,24 @@ export default function UserProfile() {
             </Card>
 
             {/* Password Change Modal */}
-            <Modal isOpen={isPasswordModalOpen} onOpenChange={onPasswordModalOpenChange} size="md">
+            <Modal 
+                isOpen={isPasswordModalOpen} 
+                onOpenChange={onPasswordModalOpenChange} 
+                size="md"
+                scrollBehavior="inside"
+                classNames={{
+                    base: "mx-4 sm:mx-0",
+                    body: "py-4 sm:py-6",
+                    header: "text-base sm:text-lg"
+                }}
+            >
                 <ModalContent>
                     {(onClose) => (
                         <>
-                            <ModalHeader>Change Password</ModalHeader>
+                            <ModalHeader className="text-base sm:text-lg">Change Password</ModalHeader>
                             <ModalBody>
                                 {!passwordOtpSent ? (
-                                    <div className="space-y-4">
+                                    <div className="space-y-3 sm:space-y-4">
                                         <p className="text-sm text-gray-600">
                                             We'll send an OTP to your {user?.email ? "email" : "phone"} to verify it's you.
                                         </p>
@@ -535,7 +555,7 @@ export default function UserProfile() {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="space-y-4">
+                                    <div className="space-y-3 sm:space-y-4">
                                         <Input
                                             label="Enter OTP"
                                             placeholder="6-digit OTP"
@@ -543,6 +563,7 @@ export default function UserProfile() {
                                             onChange={(e) => setPasswordOtp(e.target.value)}
                                             maxLength={6}
                                             variant="bordered"
+                                            size="sm"
                                         />
                                         <Input
                                             label="New Password"
@@ -551,6 +572,7 @@ export default function UserProfile() {
                                             value={newPassword}
                                             onChange={(e) => setNewPassword(e.target.value)}
                                             variant="bordered"
+                                            size="sm"
                                         />
                                         <Input
                                             label="Confirm Password"
@@ -559,11 +581,12 @@ export default function UserProfile() {
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
                                             variant="bordered"
+                                            size="sm"
                                         />
                                     </div>
                                 )}
                             </ModalBody>
-                            <ModalFooter>
+                            <ModalFooter className="flex-col sm:flex-row gap-2">
                                 <Button
                                     variant="light"
                                     onPress={() => {
@@ -573,6 +596,8 @@ export default function UserProfile() {
                                         setNewPassword("");
                                         setConfirmPassword("");
                                     }}
+                                    size="sm"
+                                    className="w-full sm:w-auto"
                                 >
                                     Cancel
                                 </Button>
@@ -593,6 +618,8 @@ export default function UserProfile() {
                                             }
                                         }}
                                         isLoading={sendingOtp}
+                                        size="sm"
+                                        className="w-full sm:w-auto"
                                     >
                                         Send OTP
                                     </Button>
@@ -630,6 +657,8 @@ export default function UserProfile() {
                                             }
                                         }}
                                         isLoading={verifyingPassword}
+                                        size="sm"
+                                        className="w-full sm:w-auto"
                                     >
                                         Change Password
                                     </Button>
@@ -641,16 +670,26 @@ export default function UserProfile() {
             </Modal>
 
             {/* Phone Update Modal */}
-            <Modal isOpen={isPhoneModalOpen} onOpenChange={onPhoneModalOpenChange} size="md">
+            <Modal 
+                isOpen={isPhoneModalOpen} 
+                onOpenChange={onPhoneModalOpenChange} 
+                size="md"
+                scrollBehavior="inside"
+                classNames={{
+                    base: "mx-4 sm:mx-0",
+                    body: "py-4 sm:py-6",
+                    header: "text-base sm:text-lg"
+                }}
+            >
                 <ModalContent>
                     {(onClose) => (
                         <>
-                            <ModalHeader>Update Phone Number</ModalHeader>
+                            <ModalHeader className="text-base sm:text-lg">Update Phone Number</ModalHeader>
                             <ModalBody>
-                                <div className="space-y-4">
+                                <div className="space-y-3 sm:space-y-4">
                                     <div className="bg-gray-50 p-3 rounded-lg">
-                                        <p className="text-sm text-gray-600">Current Phone:</p>
-                                        <p className="font-semibold">{user?.phone || "Not set"}</p>
+                                        <p className="text-xs sm:text-sm text-gray-600">Current Phone:</p>
+                                        <p className="font-semibold text-sm sm:text-base">{user?.phone || "Not set"}</p>
                                     </div>
                                     <Input
                                         label="New Phone Number"
@@ -659,16 +698,19 @@ export default function UserProfile() {
                                         onChange={(e) => setNewPhone(e.target.value)}
                                         variant="bordered"
                                         description="Enter your new phone number with country code"
+                                        size="sm"
                                     />
                                 </div>
                             </ModalBody>
-                            <ModalFooter>
+                            <ModalFooter className="flex-col sm:flex-row gap-2">
                                 <Button
                                     variant="light"
                                     onPress={() => {
                                         onClose();
                                         setNewPhone("");
                                     }}
+                                    size="sm"
+                                    className="w-full sm:w-auto"
                                 >
                                     Cancel
                                 </Button>
@@ -692,6 +734,8 @@ export default function UserProfile() {
                                         }
                                     }}
                                     isLoading={updatingPhone}
+                                    size="sm"
+                                    className="w-full sm:w-auto"
                                 >
                                     Update Phone
                                 </Button>
@@ -702,11 +746,20 @@ export default function UserProfile() {
             </Modal>
 
             {/* Image URL Modal */}
-            <Modal isOpen={isImageModalOpen} onOpenChange={onImageModalOpenChange}>
+            <Modal 
+                isOpen={isImageModalOpen} 
+                onOpenChange={onImageModalOpenChange}
+                scrollBehavior="inside"
+                classNames={{
+                    base: "mx-4 sm:mx-0",
+                    body: "py-4 sm:py-6",
+                    header: "text-base sm:text-lg"
+                }}
+            >
                 <ModalContent>
                     {(onClose) => (
                         <>
-                            <ModalHeader className="flex flex-col gap-1">Update Profile Photo</ModalHeader>
+                            <ModalHeader className="flex flex-col gap-1 text-base sm:text-lg">Update Profile Photo</ModalHeader>
                             <ModalBody>
                                 <Input
                                     label="Image URL"
@@ -714,16 +767,25 @@ export default function UserProfile() {
                                     value={imageUrlInput}
                                     onChange={(e) => setImageUrlInput(e.target.value)}
                                     description="Enter a direct link to your profile image"
+                                    size="sm"
                                 />
                             </ModalBody>
-                            <ModalFooter>
-                                <Button color="danger" variant="light" onPress={onClose}>
+                            <ModalFooter className="flex-col sm:flex-row gap-2">
+                                <Button 
+                                    color="danger" 
+                                    variant="light" 
+                                    onPress={onClose}
+                                    size="sm"
+                                    className="w-full sm:w-auto"
+                                >
                                     Cancel
                                 </Button>
                                 <Button 
                                     color="primary" 
                                     onPress={() => handlePhotoUpload(imageUrlInput)}
                                     isLoading={isUploadingPhoto}
+                                    size="sm"
+                                    className="w-full sm:w-auto"
                                 >
                                     Update Photo
                                 </Button>
