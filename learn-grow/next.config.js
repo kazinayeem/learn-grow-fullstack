@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
-  // output: "export",
-  trailingSlash: true, // Required for static hosting
+  // output: "export", // Disabled for Docker/SSR builds
+  trailingSlash: true,
 
   typescript: {
     // !! WARN !!
