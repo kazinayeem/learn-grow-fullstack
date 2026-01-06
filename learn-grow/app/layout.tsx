@@ -16,16 +16,64 @@ import {
 } from "@/config/fonts";
 
 import LayoutWrapper from "./layout-wrapper";
+import CookieConsentBanner from "@/components/CookieConsentBanner";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteConfig.url),
   title: {
     default: siteConfig.name,
-    template: `%s - ${siteConfig.name}`,
+    template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
+  keywords: siteConfig.keywords,
+  authors: [{ name: siteConfig.author }],
+  creator: siteConfig.creator,
+  publisher: siteConfig.publisher,
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: siteConfig.url,
+    title: siteConfig.name,
+    description: siteConfig.description,
+    siteName: siteConfig.name,
+    images: [
+      {
+        url: siteConfig.ogImage,
+        width: 1200,
+        height: 630,
+        alt: siteConfig.name,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.name,
+    description: siteConfig.description,
+    images: [siteConfig.ogImage],
+    creator: "@learnandgrow",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   icons: {
     icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
+  manifest: "/site.webmanifest",
 };
 
 export const viewport: Viewport = {
@@ -40,8 +88,35 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "EducationalOrganization",
+    "name": siteConfig.name,
+    "description": siteConfig.description,
+    "url": siteConfig.url,
+    "logo": `${siteConfig.url}/logo.png`,
+    "sameAs": [
+      siteConfig.links.facebook,
+      siteConfig.links.instagram,
+      siteConfig.links.linkedin,
+      siteConfig.links.youtube,
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "email": siteConfig.email,
+      "contactType": "Customer Service",
+      "availableLanguage": ["English"]
+    }
+  };
+
   return (
     <html suppressHydrationWarning lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body
         suppressHydrationWarning
         className={clsx(
@@ -58,6 +133,7 @@ export default function RootLayout({
         <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
           <LayoutWrapper>{children}</LayoutWrapper>
           <Toaster position="top-center" reverseOrder={false} />
+          <CookieConsentBanner />
         </Providers>
       </body>
     </html>

@@ -1,0 +1,54 @@
+# robots.txt for learnandgrow.io
+# This file tells search engines which pages they can and cannot crawl
+
+User-agent: *
+Allow: /
+
+# Allow important directories
+Allow: /courses/
+Allow: /about/
+Allow: /blog/
+Allow: /pricing/
+Allow: /contact/
+Allow: /services/
+Allow: /events/
+
+# Disallow admin, auth, and API routes
+Disallow: /admin/
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+Disallow: /dashboard/
+Disallow: /profile/
+Disallow: /student/
+Disallow: /instructor/
+Disallow: /manager/
+Disallow: /guardian/
+Disallow: /auth-callback/
+Disallow: /payment/
+Disallow: /checkout/
+Disallow: /orders/
+Disallow: /select-role/
+Disallow: /unauthorized/
+Disallow: /*?*sort=
+Disallow: /*?*filter=
+
+# Allow CSS and JS
+Allow: /*.css
+Allow: /*.js
+
+# Sitemap location
+Sitemap: https://learnandgrow.io/sitemap.xml
+
+# Crawl-delay (optional - helps prevent server overload)
+Crawl-delay: 1
+
+# Common bots
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /

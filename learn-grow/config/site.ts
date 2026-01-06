@@ -2,7 +2,31 @@ export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
   name: "Learn & Grow",
-  description: "Empowering the next generation through world-class STEM education.",
+  description: "Empowering the next generation through world-class STEM education. Expert robotics courses, coding classes, and hands-on STEM learning kits for students of all ages.",
+  url: "https://learnandgrow.io",
+  ogImage: "https://learnandgrow.io/og-image.jpg",
+  keywords: [
+    "robotics courses",
+    "STEM education",
+    "coding classes",
+    "robotics kits",
+    "online learning",
+    "programming for kids",
+    "Arduino courses",
+    "robotics training",
+    "STEM learning",
+    "educational robotics",
+    "robot building kits",
+    "coding bootcamp",
+    "technology education",
+    "engineering courses"
+  ],
+  author: "Learn & Grow Academy",
+  creator: "Md Jabed Hosen",
+  publisher: "Learn & Grow Academy",
+  email: "info@learnandgrow.io",
+  phone: "+880 1706-276447",
+  address: "Your Business Address",
   navItems: [
     {
       label: "Home",
