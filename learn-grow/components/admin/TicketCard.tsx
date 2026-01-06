@@ -87,15 +87,15 @@ export default function TicketCard({ ticket }: TicketCardProps) {
     <Card
       isPressable
       onPress={() => router.push(`${basePath}/${ticket._id}`)}
-      className="hover:shadow-lg transition-shadow"
+      className="hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-primary-200 cursor-pointer"
     >
-      <CardBody className="p-5">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1">
+      <CardBody className="p-4 sm:p-5 lg:p-6">
+        <div className="flex items-start justify-between mb-3 sm:mb-4 gap-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3 line-clamp-2">
               {ticket.title}
             </h3>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <Chip
                 size="sm"
                 color={statusInfo.color}
@@ -118,23 +118,23 @@ export default function TicketCard({ ticket }: TicketCardProps) {
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <Avatar
               src={ticket.createdBy.profileImage}
               name={ticket.createdBy.name}
               size="sm"
               fallback={<FaUser className="text-gray-400" />}
             />
-            <div className="text-xs">
-              <p className="font-medium text-gray-900">{ticket.createdBy.name}</p>
-              <p className="text-gray-500">{ticket.createdBy.role}</p>
+            <div className="text-xs sm:text-sm min-w-0 flex-1">
+              <p className="font-medium text-gray-900 truncate">{ticket.createdBy.name}</p>
+              <p className="text-gray-500 truncate capitalize">{ticket.createdBy.role}</p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-gray-500">{timeAgo(ticket.createdAt)}</p>
+          <div className="text-left xs:text-right flex-shrink-0">
+            <p className="text-xs sm:text-sm text-gray-500">{timeAgo(ticket.createdAt)}</p>
             {ticket.replies.length > 0 && (
-              <p className="text-xs text-primary-600 font-medium">
+              <p className="text-xs sm:text-sm text-primary-600 font-medium mt-0.5">
                 {ticket.replies.length} {ticket.replies.length === 1 ? "reply" : "replies"}
               </p>
             )}

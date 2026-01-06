@@ -15,6 +15,8 @@ import {
   Switch,
 } from "@nextui-org/react";
 import { useCreateJobMutation, useUpdateJobMutation } from "@/redux/api/jobApi";
+import { FaBriefcase, FaMapMarkerAlt, FaDollarSign, FaCalendar, FaCheckCircle, FaTimes } from "react-icons/fa";
+import toast from "react-hot-toast";
 
 interface CreateJobModalProps {
   isOpen: boolean;
@@ -66,8 +68,8 @@ export default function CreateJobModal({
             currency: editJob.salaryRange?.currency || "USD",
           },
           description: editJob.description || "",
-          requirements: Array.isArray(editJob.requirements) 
-            ? editJob.requirements.join("\n") 
+          requirements: Array.isArray(editJob.requirements)
+            ? editJob.requirements.join("\n")
             : editJob.requirements || "",
           isRemote: editJob.isRemote || false,
           isPublished: editJob.isPublished || false,
@@ -86,7 +88,7 @@ export default function CreateJobModal({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    
+
     // Handle nested salaryRange fields
     if (name.startsWith("salaryRange.")) {
       const field = name.split(".")[1];
@@ -114,8 +116,8 @@ export default function CreateJobModal({
         department: formData.department,
         location: formData.location,
         description: formData.description,
-        requirements: typeof formData.requirements === 'string' 
-          ? formData.requirements.split('\n').filter(r => r.trim()) 
+        requirements: typeof formData.requirements === 'string'
+          ? formData.requirements.split('\n').filter(r => r.trim())
           : formData.requirements,
         isRemote: formData.isRemote,
         isPublished: formData.isPublished,
@@ -144,15 +146,15 @@ export default function CreateJobModal({
           id: editJob._id || editJob.id,
           ...payload,
         }).unwrap();
-        alert("Job updated successfully!");
+        toast.success("Job updated successfully!");
       } else {
         await createJob(payload).unwrap();
-        alert("Job created successfully!");
+        toast.success("Job created successfully!");
       }
       setFormData(initialFormData);
       onClose();
     } catch (error: any) {
-      alert(error?.data?.message || "Something went wrong");
+      toast.error(error?.data?.message || "Something went wrong");
     }
   };
 
@@ -160,7 +162,7 @@ export default function CreateJobModal({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={isSubmitting ? () => {} : onClose}
+      onClose={isSubmitting ? () => { } : onClose}
       onOpenChange={(open) => {
         if (!open && !isSubmitting) {
           setFormData(initialFormData);
@@ -173,86 +175,121 @@ export default function CreateJobModal({
       isDismissable={!isSubmitting}
       hideCloseButton={isSubmitting}
       classNames={{
-        base: "bg-white",
-        header: "border-b",
-        footer: "border-t sticky bottom-0 bg-white z-10",
+        base: "bg-white max-h-[95vh]",
+        backdrop: "bg-gradient-to-t from-zinc-900 to-zinc-900/10 backdrop-opacity-20",
       }}
     >
       <ModalContent>
-        <ModalHeader>
-          <div>
-            <h2 className="text-xl font-bold">
-              {editJob ? "Edit Job" : "Create Job"}
-            </h2>
-            <p className="text-sm text-gray-500">
-              Fill all required information carefully
-            </p>
+        {/* Header with Gradient */}
+        <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-t-lg p-6">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 p-2 rounded-lg">
+              <FaBriefcase className="text-2xl" />
+            </div>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold">
+                {editJob ? "Edit Job" : "Create Job"}
+              </h2>
+              <p className="text-sm text-white/90 font-normal">
+                Fill all required information carefully
+              </p>
+            </div>
           </div>
         </ModalHeader>
 
-        <ModalBody className="space-y-6">
+        <ModalBody className="p-6 sm:p-8 space-y-6">
           {/* BASIC INFO */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Job Title"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              isRequired
-              variant="bordered"
-              placeholder="e.g., Senior Full Stack Developer"
-            />
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <FaBriefcase className="text-teal-500" />
+              Basic Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <Input
+                  label="Job Title"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  isRequired
+                  variant="bordered"
+                  size="lg"
+                  placeholder="e.g., Senior Full Stack Developer"
+                  classNames={{
+                    input: "text-sm sm:text-base",
+                    inputWrapper: "border-2 border-gray-200 hover:border-teal-400 focus-within:border-teal-500 transition-all duration-300",
+                  }}
+                />
+              </div>
 
-            <Input
-              label="Department"
-              name="department"
-              value={formData.department}
-              onChange={handleChange}
-              isRequired
-              variant="bordered"
-              placeholder="e.g., Engineering"
-            />
+              <Input
+                label="Department"
+                name="department"
+                value={formData.department}
+                onChange={handleChange}
+                isRequired
+                variant="bordered"
+                size="lg"
+                placeholder="e.g., Engineering"
+                classNames={{
+                  input: "text-sm sm:text-base",
+                  inputWrapper: "border-2 border-gray-200 hover:border-teal-400 focus-within:border-teal-500 transition-all duration-300",
+                }}
+              />
 
-            <Input
-              label="Location"
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              isRequired
-              variant="bordered"
-              placeholder="e.g., New York, NY"
-            />
+              <Input
+                label="Location"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                isRequired
+                variant="bordered"
+                size="lg"
+                placeholder="e.g., New York, NY"
+                startContent={<FaMapMarkerAlt className="text-teal-500" />}
+                classNames={{
+                  input: "text-sm sm:text-base",
+                  inputWrapper: "border-2 border-gray-200 hover:border-teal-400 focus-within:border-teal-500 transition-all duration-300",
+                }}
+              />
 
-            {/* FIXED SELECT */}
-            <Select
-              label="Employment Type"
-              selectedKeys={formData.jobType ? [formData.jobType] : []}
-              onSelectionChange={(keys) => {
-                const selectedArray = Array.from(keys);
-                if (selectedArray.length > 0) {
-                  const value = selectedArray[0] as string;
-                  setFormData((prev) => ({
-                    ...prev,
-                    jobType: value,
-                  }));
-                }
-              }}
-              variant="bordered"
-              isRequired
-              disallowEmptySelection
-            >
-              {EMPLOYMENT_TYPES.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
-                </SelectItem>
-              ))}
-            </Select>
+              <Select
+                label="Employment Type"
+                selectedKeys={formData.jobType ? [formData.jobType] : []}
+                onSelectionChange={(keys) => {
+                  const selectedArray = Array.from(keys);
+                  if (selectedArray.length > 0) {
+                    const value = selectedArray[0] as string;
+                    setFormData((prev) => ({
+                      ...prev,
+                      jobType: value,
+                    }));
+                  }
+                }}
+                variant="bordered"
+                size="lg"
+                isRequired
+                disallowEmptySelection
+                classNames={{
+                  trigger: "border-2 border-gray-200 hover:border-teal-400 focus:border-teal-500 transition-all duration-300",
+                }}
+              >
+                {EMPLOYMENT_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </Select>
+            </div>
           </div>
 
           {/* SALARY RANGE */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Salary Range (Optional)</label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <FaDollarSign className="text-teal-500" />
+              Salary Range (Optional)
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Input
                 label="Minimum"
                 name="salaryRange.min"
@@ -260,12 +297,17 @@ export default function CreateJobModal({
                 value={formData.salaryRange.min}
                 onChange={handleChange}
                 variant="bordered"
+                size="lg"
                 placeholder="e.g., 100000"
                 startContent={
                   <div className="pointer-events-none flex items-center">
                     <span className="text-gray-400 text-sm">$</span>
                   </div>
                 }
+                classNames={{
+                  input: "text-sm sm:text-base",
+                  inputWrapper: "border-2 border-gray-200 hover:border-teal-400 focus-within:border-teal-500 transition-all duration-300",
+                }}
               />
 
               <Input
@@ -275,12 +317,17 @@ export default function CreateJobModal({
                 value={formData.salaryRange.max}
                 onChange={handleChange}
                 variant="bordered"
+                size="lg"
                 placeholder="e.g., 150000"
                 startContent={
                   <div className="pointer-events-none flex items-center">
                     <span className="text-gray-400 text-sm">$</span>
                   </div>
                 }
+                classNames={{
+                  input: "text-sm sm:text-base",
+                  inputWrapper: "border-2 border-gray-200 hover:border-teal-400 focus-within:border-teal-500 transition-all duration-300",
+                }}
               />
 
               <Input
@@ -289,72 +336,109 @@ export default function CreateJobModal({
                 value={formData.salaryRange.currency}
                 onChange={handleChange}
                 variant="bordered"
+                size="lg"
                 placeholder="USD"
+                classNames={{
+                  input: "text-sm sm:text-base",
+                  inputWrapper: "border-2 border-gray-200 hover:border-teal-400 focus-within:border-teal-500 transition-all duration-300",
+                }}
               />
             </div>
           </div>
 
           {/* EXPIRATION DATE */}
-          <Input
-            label="Expiration Date (Optional)"
-            type="date"
-            name="expiresAt"
-            value={formData.expiresAt}
-            onChange={handleChange}
-            variant="bordered"
-            description="When this job posting should expire"
-          />
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <FaCalendar className="text-teal-500" />
+              Expiration Date (Optional)
+            </h3>
+            <Input
+              type="date"
+              name="expiresAt"
+              value={formData.expiresAt}
+              onChange={handleChange}
+              variant="bordered"
+              size="lg"
+              description="When this job posting should expire"
+              classNames={{
+                input: "text-sm sm:text-base",
+                inputWrapper: "border-2 border-gray-200 hover:border-teal-400 focus-within:border-teal-500 transition-all duration-300",
+              }}
+            />
+          </div>
 
           {/* TEXT AREAS */}
-          <Textarea
-            label="Job Description"
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            minRows={4}
-            variant="bordered"
-            isRequired
-            placeholder="Detailed description of the role, responsibilities, and what makes this opportunity unique..."
-          />
+          <div className="space-y-4">
+            <Textarea
+              label="Job Description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              minRows={4}
+              variant="bordered"
+              isRequired
+              placeholder="Detailed description of the role, responsibilities, and what makes this opportunity unique..."
+              classNames={{
+                input: "text-sm sm:text-base",
+                inputWrapper: "border-2 border-gray-200 hover:border-teal-400 focus-within:border-teal-500 transition-all duration-300",
+              }}
+            />
 
-          <Textarea
-            label="Requirements"
-            name="requirements"
-            value={formData.requirements}
-            onChange={handleChange}
-            minRows={5}
-            variant="bordered"
-            isRequired
-            placeholder="Enter each requirement on a new line:
-5+ years of experience in web development
-Strong proficiency in React and Node.js
-Experience with MongoDB and TypeScript"
-            description="Enter each requirement on a new line"
-          />
+            <Textarea
+              label="Requirements"
+              name="requirements"
+              value={formData.requirements}
+              onChange={handleChange}
+              minRows={5}
+              variant="bordered"
+              isRequired
+              placeholder="Enter each requirement on a new line:
+• 5+ years of experience in web development
+• Strong proficiency in React and Node.js
+• Experience with MongoDB and TypeScript"
+              description="Enter each requirement on a new line"
+              classNames={{
+                input: "text-sm sm:text-base",
+                inputWrapper: "border-2 border-gray-200 hover:border-teal-400 focus-within:border-teal-500 transition-all duration-300",
+              }}
+            />
+          </div>
 
           {/* SWITCHES */}
-          <div className="flex flex-col sm:flex-row gap-6">
-            <Switch
-              isSelected={formData.isRemote}
-              onValueChange={(v) => setFormData((p) => ({ ...p, isRemote: v }))}
-            >
-              Remote Job
-            </Switch>
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border-2 border-gray-200">
+            <div className="flex flex-col sm:flex-row gap-6">
+              <Switch
+                isSelected={formData.isRemote}
+                onValueChange={(v) => setFormData((p) => ({ ...p, isRemote: v }))}
+                size="lg"
+                color="success"
+              >
+                <span className="font-semibold">Remote Job</span>
+              </Switch>
 
-            <Switch
-              isSelected={formData.isPublished}
-              onValueChange={(v) =>
-                setFormData((p) => ({ ...p, isPublished: v }))
-              }
-              color="success"
-            >
-              Publish Immediately
-            </Switch>
+              <Switch
+                isSelected={formData.isPublished}
+                onValueChange={(v) =>
+                  setFormData((p) => ({ ...p, isPublished: v }))
+                }
+                size="lg"
+                color="success"
+              >
+                <span className="font-semibold">Publish Immediately</span>
+              </Switch>
+            </div>
           </div>
         </ModalBody>
 
-        <ModalFooter>
-          <Button variant="light" onPress={onClose} isDisabled={isSubmitting}>
+        <ModalFooter className="border-t border-gray-200 p-6 bg-gray-50">
+          <Button
+            variant="flat"
+            onPress={onClose}
+            isDisabled={isSubmitting}
+            size="lg"
+            className="min-h-[48px] font-semibold"
+            startContent={<FaTimes />}
+          >
             Cancel
           </Button>
 
@@ -362,6 +446,9 @@ Experience with MongoDB and TypeScript"
             color="primary"
             isLoading={isSubmitting}
             onPress={handleSubmit}
+            size="lg"
+            className="min-h-[48px] font-bold bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 shadow-lg hover:shadow-xl transition-all duration-300"
+            startContent={!isSubmitting && <FaCheckCircle />}
           >
             {editJob ? "Update Job" : "Create Job"}
           </Button>

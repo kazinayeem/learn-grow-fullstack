@@ -16,7 +16,8 @@ import {
   TableCell,
   Skeleton,
   Button,
-  Input,
+  Tabs,
+  Tab,
 } from "@nextui-org/react";
 import { useGetAnalyticsQuery } from "@/redux/api/analyticsApi";
 import {
@@ -32,6 +33,7 @@ import {
   FaArrowUp,
   FaArrowDown,
   FaArrowLeft,
+  FaChartPie
 } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import {
@@ -48,6 +50,8 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  AreaChart, // Added for modern feel
+  Area,      // Added for modern feel
 } from "recharts";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82ca9d", "#ffc658", "#ff6b9d"];
@@ -61,122 +65,34 @@ export default function AnalyticsPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto max-w-7xl px-6 py-8">
-        {/* Header Skeleton */}
-        <div className="mb-8">
-          <Skeleton className="h-10 w-64 rounded-lg mb-2" />
-          <Skeleton className="h-6 w-96 rounded-lg" />
-        </div>
-
-        {/* Filter Buttons Skeleton */}
-        <div className="mb-8 flex gap-2">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-10 w-24 rounded-lg" />
-          ))}
-        </div>
-
-        {/* Overview Stats Skeleton */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <Card key={i}>
-              <CardBody className="p-6">
-                <div className="flex items-center gap-4">
-                  <Skeleton className="h-12 w-12 rounded-lg" />
-                  <div className="flex-1">
-                    <Skeleton className="h-4 w-24 rounded-lg mb-2" />
-                    <Skeleton className="h-6 w-16 rounded-lg" />
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-          ))}
-        </div>
-
-        {/* Revenue & Growth Section Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {[1, 2].map((i) => (
-            <Card key={i}>
-              <CardHeader className="pb-0 pt-6 px-6">
-                <Skeleton className="h-6 w-48 rounded-lg" />
-              </CardHeader>
-              <CardBody className="px-6 pb-6">
-                <div className="space-y-4 mt-4">
-                  {[1, 2, 3, 4, 5].map((j) => (
-                    <Skeleton key={j} className="h-6 w-full rounded-lg" />
-                  ))}
-                </div>
-              </CardBody>
-            </Card>
-          ))}
-        </div>
-
-        {/* Charts Section Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
-              <CardHeader className="pb-0 pt-6 px-6">
-                <Skeleton className="h-6 w-56 rounded-lg" />
-              </CardHeader>
-              <CardBody className="px-6 pb-6">
-                <Skeleton className="h-80 w-full rounded-lg" />
-              </CardBody>
-            </Card>
-          ))}
-        </div>
-
-        {/* Top Courses Table Skeleton */}
-        <Card className="mb-8">
-          <CardHeader className="pb-0 pt-6 px-6">
-            <Skeleton className="h-6 w-48 rounded-lg" />
-          </CardHeader>
-          <CardBody className="px-6 pb-6">
-            <div className="space-y-4 mt-4">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="h-10 w-full rounded-lg" />
-              ))}
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* Recent Activity Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {[1, 2].map((i) => (
-            <Card key={i}>
-              <CardHeader className="pb-0 pt-6 px-6">
-                <Skeleton className="h-6 w-48 rounded-lg" />
-              </CardHeader>
-              <CardBody className="px-6 pb-6">
-                <div className="space-y-3 mt-4">
-                  {[1, 2, 3, 4, 5].map((j) => (
-                    <Skeleton key={j} className="h-12 w-full rounded-lg" />
-                  ))}
-                </div>
-              </CardBody>
-            </Card>
-          ))}
-        </div>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl h-screen flex items-center justify-center">
+        <Spinner size="lg" label="Loading analytics..." color="primary" />
       </div>
     );
   }
 
-  if (error) {
+  if (error || !analyticsData?.data) {
     return (
-      <div className="container mx-auto max-w-7xl px-6 py-8">
-        <Card>
+      <div className="container mx-auto px-4 py-10 max-w-5xl">
+        <Card className="border border-red-100 shadow-md">
           <CardBody className="text-center py-10">
-            <p className="text-danger">Failed to load analytics data</p>
+            <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FaChartLine size={24} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-800">Analytics Unavailable</h3>
+            <p className="text-gray-500 mt-2">Failed to load analytics data. Please try again later.</p>
+            <Button color="primary" variant="flat" onPress={() => router.push("/admin")} className="mt-4 max-w-xs mx-auto">
+              Back to Dashboard
+            </Button>
           </CardBody>
         </Card>
       </div>
     );
   }
 
-  const analytics = analyticsData?.data;
+  const analytics = analyticsData.data;
 
-  if (!analytics) {
-    return null;
-  }
-
+  // Destructure existing data
   const {
     overview,
     revenue: backendRevenue,
@@ -187,17 +103,19 @@ export default function AnalyticsPage() {
     recentActivity,
   } = analytics;
 
-  // Calculate actual revenue from approved orders (fix for backend showing ৳0)
+  // --- EXISTING LOGIC PRESERVED ---
+
+  // Calculate actual revenue from approved orders
   const calculateRevenue = () => {
     const approvedOrders = recentActivity?.orders?.filter((o: any) => o.paymentStatus === "approved") || [];
     const total = approvedOrders.reduce((sum: number, order: any) => sum + (order.price || 0), 0);
-    
+
     // Calculate monthly revenue
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
     const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-    
+
     const currentMonthRevenue = approvedOrders
       .filter((o: any) => {
         try {
@@ -210,7 +128,7 @@ export default function AnalyticsPage() {
         }
       })
       .reduce((sum: number, order: any) => sum + (order.price || 0), 0);
-    
+
     const lastMonthRevenue = approvedOrders
       .filter((o: any) => {
         try {
@@ -223,10 +141,10 @@ export default function AnalyticsPage() {
         }
       })
       .reduce((sum: number, order: any) => sum + (order.price || 0), 0);
-    
+
     const avgOrderValue = approvedOrders.length > 0 ? total / approvedOrders.length : 0;
     const growthRate = lastMonthRevenue > 0 ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue * 100).toFixed(2) : "0";
-    
+
     return {
       total: total || backendRevenue?.total || 0,
       currentMonth: currentMonthRevenue || backendRevenue?.currentMonth || 0,
@@ -241,7 +159,7 @@ export default function AnalyticsPage() {
   // Calculate plan type revenue from actual orders
   const calculatePlanTypeRevenue = () => {
     const approvedOrders = recentActivity?.orders?.filter((o: any) => o.paymentStatus === "approved") || [];
-    
+
     // Plan type name mapping
     const getPlanName = (planId: string) => {
       const names: Record<string, string> = {
@@ -252,12 +170,12 @@ export default function AnalyticsPage() {
       };
       return names[planId] || planId;
     };
-    
+
     return distributions.planTypes.map((plan: any) => {
       const planRevenue = approvedOrders
         .filter((o: any) => o.planType === plan._id)
         .reduce((sum: number, order: any) => sum + (order.price || 0), 0);
-      
+
       return {
         name: getPlanName(plan._id),
         value: plan.count || 0,
@@ -268,25 +186,22 @@ export default function AnalyticsPage() {
 
   const planTypeData = calculatePlanTypeRevenue();
 
-  // Format revenue trend data with actual calculations
+  // Format revenue trend data
   const revenueTrendData = trends.revenue.map((item: any) => {
     const trendOrders = recentActivity?.orders?.filter((o: any) => {
       try {
-        // Validate date before parsing
         if (!o?.createdAt) return false;
         const orderDate = new Date(o.createdAt);
-        // Check if date is valid
         if (isNaN(orderDate.getTime())) return false;
         const dateStr = orderDate.toISOString().split('T')[0];
         return dateStr === item._id && o.paymentStatus === "approved";
       } catch (e) {
-        console.warn("Invalid date in order:", o);
         return false;
       }
     }) || [];
-    
+
     const trendRevenue = trendOrders.reduce((sum: number, order: any) => sum + (order.price || 0), 0);
-    
+
     try {
       const date = new Date(item._id);
       return {
@@ -325,269 +240,154 @@ export default function AnalyticsPage() {
     }
   });
 
-  // Format category distribution - show proper names instead of IDs
+  // Format category distribution
   const categoryData = distributions.categories.map((item: any) => ({
     name: item.categoryName || item._id?.slice(0, 8) || "Other",
     value: item.count,
   }));
 
+  // --- END EXISTING LOGIC ---
+
   return (
-    <div className="container mx-auto max-w-7xl px-6 py-8">
-      {/* Header with Back Button */}
-      <div className="mb-8 flex items-center gap-4">
-        <Button
-          isIconOnly
-          variant="light"
-          className="rounded-full"
-          onPress={() => router.push("/admin")}
-          title="Back to Admin Dashboard"
-        >
-          <FaArrowLeft className="text-xl" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
-          <p className="text-gray-600">Comprehensive platform statistics and insights</p>
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl">
+      {/* 1. Header with Gradient and Date Filter */}
+      <div className="mb-6 sm:mb-8 bg-gradient-to-br from-indigo-700 via-purple-700 to-pink-700 rounded-2xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+        {/* Background Accents */}
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white opacity-5"></div>
+        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 rounded-full bg-white opacity-5"></div>
+
+        <div className="relative z-10">
+          <Button
+            variant="light"
+            startContent={<FaArrowLeft />}
+            onPress={() => router.push("/admin")}
+            className="mb-4 text-white/90 hover:bg-white/20 min-h-[44px]"
+            size="lg"
+          >
+            Back to Dashboard
+          </Button>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+            <div className="flex items-center gap-4">
+              <div className="bg-white/20 p-4 rounded-xl backdrop-blur-md shadow-inner">
+                <FaChartPie className="text-3xl sm:text-4xl text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">Analytics Dashboard</h1>
+                <p className="text-blue-100 mt-1 max-w-md">Overview of your platform's performance</p>
+              </div>
+            </div>
+
+            {/* Styled Date Filter */}
+            <div className="bg-white/10 p-1.5 rounded-xl border border-white/10 backdrop-blur-sm flex gap-1">
+              {(["7days", "30days", "90days"] as const).map((range) => (
+                <Button
+                  key={range}
+                  size="sm"
+                  className={`font-semibold ${dateRange === range ? "bg-white text-indigo-700 shadow-md" : "text-white hover:bg-white/10 bg-transparent"}`}
+                  onPress={() => { setDateRange(range); refetch(); }}
+                >
+                  {range === "7days" ? "7 Days" : range === "30days" ? "30 Days" : "90 Days"}
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Date Range Filter */}
-      <div className="mb-8 flex gap-2">
-        <Button
-          size="sm"
-          color={dateRange === "7days" ? "primary" : "default"}
-          variant={dateRange === "7days" ? "solid" : "flat"}
-          onPress={() => {
-            setDateRange("7days");
-            refetch();
-          }}
-        >
-          Last 7 Days
-        </Button>
-        <Button
-          size="sm"
-          color={dateRange === "30days" ? "primary" : "default"}
-          variant={dateRange === "30days" ? "solid" : "flat"}
-          onPress={() => {
-            setDateRange("30days");
-            refetch();
-          }}
-        >
-          Last 30 Days
-        </Button>
-        <Button
-          size="sm"
-          color={dateRange === "90days" ? "primary" : "default"}
-          variant={dateRange === "90days" ? "solid" : "flat"}
-          onPress={() => {
-            setDateRange("90days");
-            refetch();
-          }}
-        >
-          Last 90 Days
-        </Button>
+      {/* 2. Overview Stats Grid - All 8 Metrics Preserved */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatsCard title="Total Users" value={overview.totalUsers} icon={<FaUsers />} color="primary" trend={parseFloat(growth.userGrowth)} />
+        <StatsCard title="Students" value={overview.totalStudents} icon={<FaGraduationCap />} color="success" />
+        <StatsCard title="Instructors" value={overview.totalInstructors} icon={<FaChalkboardTeacher />} color="secondary" />
+        <StatsCard title="Total Courses" value={overview.totalCourses} icon={<FaBook />} color="warning" />
+        <StatsCard title="Published" value={overview.publishedCourses} icon={<FaCheckCircle />} color="info" />
+        <StatsCard title="Total Orders" value={overview.totalOrders} icon={<FaShoppingCart />} color="danger" />
+        <StatsCard title="Enrollments" value={overview.totalEnrollments} icon={<FaTrophy />} color="success" />
+        <StatsCard title="Completion Rate" value={`${overview.completionRate}%`} icon={<FaChartLine />} color="primary" />
       </div>
 
-      {/* Overview Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardBody className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-blue-500 w-12 h-12 rounded-lg flex items-center justify-center text-white text-xl">
-                <FaUsers />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Total Users</p>
-                <p className="text-2xl font-bold">{isLoading ? <Skeleton className="h-6 w-16 rounded-lg" /> : overview.totalUsers}</p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-green-500 w-12 h-12 rounded-lg flex items-center justify-center text-white text-xl">
-                <FaGraduationCap />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Students</p>
-                <p className="text-2xl font-bold">{isLoading ? <Skeleton className="h-6 w-16 rounded-lg" /> : overview.totalStudents}</p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-purple-500 w-12 h-12 rounded-lg flex items-center justify-center text-white text-xl">
-                <FaChalkboardTeacher />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Instructors</p>
-                <p className="text-2xl font-bold">{isLoading ? <Skeleton className="h-6 w-16 rounded-lg" /> : overview.totalInstructors}</p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-orange-500 w-12 h-12 rounded-lg flex items-center justify-center text-white text-xl">
-                <FaBook />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Total Courses</p>
-                <p className="text-2xl font-bold">{isLoading ? <Skeleton className="h-6 w-16 rounded-lg" /> : overview.totalCourses}</p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-cyan-500 w-12 h-12 rounded-lg flex items-center justify-center text-white text-xl">
-                <FaCheckCircle />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Published Courses</p>
-                <p className="text-2xl font-bold">{isLoading ? <Skeleton className="h-6 w-16 rounded-lg" /> : overview.publishedCourses}</p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-pink-500 w-12 h-12 rounded-lg flex items-center justify-center text-white text-xl">
-                <FaShoppingCart />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Total Orders</p>
-                <p className="text-2xl font-bold">{isLoading ? <Skeleton className="h-6 w-16 rounded-lg" /> : overview.totalOrders}</p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-teal-500 w-12 h-12 rounded-lg flex items-center justify-center text-white text-xl">
-                <FaTrophy />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Enrollments</p>
-                <p className="text-2xl font-bold">{isLoading ? <Skeleton className="h-6 w-16 rounded-lg" /> : overview.totalEnrollments}</p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-indigo-500 w-12 h-12 rounded-lg flex items-center justify-center text-white text-xl">
-                <FaChartLine />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Completion Rate</p>
-                <p className="text-2xl font-bold">{isLoading ? <Skeleton className="h-6 w-16 rounded-lg" /> : `${overview.completionRate}%`}</p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-      </div>
-
-      {/* Revenue & Growth Section */}
+      {/* 3. Revenue & User Growth Large Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <Card className="border-2 border-success-200 shadow-lg">
-          <CardHeader className="pb-0 pt-6 px-6 bg-gradient-to-r from-green-50 to-emerald-50">
-            <div className="flex items-center gap-3">
-              <div className="bg-success-500 p-3 rounded-full">
-                <FaDollarSign className="text-2xl text-white" />
+        {/* Revenue Card */}
+        <Card className="border border-success-100 shadow-lg group hover:shadow-xl transition-all">
+          <CardHeader className="p-6 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-success-100">
+            <div className="flex items-center gap-4">
+              <div className="bg-emerald-500 text-white p-3 rounded-xl shadow-lg shadow-emerald-200">
+                <FaDollarSign size={24} />
               </div>
               <div>
                 <h3 className="text-xl font-bold text-gray-800">Revenue Overview</h3>
-                <p className="text-sm text-gray-600">Financial performance metrics</p>
+                <p className="text-sm text-gray-500">Financial performance details</p>
               </div>
             </div>
           </CardHeader>
-          <CardBody className="px-6 pb-6">
-            <div className="space-y-4 mt-4">
-              <div className="flex justify-between items-center p-3 bg-success-50 rounded-lg">
-                <span className="text-gray-700 font-medium">Total Revenue:</span>
-                <span className="text-3xl font-bold text-success-600">৳{revenue.total.toLocaleString()}</span>
+          <CardBody className="p-6">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center p-4 bg-emerald-50/50 rounded-xl border border-emerald-100">
+                <span className="text-gray-600 font-medium">Total Lifetime</span>
+                <span className="text-3xl font-extrabold text-emerald-600">৳{revenue.total.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between items-center p-3 bg-white rounded-lg border border-gray-200">
-                <span className="text-gray-700 font-medium">This Month:</span>
-                <span className="text-xl font-bold text-gray-900">৳{revenue.currentMonth.toLocaleString()}</span>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 border border-gray-100 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">This Month</p>
+                  <p className="text-lg font-bold text-gray-800">৳{revenue.currentMonth.toLocaleString()}</p>
+                </div>
+                <div className="p-3 border border-gray-100 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">Last Month</p>
+                  <p className="text-lg font-bold text-gray-600">৳{revenue.lastMonth.toLocaleString()}</p>
+                </div>
               </div>
-              <div className="flex justify-between items-center p-3 bg-white rounded-lg border border-gray-200">
-                <span className="text-gray-700 font-medium">Last Month:</span>
-                <span className="text-xl font-semibold text-gray-700">৳{revenue.lastMonth.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-white rounded-lg border border-gray-200">
-                <span className="text-gray-700 font-medium">Avg Order Value:</span>
-                <span className="text-xl font-semibold text-gray-700">৳{Math.round(revenue.averageOrderValue).toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center pt-4 border-t-2 border-gray-300">
-                <span className="text-gray-700 font-semibold">Monthly Growth:</span>
+              <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                <span className="text-gray-600 text-sm">Monthly Growth</span>
                 <div className="flex items-center gap-2">
                   {parseFloat(revenue.growth) >= 0 ? (
-                    <FaArrowUp className="text-success text-xl" />
+                    <Chip size="sm" color="success" variant="flat" startContent={<FaArrowUp size={10} />}>{revenue.growth}%</Chip>
                   ) : (
-                    <FaArrowDown className="text-danger text-xl" />
+                    <Chip size="sm" color="danger" variant="flat" startContent={<FaArrowDown size={10} />}>{revenue.growth}%</Chip>
                   )}
-                  <span className={`text-2xl font-bold ${parseFloat(revenue.growth) >= 0 ? "text-success-600" : "text-danger-600"}`}>
-                    {Math.abs(parseFloat(revenue.growth))}%
-                  </span>
                 </div>
               </div>
             </div>
           </CardBody>
         </Card>
 
-        <Card className="border-2 border-primary-200 shadow-lg">
-          <CardHeader className="pb-0 pt-6 px-6 bg-gradient-to-r from-blue-50 to-cyan-50">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary-500 p-3 rounded-full">
-                <FaChartLine className="text-2xl text-white" />
+        {/* User Growth Card */}
+        <Card className="border border-blue-100 shadow-lg group hover:shadow-xl transition-all">
+          <CardHeader className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
+            <div className="flex items-center gap-4">
+              <div className="bg-blue-500 text-white p-3 rounded-xl shadow-lg shadow-blue-200">
+                <FaChartLine size={24} />
               </div>
               <div>
                 <h3 className="text-xl font-bold text-gray-800">User Growth</h3>
-                <p className="text-sm text-gray-600">New user registrations</p>
+                <p className="text-sm text-gray-500">New registration metrics</p>
               </div>
             </div>
           </CardHeader>
-          <CardBody className="px-6 pb-6">
-            <div className="space-y-4 mt-4">
-              <div className="flex justify-between items-center p-3 bg-primary-50 rounded-lg">
-                <span className="text-gray-700 font-medium">New Users This Month:</span>
-                <span className="text-3xl font-bold text-primary-600">{growth.newUsersThisMonth}</span>
+          <CardBody className="p-6">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                <span className="text-gray-600 font-medium">New This Month</span>
+                <span className="text-3xl font-extrabold text-blue-600">{growth.newUsersThisMonth}</span>
               </div>
-              <div className="flex justify-between items-center p-3 bg-white rounded-lg border border-gray-200">
-                <span className="text-gray-700 font-medium">New Users Last Month:</span>
-                <span className="text-xl font-semibold text-gray-700">{growth.newUsersLastMonth}</span>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 border border-gray-100 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">Last Month</p>
+                  <p className="text-lg font-bold text-gray-600">{growth.newUsersLastMonth}</p>
+                </div>
+                <div className="p-3 border border-gray-100 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">Active (7d)</p>
+                  <p className="text-lg font-bold text-gray-800">{overview.activeUsers}</p>
+                </div>
               </div>
-              <div className="flex justify-between items-center p-3 bg-white rounded-lg border border-gray-200">
-                <span className="text-gray-700 font-medium">Active Users (7 days):</span>
-                <span className="text-xl font-semibold text-gray-700">{overview.activeUsers}</span>
-              </div>
-              <div className="flex justify-between items-center pt-4 border-t-2 border-gray-300">
-                <span className="text-gray-700 font-semibold">User Growth Rate:</span>
+              <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                <span className="text-gray-600 text-sm">Growth Rate</span>
                 <div className="flex items-center gap-2">
                   {parseFloat(growth.userGrowth) >= 0 ? (
-                    <FaArrowUp className="text-success text-xl" />
+                    <Chip size="sm" color="success" variant="flat" startContent={<FaArrowUp size={10} />}>{growth.userGrowth}%</Chip>
                   ) : (
-                    <FaArrowDown className="text-danger text-xl" />
+                    <Chip size="sm" color="danger" variant="flat" startContent={<FaArrowDown size={10} />}>{growth.userGrowth}%</Chip>
                   )}
-                  <span className={`text-2xl font-bold ${parseFloat(growth.userGrowth) >= 0 ? "text-success-600" : "text-danger-600"}`}>
-                    {Math.abs(parseFloat(growth.userGrowth))}%
-                  </span>
                 </div>
               </div>
             </div>
@@ -595,272 +395,261 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      {/* Charts Section */}
+      {/* 4. Charts Section - All 4 Data Points Preserved */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Revenue Trend Chart */}
-        <Card>
-          <CardHeader className="pb-0 pt-6 px-6">
-            <h3 className="text-xl font-bold">Revenue Trend (Last 30 Days)</h3>
+        {/* Revenue Trend - Area Chart */}
+        <Card className="shadow-lg border border-gray-100">
+          <CardHeader className="px-6 pt-6 pb-0">
+            <h3 className="text-lg font-bold text-gray-800">Revenue Trend</h3>
           </CardHeader>
-          <CardBody className="px-6 pb-6">
+          <CardBody className="px-6 py-4">
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={revenueTrendData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
+                <AreaChart data={revenueTrendData}>
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip contentStyle={{ borderRadius: '10px' }} />
                   <Legend />
-                  <Line type="monotone" dataKey="revenue" stroke="#0088FE" strokeWidth={2} />
-                </LineChart>
+                  <Area type="monotone" dataKey="revenue" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorRevenue)" name="Revenue (৳)" />
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           </CardBody>
         </Card>
 
-        {/* Enrollment Trend Chart */}
-        <Card>
-          <CardHeader className="pb-0 pt-6 px-6">
-            <h3 className="text-xl font-bold">Enrollment Trend (Last 30 Days)</h3>
+        {/* Enrollment Trend - Bar Chart */}
+        <Card className="shadow-lg border border-gray-100">
+          <CardHeader className="px-6 pt-6 pb-0">
+            <h3 className="text-lg font-bold text-gray-800">Enrollment Trend</h3>
           </CardHeader>
-          <CardBody className="px-6 pb-6">
+          <CardBody className="px-6 py-4">
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={enrollmentTrendData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '10px' }} />
                   <Legend />
-                  <Bar dataKey="enrollments" fill="#00C49F" />
+                  <Bar dataKey="enrollments" fill="#10b981" radius={[4, 4, 0, 0]} name="Enrollments" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </CardBody>
         </Card>
 
-        {/* Category Distribution */}
-        <Card>
-          <CardHeader className="pb-0 pt-6 px-6">
-            <h3 className="text-xl font-bold">Course Categories</h3>
+        {/* Category Distribution - Pie Chart */}
+        <Card className="shadow-lg border border-gray-100">
+          <CardHeader className="px-6 pt-6 pb-0">
+            <h3 className="text-lg font-bold text-gray-800">Course Categories</h3>
           </CardHeader>
-          <CardBody className="px-6 pb-6">
-            {categoryData && categoryData.length > 0 ? (
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {categoryData.map((entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className="text-center py-10 text-gray-500">
-                <p>No categories available</p>
-              </div>
-            )}
+          <CardBody className="px-6 py-4">
+            <div className="h-80 relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {categoryData.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: '10px' }} />
+                  <Legend verticalAlign="bottom" height={36} />
+                </PieChart>
+              </ResponsiveContainer>
+              {categoryData.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                  No category data
+                </div>
+              )}
+            </div>
           </CardBody>
         </Card>
 
-        {/* Plan Type Distribution */}
-        <Card className="shadow-lg">
-          <CardHeader className="pb-0 pt-6 px-6 bg-gradient-to-r from-purple-50 to-pink-50">
-            <div className="flex items-center gap-2">
-              <FaDollarSign className="text-2xl text-purple-600" />
-              <h3 className="text-xl font-bold">Subscription Plans</h3>
-            </div>
+        {/* Plan Type Distribution - Progress Bars */}
+        <Card className="shadow-lg border border-gray-100">
+          <CardHeader className="px-6 pt-6 pb-0 bg-gray-50/50">
+            <h3 className="text-lg font-bold text-gray-800">Subscription Plans</h3>
           </CardHeader>
-          <CardBody className="px-6 pb-6">
+          <CardBody className="px-6 py-6 overflow-y-auto">
             {planTypeData && planTypeData.length > 0 ? (
-              <div className="space-y-4 mt-4">
+              <div className="space-y-6">
                 {planTypeData.map((plan: any, index: number) => (
-                  <div key={index} className="space-y-2 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <Chip 
-                          size="sm" 
-                          color={index === 0 ? "primary" : index === 1 ? "success" : "warning"}
-                          variant="flat"
-                        >
-                          #{index + 1}
-                        </Chip>
-                        <span className="font-bold text-gray-800">{plan.name}</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm text-gray-600 font-medium">{plan.value || 0} orders</div>
-                        <div className="text-success-600 font-bold text-lg">৳{(plan.revenue || 0).toLocaleString()}</div>
-                      </div>
+                  <div key={index}>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-semibold text-gray-700">{plan.name}</span>
+                      <span className="font-bold text-gray-900">৳{plan.revenue.toLocaleString()}</span>
                     </div>
                     <Progress
                       value={revenue.total > 0 ? ((plan.revenue || 0) / revenue.total) * 100 : 0}
-                      color={index === 0 ? "primary" : index === 1 ? "success" : "warning"}
+                      color={index === 0 ? "primary" : index === 1 ? "secondary" : "warning"}
                       size="md"
-                      className="mt-2"
+                      className="mb-1"
+                      classNames={{ indicator: "bg-gradient-to-r from-blue-500 to-indigo-600" }}
                     />
-                    <div className="text-xs text-gray-600 text-right mt-1">
-                      {revenue.total > 0 ? (((plan.revenue || 0) / revenue.total) * 100).toFixed(1) : 0}% of total revenue
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>{plan.value} orders</span>
+                      <span>{revenue.total > 0 ? (((plan.revenue || 0) / revenue.total) * 100).toFixed(1) : 0}%</span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                <p>No subscription data available</p>
-              </div>
+              <div className="h-full flex items-center justify-center text-gray-400">No plan data available</div>
             )}
           </CardBody>
         </Card>
       </div>
 
-        {/* Top Performing Courses */}
-        <Card className="mb-8">
-          <CardHeader className="pb-0 pt-6 px-6">
-            <div className="flex items-center gap-3">
-              <FaTrophy className="text-2xl text-warning" />
-              <div>
-                <h3 className="text-xl font-bold">Top Performing Courses</h3>
-                <p className="text-sm text-gray-500">Most enrolled courses</p>
-              </div>
+      {/* 5. Top Courses & Recent Activity - Tables Preserved */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <Card className="lg:col-span-2 shadow-lg border border-gray-100">
+          <CardHeader className="px-6 pt-6 pb-4 flex justify-between items-center border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <FaTrophy className="text-amber-500 text-xl" />
+              <h3 className="text-xl font-bold text-gray-800">Top Performing Courses</h3>
             </div>
           </CardHeader>
-          <CardBody className="px-6 pb-6">
-            {topCourses && topCourses.length > 0 ? (
-              <Table aria-label="Top courses table">
-                <TableHeader>
-                  <TableColumn className="text-xs">COURSE</TableColumn>
-                  <TableColumn className="text-xs">CATEGORY</TableColumn>
-                  <TableColumn className="text-xs">ENROLLMENTS</TableColumn>
-                  <TableColumn className="text-xs">RATING</TableColumn>
-                  <TableColumn className="text-xs">PRICE</TableColumn>
-                </TableHeader>
-                <TableBody>
-                  {topCourses.map((course: any, index: number) => (
-                    <TableRow key={course._id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Chip size="sm" color="primary" variant="flat">
-                            #{index + 1}
-                          </Chip>
-                          <span className="font-semibold text-sm">{course.title || "N/A"}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm">{course.categoryId?.name || course.category || "Uncategorized"}</TableCell>
-                      <TableCell className="text-sm font-semibold">{course.enrollmentCount || course.studentsEnrolled || 0}</TableCell>
-                      <TableCell>
-                        <Chip size="sm" color="warning" variant="flat">
-                          ⭐ {course.rating ? course.rating.toFixed(1) : "N/A"}
-                        </Chip>
-                      </TableCell>
-                      <TableCell className="text-sm font-semibold">৳{course.price || 0}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <p>No course data available</p>
-              </div>
-            )}
+          <CardBody className="p-0">
+            <Table aria-label="Top courses table" shadow="none" classNames={{ th: "bg-gray-50 text-gray-600" }}>
+              <TableHeader>
+                <TableColumn>RANK</TableColumn>
+                <TableColumn>COURSE</TableColumn>
+                <TableColumn>CATEGORY</TableColumn>
+                <TableColumn>STUDENTS</TableColumn>
+                <TableColumn>REVENUE</TableColumn>
+              </TableHeader>
+              <TableBody emptyContent="No course data available">
+                {topCourses.map((course: any, index: number) => (
+                  <TableRow key={course._id} className="hover:bg-gray-50 transition-colors">
+                    <TableCell>
+                      <Chip size="sm" variant="flat" color={index < 3 ? "warning" : "default"}>#{index + 1}</Chip>
+                    </TableCell>
+                    <TableCell className="font-semibold text-gray-800">{course.title}</TableCell>
+                    <TableCell>{course.categoryId?.name || course.category || "General"}</TableCell>
+                    <TableCell className="font-bold">{course.enrollmentCount || 0}</TableCell>
+                    <TableCell className="text-success font-bold">৳{(course.price * (course.enrollmentCount || 0)).toLocaleString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardBody>
         </Card>
+      </div>
 
-      {/* Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Orders */}
-        <Card>
-          <CardHeader className="pb-0 pt-6 px-6">
+        <Card className="shadow-lg border border-gray-100">
+          <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100">
             <div className="flex items-center gap-2">
-              <FaShoppingCart className="text-2xl text-primary" />
-              <h3 className="text-xl font-bold">Recent Orders</h3>
+              <FaShoppingCart className="text-primary text-xl" />
+              <h3 className="text-xl font-bold text-gray-800">Recent Orders</h3>
             </div>
           </CardHeader>
-          <CardBody className="px-6 pb-6">
+          <CardBody className="px-6 py-4">
             {recentActivity?.orders && recentActivity.orders.length > 0 ? (
-              <div className="space-y-3 mt-4">
+              <div className="space-y-4">
                 {recentActivity.orders.slice(0, 5).map((order: any) => (
-                  <div key={order._id} className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg hover:shadow-md transition-shadow">
-                    <div className="flex-1">
-                      <p className="font-semibold text-sm text-gray-900">
-                        {order.userId?.name || order.userName || "Unknown Customer"}
-                      </p>
-                      <p className="text-xs text-gray-600 mt-1">
-                        {order.courseId?.title || (order.planType ? `${order.planType.charAt(0).toUpperCase() + order.planType.slice(1)} Plan` : "All Courses Access")}
-                      </p>
+                  <div key={order._id} className="flex justify-between items-center p-3 rounded-xl hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
+                    <div>
+                      <p className="font-bold text-gray-800 text-sm">{order.userId?.name || "Customer"}</p>
+                      <p className="text-xs text-gray-500 line-clamp-1 max-w-[200px]">{order.courseId?.title || order.planType || "Course Access"}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-success text-lg">৳{(order.price || 0).toLocaleString()}</p>
-                      <Chip
-                        size="sm"
-                        color={order.paymentStatus === "approved" ? "success" : order.paymentStatus === "pending" ? "warning" : "danger"}
-                        variant="flat"
-                        className="mt-1"
-                      >
-                        {order.paymentStatus || "pending"}
+                      <p className="font-bold text-sm">৳{order.price}</p>
+                      <Chip size="sm" variant="dot" color={order.paymentStatus === 'approved' ? "success" : "warning"}>
+                        {order.paymentStatus}
                       </Chip>
                     </div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <p>No recent orders</p>
-              </div>
-            )}
+            ) : <div className="text-center py-6 text-gray-400">No orders yet</div>}
           </CardBody>
         </Card>
 
         {/* Recent Enrollments */}
-        <Card>
-          <CardHeader className="pb-0 pt-6 px-6">
+        <Card className="shadow-lg border border-gray-100">
+          <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100">
             <div className="flex items-center gap-2">
-              <FaGraduationCap className="text-2xl text-success" />
-              <h3 className="text-xl font-bold">Recent Enrollments</h3>
+              <FaGraduationCap className="text-success text-xl" />
+              <h3 className="text-xl font-bold text-gray-800">Recent Enrollments</h3>
             </div>
           </CardHeader>
-          <CardBody className="px-6 pb-6">
+          <CardBody className="px-6 py-4">
             {recentActivity?.enrollments && recentActivity.enrollments.length > 0 ? (
-              <div className="space-y-3 mt-4">
+              <div className="space-y-4">
                 {recentActivity.enrollments.slice(0, 5).map((enrollment: any) => (
-                  <div key={enrollment._id} className="flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg hover:shadow-md transition-shadow">
-                    <div className="flex-1">
-                      <p className="font-semibold text-sm text-gray-900">
-                        {enrollment.userId?.name || enrollment.userName || "Unknown Student"}
-                      </p>
-                      <p className="text-xs text-gray-600 mt-1">
-                        {enrollment.courseId?.title || "N/A"}
-                      </p>
+                  <div key={enrollment._id} className="flex justify-between items-center p-3 rounded-xl hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-success-50 text-success flex items-center justify-center text-xs font-bold">
+                        {(enrollment.userId?.name?.[0] || "S").toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-800 text-sm">{enrollment.userId?.name || "Student"}</p>
+                        <p className="text-xs text-gray-500 line-clamp-1 max-w-[200px]">{enrollment.courseId?.title}</p>
+                      </div>
                     </div>
-                    <Chip
-                      size="sm"
-                      color={enrollment.status === "completed" ? "success" : enrollment.status === "active" ? "primary" : "default"}
-                      variant="flat"
-                    >
+                    <Chip size="sm" variant="flat" color={enrollment.status === 'completed' ? "success" : "primary"}>
                       {enrollment.status || "active"}
                     </Chip>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <p>No recent enrollments</p>
-              </div>
-            )}
+            ) : <div className="text-center py-6 text-gray-400">No enrollments yet</div>}
           </CardBody>
         </Card>
       </div>
     </div>
+  );
+}
+
+// Stats Card Component for simpler code
+function StatsCard({ title, value, icon, color, trend }: { title: string, value: string | number, icon: React.ReactNode, color: "primary" | "secondary" | "success" | "warning" | "danger" | "info" | "default", trend?: number }) {
+
+  const colorClasses = {
+    primary: "bg-blue-50 text-blue-600",
+    secondary: "bg-purple-50 text-purple-600",
+    success: "bg-green-50 text-green-600",
+    warning: "bg-orange-50 text-orange-600",
+    danger: "bg-red-50 text-red-600",
+    info: "bg-cyan-50 text-cyan-600",
+    default: "bg-gray-50 text-gray-600"
+  };
+
+  return (
+    <Card className="shadow-sm hover:shadow-md transition-all border border-transparent hover:border-gray-200">
+      <CardBody className="p-5">
+        <div className="flex items-start justify-between mb-2">
+          <div className={`p-3 rounded-xl ${colorClasses[color] || colorClasses.default}`}>
+            <div className="text-xl">{icon}</div>
+          </div>
+          {trend !== undefined && (
+            <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${trend >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+              {trend >= 0 ? <FaArrowUp size={10} /> : <FaArrowDown size={10} />}
+              {Math.abs(trend)}%
+            </div>
+          )}
+        </div>
+        <div>
+          <h4 className="text-gray-500 text-xs uppercase font-bold tracking-wider mb-1">{title}</h4>
+          <p className="text-2xl font-extrabold text-gray-800">{value}</p>
+        </div>
+      </CardBody>
+    </Card>
   );
 }

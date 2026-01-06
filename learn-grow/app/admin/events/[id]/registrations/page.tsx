@@ -23,9 +23,31 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
+  User,
+  Tooltip,
 } from "@nextui-org/react";
-import { useGetEventRegistrationsQuery, useGetEventByIdQuery, useDeleteRegistrationMutation, useUpdateRegistrationMutation } from "@/redux/api/eventApi";
-import { FaArrowLeft, FaSearch, FaDownload, FaEnvelope, FaPhone, FaEdit, FaTrash, FaCheckCircle, FaClock, FaTimesCircle } from "react-icons/fa";
+import {
+  useGetEventRegistrationsQuery,
+  useGetEventByIdQuery,
+  useDeleteRegistrationMutation,
+  useUpdateRegistrationMutation,
+} from "@/redux/api/eventApi";
+import {
+  FaArrowLeft,
+  FaSearch,
+  FaDownload,
+  FaEnvelope,
+  FaPhone,
+  FaEdit,
+  FaTrash,
+  FaCheckCircle,
+  FaClock,
+  FaTimesCircle,
+  FaUserFriends,
+  FaCalendarAlt,
+  FaTicketAlt,
+  FaMapMarkerAlt,
+} from "react-icons/fa";
 import { useRouter, useParams } from "next/navigation";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
@@ -40,19 +62,31 @@ export default function EventRegistrationsPage() {
   const [search, setSearch] = useState("");
   const [exporting, setExporting] = useState<boolean>(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editFormData, setEditFormData] = useState({ fullName: "", email: "", phoneNumber: "" });
+  const [editFormData, setEditFormData] = useState({
+    fullName: "",
+    email: "",
+    phoneNumber: "",
+  });
   const [selectedEmailHistory, setSelectedEmailHistory] = useState<any>(null);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { isOpen: historyIsOpen, onOpen: historyOnOpen, onClose: historyOnClose } = useDisclosure();
+  const {
+    isOpen: historyIsOpen,
+    onOpen: historyOnOpen,
+    onClose: historyOnClose,
+  } = useDisclosure();
 
-  const { data: eventResponse } = useGetEventByIdQuery(eventId, { skip: !eventId });
+  const { data: eventResponse, isLoading: eventLoading } = useGetEventByIdQuery(
+    eventId,
+    { skip: !eventId }
+  );
   const { data: response, isLoading } = useGetEventRegistrationsQuery(
     { eventId, page, limit, search: search || undefined },
     { skip: !eventId }
   );
   const [deleteRegistration] = useDeleteRegistrationMutation();
-  const [updateRegistration, { isLoading: updating }] = useUpdateRegistrationMutation();
+  const [updateRegistration, { isLoading: updating }] =
+    useUpdateRegistrationMutation();
 
   const event = eventResponse?.data;
   const registrations = response?.data || [];
@@ -97,7 +131,12 @@ export default function EventRegistrationsPage() {
   };
 
   const handleSaveEdit = async () => {
-    if (!editingId || !editFormData.fullName || !editFormData.email || !editFormData.phoneNumber) {
+    if (
+      !editingId ||
+      !editFormData.fullName ||
+      !editFormData.email ||
+      !editFormData.phoneNumber
+    ) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -123,7 +162,13 @@ export default function EventRegistrationsPage() {
   const exportToCSV = () => {
     if (registrations.length === 0) return;
 
-    const headers = ["Full Name", "Email", "Phone Number", "Registered On", "Notification Sent"];
+    const headers = [
+      "Full Name",
+      "Email",
+      "Phone Number",
+      "Registered On",
+      "Notification Sent",
+    ];
     const csvContent = [
       headers.join(","),
       ...registrations.map((reg: any) =>
@@ -148,263 +193,436 @@ export default function EventRegistrationsPage() {
     document.body.removeChild(link);
   };
 
-  return (
-    <div className="p-8">
-      <Button
-        variant="light"
-        startContent={<FaArrowLeft />}
-        onPress={() => router.push("/admin/events")}
-        className="mb-6"
-      >
-        Back to Events
-      </Button>
+  if (eventLoading) {
+    return (
+      <div className="flex justify-center items-center h-[60vh]">
+        <Spinner size="lg" label="Loading event details..." color="secondary" />
+      </div>
+    );
+  }
 
-      {event && (
-        <Card className="mb-6">
-          <CardBody>
-            <div className="flex justify-between items-start">
-              <div>
-                <h1 className="text-2xl font-bold mb-2">{event.title}</h1>
-                <div className="flex gap-2 flex-wrap">
-                  <Chip size="sm" variant="flat" color="primary">
-                    {event.type}
-                  </Chip>
-                  <Chip
-                    size="sm"
-                    variant="flat"
-                    color={event.mode === "Online" ? "success" : "warning"}
-                  >
-                    {event.mode}
-                  </Chip>
-                  <Chip size="sm" variant="flat">
-                    {new Date(event.eventDate).toLocaleDateString()}
-                  </Chip>
-                </div>
+  if (!event && !eventLoading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-[50vh]">
+        <Card className="border-2 border-red-500 max-w-lg w-full shadow-xl">
+          <CardBody className="p-10 text-center">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Event Not Found
+            </h2>
+            <Button
+              color="primary"
+              onPress={() => router.push("/admin/events")}
+              size="lg"
+            >
+              Return to Events
+            </Button>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-7xl">
+      {/* Premium Header */}
+      <div className="mb-8 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
+        <div className="relative z-10">
+          <Button
+            variant="light"
+            startContent={<FaArrowLeft />}
+            onPress={() => router.push("/admin/events")}
+            className="mb-4 text-white/90 hover:bg-white/20"
+          >
+            Back to Events
+          </Button>
+
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <Chip
+                  color="warning"
+                  variant="solid"
+                  className="text-white font-bold uppercase tracking-wider"
+                  size="sm"
+                >
+                  {event.type}
+                </Chip>
+                <Chip
+                  color={event.mode === "Online" ? "success" : "default"}
+                  variant="flat"
+                  className="text-white bg-white/20 border border-white/30 backdrop-blur-md"
+                  startContent={
+                    event.mode === "Online" ? (
+                      <span className="w-2 h-2 rounded-full bg-green-400 ml-1 animate-pulse"></span>
+                    ) : (
+                      <FaMapMarkerAlt className="ml-1 text-white" />
+                    )
+                  }
+                >
+                  {event.mode}
+                </Chip>
               </div>
-              <div className="text-right">
-                <p className="text-3xl font-bold text-primary">{event.registeredCount}</p>
-                <p className="text-sm text-gray-600">Total Registrations</p>
-                <p className="text-sm text-gray-500 mt-1">
-                  {event.maxSeats - event.registeredCount} seats available
+              <h1 className="text-3xl md:text-4xl font-bold mb-2 leading-tight">
+                {event.title}
+              </h1>
+              <div className="flex items-center gap-6 text-violet-100 text-sm md:text-base">
+                <span className="flex items-center gap-2">
+                  <FaCalendarAlt />{" "}
+                  {new Date(event.eventDate).toLocaleDateString(undefined, {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </span>
+                <span className="flex items-center gap-2">
+                  <FaClock /> {event.startTime} - {event.endTime}
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Stats in Header */}
+            <div className="flex gap-4">
+              <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 min-w-[120px] text-center">
+                <p className="text-3xl font-bold">{event.registeredCount}</p>
+                <p className="text-xs uppercase tracking-wider opacity-80">
+                  Registered
+                </p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 min-w-[120px] text-center">
+                <p className="text-3xl font-bold">
+                  {Math.max(0, event.maxSeats - event.registeredCount)}
+                </p>
+                <p className="text-xs uppercase tracking-wider opacity-80">
+                  Seats Left
                 </p>
               </div>
             </div>
-          </CardBody>
-        </Card>
-      )}
-
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Registrations</h2>
-        <div className="flex flex-wrap gap-3">
-          <Button
-            variant="flat"
-            color="primary"
-            startContent={<FaEnvelope />}
-            onPress={() => router.push(`/admin/events/${eventId}/registrations/email`)}
-            isDisabled={registrations.length === 0}
-          >
-            Send Email
-          </Button>
-          <Button
-            color="success"
-            startContent={<FaDownload />}
-            onPress={handleExportCsv}
-            isDisabled={registrations.length === 0 || exporting}
-            isLoading={exporting}
-          >
-            Export CSV
-          </Button>
+          </div>
         </div>
+        {/* Decorative Background */}
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-white opacity-10 blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-60 h-60 rounded-full bg-white opacity-10 blur-3xl"></div>
       </div>
 
-      {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <Input
-          placeholder="Search by name, email, or phone..."
-          startContent={<FaSearch />}
-          value={search}
-          onValueChange={setSearch}
-          variant="bordered"
-        />
-        <Select
-          placeholder="Items per page"
-          selectedKeys={[limit.toString()]}
-          onSelectionChange={(keys) => {
-            setLimit(Number(Array.from(keys)[0]));
-            setPage(1);
-          }}
-          variant="bordered"
-        >
-          <SelectItem key="10">10 per page</SelectItem>
-          <SelectItem key="20">20 per page</SelectItem>
-          <SelectItem key="50">50 per page</SelectItem>
-          <SelectItem key="100">100 per page</SelectItem>
-        </Select>
-      </div>
+      {/* Main Content Card */}
+      <Card className="shadow-lg border border-gray-100">
+        <CardBody className="p-6">
 
-      {/* Table */}
-      {isLoading ? (
-        <div className="flex justify-center items-center h-96">
-          <Spinner size="lg" label="Loading registrations..." />
-        </div>
-      ) : registrations.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <p className="text-gray-600 text-lg">No registrations yet</p>
-          <p className="text-gray-500 text-sm mt-2">
-            Registrations will appear here once users sign up for this event
-          </p>
-        </div>
-      ) : (
-        <>
-          <Table aria-label="Registrations table" className="mb-6">
-            <TableHeader>
-              <TableColumn>FULL NAME</TableColumn>
-              <TableColumn>EMAIL</TableColumn>
-              <TableColumn>PHONE NUMBER</TableColumn>
-              <TableColumn>REGISTERED ON</TableColumn>
-              <TableColumn>NOTIFICATION</TableColumn>
-              <TableColumn>ACTIONS</TableColumn>
-            </TableHeader>
-            <TableBody>
-              {registrations.map((registration: any) => (
-                <TableRow key={registration._id}>
-                  <TableCell>
-                    <p className="font-semibold">{registration.fullName}</p>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <FaEnvelope className="text-gray-400" />
-                      <span>{registration.email}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <FaPhone className="text-gray-400" />
-                      <span>{registration.phoneNumber}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <p>{new Date(registration.createdAt).toLocaleDateString()}</p>
-                      <p className="text-gray-500">
-                        {new Date(registration.createdAt).toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <button
-                      onClick={() => handleViewEmailHistory(registration)}
-                      className="cursor-pointer"
-                    >
-                      <Chip
-                        size="sm"
-                        variant="flat"
-                        color={registration.notificationSent ? "success" : "warning"}
-                        className="cursor-pointer hover:opacity-80"
-                      >
-                        {registration.notificationSent ? "Sent" : "Pending"}
-                      </Chip>
-                    </button>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        color="primary"
-                        onPress={() => handleEditClick(registration)}
-                        startContent={<FaEdit />}
-                      />
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        color="danger"
-                        onPress={() => handleDelete(registration._id)}
-                        startContent={<FaTrash />}
-                      />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {/* Actions & Filters */}
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <span className="p-2 bg-pink-100 text-pink-600 rounded-lg">
+                <FaUserFriends />
+              </span>
+              Registrations List
+            </h2>
+            <div className="flex flex-wrap gap-3 w-full md:w-auto">
+              <Button
+                color="secondary"
+                variant="flat"
+                startContent={<FaEnvelope />}
+                onPress={() =>
+                  router.push(`/admin/events/${eventId}/registrations/email`)
+                }
+                isDisabled={registrations.length === 0}
+                className="font-medium"
+              >
+                Send Email
+              </Button>
+              <Button
+                color="success"
+                className="text-white font-medium bg-gradient-to-r from-emerald-500 to-teal-500 border-none"
+                startContent={<FaDownload />}
+                onPress={handleExportCsv}
+                isDisabled={registrations.length === 0 || exporting}
+                isLoading={exporting}
+              >
+                Export CSV
+              </Button>
+            </div>
+          </div>
 
-          {/* Pagination */}
-          {pagination && pagination.totalPages > 1 && (
-            <div className="flex justify-center">
-              <Pagination
-                total={pagination.totalPages}
-                page={page}
-                onChange={setPage}
-                showControls
+          {/* Search & Pagination Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+            <div className="md:col-span-5 lg:col-span-4">
+              <Input
+                placeholder="Search attendee..."
+                startContent={<FaSearch className="text-gray-400" />}
+                value={search}
+                onValueChange={setSearch}
+                variant="bordered"
+                size="lg"
+                classNames={{
+                  inputWrapper:
+                    "border-1 border-gray-200 hover:border-gray-300 focus-within:border-violet-500",
+                }}
               />
             </div>
+            <div className="md:col-span-3 lg:col-span-2">
+              <Select
+                label="Per page"
+                selectedKeys={[limit.toString()]}
+                onSelectionChange={(keys) => {
+                  setLimit(Number(Array.from(keys)[0]));
+                  setPage(1);
+                }}
+                variant="bordered"
+                size="sm"
+                className="max-w-xs"
+              >
+                <SelectItem key="10">10 Rows</SelectItem>
+                <SelectItem key="20">20 Rows</SelectItem>
+                <SelectItem key="50">50 Rows</SelectItem>
+                <SelectItem key="100">100 Rows</SelectItem>
+              </Select>
+            </div>
+          </div>
+
+          {/* Data Table */}
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <Spinner size="lg" label="Loading registrations..." color="secondary" />
+            </div>
+          ) : registrations.length === 0 ? (
+            <div className="text-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+              <div className="mb-4 inline-flex p-4 bg-gray-100 rounded-full text-gray-400">
+                <FaUserFriends size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-700">No Registrations Yet</h3>
+              <p className="text-gray-500 mt-2 max-w-sm mx-auto">
+                Registrations will appear here once students or users sign up for this event.
+              </p>
+            </div>
+          ) : (
+            <>
+              <Table
+                aria-label="Registrations table"
+                className="mb-6"
+                selectionMode="none"
+                removeWrapper
+                classNames={{
+                  th: "bg-gray-50 text-gray-600 font-bold uppercase text-xs p-4",
+                  td: "p-4 border-b border-gray-50",
+                  table: "min-w-full"
+                }}
+              >
+                <TableHeader>
+                  <TableColumn>ATTENDEE</TableColumn>
+                  <TableColumn>CONTACT INFO</TableColumn>
+                  <TableColumn>REGISTERED DATE</TableColumn>
+                  <TableColumn>STATUS</TableColumn>
+                  <TableColumn align="center">ACTIONS</TableColumn>
+                </TableHeader>
+                <TableBody>
+                  {registrations.map((registration: any) => (
+                    <TableRow key={registration._id} className="hover:bg-gray-50 transition-colors">
+                      <TableCell>
+                        <User
+                          name={registration.fullName}
+                          description={registration.role || "Detail N/A"}
+                          avatarProps={{
+                            size: "sm",
+                            color: "secondary",
+                            name: registration.fullName?.charAt(0).toUpperCase(),
+                            src: registration.profileImage // Assuming image might exist, fallback to initial
+                          }}
+                          classNames={{
+                            name: "font-semibold text-gray-800",
+                            description: "text-gray-500 text-xs"
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2 text-sm text-gray-700">
+                            <FaEnvelope className="text-gray-400 text-xs" />
+                            {registration.email}
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <FaPhone className="text-gray-400 text-xs" />
+                            {registration.phoneNumber}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-gray-700">
+                            {new Date(registration.createdAt).toLocaleDateString()}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {new Date(registration.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip content="Click to view email history">
+                          <button
+                            onClick={() => handleViewEmailHistory(registration)}
+                            className="focus:outline-none"
+                          >
+                            <Chip
+                              size="sm"
+                              variant="flat"
+                              color={registration.notificationSent ? "success" : "warning"}
+                              startContent={registration.notificationSent ? <FaCheckCircle size={10} /> : <FaClock size={10} />}
+                              className="capitalize cursor-pointer hover:scale-105 transition-transform"
+                            >
+                              {registration.notificationSent ? "Notified" : "Pending"}
+                            </Chip>
+                          </button>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-2">
+                          <Tooltip content="Edit Details">
+                            <Button
+                              isIconOnly
+                              size="sm"
+                              color="secondary"
+                              variant="light"
+                              onPress={() => handleEditClick(registration)}
+                            >
+                              <FaEdit className="text-lg" />
+                            </Button>
+                          </Tooltip>
+                          <Tooltip content="Delete Registration" color="danger">
+                            <Button
+                              isIconOnly
+                              size="sm"
+                              color="danger"
+                              variant="light"
+                              onPress={() => handleDelete(registration._id)}
+                            >
+                              <FaTrash className="text-lg" />
+                            </Button>
+                          </Tooltip>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Pagination */}
+              {pagination && pagination.totalPages > 1 && (
+                <div className="flex justify-center mt-6 border-t border-gray-100 pt-6">
+                  <Pagination
+                    total={pagination.totalPages}
+                    page={page}
+                    onChange={setPage}
+                    showControls
+                    color="secondary"
+                    variant="flat"
+                    size="lg"
+                  />
+                </div>
+              )}
+            </>
           )}
-        </>
-      )}
+        </CardBody>
+      </Card>
 
       {/* Email History Modal */}
-      <Modal isOpen={historyIsOpen} onClose={historyOnClose} size="lg" scrollBehavior="inside">
+      <Modal
+        isOpen={historyIsOpen}
+        onClose={historyOnClose}
+        size="2xl"
+        scrollBehavior="inside"
+        classNames={{
+          header: "border-b border-gray-100",
+          footer: "border-t border-gray-100"
+        }}
+      >
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            Email History - {selectedEmailHistory?.fullName}
+          <ModalHeader className="flex flex-col gap-1 bg-gray-50">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-secondary-100 text-secondary-600 rounded-lg">
+                <FaEnvelope />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">Email History</h3>
+                <p className="text-xs text-gray-500 font-normal">History for {selectedEmailHistory?.fullName}</p>
+              </div>
+            </div>
           </ModalHeader>
-          <ModalBody>
-            <div className="space-y-4">
-              <div className="flex flex-col gap-2">
-                <span className="text-sm text-gray-600">Email Address</span>
-                <span className="font-semibold">{selectedEmailHistory?.email}</span>
+          <ModalBody className="p-6">
+            <div className="space-y-6">
+
+              {/* Summary Stats */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-green-50 rounded-xl border border-green-100 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-green-600 font-semibold uppercase">Successful</p>
+                    <p className="text-2xl font-bold text-green-700">
+                      {selectedEmailHistory?.emailHistory?.filter((e: any) => e.status === "success").length || 0}
+                    </p>
+                  </div>
+                  <FaCheckCircle className="text-3xl text-green-200" />
+                </div>
+                <div className="p-4 bg-red-50 rounded-xl border border-red-100 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-red-600 font-semibold uppercase">Failed</p>
+                    <p className="text-2xl font-bold text-red-700">
+                      {selectedEmailHistory?.emailHistory?.filter((e: any) => e.status === "failed").length || 0}
+                    </p>
+                  </div>
+                  <FaTimesCircle className="text-3xl text-red-200" />
+                </div>
               </div>
 
-              <div className="border-t pt-4">
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <FaEnvelope /> Email History
-                </h3>
-                
+              {/* Status Indicator */}
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                <div className={`w-3 h-3 rounded-full ${selectedEmailHistory?.notificationSent ? "bg-green-500 animate-pulse" : "bg-yellow-500"}`} />
+                <span className="font-medium text-gray-700">
+                  Current Notification Status: <span className={selectedEmailHistory?.notificationSent ? "text-green-600" : "text-yellow-600"}>{selectedEmailHistory?.notificationSent ? "Sent" : "Pending"}</span>
+                </span>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-bold text-gray-800 flex items-center gap-2 text-sm uppercase tracking-wider">
+                  <FaClock className="text-gray-400" /> Timeline
+                </h4>
+
                 {selectedEmailHistory?.emailHistory && selectedEmailHistory.emailHistory.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="relative pl-6 border-l-2 border-gray-100 space-y-6">
                     {selectedEmailHistory.emailHistory.map((email: any, index: number) => {
                       const isSuccess = email.status === "success";
                       return (
-                        <div
-                          key={index}
-                          className={`p-3 rounded-lg border ${
-                            isSuccess
-                              ? "bg-green-50 border-green-200"
-                              : "bg-red-50 border-red-200"
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            {isSuccess ? (
-                              <FaCheckCircle className="text-green-500 mt-1 flex-shrink-0" />
-                            ) : (
-                              <FaTimesCircle className="text-red-500 mt-1 flex-shrink-0" />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className={`font-semibold text-sm ${
-                                isSuccess ? "text-green-700" : "text-red-700"
-                              }`}>
-                                {isSuccess ? "✅" : "❌"} Email {index + 1} - {isSuccess ? "Sent" : "Failed"}
+                        <div key={index} className="relative">
+                          {/* Timeline Dot */}
+                          <div className={`absolute -left-[29px] top-1 w-5 h-5 rounded-full border-2 border-white shadow-sm flex items-center justify-center ${isSuccess ? "bg-green-500" : "bg-red-500"}`}>
+                            {isSuccess ? <FaCheckCircle className="text-white text-[10px]" /> : <FaTimesCircle className="text-white text-[10px]" />}
+                          </div>
+
+                          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start mb-2">
+                              <p className={`font-bold text-sm ${isSuccess ? "text-green-600" : "text-red-600"}`}>
+                                {isSuccess ? "Email Sent Successfully" : "Email Delivery Failed"}
                               </p>
-                              <p className="text-xs text-gray-600 mt-1">
-                                <strong>Subject:</strong> {email.subject}
-                              </p>
-                              <p className="text-xs text-gray-600 mt-1">
-                                <strong>Sent At:</strong> {new Date(email.sentAt).toLocaleString()}
-                              </p>
+                              <span className="text-xs text-gray-400 whitespace-nowrap">
+                                {new Date(email.sentAt).toLocaleString()}
+                              </span>
+                            </div>
+
+                            <div className="space-y-2">
+                              <div className="text-sm">
+                                <span className="text-gray-500 font-medium">Subject:</span> <span className="text-gray-800">{email.subject}</span>
+                              </div>
+
                               {email.failureReason && (
-                                <p className="text-xs text-red-600 mt-1 bg-red-100 px-2 py-1 rounded">
-                                  <strong>Error:</strong> {email.failureReason}
-                                </p>
+                                <div className="p-2 bg-red-50 text-red-600 text-xs rounded border border-red-100 flex gap-2 items-start">
+                                  <FaTimesCircle className="mt-0.5" />
+                                  <span>{email.failureReason}</span>
+                                </div>
                               )}
+
                               {isSuccess && (
-                                <details className="mt-2">
-                                  <summary className="text-xs text-blue-600 cursor-pointer hover:text-blue-800">
-                                    View Content
+                                <details className="group">
+                                  <summary className="text-xs text-secondary-600 cursor-pointer hover:text-secondary-700 font-medium flex items-center gap-1 select-none">
+                                    <span>View Email Content</span>
                                   </summary>
-                                  <div className="mt-2 p-2 bg-white rounded border border-gray-200 text-xs max-h-40 overflow-auto">
+                                  <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-100 text-xs text-gray-600 max-h-60 overflow-y-auto prose prose-sm max-w-none">
                                     <div dangerouslySetInnerHTML={{ __html: email.content }} />
                                   </div>
                                 </details>
@@ -416,60 +634,19 @@ export default function EventRegistrationsPage() {
                     })}
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                    <FaClock className="text-yellow-600" />
-                    <span className="text-sm text-yellow-800">No emails sent to this registrant yet</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="border-t pt-4">
-                <h3 className="font-semibold mb-3">Summary</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                    <div className="flex items-center gap-2">
-                      <FaCheckCircle className="text-green-600" />
-                      <div>
-                        <p className="text-xs text-gray-600">Successful</p>
-                        <p className="text-lg font-bold text-green-600">
-                          {selectedEmailHistory?.emailHistory?.filter((e: any) => e.status === "success").length || 0}
-                        </p>
-                      </div>
+                  <div className="text-center py-8">
+                    <div className="w-12 h-12 bg-yellow-100 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <FaEnvelope />
                     </div>
+                    <p className="text-gray-500 text-sm">No emails have been sent to this user yet.</p>
                   </div>
-                  <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-                    <div className="flex items-center gap-2">
-                      <FaTimesCircle className="text-red-600" />
-                      <div>
-                        <p className="text-xs text-gray-600">Failed</p>
-                        <p className="text-lg font-bold text-red-600">
-                          {selectedEmailHistory?.emailHistory?.filter((e: any) => e.status === "failed").length || 0}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center gap-2">
-                  <div
-                    className={`w-3 h-3 rounded-full ${
-                      selectedEmailHistory?.notificationSent ? "bg-green-500" : "bg-yellow-500"
-                    }`}
-                  />
-                  <span className="text-sm font-semibold">
-                    Status: {selectedEmailHistory?.notificationSent ? "At Least One Email Sent" : "Pending"}
-                  </span>
-                </div>
-                {selectedEmailHistory?.emailHistory && selectedEmailHistory.emailHistory.length > 0 && (
-                  <p className="text-xs text-gray-600 mt-2">
-                    Total emails sent: {selectedEmailHistory.emailHistory.length}
-                  </p>
                 )}
               </div>
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button color="default" variant="light" onPress={historyOnClose}>
-              Close
+            <Button color="primary" onPress={historyOnClose}>
+              Close Log
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -478,39 +655,46 @@ export default function EventRegistrationsPage() {
       {/* Edit Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="md">
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">Edit Registration</ModalHeader>
+          <ModalHeader className="flex flex-col gap-1 text-xl font-bold text-gray-800">
+            Edit Registration
+          </ModalHeader>
           <ModalBody>
-            <Input
-              label="Full Name"
-              placeholder="Enter full name"
-              value={editFormData.fullName}
-              onValueChange={(value) =>
-                setEditFormData({ ...editFormData, fullName: value })
-              }
-              variant="bordered"
-            />
-            <Input
-              label="Email"
-              type="email"
-              placeholder="Enter email"
-              value={editFormData.email}
-              onValueChange={(value) =>
-                setEditFormData({ ...editFormData, email: value })
-              }
-              variant="bordered"
-            />
-            <Input
-              label="Phone Number"
-              placeholder="Enter phone number"
-              value={editFormData.phoneNumber}
-              onValueChange={(value) =>
-                setEditFormData({ ...editFormData, phoneNumber: value })
-              }
-              variant="bordered"
-            />
+            <div className="space-y-4">
+              <Input
+                label="Full Name"
+                placeholder="Enter full name"
+                value={editFormData.fullName}
+                onValueChange={(value) =>
+                  setEditFormData({ ...editFormData, fullName: value })
+                }
+                variant="bordered"
+                startContent={<FaUserFriends className="text-gray-400" />}
+              />
+              <Input
+                label="Email"
+                type="email"
+                placeholder="Enter email"
+                value={editFormData.email}
+                onValueChange={(value) =>
+                  setEditFormData({ ...editFormData, email: value })
+                }
+                variant="bordered"
+                startContent={<FaEnvelope className="text-gray-400" />}
+              />
+              <Input
+                label="Phone Number"
+                placeholder="Enter phone number"
+                value={editFormData.phoneNumber}
+                onValueChange={(value) =>
+                  setEditFormData({ ...editFormData, phoneNumber: value })
+                }
+                variant="bordered"
+                startContent={<FaPhone className="text-gray-400" />}
+              />
+            </div>
           </ModalBody>
           <ModalFooter>
-            <Button color="danger" variant="light" onPress={onClose}>
+            <Button color="danger" variant="flat" onPress={onClose}>
               Cancel
             </Button>
             <Button
@@ -518,6 +702,7 @@ export default function EventRegistrationsPage() {
               onPress={handleSaveEdit}
               isLoading={updating}
               disabled={updating}
+              className="font-bold"
             >
               Save Changes
             </Button>

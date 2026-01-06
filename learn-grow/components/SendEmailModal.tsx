@@ -11,10 +11,10 @@ import {
   Input,
   Card,
   CardBody,
-  Spinner,
 } from "@nextui-org/react";
 import dynamic from "next/dynamic";
 import "react-quill-new/dist/quill.snow.css";
+import { FaEnvelope, FaUser, FaPaperPlane, FaTimes, FaCheckCircle } from "react-icons/fa";
 
 // Dynamically import ReactQuill to avoid SSR issues
 const ReactQuill = dynamic(
@@ -71,34 +71,70 @@ export default function SendEmailModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="2xl" backdrop="blur">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      size="3xl"
+      scrollBehavior="inside"
+      classNames={{
+        backdrop: "bg-gradient-to-t from-zinc-900 to-zinc-900/10 backdrop-opacity-20",
+      }}
+    >
       <ModalContent>
-        <ModalHeader className="flex flex-col gap-1">
-          <p>Send Email</p>
-          <p className="text-sm font-normal text-gray-600">{applicantName}</p>
-          <p className="text-xs text-gray-500">{applicantEmail}</p>
+        {/* Header with Gradient */}
+        <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 text-white rounded-t-lg p-6">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 p-2 rounded-lg">
+              <FaEnvelope className="text-2xl" />
+            </div>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold">Send Email</h2>
+              <p className="text-sm text-white/90 font-normal">{applicantName}</p>
+              <p className="text-xs text-white/80 font-normal">{applicantEmail}</p>
+            </div>
+          </div>
         </ModalHeader>
 
-        <ModalBody className="space-y-4">
+        <ModalBody className="p-6 sm:p-8 space-y-6">
+          {/* Error Message */}
           {error && (
-            <Card className="bg-red-50 border border-red-200">
-              <CardBody className="p-3">
-                <p className="text-red-700 text-sm">{error}</p>
+            <Card className="bg-gradient-to-r from-red-50 to-pink-50 border-2 border-red-300">
+              <CardBody className="p-4">
+                <p className="text-red-700 font-semibold text-sm flex items-center gap-2">
+                  <span className="text-lg">⚠️</span>
+                  {error}
+                </p>
               </CardBody>
             </Card>
           )}
 
-          <Input
-            label="Subject *"
-            placeholder="e.g., Interview Scheduled for Senior Developer Position"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            isDisabled={isSending}
-          />
-
+          {/* Subject Input */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Message *</label>
-            <div className="border border-gray-300 rounded-lg overflow-hidden opacity-100">
+            <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+              <FaEnvelope className="text-blue-500" />
+              Subject *
+            </label>
+            <Input
+              placeholder="e.g., Interview Scheduled for Senior Developer Position"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              isDisabled={isSending}
+              variant="bordered"
+              size="lg"
+              classNames={{
+                input: "text-sm sm:text-base",
+                inputWrapper: "border-2 border-gray-200 hover:border-blue-400 focus-within:border-blue-500 transition-all duration-300",
+              }}
+            />
+          </div>
+
+          {/* Message Editor */}
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+              <FaPaperPlane className="text-blue-500" />
+              Message *
+            </label>
+            <div className="border-2 border-gray-200 hover:border-blue-400 focus-within:border-blue-500 rounded-xl overflow-hidden transition-all duration-300">
               <ReactQuill
                 value={message}
                 onChange={setMessage}
@@ -121,28 +157,40 @@ export default function SendEmailModal({
             </div>
           </div>
 
-          <Card className="bg-blue-50 border border-blue-200">
-            <CardBody className="p-3 space-y-2">
-              <p className="text-xs font-medium text-blue-900">📧 Email Info:</p>
-              <p className="text-xs text-blue-800">
-                <strong>To:</strong> {applicantEmail}
+          {/* Email Info Card */}
+          <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200">
+            <CardBody className="p-4 sm:p-5 space-y-3">
+              <p className="text-sm font-bold text-blue-900 flex items-center gap-2">
+                <FaEnvelope className="text-lg" />
+                Email Info
               </p>
-              <p className="text-xs text-blue-800">
-                <strong>Name:</strong> {applicantName}
-              </p>
-              <p className="text-xs text-blue-700 mt-2">
-                ✓ This email will be tracked
-              </p>
+              <div className="space-y-2">
+                <div className="flex items-start gap-2 text-sm">
+                  <span className="font-semibold text-blue-800 min-w-[60px]">To:</span>
+                  <span className="text-blue-700">{applicantEmail}</span>
+                </div>
+                <div className="flex items-start gap-2 text-sm">
+                  <span className="font-semibold text-blue-800 min-w-[60px]">Name:</span>
+                  <span className="text-blue-700">{applicantName}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-blue-700 bg-white/50 px-3 py-2 rounded-lg mt-2">
+                <FaCheckCircle className="text-green-600" />
+                <span className="font-medium">This email will be tracked</span>
+              </div>
             </CardBody>
           </Card>
         </ModalBody>
 
-        <ModalFooter>
+        <ModalFooter className="border-t border-gray-200 p-6 bg-gray-50">
           <Button
             color="default"
-            variant="light"
+            variant="flat"
             onPress={handleClose}
             isDisabled={isSending}
+            size="lg"
+            className="min-h-[48px] font-semibold"
+            startContent={<FaTimes />}
           >
             Cancel
           </Button>
@@ -151,6 +199,9 @@ export default function SendEmailModal({
             onPress={handleSend}
             isLoading={isSending}
             disabled={isSending || !subject.trim() || !message.trim()}
+            size="lg"
+            className="min-h-[48px] font-bold bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 shadow-lg hover:shadow-xl transition-all duration-300"
+            startContent={!isSending && <FaPaperPlane />}
           >
             {isSending ? "Sending..." : "Send Email"}
           </Button>

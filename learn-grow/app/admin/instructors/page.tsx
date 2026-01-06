@@ -1,21 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardBody, Button, Chip, Input, Select, SelectItem, Pagination, Tabs, Tab, Skeleton } from "@nextui-org/react";
-import { FaCheckCircle, FaTimesCircle, FaUserCheck, FaUserClock, FaArrowLeft } from "react-icons/fa";
+import { Card, CardBody, Button, Chip, Input, Tabs, Tab, Skeleton, Avatar } from "@nextui-org/react";
+import { FaCheckCircle, FaTimesCircle, FaUserCheck, FaUserClock, FaArrowLeft, FaSearch, FaChalkboardTeacher, FaEnvelope, FaPhone, FaIdCard } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import {
     useGetAllInstructorsQuery,
     useApproveInstructorMutation,
     useRejectInstructorMutation,
+    useGetAdminDashboardStatsQuery,
 } from "@/redux/api/userApi";
 
 export default function InstructorApprovalPage() {
     const router = useRouter();
-    
+
     // Get user role
     const [userRole, setUserRole] = useState<string>("");
-    
+
     useEffect(() => {
         const storedUser = localStorage.getItem("user");
         if (storedUser) {
@@ -23,13 +24,13 @@ export default function InstructorApprovalPage() {
             setUserRole(user.role || "admin");
         }
     }, []);
-    
+
     // Pagination and search state
     const [searchTerm, setSearchTerm] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "approved">("all");
     const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(12);
+    const limit = 12;
 
     // Debounce search
     useEffect(() => {
@@ -40,13 +41,16 @@ export default function InstructorApprovalPage() {
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
+    // Fetch dashboard stats for total count
+    const { data: statsData } = useGetAdminDashboardStatsQuery(undefined);
+
     const { data, isLoading, refetch } = useGetAllInstructorsQuery({
         page,
         limit,
         search: debouncedSearch,
         status: filterStatus === "all" ? undefined : filterStatus,
     });
-    
+
     const [approveInstructor, { isLoading: isApproving }] = useApproveInstructorMutation();
     const [rejectInstructor, { isLoading: isRejecting }] = useRejectInstructorMutation();
     const [processingId, setProcessingId] = React.useState<string | null>(null);
@@ -81,301 +85,340 @@ export default function InstructorApprovalPage() {
         }
     };
 
-    if (isLoading) {
-        return (
-            <div className="container mx-auto px-4 py-8 max-w-7xl">
-                <div className="mb-6">
-                    <Skeleton className="h-10 w-32 rounded-lg mb-6" />
-                </div>
-                
-                <div className="mb-8">
-                    <Skeleton className="h-10 w-64 rounded-lg mb-2" />
-                    <Skeleton className="h-6 w-96 rounded-lg" />
-                </div>
-
-                {/* Stats Skeleton */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    {[1, 2, 3].map((i) => (
-                        <Card key={i}>
-                            <CardBody className="p-6">
-                                <Skeleton className="h-12 w-32 rounded-lg mb-4" />
-                                <Skeleton className="h-8 w-20 rounded-lg" />
-                            </CardBody>
-                        </Card>
-                    ))}
-                </div>
-
-                {/* Search Skeleton */}
-                <Skeleton className="h-12 w-full rounded-lg mb-6" />
-
-                {/* Filter Tabs Skeleton */}
-                <div className="flex gap-4 mb-6">
-                    {[1, 2, 3].map((i) => (
-                        <Skeleton key={i} className="h-10 w-24 rounded-lg" />
-                    ))}
-                </div>
-
-                {/* Cards Skeleton */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                    {[1, 2, 3, 4, 5, 6].map((i) => (
-                        <Card key={i}>
-                            <CardBody className="p-6">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="flex-1">
-                                        <Skeleton className="h-6 w-40 rounded-lg mb-2" />
-                                        <Skeleton className="h-4 w-48 rounded-lg mb-2" />
-                                        <Skeleton className="h-4 w-44 rounded-lg mb-2" />
-                                        <Skeleton className="h-3 w-32 rounded-lg" />
-                                    </div>
-                                    <Skeleton className="h-6 w-20 rounded-lg" />
-                                </div>
-                                <div className="flex gap-2 mt-4">
-                                    <Skeleton className="h-10 flex-1 rounded-lg" />
-                                    <Skeleton className="h-10 flex-1 rounded-lg" />
-                                </div>
-                            </CardBody>
-                        </Card>
-                    ))}
-                </div>
-
-                {/* Pagination Skeleton */}
-                <div className="flex flex-col items-center gap-4 mt-8 mb-6">
-                    <div className="flex items-center gap-2 flex-wrap justify-center">
-                        <Skeleton className="h-10 w-20 rounded-lg" />
-                        {[1, 2, 3, 4, 5].map((i) => (
-                            <Skeleton key={i} className="h-10 w-10 rounded-lg" />
-                        ))}
-                        <Skeleton className="h-10 w-20 rounded-lg" />
-                    </div>
-                    <Skeleton className="h-4 w-64 rounded-lg" />
-                </div>
-            </div>
-        );
-    }
-
     const instructorList = data?.data || [];
     const pagination = data?.pagination;
     const totalPages = pagination?.totalPages || 1;
-    const totalInstructors = pagination?.total || instructorList.length;
-    
+    const totalInstructors = statsData?.data?.instructors || 0;
+
     // Get counts from current data
     const pending = instructorList.filter((i: any) => !i.isApproved);
     const approved = instructorList.filter((i: any) => i.isApproved);
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl">
+            {/* Back Button */}
             <Button
                 variant="light"
                 startContent={<FaArrowLeft />}
                 onPress={() => router.push(userRole === "manager" ? "/manager" : "/admin")}
-                className="mb-6"
+                className="mb-5 sm:mb-6 min-h-[44px] hover:bg-gray-100 transition-colors"
+                size="lg"
             >
                 Back to Dashboard
             </Button>
-            
-            <div className="mb-8">
-                <h1 className="text-4xl font-bold mb-2">Instructor Management 👨‍🏫</h1>
-                <p className="text-gray-600">
-                    Approve or reject instructor applications
-                </p>
+
+            {/* Header with Gradient */}
+            <div className="mb-6 sm:mb-8 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 rounded-2xl p-6 sm:p-8 text-white shadow-xl">
+                <div className="flex items-center gap-3 sm:gap-4 mb-2">
+                    <div className="bg-white/20 p-3 sm:p-4 rounded-xl backdrop-blur-sm">
+                        <FaChalkboardTeacher className="text-3xl sm:text-4xl" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
+                            Instructor Management
+                        </h1>
+                        <p className="text-sm sm:text-base text-white/90 mt-1">
+                            Approve or reject instructor applications
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <Card>
-                    <CardBody className="p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+            {/* Stats Cards with Enhanced Design */}
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5 mb-5 sm:mb-6">
+                <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-blue-200">
+                    <CardBody className="p-4 sm:p-5 lg:p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
                         <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm opacity-90">Total Instructors</p>
-                                <p className="text-3xl font-bold">{totalInstructors}</p>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs sm:text-sm opacity-90 mb-1 truncate font-medium">Total Instructors</p>
+                                {isLoading ? (
+                                    <Skeleton className="h-8 w-20 rounded-lg bg-white/20" />
+                                ) : (
+                                    <p className="text-2xl sm:text-3xl lg:text-4xl font-bold">{totalInstructors}</p>
+                                )}
                             </div>
-                            <FaUserCheck className="text-4xl opacity-50" />
+                            <div className="bg-white/20 p-3 rounded-full flex-shrink-0 ml-2">
+                                <FaChalkboardTeacher className="text-2xl sm:text-3xl lg:text-4xl" />
+                            </div>
                         </div>
                     </CardBody>
                 </Card>
 
-                <Card>
-                    <CardBody className="p-6 bg-gradient-to-br from-yellow-500 to-yellow-600 text-white">
+                <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-yellow-200">
+                    <CardBody className="p-4 sm:p-5 lg:p-6 bg-gradient-to-br from-yellow-500 to-orange-500 text-white">
                         <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm opacity-90">Pending Approval</p>
-                                <p className="text-3xl font-bold">{isLoading ? <Skeleton className="h-10 w-20 rounded-lg" /> : pending.length}</p>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs sm:text-sm opacity-90 mb-1 truncate font-medium">Pending Approval</p>
+                                {isLoading ? (
+                                    <Skeleton className="h-8 w-20 rounded-lg bg-white/20" />
+                                ) : (
+                                    <p className="text-2xl sm:text-3xl lg:text-4xl font-bold">{pending.length}</p>
+                                )}
                             </div>
-                            <FaUserClock className="text-4xl opacity-50" />
+                            <div className="bg-white/20 p-3 rounded-full flex-shrink-0 ml-2 animate-pulse">
+                                <FaUserClock className="text-2xl sm:text-3xl lg:text-4xl" />
+                            </div>
                         </div>
                     </CardBody>
                 </Card>
 
-                <Card>
-                    <CardBody className="p-6 bg-gradient-to-br from-green-500 to-green-600 text-white">
+                <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-green-200 xs:col-span-2 lg:col-span-1">
+                    <CardBody className="p-4 sm:p-5 lg:p-6 bg-gradient-to-br from-green-500 to-emerald-600 text-white">
                         <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm opacity-90">Approved</p>
-                                <p className="text-3xl font-bold">{isLoading ? <Skeleton className="h-10 w-20 rounded-lg" /> : approved.length}</p>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs sm:text-sm opacity-90 mb-1 truncate font-medium">Approved</p>
+                                {isLoading ? (
+                                    <Skeleton className="h-8 w-20 rounded-lg bg-white/20" />
+                                ) : (
+                                    <p className="text-2xl sm:text-3xl lg:text-4xl font-bold">{approved.length}</p>
+                                )}
                             </div>
-                            <FaCheckCircle className="text-4xl opacity-50" />
+                            <div className="bg-white/20 p-3 rounded-full flex-shrink-0 ml-2">
+                                <FaCheckCircle className="text-2xl sm:text-3xl lg:text-4xl" />
+                            </div>
                         </div>
                     </CardBody>
                 </Card>
             </div>
 
-            {/* Search and Filter Controls */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                <Input
-                    placeholder="Search by name, email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    size="lg"
-                    startContent={<span>🔍</span>}
-                    variant="bordered"
-                    className="flex-1"
-                    isClearable
-                    onClear={() => setSearchTerm("")}
-                />
-            </div>
+            {/* Search with Enhanced Styling */}
+            <Card className="mb-5 sm:mb-6 shadow-lg border border-gray-200">
+                <CardBody className="p-4 sm:p-5">
+                    <Input
+                        placeholder="Search by name, email..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        size="lg"
+                        startContent={<FaSearch className="text-primary-500 text-base sm:text-lg" />}
+                        variant="bordered"
+                        isClearable
+                        onClear={() => setSearchTerm("")}
+                        classNames={{
+                            input: "text-sm sm:text-base",
+                            inputWrapper: "min-h-[44px] border-2 hover:border-primary-400 transition-colors",
+                        }}
+                    />
+                </CardBody>
+            </Card>
 
-            {/* Filter Tabs */}
-            <Tabs
-                selectedKey={filterStatus}
-                onSelectionChange={(key) => {
-                    setFilterStatus(key as "all" | "pending" | "approved");
-                    setPage(1);
-                }}
-                className="mb-6"
-                color="primary"
-            >
-                <Tab key="all" title={`All (${totalInstructors})`} />
-                <Tab key="pending" title="Pending" />
-                <Tab key="approved" title="Approved" />
-            </Tabs>
+            {/* Filter Tabs with Better Design */}
+            <Card className="mb-5 sm:mb-6 shadow-lg border border-gray-200">
+                <CardBody className="p-3 sm:p-4 overflow-x-auto">
+                    <Tabs
+                        selectedKey={filterStatus}
+                        onSelectionChange={(key) => {
+                            setFilterStatus(key as "all" | "pending" | "approved");
+                            setPage(1);
+                        }}
+                        color="primary"
+                        variant="underlined"
+                        classNames={{
+                            tabList: "gap-4 sm:gap-6 w-full",
+                            cursor: "w-full bg-gradient-to-r from-primary-500 to-blue-500",
+                            tab: "min-h-[44px] px-3 sm:px-4",
+                            tabContent: "text-sm sm:text-base font-semibold"
+                        }}
+                    >
+                        <Tab key="all" title={`All (${totalInstructors})`} />
+                        <Tab key="pending" title={`Pending (${pending.length})`} />
+                        <Tab key="approved" title={`Approved (${approved.length})`} />
+                    </Tabs>
+                </CardBody>
+            </Card>
 
-            {/* Instructors Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                {instructorList.map((instructor: any) => (
-                            <Card key={instructor._id} className={instructor.isApproved ? "border-2 border-green-300" : "border-2 border-yellow-300"}>
-                                <CardBody className="p-6">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <h3 className="font-bold text-lg">{instructor.name}</h3>
-                                            <p className="text-sm text-gray-600">{instructor.email}</p>
-                                            {instructor.phone && (
-                                                <p className="text-sm text-gray-600">{instructor.phone}</p>
-                                            )}
-                                            <p className="text-xs text-gray-400 mt-1">ID: {instructor._id}</p>
-                                        </div>
-                                        <Chip color={instructor.isApproved ? "success" : "warning"} size="sm" variant="flat">
+            {/* Instructors Grid with Enhanced Cards */}
+            {isLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5 mb-6">
+                    {[...Array(6)].map((_, i) => (
+                        <Card key={i} className="shadow-md">
+                            <CardBody className="p-4 sm:p-5 lg:p-6">
+                                <Skeleton className="h-40 sm:h-44 w-full rounded-lg" />
+                            </CardBody>
+                        </Card>
+                    ))}
+                </div>
+            ) : instructorList.length === 0 ? (
+                <Card className="shadow-xl border-2 border-gray-200">
+                    <CardBody className="p-10 sm:p-12 lg:p-16 text-center">
+                        <div className="bg-gradient-to-br from-gray-100 to-gray-200 w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <FaChalkboardTeacher className="text-4xl sm:text-5xl text-gray-400" />
+                        </div>
+                        <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mb-2 sm:mb-3">
+                            No instructors found
+                        </h3>
+                        <p className="text-sm sm:text-base text-gray-500 max-w-md mx-auto">
+                            Try adjusting your search or filter criteria to find instructors
+                        </p>
+                    </CardBody>
+                </Card>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5 mb-6">
+                    {instructorList.map((instructor: any) => (
+                        <Card
+                            key={instructor._id}
+                            className={`shadow-lg hover:shadow-2xl transition-all duration-300 border-2 ${instructor.isApproved
+                                    ? "border-green-300 bg-gradient-to-br from-green-50 to-emerald-50"
+                                    : "border-yellow-300 bg-gradient-to-br from-yellow-50 to-orange-50"
+                                }`}
+                        >
+                            <CardBody className="p-4 sm:p-5 lg:p-6">
+                                {/* Header with Avatar */}
+                                <div className="flex items-start gap-3 mb-4">
+                                    <Avatar
+                                        src={instructor.profileImage}
+                                        name={instructor.name}
+                                        size="lg"
+                                        className="flex-shrink-0"
+                                        fallback={
+                                            <div className="bg-gradient-to-br from-primary-500 to-blue-600 w-full h-full flex items-center justify-center text-white text-xl font-bold">
+                                                {instructor.name?.charAt(0).toUpperCase()}
+                                            </div>
+                                        }
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1 truncate">
+                                            {instructor.name}
+                                        </h3>
+                                        <Chip
+                                            color={instructor.isApproved ? "success" : "warning"}
+                                            size="sm"
+                                            variant="flat"
+                                            className="font-semibold"
+                                            startContent={
+                                                instructor.isApproved ?
+                                                    <FaCheckCircle className="text-xs" /> :
+                                                    <FaUserClock className="text-xs" />
+                                            }
+                                        >
                                             {instructor.isApproved ? "Approved" : "Pending"}
                                         </Chip>
                                     </div>
+                                </div>
 
-                                    <div className="flex gap-2 mt-4">
-                                        {!instructor.isApproved ? (
-                                            <>
-                                                <Button
-                                                    color="success"
-                                                    size="sm"
-                                                    fullWidth
-                                                    startContent={<FaCheckCircle />}
-                                                    onPress={() => handleApprove(instructor._id)}
-                                                    isLoading={processingId === instructor._id && isApproving}
-                                                    isDisabled={processingId !== null}
-                                                >
-                                                    {processingId === instructor._id && isApproving ? "Approving..." : "Approve"}
-                                                </Button>
-                                                <Button
-                                                    color="danger"
-                                                    size="sm"
-                                                    fullWidth
-                                                    variant="flat"
-                                                    startContent={<FaTimesCircle />}
-                                                    onPress={() => handleReject(instructor._id)}
-                                                    isLoading={processingId === instructor._id && isRejecting}
-                                                    isDisabled={processingId !== null}
-                                                >
-                                                    {processingId === instructor._id && isRejecting ? "Rejecting..." : "Reject"}
-                                                </Button>
-                                            </>
-                                        ) : (
+                                {/* Contact Information */}
+                                <div className="space-y-2 mb-4 bg-white/50 rounded-lg p-3">
+                                    <div className="flex items-center gap-2 text-xs sm:text-sm">
+                                        <FaEnvelope className="text-primary-500 flex-shrink-0" />
+                                        <span className="text-gray-700 truncate">{instructor.email}</span>
+                                    </div>
+                                    {instructor.phone && (
+                                        <div className="flex items-center gap-2 text-xs sm:text-sm">
+                                            <FaPhone className="text-primary-500 flex-shrink-0" />
+                                            <span className="text-gray-700">{instructor.phone}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex items-center gap-2 text-[10px] sm:text-xs">
+                                        <FaIdCard className="text-gray-400 flex-shrink-0" />
+                                        <span className="text-gray-500 truncate font-mono">ID: {instructor._id}</span>
+                                    </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-2">
+                                    {!instructor.isApproved ? (
+                                        <>
                                             <Button
-                                                color="warning"
-                                                size="sm"
-                                                fullWidth
+                                                color="success"
+                                                size="md"
+                                                className="flex-1 min-h-[44px] font-semibold shadow-md hover:shadow-lg transition-shadow"
+                                                startContent={<FaCheckCircle />}
+                                                onPress={() => handleApprove(instructor._id)}
+                                                isLoading={processingId === instructor._id && isApproving}
+                                                isDisabled={processingId !== null}
+                                            >
+                                                Approve
+                                            </Button>
+                                            <Button
+                                                color="danger"
+                                                size="md"
+                                                className="flex-1 min-h-[44px] font-semibold"
+                                                variant="flat"
                                                 startContent={<FaTimesCircle />}
                                                 onPress={() => handleReject(instructor._id)}
                                                 isLoading={processingId === instructor._id && isRejecting}
                                                 isDisabled={processingId !== null}
                                             >
-                                                {processingId === instructor._id && isRejecting ? "Revoking..." : "Revoke Approval"}
+                                                Reject
                                             </Button>
-                                        )}
-                                    </div>
-                                </CardBody>
-                            </Card>
-                        ))}
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-                <div className="flex flex-col items-center gap-4 mt-8 mb-6">
-                    <div className="flex items-center gap-2 flex-wrap justify-center">
-                        <Button
-                            size="sm"
-                            isDisabled={page === 1}
-                            variant="flat"
-                            className="text-sm font-semibold px-4"
-                            onPress={() => setPage(Math.max(1, page - 1))}
-                        >
-                            ← Previous
-                        </Button>
-
-                        <div className="flex gap-1.5 flex-wrap justify-center">
-                            {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                                let pageNum;
-                                
-                                if (totalPages <= 7) {
-                                    pageNum = i + 1;
-                                } else {
-                                    const startPage = Math.max(1, Math.min(page - 3, totalPages - 6));
-                                    pageNum = startPage + i;
-                                }
-
-                                return (
-                                    <Button
-                                        key={pageNum}
-                                        size="sm"
-                                        color={page === pageNum ? "primary" : "default"}
-                                        variant={page === pageNum ? "solid" : "flat"}
-                                        className="text-sm font-semibold px-3 min-w-[40px]"
-                                        onPress={() => setPage(pageNum)}
-                                    >
-                                        {pageNum}
-                                    </Button>
-                                );
-                            })}
-                        </div>
-
-                        <Button
-                            size="sm"
-                            isDisabled={page === totalPages}
-                            variant="flat"
-                            className="text-sm font-semibold px-4"
-                            onPress={() => setPage(Math.min(totalPages, page + 1))}
-                        >
-                            Next →
-                        </Button>
-                    </div>
-
-                    <div className="text-sm text-gray-600 font-medium">
-                        Page {page} of {totalPages} | Total Instructors: {totalInstructors}
-                    </div>
+                                        </>
+                                    ) : (
+                                        <Button
+                                            color="warning"
+                                            size="md"
+                                            className="w-full min-h-[44px] font-semibold shadow-md hover:shadow-lg transition-shadow"
+                                            startContent={<FaTimesCircle />}
+                                            onPress={() => handleReject(instructor._id)}
+                                            isLoading={processingId === instructor._id && isRejecting}
+                                            isDisabled={processingId !== null}
+                                        >
+                                            Revoke Approval
+                                        </Button>
+                                    )}
+                                </div>
+                            </CardBody>
+                        </Card>
+                    ))}
                 </div>
             )}
 
-            {/* No Results */}
-            {instructorList.length === 0 && (
-                <Card>
-                    <CardBody className="p-8 text-center text-gray-500">
-                        No instructors found matching your criteria.
+            {/* Enhanced Pagination */}
+            {totalPages > 1 && (
+                <Card className="shadow-lg border border-gray-200">
+                    <CardBody className="p-4 sm:p-6">
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="flex items-center gap-2 flex-wrap justify-center">
+                                <Button
+                                    size="md"
+                                    isDisabled={page === 1}
+                                    variant="flat"
+                                    className="text-sm sm:text-base font-semibold px-4 min-h-[44px] hover:bg-primary-50 transition-colors"
+                                    onPress={() => setPage(Math.max(1, page - 1))}
+                                >
+                                    ← Previous
+                                </Button>
+
+                                <div className="hidden sm:flex gap-1.5 flex-wrap justify-center">
+                                    {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                                        let pageNum;
+
+                                        if (totalPages <= 7) {
+                                            pageNum = i + 1;
+                                        } else {
+                                            const startPage = Math.max(1, Math.min(page - 3, totalPages - 6));
+                                            pageNum = startPage + i;
+                                        }
+
+                                        return (
+                                            <Button
+                                                key={pageNum}
+                                                size="md"
+                                                color={page === pageNum ? "primary" : "default"}
+                                                variant={page === pageNum ? "solid" : "flat"}
+                                                className={`text-sm font-semibold px-3 min-w-[44px] min-h-[44px] ${page === pageNum ? "shadow-lg" : ""
+                                                    }`}
+                                                onPress={() => setPage(pageNum)}
+                                            >
+                                                {pageNum}
+                                            </Button>
+                                        );
+                                    })}
+                                </div>
+
+                                <Button
+                                    size="md"
+                                    isDisabled={page === totalPages}
+                                    variant="flat"
+                                    className="text-sm sm:text-base font-semibold px-4 min-h-[44px] hover:bg-primary-50 transition-colors"
+                                    onPress={() => setPage(Math.min(totalPages, page + 1))}
+                                >
+                                    Next →
+                                </Button>
+                            </div>
+
+                            <div className="text-xs sm:text-sm text-gray-600 font-medium text-center bg-gray-50 px-4 py-2 rounded-full">
+                                Page <span className="font-bold text-primary-600">{page}</span> of <span className="font-bold">{totalPages}</span> • Total: <span className="font-bold text-primary-600">{totalInstructors}</span> instructors
+                            </div>
+                        </div>
                     </CardBody>
                 </Card>
             )}
