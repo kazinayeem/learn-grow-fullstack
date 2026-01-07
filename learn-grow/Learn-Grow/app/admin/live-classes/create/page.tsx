@@ -33,7 +33,6 @@ export default function CreateLiveClassPage() {
             createdAt: new Date().toISOString(),
         };
 
-        console.log("Scheduling live class:", liveClassData);
         alert("Live class scheduled successfully! (Mock mode)");
         router.push("/admin");
     };

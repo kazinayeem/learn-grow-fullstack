@@ -106,7 +106,7 @@ export default function AdminBlogPage() {
           return;
         }
       } catch (e) {
-        console.error("Auth check failed");
+
       }
     }
     router.replace("/admin");

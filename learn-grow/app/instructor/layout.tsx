@@ -32,7 +32,6 @@ export default function InstructorLayout({
       // 🚨 Check if logout is in progress - if so, don't redirect yet
       const loggingOut = sessionStorage.getItem("loggingOut") === "1";
       if (loggingOut) {
-        console.log("🚪 Instructor Layout: Logout in progress, skipping auth check");
         return;
       }
 
@@ -59,7 +58,6 @@ export default function InstructorLayout({
   const handleLogout = async () => {
     // Set logout flag FIRST to prevent race conditions
     sessionStorage.setItem("loggingOut", "1");
-    console.log("🚪 Instructor Layout: Set loggingOut flag");
 
     // Clear all auth data
     localStorage.removeItem("user");
@@ -69,10 +67,8 @@ export default function InstructorLayout({
     Cookies.remove("refreshToken", { path: "/" });
     Cookies.remove("userRole", { path: "/" });
     Cookies.remove("token", { path: "/" });
-    console.log("🚪 Instructor Layout: Cleared auth data");
 
     // Redirect to home page (not login) to avoid blinking
-    console.log("🚪 Instructor Layout: Redirecting to home");
     router.replace("/");
   };
 

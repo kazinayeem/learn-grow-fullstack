@@ -13,7 +13,6 @@ import { courses } from "@/lib/coursesData";
 export function generateStaticParams() {
     // Ensure courses is available and has data
     if (!courses || courses.length === 0) {
-        console.warn("No courses data found for generateStaticParams");
         return [];
     }
 

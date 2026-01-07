@@ -64,7 +64,6 @@ export default function InstructorCoursesPage() {
         if (freshUser) {
             const freshApprovalStatus = !!freshUser.isApproved;
             setIsApproved(freshApprovalStatus);
-            console.log("Approval status checked. isApproved:", freshApprovalStatus);
         }
     };
 

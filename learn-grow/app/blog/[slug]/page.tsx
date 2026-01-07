@@ -48,7 +48,6 @@ export default function BlogDetailPage() {
         setUserId(user._id || user.id);
         setUserRole(user.role);
       } catch (e) {
-        console.error("Failed to get user info");
       }
     }
   }, []);

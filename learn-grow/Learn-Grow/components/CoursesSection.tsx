@@ -10,9 +10,7 @@ const CoursesSection = () => {
   const router = useRouter();
 
   if (error) {
-    
-    console.warn("API Error: Using sample courses for display.");
-    
+    // API error - will use fallback courses
   }
 
   // Use API data or fallback to sampleCourses if error exists

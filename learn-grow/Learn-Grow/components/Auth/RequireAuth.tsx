@@ -33,7 +33,6 @@ export default function RequireAuth({ children, allowedRoles }: RequireAuthProps
                     return;
                 }
             } catch (e) {
-                console.error("Error parsing user data", e);
                 router.push("/login");
                 return;
             }

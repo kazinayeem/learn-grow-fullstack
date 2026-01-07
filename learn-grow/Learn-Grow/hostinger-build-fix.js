@@ -10,7 +10,6 @@ const oldPath = path.join(outDir, oldAssetsDirName);
 const newPath = path.join(outDir, newAssetsDirName);
 
 if (fs.existsSync(oldPath)) {
-    console.log(`Renaming ${oldPath} to ${newPath}...`);
     fs.renameSync(oldPath, newPath);
 }
 
@@ -25,8 +24,6 @@ function walkDir(dir, callback) {
 }
 
 const fileExtensionsToProcess = ['.html', '.js', '.css', '.json', '.txt'];
-
-console.log('Updating all file references...');
 walkDir(outDir, function (filePath) {
     const ext = path.extname(filePath);
     if (fileExtensionsToProcess.includes(ext)) {
@@ -44,9 +41,8 @@ walkDir(outDir, function (filePath) {
                 // console.log(`Updated: ${filePath}`); // Commented out to reduce noise
             }
         } catch (e) {
-            console.error(`Error processing ${filePath}:`, e);
+            // Error processing file - continue
         }
     }
 });
 
-console.log('Deep replacement complete. Ready for secure deployment.');

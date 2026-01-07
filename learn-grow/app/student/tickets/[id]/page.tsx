@@ -88,7 +88,6 @@ export default function StudentTicketDetailPage() {
           const user = JSON.parse(storedUser);
           setUserRole(user.role || "");
         } catch (e) {
-          console.error("Failed to parse user:", e);
         }
       }
     }

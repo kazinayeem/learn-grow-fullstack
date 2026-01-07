@@ -128,7 +128,7 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                     await completeLesson(idToComplete).unwrap();
                 }
             } catch (error) {
-                console.error("Failed to complete lesson:", error);
+                // Error already handled by RTK Query
             }
         }
     };

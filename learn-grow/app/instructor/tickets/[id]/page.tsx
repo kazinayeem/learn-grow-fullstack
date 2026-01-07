@@ -86,7 +86,6 @@ function InstructorTicketDetailContent() {
       toast.success("Reply added successfully");
       setReplyContent("");
     } catch (error: any) {
-      console.error("Failed to add reply:", error);
       toast.error(error?.data?.message || "Failed to add reply");
     }
   };

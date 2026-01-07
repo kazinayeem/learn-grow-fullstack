@@ -75,7 +75,6 @@ function PaymentProcessingContent() {
         });
         toast.success("Order submitted! Wait for admin approval.");
       } catch (error: any) {
-        console.error("Payment processing error:", error);
         const errorMessage =
           error.response?.data?.message || error.message || "Failed to process order";
         setError(errorMessage);

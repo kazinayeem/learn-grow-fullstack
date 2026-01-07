@@ -93,7 +93,6 @@ export default function EditBlogPage() {
           return;
         }
       } catch (e) {
-        console.error("Auth check failed");
       }
     }
     router.replace("/login");

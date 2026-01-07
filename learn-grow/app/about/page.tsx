@@ -44,7 +44,6 @@ async function getAboutContent() {
         const data = await res.json();
         return data?.data?.content || defaultAboutData;
     } catch (error) {
-        console.error("Failed to fetch about content:", error);
         return defaultAboutData;
     }
 }

@@ -55,7 +55,6 @@ export default function QuizList({ courseId, hasAccess = false }: QuizListProps)
                 const isLocked = !hasAccess;
 
                 if (!quizId) {
-                    console.error("Quiz without _id:", quiz);
                     return null;
                 }
 

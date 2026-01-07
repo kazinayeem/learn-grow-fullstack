@@ -32,7 +32,6 @@ export default function AdminLayout({
       // 🚨 Check if logout is in progress - if so, don't redirect yet
       const loggingOut = sessionStorage.getItem("loggingOut") === "1";
       if (loggingOut) {
-        console.log("🚪 Admin Layout: Logout in progress, skipping auth check");
         return;
       }
 
@@ -60,7 +59,6 @@ export default function AdminLayout({
   const handleLogout = async () => {
     // Set logout flag FIRST to prevent race conditions
     sessionStorage.setItem("loggingOut", "1");
-    console.log("🚪 Admin Layout: Set loggingOut flag");
 
     // Clear all auth data
     localStorage.removeItem("user");
@@ -70,10 +68,8 @@ export default function AdminLayout({
     Cookies.remove("refreshToken", { path: "/" });
     Cookies.remove("userRole", { path: "/" });
     Cookies.remove("token", { path: "/" });
-    console.log("🚪 Admin Layout: Cleared auth data");
 
     // Redirect to home page (not login) to avoid blinking
-    console.log("🚪 Admin Layout: Redirecting to home");
     router.replace("/");
   };
 

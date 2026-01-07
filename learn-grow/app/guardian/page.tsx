@@ -147,7 +147,6 @@ function GuardianDashboardContent() {
                 }
             }
         } catch (error: any) {
-            console.error("Failed to load profile:", error);
             toast.error("Failed to load profile");
         } finally {
             setLoading(false);
@@ -158,16 +157,10 @@ function GuardianDashboardContent() {
         try {
             const token = Cookies.get('accessToken') || (typeof window !== 'undefined' ? localStorage.getItem('token') : '') || '';
             
-            console.log("[Guardian] ========== loadStudentData START ==========");
-            console.log("[Guardian] Received studentId parameter:", studentId);
-            
             // Build URL with student ID if available
             let url = `${process.env.NEXT_PUBLIC_API_URL}/orders/student-data`;
             if (studentId) {
                 url += `?studentId=${studentId}`;
-                console.log("[Guardian] Built URL with studentId:", url);
-            } else {
-                console.log("[Guardian] No studentId provided, using base URL:", url);
             }
             
             // Fetch student's orders and enrollments from guardian-specific endpoint
@@ -185,11 +178,6 @@ function GuardianDashboardContent() {
                     setPayments(result.data.orders || []);
                     setHasQuarterlyAccess(result.data.hasQuarterlyAccess || false);
                     
-                    console.log("[Guardian] API Response:", result);
-                    console.log("[Guardian] Guardian student ID:", result.data.student?._id);
-                    console.log("[Guardian] Enrollments received:", result.data.enrollments?.length, "courses");
-                    console.log("[Guardian] Has quarterly access:", result.data.hasQuarterlyAccess);
-                    
                     // Transform enrollments to include course data
                     const enrollmentData = (result.data.enrollments || []).map((enrollment: any) => {
                         // Calculate progress from completed lessons
@@ -199,7 +187,7 @@ function GuardianDashboardContent() {
                             ? Math.round((completedLessonsCount / totalLessonsInCourse) * 100)
                             : (enrollment.progress || enrollment.completionPercentage || 0);
                         
-                        console.log(`[Guardian] Enrollment: ${enrollment.courseId?.title} (${enrollment.courseId?._id}), Progress: ${calculatedProgress}%`);
+
                         
                         return {
                             _id: enrollment._id,
@@ -217,7 +205,6 @@ function GuardianDashboardContent() {
                     setEnrollments(enrollmentData.slice(0, coursesPerPage));
                 }
             } else {
-                console.error('Failed to fetch student data:', response.status);
                 // Show toast notification for errors
                 if (response.status === 500) {
                     toast.error("Server error loading student data. Please try again.");
@@ -230,7 +217,6 @@ function GuardianDashboardContent() {
                 loadStudentReports();
             }
         } catch (error) {
-            console.error('Failed to load student data:', error);
             toast.error("Error loading student data. Please refresh the page.");
             // Load reports anyway
             loadStudentReports();

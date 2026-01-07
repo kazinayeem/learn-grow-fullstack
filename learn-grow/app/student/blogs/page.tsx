@@ -46,7 +46,6 @@ export default function StudentBlogsPage() {
           return;
         }
       } catch (e) {
-        console.error("Auth check failed");
       }
     }
     router.replace("/login");

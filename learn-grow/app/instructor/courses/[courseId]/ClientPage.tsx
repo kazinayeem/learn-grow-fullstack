@@ -261,7 +261,7 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
             setEditingModuleId(null);
             onCloseModuleModal();
             // Non-blocking refetch to prevent hanging
-            refetchCourse().catch(() => console.warn("Refetch delayed"))
+            refetchCourse().catch(() => {})
         } catch (err: any) {
             const errorMsg = err?.data?.message || "Failed to save module";
             toast.error(errorMsg);
@@ -275,7 +275,7 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                 await deleteModule(moduleId).unwrap();
                 toast.success("Module deleted successfully!");
                 // Non-blocking refetch to prevent hanging
-                refetchCourse().catch(() => console.warn("Refetch delayed"))
+                refetchCourse().catch(() => {})
             } catch (err: any) {
                 const errorMsg = err?.data?.message || "Failed to delete module";
                 toast.error(errorMsg);
@@ -321,7 +321,7 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
             setEditingLessonId(null);
             onCloseLessonModal();
             // Non-blocking refetch to prevent hanging
-            refetchCourse().catch(() => console.warn("Refetch delayed"))
+            refetchCourse().catch(() => {})
         } catch (err: any) {
             const errorMsg = err?.data?.message || "Failed to save lesson";
             toast.error(errorMsg);
@@ -335,7 +335,7 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                 await deleteLesson(lessonId).unwrap();
                 toast.success("Lesson deleted successfully!");
                 // Non-blocking refetch to prevent hanging
-                refetchCourse().catch(() => console.warn("Refetch delayed"))
+                refetchCourse().catch(() => {})
             } catch (err: any) {
                 const errorMsg = err?.data?.message || "Failed to delete lesson";
                 toast.error(errorMsg);

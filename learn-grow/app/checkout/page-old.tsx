@@ -129,18 +129,15 @@ function CheckoutContent() {
           ? methods.filter((m: PaymentMethod) => m.isActive !== false)
           : [];
 
-        console.log("Fetched payment methods:", active);
         setPaymentMethods(active);
 
         if (active[0]?._id) {
-          console.log("Setting default payment method ID:", active[0]._id);
           setFormData((prev) => ({
             ...prev,
             paymentMethodId: prev.paymentMethodId || active[0]._id,
           }));
         }
       } catch (error) {
-        console.error("Failed to fetch payment methods:", error);
         toast.error("পেমেন্ট পদ্ধতি লোড করতে ব্যর্থ");
       } finally {
         setLoading(false);
@@ -255,8 +252,7 @@ function CheckoutContent() {
         price: planDetails.price,
       };
 
-      console.log("=== PREPARING PAYLOAD ===");
-      console.log("Initial payload:", payload);
+
 
       if (plan === "single" && courseId) {
         payload.courseId = courseId;
@@ -271,21 +267,17 @@ function CheckoutContent() {
           city: formData.city,
           postalCode: formData.postalCode,
         };
-        console.log("Added delivery address to payload");
+
       }
 
       const token = getAuthToken();
       if (!token) {
-        console.error("No auth token found");
         toast.error("Please login to continue");
         router.push("/login?redirect=/checkout");
         return;
       }
 
-      console.log("=== SENDING API REQUEST ===");
-      console.log("URL: ${process.env.NEXT_PUBLIC_API_URL}/orders");
-      console.log("Payload:", JSON.stringify(payload, null, 2));
-      console.log("Token:", token.substring(0, 20) + "...");
+
 
       const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/orders`, payload, {
         headers: {
@@ -294,8 +286,7 @@ function CheckoutContent() {
         },
       });
 
-      console.log("=== API RESPONSE ===");
-      console.log("Response:", response.data);
+
 
       if (response.data?.success) {
         toast.success(response.data.message || "Order placed successfully!");
@@ -315,7 +306,6 @@ function CheckoutContent() {
           router.push("/student/orders");
         }, 1500);
       } else {
-        console.error("API returned success: false");
         toast.error(response.data?.message || "Failed to create order");
       }
     } catch (error: any) {

@@ -53,7 +53,6 @@ export default function CreateQuizPage() {
             createdAt: new Date().toISOString(),
         };
 
-        console.log("Creating quiz:", quizData);
         alert("Quiz created successfully! (Mock mode)");
         router.push("/admin");
     };

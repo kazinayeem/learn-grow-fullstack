@@ -9,7 +9,6 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("/instructor/courses error:", error);
   }, [error]);
 
   return (

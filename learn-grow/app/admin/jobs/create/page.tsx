@@ -44,7 +44,6 @@ export default function CreateJobPage() {
         setIsLoading(true);
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 1000));
-        console.log("Job data:", formData);
         setIsLoading(false);
         router.push("/admin/jobs");
     };

@@ -19,15 +19,11 @@ export default function DashboardRedirect() {
                     userRole = user.role;
                 }
             } catch (e) {
-                console.error("Error parsing user object for role fallback", e);
             }
         }
 
-        console.log("Dashboard Redirect: Resolved User Role:", userRole);
-
         // Redirect based on role
         if (!userRole) {
-            console.warn("No user role found, redirecting to login");
             router.replace("/login");
             return;
         }
@@ -48,7 +44,6 @@ export default function DashboardRedirect() {
                 router.replace("/student");
                 break;
             default:
-                console.warn("Unknown role:", userRole, "- Redirecting to home/login");
                 router.replace("/"); // or /login
                 break;
         }

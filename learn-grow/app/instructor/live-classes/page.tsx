@@ -51,7 +51,6 @@ export default function InstructorLiveClassesPage() {
                 const id = parsed?._id || parsed?.id;
                 if (id) setInstructorId(id as string);
             } catch (e) {
-                console.error("Failed to parse stored user", e);
             }
         }
     }, []);
@@ -206,7 +205,6 @@ export default function InstructorLiveClassesPage() {
         if (!completingClassId) return;
         
         try {
-            console.log("Marking class as done:", completingClassId);
             const updateData: any = {
                 id: completingClassId,
                 status: "Completed",
@@ -218,15 +216,12 @@ export default function InstructorLiveClassesPage() {
             }
             
             const result = await updateLiveClass(updateData).unwrap();
-            console.log("Mark as done result:", result);
             refetch();
             setMarkDoneModalOpen(false);
             setCompletingClassId(null);
             setCompletionRecordedLink("");
             alert("Class marked as completed successfully!");
         } catch (error: any) {
-            console.error("Mark as done error:", error);
-            console.error("Error details:", JSON.stringify(error, null, 2));
             const errorMsg = error?.data?.message || error?.message || error?.error || "Failed to update class status";
             alert("Failed to mark class as done: " + errorMsg);
         }

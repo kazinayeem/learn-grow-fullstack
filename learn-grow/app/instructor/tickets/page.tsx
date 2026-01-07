@@ -55,7 +55,6 @@ function InstructorTicketsContent() {
       toast.success("Ticket created successfully");
       onClose();
     } catch (error: any) {
-      console.error("Failed to create ticket:", error);
       toast.error(error?.data?.message || "Failed to create ticket");
     }
   };

@@ -60,7 +60,6 @@ export default function StudentsPage() {
       await updateUser({ id: userId, isBlocked: !isBlocked }).unwrap();
       // nothing else; query is cached by RTK; optional UI tweaks could refetch
     } catch (e: any) {
-      console.error(e);
     }
   };
 

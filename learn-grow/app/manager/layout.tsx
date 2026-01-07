@@ -31,7 +31,6 @@ export default function ManagerLayout({
       // 🚨 Check if logout is in progress - if so, don't redirect yet
       const loggingOut = sessionStorage.getItem("loggingOut") === "1";
       if (loggingOut) {
-        console.log("🚪 Manager Layout: Logout in progress, skipping auth check");
         return;
       }
 
@@ -56,28 +55,22 @@ export default function ManagerLayout({
   }, [router]);
 
   const handleLogout = async () => {
-    console.log("🚪 Manager Layout: Logout initiated");
-    
     // Set logout flag FIRST
     sessionStorage.setItem("loggingOut", "1");
-    console.log("🚪 Manager Layout: Set loggingOut flag");
 
     // Clear cookies
     Cookies.remove("accessToken", { path: "/" });
     Cookies.remove("refreshToken", { path: "/" });
     Cookies.remove("userRole", { path: "/" });
-    console.log("🚪 Manager Layout: Cleared cookies");
 
     // Clear localStorage (minimal)
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       localStorage.removeItem("userRole");
-      console.log("🚪 Manager Layout: Cleared localStorage");
     }
 
     // Single redirect using router.replace to home page (not login) to avoid blinking
-    console.log("🚪 Manager Layout: Redirecting to home");
     router.replace("/");
   };
 

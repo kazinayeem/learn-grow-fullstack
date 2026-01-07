@@ -481,7 +481,7 @@ export default function RichTextEditor({
     ],
     theme,
     onError(error: Error) {
-      console.error(error);
+      // Error handling for editor
     },
   };
 

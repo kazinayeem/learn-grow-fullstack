@@ -46,7 +46,6 @@ export default function InstructorBlogsPage() {
           return;
         }
       } catch (e) {
-        console.error("Auth check failed");
       }
     }
     router.replace("/login");

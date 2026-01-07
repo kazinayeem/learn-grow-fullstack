@@ -177,7 +177,6 @@ export default function CheckoutPage() {
               setExistingSubscription(activeSubscription);
             }
           } catch (error) {
-            console.error("Error checking existing subscription:", error);
           }
         }
 
@@ -193,7 +192,6 @@ export default function CheckoutPage() {
           setSelectedPaymentMethod(methods[0]._id);
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
         toast.error("Failed to load checkout data");
       } finally {
         setLoading(false);

@@ -108,8 +108,6 @@ export default function UserProfile() {
                     yearsOfExperience: userData.yearsOfExperience?.toString() || "",
                 });
             } catch (error) {
-                console.error("Failed to fetch profile:", error);
-                
                 // Fallback to localStorage data if API fails
                 const storedUser = typeof window !== "undefined" ? localStorage.getItem("user") : null;
                 if (storedUser) {
@@ -132,7 +130,6 @@ export default function UserProfile() {
                         });
                         toast.warning("Using cached profile data");
                     } catch (parseError) {
-                        console.error("Failed to parse stored user data:", parseError);
                         toast.error("Failed to load profile");
                     }
                 } else {
@@ -211,7 +208,6 @@ export default function UserProfile() {
             setImageUrlInput("");
             onImageModalOpenChange();
         } catch (error) {
-            console.error("Failed to upload photo:", error);
             toast.error("Failed to upload photo");
         } finally {
             setIsUploadingPhoto(false);
@@ -235,7 +231,6 @@ export default function UserProfile() {
             setIsEditing(false);
             setUser({ ...user, ...updateData });
         } catch (error) {
-            console.error("Failed to update profile:", error);
             toast.error("Failed to update profile");
         } finally {
             setIsSaving(false);
@@ -245,7 +240,6 @@ export default function UserProfile() {
     const handleLogout = async () => {
         try {
             setIsLoggingOut(true);
-            console.log("🚪 Profile: Logout initiated");
 
             // Set logout flag
             sessionStorage.setItem("loggingOut", "1");
@@ -257,9 +251,8 @@ export default function UserProfile() {
                     {},
                     { headers: { Authorization: `Bearer ${Cookies.get("accessToken")}` } }
                 );
-                console.log("🚪 Profile: API logout successful");
             } catch (e) {
-                console.log("🚪 Profile: API logout failed (continuing anyway):", e);
+                // Continue with logout
             }
 
             // Clear all auth data
@@ -269,7 +262,6 @@ export default function UserProfile() {
             localStorage.removeItem("user");
             localStorage.removeItem("userRole");
             localStorage.removeItem("token");
-            console.log("🚪 Profile: Cleared all auth data");
 
             // Show success message and redirect
             toast.success("Logged out successfully");
@@ -285,7 +277,6 @@ export default function UserProfile() {
                 }, 500);
             }, 200);
         } catch (error) {
-            console.error("🚪 Profile: Unexpected error during logout:", error);
             toast.error("Logout error - redirecting to home page");
             // Emergency logout
             window.location.href = "/";

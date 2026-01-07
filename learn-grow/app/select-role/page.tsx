@@ -59,7 +59,6 @@ function SelectRoleContent() {
         toast.error(response.data.message || "Failed to complete setup.");
       }
     } catch (err: any) {
-      console.error(err);
       const msg = err?.response?.data?.message || "Failed to complete setup. Please try again.";
       setError(msg);
       toast.error(msg);

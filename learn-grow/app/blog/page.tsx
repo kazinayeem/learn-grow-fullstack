@@ -58,7 +58,6 @@ export default function BlogPage() {
         setUserRole(user.role);
       }
     } catch (e) {
-      console.error("Failed to get user role");
     }
   }, []);
 

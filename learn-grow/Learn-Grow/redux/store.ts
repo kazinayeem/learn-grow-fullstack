@@ -37,7 +37,7 @@ if (typeof window !== "undefined") {
         try {
             store.dispatch(loadEnrollments(JSON.parse(savedEnrollments)));
         } catch (e) {
-            console.error("Failed to load enrollments", e);
+            // Loading error handled silently
         }
     }
 
@@ -172,7 +172,7 @@ if (typeof window !== "undefined") {
                 JSON.stringify(state.courseContent.lectureProgress)
             );
         } catch (e) {
-            console.error("Failed to save to localStorage", e);
+            // Saving error handled silently
         }
     });
 }

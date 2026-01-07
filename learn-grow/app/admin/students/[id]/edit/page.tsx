@@ -101,8 +101,7 @@ export default function AdminStudentEditPage() {
       toast.success("Student information updated successfully");
       router.push(`/admin/students/${studentId}`);
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to update student");
-      console.error("Update error:", error);
+      toast.error(error?.response?.data?.message || "Failed to update student")
     } finally {
       setSaving(false);
     }

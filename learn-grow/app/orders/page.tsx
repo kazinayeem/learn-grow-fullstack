@@ -65,7 +65,6 @@ function OrdersContent() {
         setOrders(Array.isArray(ordersData) ? ordersData : []);
         setError(null);
       } catch (error: any) {
-        console.error("Error fetching orders:", error);
         setError(error.response?.data?.message || "Failed to load orders");
         toast.error("Failed to load your orders");
       } finally {

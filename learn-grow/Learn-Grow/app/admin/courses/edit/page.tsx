@@ -76,7 +76,6 @@ function EditCourseContent() {
       alert("Course updated successfully!");
       router.push("/admin/courses");
     } catch (error: any) {
-      console.error("Update failed:", error);
       alert(
         `Failed to update course: ${error?.data?.message || error?.message}`
       );
