@@ -413,7 +413,7 @@ export const Navbar = () => {
       <NavbarContent className="sm:hidden basis-1/5" justify="end">
         <NavbarMenuToggle
           className={clsx(
-            "ml-2 touch-manipulation active:scale-95 transition-transform",
+            "ml-2 touch-manipulation active:scale-95 transition-transform w-8 h-8 [&>span]:w-6 [&>span]:h-0.5 [&>span:nth-child(2)]:my-1",
             isScrolled ? "text-gray-700" : "text-white"
           )}
           aria-label="Toggle navigation menu"

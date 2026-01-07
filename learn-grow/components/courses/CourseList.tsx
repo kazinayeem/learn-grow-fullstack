@@ -153,7 +153,7 @@ export default function CourseList() {
   return (
     <div className="space-y-8">
       {/* Search and Filter Section */}
-      <div className="flex flex-col md:flex-row gap-4 sticky top-0 z-10 bg-white/80 backdrop-blur-lg py-4 rounded-2xl px-4 shadow-sm border border-gray-100">
+      <div className="flex flex-col md:flex-row gap-4 md:sticky md:top-20 md:z-10 bg-white md:bg-white/80 md:backdrop-blur-lg py-4 rounded-2xl px-4 md:shadow-sm md:border md:border-gray-100">
         <Input
           placeholder="Search courses by name..."
           value={searchTerm}
