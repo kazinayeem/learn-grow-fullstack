@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Card, CardBody, Button, Input, Chip, Spinner, Skeleton } from "@nextui-org/react";
-import { FaVideo, FaClock, FaCalendar, FaCheckCircle, FaBan, FaArrowLeft, FaTrash } from "react-icons/fa";
+import { Card, CardBody, Button, Input, Chip, Spinner, Skeleton, Select, SelectItem } from "@nextui-org/react";
+import { FaVideo, FaClock, FaCalendar, FaCheckCircle, FaBan, FaArrowLeft, FaTrash, FaSearch, FaTimes } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import {
@@ -21,7 +21,6 @@ export default function AdminLiveClassesPage() {
     const [approvalFilter, setApprovalFilter] = useState("all");
     const itemsPerPage = 10;
 
-    // Get user role from localStorage
     const [userRole, setUserRole] = useState<string>("");
 
     React.useEffect(() => {
@@ -51,26 +50,7 @@ export default function AdminLiveClassesPage() {
     const paginatedClasses = classes;
     const pendingCount = classes.filter((c: any) => !c.isApproved).length;
     const approvedCount = classes.filter((c: any) => c.isApproved).length;
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = Math.min(startIndex + classes.length, totalCount || classes.length);
-
-    const pageNumbers = useMemo(() => {
-        const maxButtons = 7;
-        if (totalPages <= maxButtons) {
-            return Array.from({ length: totalPages }, (_, i) => i + 1);
-        }
-
-        const pages: (number | string)[] = [1];
-        const start = Math.max(2, currentPage - 1);
-        const end = Math.min(totalPages - 1, currentPage + 1);
-
-        if (start > 2) pages.push("left-ellipsis");
-        for (let i = start; i <= end; i++) pages.push(i);
-        if (end < totalPages - 1) pages.push("right-ellipsis");
-        pages.push(totalPages);
-
-        return pages;
-    }, [currentPage, totalPages]);
+    const scheduledCount = classes.filter((c: any) => c.status === "Scheduled").length;
 
     const handleApprove = async (id: string, title: string) => {
         if (confirm(`Approve live class: "${title}"?`)) {
@@ -121,77 +101,39 @@ export default function AdminLiveClassesPage() {
         }
     };
 
+    const getPlatformIcon = (platform: string) => {
+        const lower = platform?.toLowerCase();
+        if (lower?.includes("zoom")) return "📹";
+        if (lower?.includes("meet")) return "🎥";
+        if (lower?.includes("teams")) return "💼";
+        return "🎬";
+    };
+
+    const clearFilters = () => {
+        setSearchQuery("");
+        setStatusFilter("all");
+        setPlatformFilter("all");
+        setApprovalFilter("all");
+        setCurrentPage(1);
+    };
+
+    const hasActiveFilters = searchQuery || statusFilter !== "all" || platformFilter !== "all" || approvalFilter !== "all";
+
     if (isLoading) {
         return (
-            <div className="container mx-auto px-4 py-8 max-w-7xl">
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <Skeleton className="h-10 w-32 rounded-lg" />
-                            <Skeleton className="h-10 w-64 rounded-lg" />
-                        </div>
-                        <Skeleton className="h-6 w-96 rounded-lg" />
-                    </div>
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl">
+                <div className="mb-6 sm:mb-8">
+                    <Skeleton className="h-32 sm:h-40 w-full rounded-2xl mb-6" />
                 </div>
-
-                {/* Statistics Skeleton */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-5 sm:mb-6">
                     {[1, 2, 3, 4].map((i) => (
-                        <Card key={i}>
-                            <CardBody className="p-6">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                        <Skeleton className="h-4 w-32 rounded-lg mb-2" />
-                                        <Skeleton className="h-8 w-20 rounded-lg" />
-                                    </div>
-                                    <Skeleton className="h-10 w-10 rounded-full" />
-                                </div>
-                            </CardBody>
-                        </Card>
+                        <Skeleton key={i} className="h-32 w-full rounded-xl" />
                     ))}
                 </div>
-
-                {/* Search and Filters Skeleton */}
-                <div className="mb-6 space-y-4">
-                    <Skeleton className="h-12 w-full rounded-lg" />
-                    <div className="flex flex-wrap gap-4">
-                        {[1, 2, 3].map((i) => (
-                            <Skeleton key={i} className="h-10 w-40 rounded-lg" />
-                        ))}
-                    </div>
-                </div>
-
-                {/* Classes List Skeleton */}
+                <Skeleton className="h-48 w-full rounded-2xl mb-6" />
                 <div className="space-y-4">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                        <Card key={i}>
-                            <CardBody className="p-6">
-                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                    <div className="flex-1 w-full">
-                                        <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                            <Skeleton className="h-6 w-48 rounded-lg" />
-                                            <Skeleton className="h-6 w-20 rounded-lg" />
-                                            <Skeleton className="h-6 w-20 rounded-lg" />
-                                            <Skeleton className="h-6 w-32 rounded-lg" />
-                                        </div>
-                                        <Skeleton className="h-4 w-64 rounded-lg mb-2" />
-                                        <Skeleton className="h-4 w-56 rounded-lg mb-2" />
-                                        <Skeleton className="h-4 w-48 rounded-lg" />
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <Skeleton className="h-10 w-28 rounded-lg" />
-                                        <Skeleton className="h-10 w-28 rounded-lg" />
-                                    </div>
-                                </div>
-                            </CardBody>
-                        </Card>
-                    ))}
-                </div>
-
-                {/* Pagination Skeleton */}
-                <div className="flex justify-center items-center gap-2 mt-8">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                        <Skeleton key={i} className="h-10 w-10 rounded-lg" />
+                    {[1, 2, 3].map((i) => (
+                        <Skeleton key={i} className="h-40 w-full rounded-xl" />
                     ))}
                 </div>
             </div>
@@ -199,233 +141,290 @@ export default function AdminLiveClassesPage() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <div className="flex items-center gap-3 mb-2">
-                        <Button 
-                            variant="light" 
-                            startContent={<FaArrowLeft />}
-                            onPress={() => router.push(userRole === "manager" ? "/manager" : "/admin")}
-                        >
-                            Back to Dashboard
-                        </Button>
-                        <h1 className="text-4xl font-bold">Pending Live Classes 🎥</h1>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl">
+            {/* Header with Gradient */}
+            <div className="mb-6 sm:mb-8 bg-gradient-to-r from-rose-600 via-pink-600 to-fuchsia-600 rounded-2xl p-6 sm:p-8 text-white shadow-xl">
+                <Button
+                    variant="light"
+                    startContent={<FaArrowLeft />}
+                    onPress={() => router.push(userRole === "manager" ? "/manager" : "/admin")}
+                    className="mb-3 sm:mb-4 text-white hover:bg-white/20 min-h-[44px]"
+                    size="lg"
+                >
+                    Back to Dashboard
+                </Button>
+                <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="bg-white/20 p-3 sm:p-4 rounded-xl backdrop-blur-sm">
+                        <FaVideo className="text-3xl sm:text-4xl" />
                     </div>
-                    <p className="text-gray-600">Review and approve instructor live class requests</p>
+                    <div>
+                        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
+                            Pending Live Classes 🎥
+                        </h1>
+                        <p className="text-sm sm:text-base text-white/90 mt-1">
+                            Review and approve instructor live class requests
+                        </p>
+                    </div>
                 </div>
             </div>
 
             {/* Statistics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-                <Card className="bg-gradient-to-br from-orange-500 to-orange-600">
-                    <CardBody className="text-white p-6">
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-5 sm:mb-6">
+                <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-orange-200">
+                    <CardBody className="p-4 sm:p-5 lg:p-6 bg-gradient-to-br from-orange-500 to-red-600 text-white">
                         <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm opacity-90">Pending Approval</p>
-                                <p className="text-3xl font-bold mt-1">
-                                    {isLoading ? <Skeleton className="h-10 w-20 rounded-lg" /> : pendingCount}
-                                </p>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs sm:text-sm opacity-90 mb-1 truncate font-medium">Pending Approval</p>
+                                <p className="text-2xl sm:text-3xl lg:text-4xl font-bold">{pendingCount}</p>
                             </div>
-                            <FaClock className="text-4xl opacity-50" />
+                            <div className="bg-white/20 p-3 rounded-full flex-shrink-0 ml-2 animate-pulse">
+                                <FaClock className="text-2xl sm:text-3xl lg:text-4xl" />
+                            </div>
                         </div>
                     </CardBody>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-blue-500 to-blue-600">
-                    <CardBody className="text-white p-6">
+                <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-blue-200">
+                    <CardBody className="p-4 sm:p-5 lg:p-6 bg-gradient-to-br from-blue-500 to-cyan-600 text-white">
                         <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm opacity-90">Scheduled</p>
-                                <p className="text-3xl font-bold mt-1">
-                                    {isLoading ? <Skeleton className="h-10 w-20 rounded-lg" /> : classes.filter((c: any) => c.status === "Scheduled").length}
-                                </p>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs sm:text-sm opacity-90 mb-1 truncate font-medium">Scheduled</p>
+                                <p className="text-2xl sm:text-3xl lg:text-4xl font-bold">{scheduledCount}</p>
                             </div>
-                            <FaCalendar className="text-4xl opacity-50" />
+                            <div className="bg-white/20 p-3 rounded-full flex-shrink-0 ml-2">
+                                <FaCalendar className="text-2xl sm:text-3xl lg:text-4xl" />
+                            </div>
                         </div>
                     </CardBody>
                 </Card>
-                <Card className="bg-gradient-to-br from-green-500 to-green-600">
-                    <CardBody className="text-white p-6">
+
+                <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-green-200">
+                    <CardBody className="p-4 sm:p-5 lg:p-6 bg-gradient-to-br from-green-500 to-emerald-600 text-white">
                         <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm opacity-90">Approved Classes</p>
-                                <p className="text-3xl font-bold mt-1">
-                                    {isLoading ? <Skeleton className="h-10 w-20 rounded-lg" /> : approvedCount}
-                                </p>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs sm:text-sm opacity-90 mb-1 truncate font-medium">Approved Classes</p>
+                                <p className="text-2xl sm:text-3xl lg:text-4xl font-bold">{approvedCount}</p>
                             </div>
-                            <FaCheckCircle className="text-4xl opacity-80" />
+                            <div className="bg-white/20 p-3 rounded-full flex-shrink-0 ml-2">
+                                <FaCheckCircle className="text-2xl sm:text-3xl lg:text-4xl" />
+                            </div>
                         </div>
                     </CardBody>
                 </Card>
-                <Card className="bg-gradient-to-br from-purple-500 to-purple-600">
-                    <CardBody className="text-white p-6">
+
+                <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-purple-200">
+                    <CardBody className="p-4 sm:p-5 lg:p-6 bg-gradient-to-br from-purple-500 to-violet-600 text-white">
                         <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm opacity-90">Total Classes</p>
-                                <p className="text-3xl font-bold mt-1">
-                                    {isLoading ? <Skeleton className="h-10 w-20 rounded-lg" /> : totalCount}
-                                </p>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs sm:text-sm opacity-90 mb-1 truncate font-medium">Total Classes</p>
+                                <p className="text-2xl sm:text-3xl lg:text-4xl font-bold">{totalCount}</p>
                             </div>
-                            <FaVideo className="text-4xl opacity-50" />
+                            <div className="bg-white/20 p-3 rounded-full flex-shrink-0 ml-2">
+                                <FaVideo className="text-2xl sm:text-3xl lg:text-4xl" />
+                            </div>
                         </div>
                     </CardBody>
                 </Card>
             </div>
 
-            {/* Search and Filters */}
-            <div className="mb-6 space-y-4">
-                <Input
-                    placeholder="Search classes by title, course, or instructor..."
-                    value={searchQuery}
-                    onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                    size="lg"
-                    startContent={<FaVideo />}
-                />
-                
-                <div className="flex flex-wrap gap-4">
-                    <select
-                        value={approvalFilter}
-                        onChange={(e) => { setApprovalFilter(e.target.value); setCurrentPage(1); }}
-                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        <option value="all">All Approval Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="approved">Approved</option>
-                    </select>
-
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        <option value="all">All Status</option>
-                        <option value="scheduled">Scheduled</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
-                    </select>
-
-                    <select
-                        value={platformFilter}
-                        onChange={(e) => { setPlatformFilter(e.target.value); setCurrentPage(1); }}
-                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        <option value="all">All Platforms</option>
-                        <option value="zoom">Zoom</option>
-                        <option value="meet">Meet</option>
-                        <option value="teams">Teams</option>
-                    </select>
-
-                    {(searchQuery || statusFilter !== "all" || platformFilter !== "all" || approvalFilter !== "all") && (
-                        <Button
-                            size="sm"
-                            color="default"
-                            variant="flat"
-                            onPress={() => {
-                                setSearchQuery("");
-                                setStatusFilter("all");
-                                setPlatformFilter("all");
-                                setApprovalFilter("all");
-                                setCurrentPage(1);
+            {/* Filters - Modern Design */}
+            <div className="mb-5 sm:mb-6 bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-xl border-2 border-gray-100 p-4 sm:p-6 backdrop-blur-sm">
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Search</label>
+                        <Input
+                            placeholder="Search by title, course, or instructor..."
+                            value={searchQuery}
+                            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                            size="lg"
+                            startContent={<FaSearch className="text-rose-500" />}
+                            classNames={{
+                                input: "text-sm sm:text-base",
+                                inputWrapper: "min-h-[48px] border-2 border-gray-200 hover:border-rose-400 focus-within:border-rose-500 transition-all duration-300 bg-white shadow-sm hover:shadow-md",
                             }}
-                        >
-                            Clear Filters
-                        </Button>
-                    )}
+                        />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-end">
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Approval Status</label>
+                            <Select
+                                placeholder="Select status"
+                                selectedKeys={[approvalFilter]}
+                                onSelectionChange={(keys) => { setApprovalFilter(Array.from(keys)[0] as string); setCurrentPage(1); }}
+                                size="lg"
+                                variant="bordered"
+                                classNames={{
+                                    trigger: "min-h-[48px] border-2 border-gray-200 hover:border-rose-400 focus:border-rose-500 transition-all duration-300 bg-white shadow-sm hover:shadow-md",
+                                }}
+                            >
+                                <SelectItem key="all">All Approval Status</SelectItem>
+                                <SelectItem key="pending">Pending</SelectItem>
+                                <SelectItem key="approved">Approved</SelectItem>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Class Status</label>
+                            <Select
+                                placeholder="Select status"
+                                selectedKeys={[statusFilter]}
+                                onSelectionChange={(keys) => { setStatusFilter(Array.from(keys)[0] as string); setCurrentPage(1); }}
+                                size="lg"
+                                variant="bordered"
+                                classNames={{
+                                    trigger: "min-h-[48px] border-2 border-gray-200 hover:border-rose-400 focus:border-rose-500 transition-all duration-300 bg-white shadow-sm hover:shadow-md",
+                                }}
+                            >
+                                <SelectItem key="all">All Status</SelectItem>
+                                <SelectItem key="scheduled">Scheduled</SelectItem>
+                                <SelectItem key="completed">Completed</SelectItem>
+                                <SelectItem key="cancelled">Cancelled</SelectItem>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Platform</label>
+                            <Select
+                                placeholder="Select platform"
+                                selectedKeys={[platformFilter]}
+                                onSelectionChange={(keys) => { setPlatformFilter(Array.from(keys)[0] as string); setCurrentPage(1); }}
+                                size="lg"
+                                variant="bordered"
+                                classNames={{
+                                    trigger: "min-h-[48px] border-2 border-gray-200 hover:border-rose-400 focus:border-rose-500 transition-all duration-300 bg-white shadow-sm hover:shadow-md",
+                                }}
+                            >
+                                <SelectItem key="all">All Platforms</SelectItem>
+                                <SelectItem key="zoom">📹 Zoom</SelectItem>
+                                <SelectItem key="meet">🎥 Meet</SelectItem>
+                                <SelectItem key="teams">💼 Teams</SelectItem>
+                            </Select>
+                        </div>
+                        {hasActiveFilters && (
+                            <Button
+                                color="default"
+                                variant="flat"
+                                size="lg"
+                                onPress={clearFilters}
+                                startContent={<FaTimes />}
+                                className="min-h-[48px] font-semibold"
+                            >
+                                Clear Filters
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* Classes List */}
             {paginatedClasses.length === 0 ? (
-                <Card>
-                    <CardBody className="p-12 text-center">
-                        <FaCheckCircle className="text-6xl text-green-500 mx-auto mb-4" />
-                        <h3 className="text-2xl font-bold mb-2">All Caught Up!</h3>
-                        <p className="text-gray-600">
-                            {classes.length === 0
-                                ? "No pending live classes to review."
-                                : "No classes match your search criteria."}
-                        </p>
-                    </CardBody>
-                </Card>
+                <div className="text-center py-10 sm:py-12 lg:py-16 px-4">
+                    <div className="bg-gradient-to-br from-green-100 to-emerald-200 w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <FaCheckCircle className="text-4xl sm:text-5xl text-green-600" />
+                    </div>
+                    <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mb-2 sm:mb-3">
+                        All Caught Up!
+                    </h3>
+                    <p className="text-sm sm:text-base text-gray-500 max-w-md mx-auto">
+                        {classes.length === 0
+                            ? "No pending live classes to review."
+                            : "No classes match your search criteria."}
+                    </p>
+                </div>
             ) : (
                 <div className="space-y-4">
                     {paginatedClasses.map((cls: any) => (
-                        <Card key={cls._id} className="hover:shadow-lg transition-shadow">
-                            <CardBody className="p-6">
-                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <h3 className="font-bold text-xl">{cls.title}</h3>
-                                            <Chip color={getStatusColor(cls.status) as any} size="sm" variant="flat">
-                                                {cls.status?.toUpperCase()}
-                                            </Chip>
-                                            <Chip size="sm" variant="flat" color="warning">
-                                                {cls.platform}
-                                            </Chip>
-                                            <Chip 
-                                                size="sm" 
-                                                variant="flat" 
-                                                color={cls.isApproved ? "success" : "danger"}
-                                            >
-                                                {cls.isApproved ? "APPROVED" : "PENDING APPROVAL"}
-                                            </Chip>
+                        <Card key={cls._id} className="hover:shadow-xl transition-all duration-300 border border-gray-200">
+                            <CardBody className="p-4 sm:p-5 lg:p-6">
+                                <div className="flex flex-col gap-4">
+                                    {/* Title and Chips */}
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-bold text-lg sm:text-xl text-gray-900 mb-2 truncate">{cls.title}</h3>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <Chip color={getStatusColor(cls.status) as any} size="sm" variant="flat">
+                                                    {cls.status?.toUpperCase()}
+                                                </Chip>
+                                                <Chip size="sm" variant="flat" color="warning">
+                                                    {getPlatformIcon(cls.platform)} {cls.platform}
+                                                </Chip>
+                                                <Chip
+                                                    size="sm"
+                                                    variant="flat"
+                                                    color={cls.isApproved ? "success" : "danger"}
+                                                    startContent={cls.isApproved ? <FaCheckCircle /> : <FaClock />}
+                                                >
+                                                    {cls.isApproved ? "APPROVED" : "PENDING"}
+                                                </Chip>
+                                            </div>
                                         </div>
-                                        <p className="text-gray-600 mb-1">
-                                            Course: {typeof cls.courseId === 'object' ? cls.courseId?.title : 'N/A'}
+                                    </div>
+
+                                    {/* Course and Instructor Info */}
+                                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-3 sm:p-4 border border-gray-200">
+                                        <p className="text-sm text-gray-600 mb-1">
+                                            <span className="font-semibold">Course:</span> {typeof cls.courseId === 'object' ? cls.courseId?.title : 'N/A'}
                                         </p>
-                                        <p className="text-sm text-gray-500">
-                                            Instructor: {typeof cls.instructorId === 'object' ? cls.instructorId?.name : 'N/A'}
+                                        <p className="text-sm text-gray-600">
+                                            <span className="font-semibold">Instructor:</span> {typeof cls.instructorId === 'object' ? cls.instructorId?.name : 'N/A'}
                                         </p>
                                     </div>
 
-                                    <div className="grid grid-cols-2 md:grid-cols-2 gap-4 text-center">
-                                        <div>
-                                            <p className="text-sm text-gray-600">Scheduled Date</p>
-                                            <p className="font-semibold">
+                                    {/* Date and Duration */}
+                                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                                        <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                                            <p className="text-xs text-blue-900 font-semibold mb-1 flex items-center gap-1">
+                                                <FaCalendar /> Scheduled
+                                            </p>
+                                            <p className="font-bold text-gray-900">
                                                 {new Date(cls.scheduledAt).toLocaleDateString()}
                                             </p>
-                                            <p className="text-sm">
-                                                {new Date(cls.scheduledAt).toLocaleTimeString([], { 
-                                                    hour: '2-digit', 
-                                                    minute: '2-digit' 
+                                            <p className="text-sm text-gray-600">
+                                                {new Date(cls.scheduledAt).toLocaleTimeString([], {
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
                                                 })}
                                             </p>
                                         </div>
-                                        <div>
-                                            <p className="text-sm text-gray-600">Duration</p>
-                                            <p className="text-xl font-bold">{cls.duration} min</p>
+                                        <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                                            <p className="text-xs text-purple-900 font-semibold mb-1 flex items-center gap-1">
+                                                <FaClock /> Duration
+                                            </p>
+                                            <p className="text-2xl font-bold text-purple-600">{cls.duration}</p>
+                                            <p className="text-sm text-gray-600">minutes</p>
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-2">
+                                    {/* Action Buttons */}
+                                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                                         {!cls.isApproved ? (
                                             <Button
-                                                size="sm"
+                                                size="md"
                                                 color="success"
                                                 variant="flat"
                                                 startContent={<FaCheckCircle />}
                                                 onPress={() => handleApprove(cls._id, cls.title)}
+                                                className="flex-1 min-h-[44px] font-semibold"
                                             >
-                                                Approve
+                                                Approve Class
                                             </Button>
                                         ) : (
                                             <Button
-                                                size="sm"
+                                                size="md"
                                                 color="warning"
                                                 variant="flat"
                                                 startContent={<FaBan />}
                                                 onPress={() => handleRevoke(cls._id, cls.title)}
+                                                className="flex-1 min-h-[44px] font-semibold"
                                             >
-                                                Revoke
+                                                Revoke Approval
                                             </Button>
                                         )}
                                         <Button
-                                            size="sm"
+                                            size="md"
                                             color="danger"
-                                            variant="light"
+                                            variant="flat"
                                             startContent={<FaTrash />}
                                             onPress={() => handleDelete(cls._id, cls.title)}
+                                            className="flex-1 sm:flex-initial min-h-[44px] font-semibold"
                                         >
                                             Delete
                                         </Button>
@@ -439,50 +438,55 @@ export default function AdminLiveClassesPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="mt-8 flex flex-wrap justify-center items-center gap-2">
-                    <Button
-                        size="sm"
-                        isDisabled={currentPage === 1}
-                        onPress={() => setCurrentPage(currentPage - 1)}
-                    >
-                        Previous
-                    </Button>
-
-                    <div className="flex gap-2 flex-wrap justify-center">
-                        {pageNumbers.map((page, idx) =>
-                            typeof page === "number" ? (
+                <Card className="mt-6 shadow-lg border border-gray-200">
+                    <CardBody className="p-4 sm:p-6">
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="flex items-center gap-2 flex-wrap justify-center">
                                 <Button
-                                    key={page}
-                                    size="sm"
-                                    color={currentPage === page ? "primary" : "default"}
-                                    variant={currentPage === page ? "solid" : "flat"}
-                                    onPress={() => setCurrentPage(page)}
+                                    size="md"
+                                    isDisabled={currentPage === 1}
+                                    variant="flat"
+                                    className="min-h-[44px] font-semibold"
+                                    onPress={() => setCurrentPage(currentPage - 1)}
                                 >
-                                    {page}
+                                    ← Previous
                                 </Button>
-                            ) : (
-                                <Button key={`${page}-${idx}`} size="sm" isDisabled variant="light">
-                                    ...
+
+                                <div className="hidden sm:flex gap-1.5">
+                                    {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                                        const startPage = Math.max(1, currentPage - 2);
+                                        return startPage + i;
+                                    }).map((page) => (
+                                        <Button
+                                            key={page}
+                                            size="md"
+                                            color={currentPage === page ? "primary" : "default"}
+                                            variant={currentPage === page ? "solid" : "flat"}
+                                            className={`min-w-[44px] min-h-[44px] font-semibold ${currentPage === page ? "shadow-lg" : ""}`}
+                                            onPress={() => setCurrentPage(page)}
+                                        >
+                                            {page}
+                                        </Button>
+                                    ))}
+                                </div>
+
+                                <Button
+                                    size="md"
+                                    isDisabled={currentPage === totalPages}
+                                    variant="flat"
+                                    className="min-h-[44px] font-semibold"
+                                    onPress={() => setCurrentPage(currentPage + 1)}
+                                >
+                                    Next →
                                 </Button>
-                            )
-                        )}
-                    </div>
+                            </div>
 
-                    <Button
-                        size="sm"
-                        isDisabled={currentPage === totalPages}
-                        onPress={() => setCurrentPage(currentPage + 1)}
-                    >
-                        Next
-                    </Button>
-                </div>
-            )}
-
-            {/* Pagination Info */}
-            {totalCount > 0 && (
-                <div className="text-center text-sm text-gray-600 mt-4">
-                    Showing {startIndex + 1} to {endIndex} of {totalCount} classes
-                </div>
+                            <div className="text-xs sm:text-sm text-gray-600 font-medium text-center bg-gray-50 px-4 py-2 rounded-full">
+                                Page <span className="font-bold text-rose-600">{currentPage}</span> of <span className="font-bold">{totalPages}</span> • Total: <span className="font-bold text-rose-600">{totalCount}</span> classes
+                            </div>
+                        </div>
+                    </CardBody>
+                </Card>
             )}
         </div>
     );

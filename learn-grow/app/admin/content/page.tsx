@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { Button, Card, CardBody, Spinner, Tabs, Tab } from "@nextui-org/react";
+import { Button, Card, CardBody, Spinner, Tabs, Tab, Select, SelectItem } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
-import { FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft, FaUsers, FaFileAlt, FaSave, FaUndo, FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
 import { defaultTeamData } from "@/lib/teamData";
 import { defaultBlogData } from "@/lib/blogData";
 import { defaultEventsData } from "@/lib/eventsData";
@@ -16,31 +16,32 @@ import { defaultAboutData } from "@/lib/aboutData";
 import { useGetSiteContentQuery, useUpdateSiteContentMutation } from "@/redux/api/siteContentApi";
 import "react-quill-new/dist/quill.snow.css";
 import TeamManagementTab from "@/components/admin/TeamManagementTab";
+import toast from "react-hot-toast";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex justify-center py-10">
-      <Spinner label="Loading editor..." />
-    </div>
-  ),
+    ssr: false,
+    loading: () => (
+        <div className="flex justify-center py-10">
+            <Spinner label="Loading editor..." color="primary" />
+        </div>
+    ),
 });
 
 // Color configuration for different content sections
-const SECTION_COLORS = {
-  "Privacy Policy": { bg: "bg-blue-50", border: "border-blue-200", label: "bg-blue-100 text-blue-700" },
-  "Terms & Conditions": { bg: "bg-purple-50", border: "border-purple-200", label: "bg-purple-100 text-purple-700" },
-  "Refund Policy": { bg: "bg-green-50", border: "border-green-200", label: "bg-green-100 text-green-700" },
-  "About Page": { bg: "bg-orange-50", border: "border-orange-200", label: "bg-orange-100 text-orange-700" },
-  "Blog Page": { bg: "bg-pink-50", border: "border-pink-200", label: "bg-pink-100 text-pink-700" },
-  "Events Page": { bg: "bg-cyan-50", border: "border-cyan-200", label: "bg-cyan-100 text-cyan-700" },
-  "Press Page": { bg: "bg-indigo-50", border: "border-indigo-200", label: "bg-indigo-100 text-indigo-700" },
-  "Contact Page": { bg: "bg-amber-50", border: "border-amber-200", label: "bg-amber-100 text-amber-700" },
-  "Careers Page": { bg: "bg-emerald-50", border: "border-emerald-200", label: "bg-emerald-100 text-emerald-700" },
-  "Educators (Homepage)": { bg: "bg-rose-50", border: "border-rose-200", label: "bg-rose-100 text-rose-700" },
+const SECTION_COLORS: Record<string, any> = {
+    "Privacy Policy": { bg: "from-blue-50 to-indigo-50", border: "border-blue-200", text: "text-blue-700", icon: "🛡️" },
+    "Terms & Conditions": { bg: "from-purple-50 to-pink-50", border: "border-purple-200", text: "text-purple-700", icon: "📜" },
+    "Refund Policy": { bg: "from-green-50 to-emerald-50", border: "border-green-200", text: "text-green-700", icon: "💸" },
+    "About Page": { bg: "from-orange-50 to-amber-50", border: "border-orange-200", text: "text-orange-700", icon: "ℹ️" },
+    "Blog Page": { bg: "from-pink-50 to-rose-50", border: "border-pink-200", text: "text-pink-700", icon: "📝" },
+    "Events Page": { bg: "from-cyan-50 to-sky-50", border: "border-cyan-200", text: "text-cyan-700", icon: "📅" },
+    "Press Page": { bg: "from-indigo-50 to-violet-50", border: "border-indigo-200", text: "text-indigo-700", icon: "📰" },
+    "Contact Page": { bg: "from-amber-50 to-yellow-50", border: "border-amber-200", text: "text-amber-700", icon: "📞" },
+    "Careers Page": { bg: "from-emerald-50 to-teal-50", border: "border-emerald-200", text: "text-emerald-700", icon: "💼" },
+    "Educators (Homepage)": { bg: "from-rose-50 to-red-50", border: "border-rose-200", text: "text-rose-700", icon: "🎓" },
 };
 
-// Map UI names to API page keys and default data (non-team content)
+// Map UI names to API page keys and default data
 const SECTIONS = {
     "About Page": { key: "about", default: defaultAboutData },
     "Blog Page": { key: "blog", default: defaultBlogData },
@@ -59,18 +60,18 @@ export default function ContentManagerPage() {
     const router = useRouter();
     const [selectedSection, setSelectedSection] = useState("About Page");
     const [richValue, setRichValue] = useState<string>("");
-    const [status, setStatus] = useState("");
 
     const sectionKey = SECTIONS[selectedSection as keyof typeof SECTIONS].key;
     const defaultData = SECTIONS[selectedSection as keyof typeof SECTIONS].default;
-    const colors = SECTION_COLORS[selectedSection as keyof typeof SECTION_COLORS] || { 
-      bg: "bg-gray-50", 
-      border: "border-gray-200", 
-      label: "bg-gray-100 text-gray-700" 
+    const colors = SECTION_COLORS[selectedSection as keyof typeof SECTION_COLORS] || {
+        bg: "from-gray-50 to-slate-50",
+        border: "border-gray-200",
+        text: "text-gray-700",
+        icon: "📄"
     };
 
     // Fetch content from API
-    const { data: apiData, isLoading, isError, refetch } = useGetSiteContentQuery(sectionKey);
+    const { data: apiData, isLoading, refetch } = useGetSiteContentQuery(sectionKey);
     const [updateContent, { isLoading: isSaving }] = useUpdateSiteContentMutation();
 
     // Load content when data arrives or section changes
@@ -79,9 +80,9 @@ export default function ContentManagerPage() {
             setRichValue("<p>Loading...</p>");
             return;
         }
-        
+
         const contentFromApi = apiData?.data?.content;
-        
+
         // For all sections, convert to HTML string
         if (contentFromApi) {
             if (typeof contentFromApi === "string") {
@@ -100,151 +101,221 @@ export default function ContentManagerPage() {
                 setRichValue(`<pre>${JSON.stringify(defaultData, null, 2)}</pre>`);
             }
         }
-        setStatus("");
     }, [apiData, selectedSection, isLoading]);
 
     const handleSave = async () => {
         try {
-            const payload = { 
-                page: sectionKey, 
-                content: richValue || "" 
+            const payload = {
+                page: sectionKey,
+                content: richValue || ""
             };
-            
+
             await updateContent(payload).unwrap();
-            setStatus("✅ Saved to Database successfully! Updates are live.");
+            toast.success("Saved content successfully!");
             refetch(); // Refresh data
         } catch (e: any) {
-            setStatus(`❌ Save failed: ${e.message || "Unknown error"}`);
+            toast.error(`Save failed: ${e.message || "Unknown error"}`);
         }
     };
 
     const handleReset = () => {
         if (!confirm("Are you sure? This will revert to the original code defaults.")) return;
-        
+
         if (typeof defaultData === "string") {
             setRichValue(defaultData);
         } else {
             setRichValue(`<pre>${JSON.stringify(defaultData, null, 2)}</pre>`);
         }
-        setStatus("⚠️ Reset to defaults. Click 'Save' to apply.");
+        toast("Reset to defaults. Click 'Save' to apply.", { icon: "⚠️" });
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
-            <div className="max-w-7xl mx-auto">
-                <div className="flex items-center gap-3 mb-2">
-                    <Button 
-                        variant="light" 
-                        startContent={<FaArrowLeft />}
-                        onPress={() => router.push("/admin")}
-                    >
-                        Back
-                    </Button>
-                    <h1 className="text-3xl font-bold">Site Content Manager (CMS)</h1>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl">
+            {/* Header with Gradient */}
+            <div className="mb-6 sm:mb-8 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 rounded-2xl p-6 sm:p-8 text-white shadow-xl">
+                <Button
+                    variant="light"
+                    startContent={<FaArrowLeft />}
+                    onPress={() => router.push("/admin")}
+                    className="mb-3 sm:mb-4 text-white hover:bg-white/20 min-h-[44px]"
+                    size="lg"
+                >
+                    Back to Dashboard
+                </Button>
+                <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="bg-white/20 p-3 sm:p-4 rounded-xl backdrop-blur-sm">
+                        <FaFileAlt className="text-3xl sm:text-4xl" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
+                            Site Content Manager (CMS)
+                        </h1>
+                        <p className="text-sm sm:text-base text-white/90 mt-1">
+                            Manage team members, pages, and rich text content
+                        </p>
+                    </div>
                 </div>
-                <p className="mb-6 text-gray-600">
-                    Manage team members, pages, and rich text content for your website.
-                </p>
+            </div>
 
-                <Tabs color="primary" aria-label="Content Manager Tabs" size="lg">
-                    {/* Team Management Tab */}
-                    <Tab key="team" title="👥 Team Members">
-                        <TeamManagementTab />
-                    </Tab>
-
-                    {/* Rich Text Content Tab */}
-                    <Tab key="content" title="📝 Pages & Content">
-                        <div className="mt-6">
-                            <div className="flex flex-col lg:flex-row gap-6">
-                                {/* Sidebar / Section List */}
-                                <div className="w-full lg:w-1/4">
-                                    <Card>
-                                        <CardBody className="p-0">
-                                            <div className="flex flex-col">
-                                                {Object.keys(SECTIONS).map((section) => {
-                                                    const sectionColors = SECTION_COLORS[section as keyof typeof SECTION_COLORS];
-                                                    return (
-                                                        <button
-                                                            key={section}
-                                                            onClick={() => setSelectedSection(section)}
-                                                            className={`p-4 text-left font-semibold border-b last:border-b-0 hover:bg-opacity-80 transition-all ${
-                                                                selectedSection === section 
-                                                                    ? `${sectionColors.label} border-l-4 border-l-primary` 
-                                                                    : "text-gray-700 hover:bg-gray-100"
+            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+                <Tabs
+                    aria-label="Content Manager Options"
+                    color="primary"
+                    variant="underlined"
+                    classNames={{
+                        tabList: "gap-6 w-full relative rounded-none p-0 border-b border-divider",
+                        cursor: "w-full bg-blue-600",
+                        tab: "max-w-fit px-6 h-14",
+                        tabContent: "group-data-[selected=true]:text-blue-600 font-semibold text-lg"
+                    }}
+                >
+                    <Tab
+                        key="content"
+                        title={
+                            <div className="flex items-center space-x-2">
+                                <FaFileAlt />
+                                <span>Pages & Content</span>
+                            </div>
+                        }
+                    >
+                        <div className="p-4 sm:p-6 lg:p-8">
+                            <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+                                {/* Sidebar - Desktop */}
+                                <div className="hidden lg:block w-1/4 min-w-[250px] shrink-0">
+                                    <div className="bg-white rounded-2xl border-2 border-gray-100 shadow-sm overflow-hidden sticky top-6">
+                                        <div className="p-4 bg-gray-50 border-b border-gray-100 font-bold text-gray-700">
+                                            Select Page
+                                        </div>
+                                        <div className="flex flex-col max-h-[calc(100vh-250px)] overflow-y-auto">
+                                            {Object.keys(SECTIONS).map((section) => {
+                                                const sectionColors = SECTION_COLORS[section as keyof typeof SECTION_COLORS] || { text: "text-gray-700", icon: "📄" };
+                                                const isSelected = selectedSection === section;
+                                                return (
+                                                    <button
+                                                        key={section}
+                                                        onClick={() => setSelectedSection(section)}
+                                                        className={`p-4 text-left font-medium transition-all flex items-center gap-3 border-l-4 ${isSelected
+                                                                ? `bg-blue-50 border-blue-600 text-blue-700 shadow-inner`
+                                                                : "border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                                                             }`}
-                                                        >
-                                                            {section}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </CardBody>
-                                    </Card>
+                                                    >
+                                                        <span className="text-xl">{sectionColors.icon}</span>
+                                                        {section}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 </div>
 
-                                {/* Editor */}
-                                <div className="w-full lg:w-3/4">
-                                    <Card className={`border-2 ${colors.border}`}>
-                                        <CardBody className={`p-6 ${colors.bg}`}>
-                                            <div className="flex justify-between items-center mb-4">
+                                {/* Sidebar - Mobile Dropdown */}
+                                <div className="lg:hidden w-full">
+                                    <Select
+                                        label="Select Page to Edit"
+                                        selectedKeys={[selectedSection]}
+                                        onChange={(e) => setSelectedSection(e.target.value)}
+                                        size="lg"
+                                        variant="bordered"
+                                        startContent={<FaFileAlt className="text-gray-400" />}
+                                        classNames={{
+                                            trigger: "min-h-[56px] border-2 bg-white",
+                                        }}
+                                    >
+                                        {Object.keys(SECTIONS).map((section) => (
+                                            <SelectItem key={section} value={section} textValue={section}>
+                                                {SECTION_COLORS[section]?.icon} {section}
+                                            </SelectItem>
+                                        ))}
+                                    </Select>
+                                </div>
+
+                                {/* Editor Area */}
+                                <div className="flex-1 w-full min-w-0">
+                                    <Card className={`border-2 shadow-sm ${colors.border}`}>
+                                        <CardBody className={`p-0 bg-gradient-to-br ${colors.bg} bg-opacity-30`}>
+                                            <div className="p-4 sm:p-6 border-b border-gray-200/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/50 backdrop-blur-sm">
                                                 <div>
-                                                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${colors.label} mb-2`}>
+                                                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-bold bg-white shadow-sm border ${colors.border} ${colors.text} mb-2`}>
+                                                        <span>{colors.icon}</span>
                                                         {selectedSection}
-                                                    </span>
-                                                    <h2 className="text-2xl font-bold text-gray-800">Rich Text Editor</h2>
+                                                    </div>
+                                                    <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Rich Text Editor</h2>
                                                 </div>
-                                                <div className="flex gap-2">
-                                                    <Button color="danger" variant="light" onPress={handleReset} isDisabled={isSaving} size="sm">
+                                                <div className="flex gap-3 w-full sm:w-auto">
+                                                    <Button
+                                                        color="danger"
+                                                        variant="flat"
+                                                        onPress={handleReset}
+                                                        isDisabled={isSaving}
+                                                        startContent={<FaUndo />}
+                                                        className="flex-1 sm:flex-initial"
+                                                    >
                                                         Reset
                                                     </Button>
-                                                    <Button color="primary" onPress={handleSave} isLoading={isSaving} size="sm">
-                                                        Save
+                                                    <Button
+                                                        color="primary"
+                                                        onPress={handleSave}
+                                                        isLoading={isSaving}
+                                                        startContent={<FaSave />}
+                                                        className="flex-1 sm:flex-initial shadow-lg bg-gradient-to-r from-blue-600 to-indigo-600"
+                                                    >
+                                                        Save Changes
                                                     </Button>
                                                 </div>
                                             </div>
 
-                                            {status && (
-                                                <div className={`p-3 mb-4 rounded-lg text-sm font-semibold border ${status.startsWith("✅") ? "bg-green-100 text-green-700 border-green-300" : "bg-red-100 text-red-700 border-red-300"}`}>
-                                                    {status}
-                                                </div>
-                                            )}
+                                            <div className="p-4 sm:p-6">
+                                                {isLoading ? (
+                                                    <div className="h-96 flex flex-col items-center justify-center text-gray-500 gap-4">
+                                                        <Spinner size="lg" color="primary" />
+                                                        <p>Loading {selectedSection} content...</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-[500px]">
+                                                        <ReactQuill
+                                                            theme="snow"
+                                                            value={richValue}
+                                                            onChange={setRichValue}
+                                                            placeholder="Enter content here..."
+                                                            className="h-full min-h-[450px]"
+                                                            modules={{
+                                                                toolbar: [
+                                                                    [{ header: [1, 2, 3, 4, 5, 6, false] }],
+                                                                    ['bold', 'italic', 'underline', 'strike'],
+                                                                    [{ color: [] }, { background: [] }],
+                                                                    [{ list: 'ordered' }, { list: 'bullet' }],
+                                                                    [{ script: 'sub' }, { script: 'super' }],
+                                                                    [{ indent: '-1' }, { indent: "+1" }],
+                                                                    ['blockquote', 'code-block'],
+                                                                    ['link', 'image', 'video'],
+                                                                    ['clean']
+                                                                ]
+                                                            }}
+                                                        />
+                                                    </div>
+                                                )}
 
-                                            {isLoading ? (
-                                                <div className="h-96 flex items-center justify-center">
-                                                    <Spinner size="lg" label="Loading content..." />
-                                                </div>
-                                            ) : (
-                                                <div className="min-h-[500px]">
-                                                    <ReactQuill 
-                                                        theme="snow" 
-                                                        value={richValue} 
-                                                        onChange={setRichValue} 
-                                                        placeholder="Enter content here..."
-                                                        className="bg-white rounded-lg"
-                                                        modules={{
-                                                            toolbar: [
-                                                                [{ header: [1, 2, 3, 4, 5, 6, false] }],
-                                                                ['bold', 'italic', 'underline', 'strike'],
-                                                                [{ color: [] }, { background: [] }],
-                                                                [{ list: 'ordered' }, { list: 'bullet' }],
-                                                                [{ script: 'sub' }, { script: 'super' }],
-                                                                [{ indent: '-1' }, { indent: '+1' }],
-                                                                ['blockquote', 'code-block'],
-                                                                ['link', 'image', 'video'],
-                                                                ['clean']
-                                                            ]
-                                                        }}
-                                                    />
-                                                </div>
-                                            )}
-
-                                            <p className="mt-4 text-xs text-gray-500">
-                                                💡 Tip: Use the toolbar to add colors, backgrounds, formatting, and styles. All content is saved as HTML.
-                                            </p>
+                                                <p className="mt-4 text-xs text-gray-500 flex items-center gap-2 bg-white/50 p-2 rounded-lg border border-gray-200 inline-block">
+                                                    💡 <strong>Tip:</strong> Use the toolbar to add formatted text, images, and links. Content is saved as HTML.
+                                                </p>
+                                            </div>
                                         </CardBody>
                                     </Card>
                                 </div>
                             </div>
+                        </div>
+                    </Tab>
+                    <Tab
+                        key="team"
+                        title={
+                            <div className="flex items-center space-x-2">
+                                <FaUsers />
+                                <span>Team Members</span>
+                            </div>
+                        }
+                    >
+                        <div className="p-4 sm:p-6 lg:p-8">
+                            <TeamManagementTab />
                         </div>
                     </Tab>
                 </Tabs>
@@ -252,4 +323,3 @@ export default function ContentManagerPage() {
         </div>
     );
 }
-

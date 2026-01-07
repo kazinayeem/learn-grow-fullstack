@@ -27,7 +27,21 @@ import {
     Checkbox,
 } from "@nextui-org/react";
 import toast from "react-hot-toast";
-import { FaTrash, FaEdit, FaDownload, FaEye, FaEyeSlash } from "react-icons/fa";
+import {
+    FaTrash,
+    FaEdit,
+    FaDownload,
+    FaEye,
+    FaEyeSlash,
+    FaUsers,
+    FaPlus,
+    FaUserTie,
+    FaLinkedin,
+    FaTwitter,
+    FaArrowLeft,
+    FaCheck,
+    FaUpload
+} from "react-icons/fa";
 import ImageUploadBase64 from "@/components/admin/ImageUploadBase64";
 import {
     useGetAllTeamMembersQuery,
@@ -39,6 +53,7 @@ import {
     useImportInstructorsMutation,
 } from "@/redux/api/teamApi";
 import SweetAlert2 from "sweetalert2";
+import { useRouter } from "next/navigation";
 
 interface TeamMember {
     _id: string;
@@ -60,6 +75,7 @@ interface Instructor {
 }
 
 export default function TeamManagementPage() {
+    const router = useRouter();
     // Queries and Mutations
     const { data: teamData, isLoading: teamLoading, refetch } = useGetAllTeamMembersQuery(undefined);
     const { data: instructorsData, isLoading: instructorsLoading } = useGetApprovedInstructorsForImportQuery(undefined);
@@ -185,326 +201,447 @@ export default function TeamManagementPage() {
     };
 
     return (
-        <div className="space-y-6 pb-10">
-            <div>
-                <h1 className="text-3xl font-bold">Team Management</h1>
-                <p className="text-gray-600 mt-2">Manage "Our Experts" section displayed on home page</p>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl">
+            {/* Header with Gradient */}
+            <div className="mb-6 sm:mb-8 bg-gradient-to-r from-teal-600 via-emerald-600 to-green-600 rounded-2xl p-6 sm:p-8 text-white shadow-xl">
+                <Button
+                    variant="light"
+                    startContent={<FaArrowLeft />}
+                    onPress={() => router.push("/admin")}
+                    className="mb-3 sm:mb-4 text-white hover:bg-white/20 min-h-[44px]"
+                    size="lg"
+                >
+                    Back to Dashboard
+                </Button>
+                <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="bg-white/20 p-3 sm:p-4 rounded-xl backdrop-blur-sm">
+                        <FaUsers className="text-3xl sm:text-4xl" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
+                            Team Management
+                        </h1>
+                        <p className="text-sm sm:text-base text-white/90 mt-1">
+                            Manage "Our Experts" section displayed on home page
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            <Tabs color="primary" aria-label="Team Management Tabs">
-                {/* Add Member Tab */}
-                <Tab key="add" title="Add Manual Member">
-                    <Card>
-                        <CardHeader className="flex gap-3">
-                            <div>
-                                <p className="text-lg font-semibold">Add New Team Member</p>
-                                <p className="text-sm text-gray-600">Add instructor manually with name and image</p>
+            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden min-h-[600px]">
+                <Tabs
+                    aria-label="Team Management Tabs"
+                    color="primary"
+                    variant="underlined"
+                    classNames={{
+                        tabList: "gap-6 w-full relative rounded-none p-0 border-b border-divider px-6 pt-4",
+                        cursor: "w-full bg-emerald-600",
+                        tab: "max-w-fit px-4 h-14",
+                        tabContent: "group-data-[selected=true]:text-emerald-600 font-bold text-lg"
+                    }}
+                >
+                    {/* Add Member Tab */}
+                    <Tab
+                        key="add"
+                        title={
+                            <div className="flex items-center space-x-2">
+                                <FaPlus />
+                                <span>Add New Member</span>
                             </div>
-                        </CardHeader>
-                        <CardBody className="space-y-4">
-                            <Input
-                                label="Name"
-                                placeholder="Enter member name"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            />
-                            <Input
-                                label="Role"
-                                placeholder="e.g., Senior Instructor, Course Creator"
-                                value={formData.role}
-                                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                            />
-                            <Input
-                                label="LinkedIn URL (Optional)"
-                                placeholder="https://linkedin.com/in/..."
-                                value={formData.linkedIn}
-                                onChange={(e) => setFormData({ ...formData, linkedIn: e.target.value })}
-                            />
-                            <Input
-                                label="Twitter URL (Optional)"
-                                placeholder="https://twitter.com/..."
-                                value={formData.twitter}
-                                onChange={(e) => setFormData({ ...formData, twitter: e.target.value })}
-                            />
-                            <Input
-                                label="Bio (Optional)"
-                                placeholder="Brief description"
-                                value={formData.bio}
-                                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                            />
-
-                            <div>
-                                <p className="text-sm font-semibold mb-3">Profile Picture</p>
-                                <ImageUploadBase64
-                                    onImageSelected={(base64, size) => {
-                                        setSelectedImage(base64);
-                                        setImageSize(size);
-                                    }}
-                                    preview={selectedImage ?? undefined}
-                                    isLoading={createLoading}
-                                />
-                                {imageSize > 0 && (
-                                    <p className="text-xs text-gray-500 mt-2">Size: {(imageSize / 1024).toFixed(2)} KB</p>
-                                )}
-                            </div>
-
-                            <Button
-                                color="success"
-                                onClick={handleAddMember}
-                                isLoading={createLoading}
-                                className="w-full"
-                            >
-                                Add Member
-                            </Button>
-                        </CardBody>
-                    </Card>
-                </Tab>
-
-                {/* Import Instructors Tab */}
-                <Tab key="import" title="Import from Instructors">
-                    <Card>
-                        <CardHeader className="flex gap-3">
-                            <div>
-                                <p className="text-lg font-semibold">Import Approved Instructors</p>
-                                <p className="text-sm text-gray-600">Select instructors from your approved instructors list</p>
-                            </div>
-                        </CardHeader>
-                        <CardBody className="space-y-4">
-                            {instructorsLoading ? (
-                                <div className="flex justify-center py-8">
-                                    <Spinner />
-                                </div>
-                            ) : instructors.length === 0 ? (
-                                <p className="text-gray-600">No approved instructors found</p>
-                            ) : (
-                                <>
-                                    <div className="space-y-2 max-h-96 overflow-y-auto">
-                                        {instructors.map((instructor) => (
-                                            <div
-                                                key={instructor._id}
-                                                className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50"
-                                            >
-                                                <Checkbox
-                                                    isSelected={selectedInstructors.includes(instructor._id)}
-                                                    onChange={(e) => {
-                                                        if (e.target.checked) {
-                                                            setSelectedInstructors([...selectedInstructors, instructor._id]);
-                                                        } else {
-                                                            setSelectedInstructors(
-                                                                selectedInstructors.filter((id) => id !== instructor._id)
-                                                            );
-                                                        }
-                                                    }}
-                                                />
-                                                {instructor.profileImage && (
-                                                    <Image
-                                                        src={`data:image/jpeg;base64,${instructor.profileImage}`}
-                                                        alt={instructor.name}
-                                                        width={40}
-                                                        height={40}
-                                                        className="rounded-full"
-                                                    />
-                                                )}
-                                                <span className="flex-1">{instructor.name}</span>
-                                            </div>
-                                        ))}
+                        }
+                    >
+                        <div className="p-6 sm:p-8 max-w-2xl mx-auto">
+                            <Card className="shadow-lg border border-gray-100">
+                                <CardHeader className="flex gap-3 px-6 pt-6 pb-0">
+                                    <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl">
+                                        <FaUserTie size={24} />
                                     </div>
+                                    <div>
+                                        <p className="text-xl font-bold text-gray-800">New Team Member</p>
+                                        <p className="text-sm text-gray-500">Add details manually for a custom team member.</p>
+                                    </div>
+                                </CardHeader>
+                                <CardBody className="space-y-6 p-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <Input
+                                            label="Name"
+                                            placeholder="e.g. Sarah Smith"
+                                            value={formData.name}
+                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                            variant="bordered"
+                                            isRequired
+                                        />
+                                        <Input
+                                            label="Role"
+                                            placeholder="e.g. Senior Instructor"
+                                            value={formData.role}
+                                            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                                            variant="bordered"
+                                            isRequired
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <Input
+                                            label="LinkedIn (Optional)"
+                                            placeholder="https://linkedin.com/in/..."
+                                            value={formData.linkedIn}
+                                            onChange={(e) => setFormData({ ...formData, linkedIn: e.target.value })}
+                                            startContent={<FaLinkedin className="text-blue-600" />}
+                                            variant="bordered"
+                                        />
+                                        <Input
+                                            label="Twitter (Optional)"
+                                            placeholder="https://twitter.com/..."
+                                            value={formData.twitter}
+                                            onChange={(e) => setFormData({ ...formData, twitter: e.target.value })}
+                                            startContent={<FaTwitter className="text-sky-500" />}
+                                            variant="bordered"
+                                        />
+                                    </div>
+                                    <Input
+                                        label="Bio (Optional)"
+                                        placeholder="Brief professional description"
+                                        value={formData.bio}
+                                        onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                                        variant="bordered"
+                                    />
+
+                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                                        <p className="text-sm font-semibold mb-3 text-gray-600">Profile Picture *</p>
+                                        <div className="flex flex-col items-center justify-center">
+                                            <ImageUploadBase64
+                                                onImageSelected={(base64, size) => {
+                                                    setSelectedImage(base64);
+                                                    setImageSize(size);
+                                                }}
+                                                preview={selectedImage ?? undefined}
+                                                isLoading={createLoading}
+                                            />
+                                            {imageSize > 0 && (
+                                                <Chip size="sm" color="success" variant="flat" className="mt-2">
+                                                    Size: {(imageSize / 1024).toFixed(2)} KB
+                                                </Chip>
+                                            )}
+                                        </div>
+                                    </div>
+
                                     <Button
-                                        color="primary"
-                                        onClick={handleImportInstructors}
-                                        isLoading={importLoading}
-                                        className="w-full"
+                                        size="lg"
+                                        onPress={handleAddMember}
+                                        isLoading={createLoading}
+                                        className="w-full font-bold text-white shadow-lg bg-gradient-to-r from-emerald-500 to-green-600"
+                                        startContent={<FaPlus />}
                                     >
-                                        Import Selected ({selectedInstructors.length})
+                                        Add Member
                                     </Button>
-                                </>
-                            )}
-                        </CardBody>
-                    </Card>
-                </Tab>
+                                </CardBody>
+                            </Card>
+                        </div>
+                    </Tab>
 
-                {/* Team Members List Tab */}
-                <Tab key="list" title={`Team Members (${teamMembers.length})`}>
-                    <Card>
-                        <CardHeader className="flex gap-3">
-                            <div>
-                                <p className="text-lg font-semibold">Manage Team Members</p>
-                                <p className="text-sm text-gray-600">Edit, delete, or toggle home page visibility</p>
+                    {/* Import Instructors Tab */}
+                    <Tab
+                        key="import"
+                        title={
+                            <div className="flex items-center space-x-2">
+                                <FaDownload />
+                                <span>Import Instructors</span>
                             </div>
-                        </CardHeader>
-                        <CardBody>
-                            {teamLoading ? (
-                                <div className="flex justify-center py-8">
-                                    <Spinner />
-                                </div>
-                            ) : teamMembers.length === 0 ? (
-                                <p className="text-gray-600">No team members yet. Add one from the "Add Manual Member" tab.</p>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {teamMembers.map((member) => (
-                                        <Card key={member._id} className="relative">
-                                            <CardBody className="space-y-3">
-                                                <div className="flex justify-between items-start">
-                                                    <div className="flex-1">
-                                                        <h3 className="font-semibold text-lg">{member.name}</h3>
-                                                        <p className="text-sm text-gray-600">{member.role}</p>
-                                                    </div>
-                                                    <Chip
-                                                        startContent={member.showOnHome ? <FaEye /> : <FaEyeSlash />}
-                                                        variant="flat"
-                                                        color={member.showOnHome ? "success" : "default"}
-                                                        size="sm"
-                                                    >
-                                                        {member.showOnHome ? "Visible" : "Hidden"}
-                                                    </Chip>
-                                                </div>
-
-                                                {member.image && (
-                                                    <Image
-                                                        src={`data:image/jpeg;base64,${member.image}`}
-                                                        alt={member.name}
-                                                        width="100%"
-                                                        height={150}
-                                                        className="rounded-lg object-cover"
-                                                    />
-                                                )}
-
-                                                {member.bio && <p className="text-sm text-gray-600">{member.bio}</p>}
-
-                                                <div className="flex gap-2">
-                                                    {member.linkedIn && (
-                                                        <Button
-                                                            isIconOnly
-                                                            size="sm"
-                                                            as="a"
-                                                            href={member.linkedIn}
-                                                            target="_blank"
-                                                            variant="light"
-                                                        >
-                                                            in
-                                                        </Button>
-                                                    )}
-                                                    {member.twitter && (
-                                                        <Button
-                                                            isIconOnly
-                                                            size="sm"
-                                                            as="a"
-                                                            href={member.twitter}
-                                                            target="_blank"
-                                                            variant="light"
-                                                        >
-                                                            𝕏
-                                                        </Button>
-                                                    )}
-                                                </div>
-
-                                                <div className="flex gap-2 pt-2">
-                                                    <Button
-                                                        startContent={<FaEye />}
-                                                        size="sm"
-                                                        variant="flat"
-                                                        color={member.showOnHome ? "warning" : "success"}
-                                                        onClick={() => handleToggleShowHome(member._id, member.showOnHome)}
-                                                    >
-                                                        {member.showOnHome ? "Hide" : "Show"}
-                                                    </Button>
-                                                    <Button
-                                                        isIconOnly
-                                                        size="sm"
-                                                        variant="flat"
-                                                        color="primary"
+                        }
+                    >
+                        <div className="p-6 sm:p-8 max-w-3xl mx-auto">
+                            <Card className="shadow-lg border border-gray-100">
+                                <CardHeader className="flex gap-3 px-6 pt-6 pb-0">
+                                    <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
+                                        <FaUpload size={24} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xl font-bold text-gray-800">Import Approved Instructors</p>
+                                        <p className="text-sm text-gray-500">Quickly add existing instructors to your team showcase.</p>
+                                    </div>
+                                </CardHeader>
+                                <CardBody className="p-6">
+                                    {instructorsLoading ? (
+                                        <div className="h-60 flex items-center justify-center">
+                                            <Spinner size="lg" label="Loading instructors..." color="primary" />
+                                        </div>
+                                    ) : instructors.length === 0 ? (
+                                        <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                                            <p className="text-gray-500 font-medium">No approved instructors available to import.</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar border border-gray-200 rounded-xl p-2 mb-4 bg-gray-50/50">
+                                                {instructors.map((instructor) => (
+                                                    <div
+                                                        key={instructor._id}
+                                                        className={`flex items-center gap-3 p-3 border rounded-lg transition-all cursor-pointer ${selectedInstructors.includes(instructor._id)
+                                                                ? "bg-blue-50 border-blue-300 shadow-sm"
+                                                                : "bg-white hover:bg-gray-50 border-gray-100"
+                                                            }`}
                                                         onClick={() => {
-                                                            setEditingMember(member);
-                                                            setIsEditOpen(true);
+                                                            if (selectedInstructors.includes(instructor._id)) {
+                                                                setSelectedInstructors(selectedInstructors.filter(id => id !== instructor._id));
+                                                            } else {
+                                                                setSelectedInstructors([...selectedInstructors, instructor._id]);
+                                                            }
                                                         }}
                                                     >
-                                                        <FaEdit />
-                                                    </Button>
-                                                    <Button
-                                                        isIconOnly
-                                                        size="sm"
-                                                        variant="flat"
-                                                        color="danger"
-                                                        onClick={() => handleDeleteMember(member._id, member.name)}
-                                                    >
-                                                        <FaTrash />
-                                                    </Button>
+                                                        <Checkbox
+                                                            isSelected={selectedInstructors.includes(instructor._id)}
+                                                            pointerEvents="none"
+                                                            size="lg"
+                                                            radius="full"
+                                                        />
+                                                        {instructor.profileImage ? (
+                                                            <Image
+                                                                src={`data:image/jpeg;base64,${instructor.profileImage}`}
+                                                                alt={instructor.name}
+                                                                width={48}
+                                                                height={48}
+                                                                className="rounded-full border-2 border-white shadow-sm"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-gray-500">
+                                                                <FaUserTie />
+                                                            </div>
+                                                        )}
+                                                        <span className="flex-1 font-semibold text-gray-800">{instructor.name}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <Button
+                                                size="lg"
+                                                color="primary"
+                                                onClick={handleImportInstructors}
+                                                isLoading={importLoading}
+                                                className="w-full font-bold shadow-lg"
+                                                isDisabled={selectedInstructors.length === 0}
+                                                startContent={<FaDownload />}
+                                            >
+                                                Import Selected ({selectedInstructors.length})
+                                            </Button>
+                                        </>
+                                    )}
+                                </CardBody>
+                            </Card>
+                        </div>
+                    </Tab>
+
+                    {/* Team Members List Tab */}
+                    <Tab
+                        key="list"
+                        title={
+                            <div className="flex items-center space-x-2">
+                                <FaUsers />
+                                <span>All Members ({teamMembers.length})</span>
+                            </div>
+                        }
+                    >
+                        <div className="p-6 sm:p-8">
+                            {teamLoading ? (
+                                <div className="h-60 flex items-center justify-center">
+                                    <Spinner size="lg" label="Loading team..." color="primary" />
+                                </div>
+                            ) : teamMembers.length === 0 ? (
+                                <div className="text-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                                    <FaUsers className="text-6xl text-gray-300 mx-auto mb-4" />
+                                    <h3 className="text-xl font-bold text-gray-700">No team members yet</h3>
+                                    <p className="text-gray-500 mt-2">Add or import members to display them here.</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                    {teamMembers.map((member) => (
+                                        <Card key={member._id} className="group hover:shadow-xl transition-all duration-300 border border-gray-100">
+                                            <CardBody className="p-0">
+                                                <div className="relative h-48 bg-gray-100 overflow-hidden">
+                                                    {member.image ? (
+                                                        <Image
+                                                            src={`data:image/jpeg;base64,${member.image}`}
+                                                            alt={member.name}
+                                                            width="100%"
+                                                            height="100%"
+                                                            classNames={{
+                                                                img: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                            }}
+                                                            radius="none"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
+                                                            <FaUserTie size={48} />
+                                                        </div>
+                                                    )}
+                                                    <div className="absolute top-3 right-3 z-10">
+                                                        <Chip
+                                                            startContent={member.showOnHome ? <FaEye size={12} /> : <FaEyeSlash size={12} />}
+                                                            variant="solid"
+                                                            color={member.showOnHome ? "success" : "default"}
+                                                            size="sm"
+                                                            className="shadow-md"
+                                                        >
+                                                            {member.showOnHome ? "Visible" : "Hidden"}
+                                                        </Chip>
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-5">
+                                                    <h3 className="font-bold text-lg text-gray-800 truncate">{member.name}</h3>
+                                                    <p className="text-sm text-emerald-600 font-medium mb-2 truncate">{member.role}</p>
+
+                                                    {member.bio && (
+                                                        <p className="text-xs text-gray-500 line-clamp-2 mb-4 h-8">
+                                                            {member.bio}
+                                                        </p>
+                                                    )}
+
+                                                    <div className="flex gap-2 mb-4">
+                                                        {member.linkedIn && (
+                                                            <a href={member.linkedIn} target="_blank" rel="noopener noreferrer" className="p-2 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors">
+                                                                <FaLinkedin />
+                                                            </a>
+                                                        )}
+                                                        {member.twitter && (
+                                                            <a href={member.twitter} target="_blank" rel="noopener noreferrer" className="p-2 bg-sky-50 text-sky-500 rounded-full hover:bg-sky-100 transition-colors">
+                                                                <FaTwitter />
+                                                            </a>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-100">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="flat"
+                                                            color={member.showOnHome ? "default" : "success"}
+                                                            onClick={() => handleToggleShowHome(member._id, member.showOnHome)}
+                                                            className="w-full"
+                                                        >
+                                                            {member.showOnHome ? "Hide" : "Show"}
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="flat"
+                                                            color="primary"
+                                                            onClick={() => {
+                                                                setEditingMember(member);
+                                                                setIsEditOpen(true);
+                                                            }}
+                                                            isIconOnly
+                                                            className="w-full"
+                                                        >
+                                                            <FaEdit />
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="flat"
+                                                            color="danger"
+                                                            onClick={() => handleDeleteMember(member._id, member.name)}
+                                                            isIconOnly
+                                                            className="w-full"
+                                                        >
+                                                            <FaTrash />
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             </CardBody>
                                         </Card>
                                     ))}
                                 </div>
                             )}
-                        </CardBody>
-                    </Card>
-                </Tab>
-            </Tabs>
+                        </div>
+                    </Tab>
+                </Tabs>
+            </div>
 
             {/* Edit Modal */}
-            <Modal isOpen={isEditOpen} onOpenChange={setIsEditOpen} size="lg">
+            <Modal
+                isOpen={isEditOpen}
+                onOpenChange={setIsEditOpen}
+                size="lg"
+                classNames={{
+                    backdrop: "bg-gradient-to-t from-zinc-900 to-zinc-900/10 backdrop-opacity-20"
+                }}
+            >
                 <ModalContent>
                     {(onClose) => (
                         <>
-                            <ModalHeader>Edit Team Member</ModalHeader>
-                            <ModalBody className="space-y-4">
+                            <ModalHeader className="bg-gray-50 border-b border-gray-100">Edit Team Member</ModalHeader>
+                            <ModalBody className="space-y-4 p-6">
                                 {editingMember && (
                                     <>
-                                        <Input
-                                            label="Name"
-                                            value={editingMember.name}
-                                            onChange={(e) =>
-                                                setEditingMember({ ...editingMember, name: e.target.value })
-                                            }
-                                        />
-                                        <Input
-                                            label="Role"
-                                            value={editingMember.role}
-                                            onChange={(e) =>
-                                                setEditingMember({ ...editingMember, role: e.target.value })
-                                            }
-                                        />
+                                        <div className="flex items-center gap-4 mb-2">
+                                            {editingMember.image && (
+                                                <Image
+                                                    src={`data:image/jpeg;base64,${editingMember.image}`}
+                                                    alt={editingMember.name}
+                                                    width={64}
+                                                    height={64}
+                                                    className="rounded-full shadow-sm border-2 border-white"
+                                                />
+                                            )}
+                                            <div>
+                                                <p className="font-bold text-lg">{editingMember.name}</p>
+                                                <p className="text-xs text-gray-500">Updating profile details</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <Input
+                                                label="Name"
+                                                value={editingMember.name}
+                                                onChange={(e) =>
+                                                    setEditingMember({ ...editingMember, name: e.target.value })
+                                                }
+                                                variant="bordered"
+                                            />
+                                            <Input
+                                                label="Role"
+                                                value={editingMember.role}
+                                                onChange={(e) =>
+                                                    setEditingMember({ ...editingMember, role: e.target.value })
+                                                }
+                                                variant="bordered"
+                                            />
+                                        </div>
                                         <Input
                                             label="Bio"
                                             value={editingMember.bio || ""}
                                             onChange={(e) =>
                                                 setEditingMember({ ...editingMember, bio: e.target.value })
                                             }
+                                            variant="bordered"
                                         />
-                                        <Input
-                                            label="LinkedIn URL"
-                                            value={editingMember.linkedIn || ""}
-                                            onChange={(e) =>
-                                                setEditingMember({ ...editingMember, linkedIn: e.target.value })
-                                            }
-                                        />
-                                        <Input
-                                            label="Twitter URL"
-                                            value={editingMember.twitter || ""}
-                                            onChange={(e) =>
-                                                setEditingMember({ ...editingMember, twitter: e.target.value })
-                                            }
-                                        />
-                                        <div>
-                                            <p className="text-sm font-semibold mb-2">Current Image</p>
-                                            <Image
-                                                src={`data:image/jpeg;base64,${editingMember.image}`}
-                                                alt={editingMember.name}
-                                                width={100}
-                                                height={100}
-                                                className="rounded-lg"
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <Input
+                                                label="LinkedIn URL"
+                                                value={editingMember.linkedIn || ""}
+                                                onChange={(e) =>
+                                                    setEditingMember({ ...editingMember, linkedIn: e.target.value })
+                                                }
+                                                variant="bordered"
+                                                startContent={<FaLinkedin className="text-blue-600" />}
+                                            />
+                                            <Input
+                                                label="Twitter URL"
+                                                value={editingMember.twitter || ""}
+                                                onChange={(e) =>
+                                                    setEditingMember({ ...editingMember, twitter: e.target.value })
+                                                }
+                                                variant="bordered"
+                                                startContent={<FaTwitter className="text-sky-500" />}
                                             />
                                         </div>
                                     </>
                                 )}
                             </ModalBody>
-                            <ModalFooter>
-                                <Button color="default" onPress={onClose}>
+                            <ModalFooter className="bg-gray-50 border-t border-gray-100">
+                                <Button color="default" variant="flat" onPress={onClose}>
                                     Cancel
                                 </Button>
                                 <Button
                                     color="primary"
                                     onPress={handleUpdateMember}
                                     isLoading={updateLoading}
+                                    className="font-semibold shadow-md"
                                 >
                                     Save Changes
                                 </Button>

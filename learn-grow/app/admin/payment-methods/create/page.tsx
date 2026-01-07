@@ -10,10 +10,11 @@ import {
   SelectItem,
   Button,
   Switch,
+  Chip,
 } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import { useCreatePaymentMethodMutation } from "@/redux/api/paymentApi";
-import { FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft, FaCreditCard, FaCheckCircle, FaInfoCircle } from "react-icons/fa";
 import toast from "react-hot-toast";
 
 export default function CreatePaymentMethodPage() {
@@ -57,25 +58,57 @@ export default function CreatePaymentMethodPage() {
     }
   };
 
+  const getPaymentIcon = (name: string) => {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes("bkash")) return "💳";
+    if (lowerName.includes("nagad")) return "💰";
+    if (lowerName.includes("rocket")) return "🚀";
+    if (lowerName.includes("bank")) return "🏦";
+    return "💵";
+  };
+
+  const currentName = showCustomName ? (formData.customName || "Custom Payment") : formData.name;
+
   return (
-    <div className="p-8">
-      <Button
-        variant="light"
-        startContent={<FaArrowLeft />}
-        onPress={() => router.push("/admin/payment-methods")}
-        className="mb-6"
-      >
-        Back to Payment Methods
-      </Button>
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-4xl">
+      {/* Header with Gradient */}
+      <div className="mb-6 sm:mb-8 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 rounded-2xl p-6 sm:p-8 text-white shadow-xl">
+        <Button
+          variant="light"
+          startContent={<FaArrowLeft />}
+          onPress={() => router.push("/admin/payment-methods")}
+          className="mb-3 sm:mb-4 text-white hover:bg-white/20 min-h-[44px]"
+          size="lg"
+        >
+          Back to Payment Methods
+        </Button>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="bg-white/20 p-3 sm:p-4 rounded-xl backdrop-blur-sm">
+            <FaCreditCard className="text-3xl sm:text-4xl" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
+              Add Payment Method
+            </h1>
+            <p className="text-sm sm:text-base text-white/90 mt-1">
+              Create a new payment option for users
+            </p>
+          </div>
+        </div>
+      </div>
 
-      <div className="max-w-2xl">
-        <h1 className="text-3xl font-bold mb-8">Add Payment Method</h1>
-
-        <Card>
-          <CardBody className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Form Card */}
+      <Card className="shadow-2xl border-2 border-gray-100">
+        <CardBody className="p-6 sm:p-8 lg:p-10">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Payment Name */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <FaCreditCard className="text-violet-500" />
+                Payment Name
+                <span className="text-red-500">*</span>
+              </label>
               <Select
-                label="Payment Name"
                 placeholder="Select payment method"
                 selectedKeys={[showCustomName ? "Other" : formData.name]}
                 onSelectionChange={(keys) => {
@@ -89,51 +122,95 @@ export default function CreatePaymentMethodPage() {
                 }}
                 isRequired
                 variant="bordered"
+                size="lg"
+                classNames={{
+                  trigger: "min-h-[48px] border-2 border-gray-200 hover:border-violet-400 focus:border-violet-500 transition-all duration-300",
+                }}
                 description="Choose the payment gateway or bank"
               >
-                <SelectItem key="bKash">bKash</SelectItem>
-                <SelectItem key="Nagad">Nagad</SelectItem>
-                <SelectItem key="Rocket">Rocket</SelectItem>
-                <SelectItem key="Bank Transfer">Bank Transfer</SelectItem>
-                <SelectItem key="Other">Other (Custom)</SelectItem>
+                <SelectItem key="bKash">💳 bKash</SelectItem>
+                <SelectItem key="Nagad">💰 Nagad</SelectItem>
+                <SelectItem key="Rocket">🚀 Rocket</SelectItem>
+                <SelectItem key="Bank Transfer">🏦 Bank Transfer</SelectItem>
+                <SelectItem key="Other">💵 Other (Custom)</SelectItem>
               </Select>
+            </div>
 
-              {showCustomName && (
+            {/* Custom Name */}
+            {showCustomName && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  Custom Payment Name
+                  <span className="text-red-500">*</span>
+                </label>
                 <Input
-                  label="Custom Payment Name"
                   placeholder="Enter bank name or payment method"
                   value={formData.customName}
                   onValueChange={(val) => setFormData({ ...formData, customName: val })}
                   isRequired
                   variant="bordered"
+                  size="lg"
+                  classNames={{
+                    input: "text-sm sm:text-base",
+                    inputWrapper: "min-h-[48px] border-2 border-gray-200 hover:border-violet-400 focus-within:border-violet-500 transition-all duration-300",
+                  }}
                   description="Enter the name of the payment method (e.g., Dutch Bangla Bank, City Bank)"
                 />
-              )}
+              </div>
+            )}
 
+            {/* Account Number */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                Account Number
+                <span className="text-red-500">*</span>
+              </label>
               <Input
-                label="Account Number"
                 placeholder="01XXXXXXXXX or Bank Account Number"
                 value={formData.accountNumber}
                 onValueChange={(val) => setFormData({ ...formData, accountNumber: val })}
                 isRequired
                 variant="bordered"
+                size="lg"
+                classNames={{
+                  input: "text-sm sm:text-base font-mono",
+                  inputWrapper: "min-h-[48px] border-2 border-gray-200 hover:border-violet-400 focus-within:border-violet-500 transition-all duration-300",
+                }}
                 description="Mobile wallet number or bank account number"
               />
+            </div>
 
+            {/* Payment Note */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <FaInfoCircle className="text-violet-500" />
+                Payment Instructions
+                <span className="text-red-500">*</span>
+              </label>
               <Textarea
-                label="Payment Note"
                 placeholder="Send Money / Cash Out / NPSB / Bank Transfer"
                 value={formData.paymentNote}
                 onValueChange={(val) => setFormData({ ...formData, paymentNote: val })}
                 isRequired
                 variant="bordered"
-                minRows={3}
+                size="lg"
+                minRows={4}
+                classNames={{
+                  input: "text-sm sm:text-base",
+                  inputWrapper: "border-2 border-gray-200 hover:border-violet-400 focus-within:border-violet-500 transition-all duration-300",
+                }}
                 description="Instructions for users on how to complete the payment"
               />
+            </div>
 
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-semibold">Active Status</p>
+            {/* Active Status */}
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 sm:p-6 border-2 border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex-1">
+                  <p className="font-bold text-gray-900 flex items-center gap-2 mb-1">
+                    <FaCheckCircle className="text-green-500" />
+                    Active Status
+                  </p>
                   <p className="text-sm text-gray-600">
                     Only active payment methods will be shown to users
                   </p>
@@ -142,63 +219,82 @@ export default function CreatePaymentMethodPage() {
                   isSelected={formData.isActive}
                   onValueChange={(val) => setFormData({ ...formData, isActive: val })}
                   size="lg"
+                  color="success"
+                  classNames={{
+                    wrapper: "group-data-[selected=true]:bg-green-500",
+                  }}
                 />
               </div>
+            </div>
 
-              {/* Preview */}
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                <h3 className="font-semibold mb-3">Preview</h3>
-                <div className="bg-white p-4 rounded border space-y-2">
+            {/* Preview */}
+            <div className="border-2 border-dashed border-violet-300 rounded-2xl p-5 sm:p-6 bg-gradient-to-br from-violet-50 to-purple-50">
+              <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-violet-900">
+                <span className="text-2xl">👁️</span>
+                Live Preview
+              </h3>
+              <Card className="shadow-lg border-2 border-violet-200">
+                <CardBody className="p-4 sm:p-5 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-lg">
-                      {showCustomName ? (formData.customName || "Custom Payment") : formData.name}
-                    </span>
-                    <span
-                      className={`text-xs px-2 py-1 rounded ${
-                        formData.isActive
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">{getPaymentIcon(currentName)}</span>
+                      <span className="font-bold text-lg sm:text-xl text-gray-900">
+                        {currentName}
+                      </span>
+                    </div>
+                    <Chip
+                      size="sm"
+                      variant="flat"
+                      color={formData.isActive ? "success" : "default"}
+                      startContent={formData.isActive ? <FaCheckCircle /> : undefined}
                     >
                       {formData.isActive ? "Active" : "Inactive"}
-                    </span>
+                    </Chip>
                   </div>
-                  <p className="text-sm">
-                    <span className="font-semibold">Account:</span>{" "}
-                    <code className="bg-gray-100 px-2 py-1 rounded">
+                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <p className="text-sm font-semibold text-gray-600 mb-1">Account Number:</p>
+                    <code className="bg-white px-3 py-2 rounded-lg text-sm font-mono border border-gray-300 block">
                       {formData.accountNumber || "Not provided"}
                     </code>
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {formData.paymentNote || "No instructions provided"}
-                  </p>
-                </div>
-              </div>
+                  </div>
+                  <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                    <p className="text-sm font-semibold text-blue-900 mb-1 flex items-center gap-2">
+                      <FaInfoCircle />
+                      Instructions:
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      {formData.paymentNote || "No instructions provided"}
+                    </p>
+                  </div>
+                </CardBody>
+              </Card>
+            </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-4 pt-4">
-                <Button
-                  color="primary"
-                  type="submit"
-                  size="lg"
-                  isLoading={isLoading}
-                  className="flex-1"
-                >
-                  Create Payment Method
-                </Button>
-                <Button
-                  variant="bordered"
-                  size="lg"
-                  onPress={() => router.push("/admin/payment-methods")}
-                  isDisabled={isLoading}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardBody>
-        </Card>
-      </div>
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
+              <Button
+                color="primary"
+                type="submit"
+                size="lg"
+                isLoading={isLoading}
+                className="flex-1 min-h-[48px] font-bold bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300"
+                startContent={!isLoading && <FaCheckCircle />}
+              >
+                Create Payment Method
+              </Button>
+              <Button
+                variant="bordered"
+                size="lg"
+                onPress={() => router.push("/admin/payment-methods")}
+                isDisabled={isLoading}
+                className="flex-1 sm:flex-initial min-h-[48px] font-semibold border-2 hover:bg-gray-50"
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </CardBody>
+      </Card>
     </div>
   );
 }
