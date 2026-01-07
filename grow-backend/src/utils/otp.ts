@@ -51,7 +51,7 @@ export const sendCourseApprovalEmail = async (
             <p style="color: #666;">Thank you for contributing to our learning community!</p>
             
             <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-            <p style="color: #999; font-size: 12px; text-align: center;">© 2024 Learn & Grow. All rights reserved.</p>
+            <p style="color: #999; font-size: 12px; text-align: center;">© 2026 Learn & Grow. All rights reserved.</p>
           </div>
         </div>
       `,
@@ -102,7 +102,7 @@ export const sendOTPEmail = async (
             <p style="color: #666;">This OTP will expire in 5 minutes.</p>
             <p style="color: #666;">If you didn't request this OTP, please ignore this email.</p>
             <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-            <p style="color: #999; font-size: 12px;">© 2024 Learn & Grow. All rights reserved.</p>
+            <p style="color: #999; font-size: 12px;">© 2026 Learn & Grow. All rights reserved.</p>
           </div>
         </div>
       `,
@@ -190,7 +190,7 @@ export const sendWelcomeEmail = async (
               <a href="${ENV.FRONTEND_URL}" style="display: inline-block; padding: 15px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Go to Dashboard</a>
             </div>
             <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-            <p style="color: #999; font-size: 12px; text-align: center;">© 2025 Learn & Grow. All rights reserved.</p>
+            <p style="color: #999; font-size: 12px; text-align: center;">© 2026 Learn & Grow. All rights reserved.</p>
           </div>
         </div>
       `,
@@ -303,7 +303,7 @@ export const sendInstructorApprovalEmail = async (
               </div>
             `}
             <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-            <p style="color: #999; font-size: 12px; text-align: center;">© 2025 Learn & Grow. All rights reserved.</p>
+            <p style="color: #999; font-size: 12px; text-align: center;">© 2026 Learn & Grow. All rights reserved.</p>
           </div>
         </div>
       `,

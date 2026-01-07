@@ -35,7 +35,7 @@ export default function InstructorCoursesPage() {
             status: "published",
             price: 2000,
             rating: 4.8,
-            lastUpdated: "2024-12-01",
+            lastUpdated: "2026-12-01",
         },
         {
             id: "2",
@@ -44,7 +44,7 @@ export default function InstructorCoursesPage() {
             status: "published",
             price: 1500,
             rating: 4.9,
-            lastUpdated: "2024-11-28",
+            lastUpdated: "2026-11-28",
         },
         {
             id: "3",
@@ -53,7 +53,7 @@ export default function InstructorCoursesPage() {
             status: "published",
             price: 2500,
             rating: 4.7,
-            lastUpdated: "2024-12-05",
+            lastUpdated: "2026-12-05",
         },
         {
             id: "4",
@@ -62,7 +62,7 @@ export default function InstructorCoursesPage() {
             status: "published",
             price: 1200,
             rating: 4.9,
-            lastUpdated: "2024-12-07",
+            lastUpdated: "2026-12-07",
         },
     ]);
 

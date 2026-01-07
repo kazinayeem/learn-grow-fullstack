@@ -30,7 +30,7 @@ export default async function RefundPolicyPage() {
         <div className="container mx-auto px-4 sm:px-6 py-12 max-w-4xl">
             <h1 className="text-3xl sm:text-4xl font-bold mb-8">Refund Policy / রিফান্ড পলিসি</h1>
             <div className="prose prose-lg max-w-none text-gray-700">
-                <p className="text-sm text-gray-500 mb-8">Last updated: December 9, 2025</p>
+                <p className="text-sm text-gray-500 mb-8">Last updated: December 9, 2026</p>
 
                 <div className="bg-blue-50 border-l-4 border-blue-500 p-6 mb-8">
                     <p className="font-semibold text-lg mb-2">আমাদের রিফান্ড পলিসি খুবই সিম্পল।</p>

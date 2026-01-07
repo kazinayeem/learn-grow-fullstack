@@ -36,7 +36,7 @@ export default function GuardianDashboard() {
             id: "1",
             name: "Ayesha Khan",
             age: 12,
-            studentId: "STU-2024-001",
+            studentId: "STU-2026-001",
             enrolledCourses: 3,
             averageProgress: 75,
             lastActive: "2 hours ago",
@@ -46,7 +46,7 @@ export default function GuardianDashboard() {
             id: "2",
             name: "Rafi Ahmed",
             age: 10,
-            studentId: "STU-2024-002",
+            studentId: "STU-2026-002",
             enrolledCourses: 2,
             averageProgress: 60,
             lastActive: "5 hours ago",
@@ -348,7 +348,7 @@ export default function GuardianDashboard() {
                                         <Input
                                             autoFocus
                                             label="Student ID or Phone"
-                                            placeholder="e.g. STU-2024-001 or 017..."
+                                            placeholder="e.g. STU-2026-001 or 017..."
                                             variant="bordered"
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}

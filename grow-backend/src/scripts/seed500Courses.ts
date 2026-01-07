@@ -131,7 +131,7 @@ const generateCourse = (index: number, instructorId: mongoose.Types.ObjectId): a
       "hands-on",
       "industry-standard",
       "certificate",
-      "updated-2025"
+      "updated-2026"
     ],
     learningOutcomes: [
       `Master the core concepts of ${title}`,

@@ -30,7 +30,7 @@ export default async function TermsOfUsePage() {
         <div className="container mx-auto px-4 sm:px-6 py-12 max-w-4xl">
             <h1 className="text-3xl sm:text-4xl font-bold mb-8">Terms of Service</h1>
             <div className="prose prose-lg max-w-none text-gray-700">
-                <p className="text-sm text-gray-500 mb-8">Last updated: December 9, 2025</p>
+                <p className="text-sm text-gray-500 mb-8">Last updated: December 9, 2026</p>
 
                 <p className="mb-6">
                     Welcome to Learn & Grow! These Terms of Service ("Terms") govern your access to and use of our website, mobile application, and all related services (collectively, the "Platform"). By creating an account or using our Platform, you agree to be bound by these Terms.
@@ -332,7 +332,7 @@ export default async function TermsOfUsePage() {
 
                 <div className="bg-yellow-50 border-l-4 border-yellow-500 p-6 mt-8">
                     <p className="font-semibold mb-2">✓ By using Learn & Grow, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.</p>
-                    <p className="text-sm">Last Updated: December 9, 2025</p>
+                    <p className="text-sm">Last Updated: December 9, 2026</p>
                 </div>
             </div>
         </div>

@@ -5,7 +5,7 @@ export default function AppPrivacyPolicyPage() {
         <div className="container mx-auto px-6 py-12 max-w-4xl">
             <h1 className="text-4xl font-bold mb-8">App Privacy Policy</h1>
             <div className="prose prose-lg max-w-none text-gray-700">
-                <p className="text-sm text-gray-500 mb-8">Last modified: December 9, 2025</p>
+                <p className="text-sm text-gray-500 mb-8">Last modified: December 9, 2026</p>
 
                 <p className="mb-6">
                     This SERVICE is provided by Learn & Grow at no cost (for free courses) or at a subscription fee (for premium courses) and is intended for use as is.

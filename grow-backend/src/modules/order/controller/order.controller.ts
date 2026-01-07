@@ -573,7 +573,7 @@ export const sendOrderEmail = async (req: Request, res: Response) => {
             </div>
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #999;">
               <p style="margin: 5px 0;">Learn Grow Academy | Making Education Accessible</p>
-              <p style="margin: 5px 0;">© 2025 Learn Grow. All rights reserved.</p>
+              <p style="margin: 5px 0;">© 2026 Learn Grow. All rights reserved.</p>
             </div>
           </div>
         </div>
@@ -619,7 +619,7 @@ export const sendOrderEmail = async (req: Request, res: Response) => {
             </div>
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #999;">
               <p style="margin: 5px 0;">Learn Grow Academy | Making Education Accessible</p>
-              <p style="margin: 5px 0;">© 2025 Learn Grow. All rights reserved.</p>
+              <p style="margin: 5px 0;">© 2026 Learn Grow. All rights reserved.</p>
             </div>
           </div>
         </div>

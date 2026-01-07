@@ -146,7 +146,7 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
 
     const course = {
         ...courseData,
-        lastUpdated: "2024-12-08",
+        lastUpdated: "2026-12-08",
         progress: 35, // Average student progress
         modules: 12,
         lessons: 48,
@@ -156,10 +156,10 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
     // Assessment Logic
     const assessments = [
         { id: "101", type: "quiz", title: "HTML Basics Quiz", questions: 15, status: "published", submissions: 42 },
-        { id: "102", type: "assignment", title: "Build a Portfolio Website", dueDate: "2024-12-20", status: "active", submissions: 12 },
+        { id: "102", type: "assignment", title: "Build a Portfolio Website", dueDate: "2026-12-20", status: "active", submissions: 12 },
         { id: "103", type: "mid-exam", title: "Mid-Term Exam", questions: 40, status: "draft", submissions: 0 },
         { id: "104", type: "final-exam", title: "Final Course Exam", questions: 60, status: "draft", submissions: 0 },
-        { id: "105", type: "project", title: "E-Commerce Platform Project", dueDate: "2025-01-15", status: "active", submissions: 5 },
+        { id: "105", type: "project", title: "E-Commerce Platform Project", dueDate: "2026-01-15", status: "active", submissions: 5 },
     ];
 
     const getStatusColor = (status: string) => status === "published" || status === "active" ? "success" : "warning";

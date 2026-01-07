@@ -5,7 +5,7 @@ export default function PrivacyPolicyPage() {
         <div className="container mx-auto px-6 py-12 max-w-4xl">
             <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
             <div className="prose prose-lg max-w-none text-gray-700">
-                <p className="text-sm text-gray-500 mb-8">Last updated: December 9, 2025</p>
+                <p className="text-sm text-gray-500 mb-8">Last updated: December 9, 2026</p>
 
                 <p className="mb-6">
                     At Learn & Grow ("we," "our," or "us"), we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website <strong>learnandgrow.io</strong> and use our e-learning platform services.

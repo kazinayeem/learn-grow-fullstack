@@ -184,7 +184,7 @@ const blogTitles = [
   "Building Production-Ready REST APIs",
   "Cloud Computing Fundamentals for Developers",
   "DevOps Essentials: CI/CD Pipeline Automation",
-  "Web Security Best Practices 2025",
+  "Web Security Best Practices 2026",
   "Performance Optimization: Making Apps Fast",
   "Machine Learning Integration for Web Apps",
   "TypeScript: Strong Typing for JavaScript",

@@ -6,7 +6,7 @@ export const defaultEventsData = {
     },
     upcomingEvents: [
         {
-            title: "Robotics Competition 2025",
+            title: "Robotics Competition 2026",
             date: "January 15, 2026",
             time: "10:00 AM - 4:00 PM",
             location: "Dhaka Science Museum",
@@ -33,12 +33,12 @@ export const defaultEventsData = {
     pastEvents: [
         {
             title: "Python Bootcamp",
-            date: "December 10, 2025",
+            date: "December 10, 2026",
             attendees: 45,
         },
         {
-            title: "Career Fair 2025",
-            date: "November 20, 2025",
+            title: "Career Fair 2026",
+            date: "November 20, 2026",
             attendees: 120,
         },
     ]

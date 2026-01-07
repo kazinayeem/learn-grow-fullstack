@@ -39,7 +39,7 @@ export default function InstructorQuizzesPage() {
             status: "published",
             submissions: 42,
             avgScore: 72,
-            dueDate: "2024-10-15T10:00:00",
+            dueDate: "2026-10-15T10:00:00",
         },
         {
             id: "3",
@@ -51,7 +51,7 @@ export default function InstructorQuizzesPage() {
             status: "draft",
             submissions: 0,
             avgScore: 0,
-            dueDate: "2024-12-20T23:59:00",
+            dueDate: "2026-12-20T23:59:00",
         },
         {
             id: "4",
@@ -63,7 +63,7 @@ export default function InstructorQuizzesPage() {
             status: "active",
             submissions: 12,
             avgScore: 85,
-            dueDate: "2024-11-05T23:59:00",
+            dueDate: "2026-11-05T23:59:00",
         }
     ]);
 

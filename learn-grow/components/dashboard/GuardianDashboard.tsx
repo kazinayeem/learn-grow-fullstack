@@ -186,7 +186,7 @@ export default function GuardianDashboard() {
                                         <p className="text-sm font-medium mt-1">Parent-Teacher Meeting</p>
                                     </div>
                                     <div className="bg-purple-50 p-3 rounded-lg">
-                                        <p className="text-xs text-purple-600 font-semibold">Dec 15, 2025</p>
+                                        <p className="text-xs text-purple-600 font-semibold">Dec 15, 2026</p>
                                         <p className="text-sm font-medium mt-1">Progress Report Available</p>
                                     </div>
                                 </div>
