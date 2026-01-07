@@ -47,12 +47,17 @@ import { verifyToken, optionalAuth } from "./middleware/auth.middleware.js";
 
 export const createApp = () => {
   const app = express();
+  // proxy trust for rate limiting and secure cookies
+  app.set("trust proxy", 1);
 
   // ====================================
   // SECURITY LAYER 0: CORS (Must be FIRST)
   // ====================================
   const corsOptions = {
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void
+    ) => {
       // Allowed origins list
       const allowedOrigins = [
         ENV.FRONTEND_URL,
@@ -67,26 +72,31 @@ export const createApp = () => {
         "https://learn-grow-fullstack-t7az.vercel.app",
         "https://learn-grow-fullstack-t7az-2u0142onf.vercel.app",
         "https://learn-grow-fullsta-git-996086-kazinayeem55085gmailcoms-projects.vercel.app",
-        "https://learn-grow-fullstack-t7az-9wt4j22we.vercel.app"
+        "https://learn-grow-fullstack-t7az-9wt4j22we.vercel.app",
       ];
-      
+
       // Allow requests with no origin (like mobile apps or Postman)
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        console.warn(`CORS blocked request from origin: ${origin}`);
         callback(null, true); // Allow for now, but log it
       }
     },
     credentials: true,
     maxAge: 86400, // Cache preflight for 24 hours
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With', 'Accept'],
-    exposedHeaders: ['Content-Length', 'X-JSON-Response-Length'],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-CSRF-Token",
+      "X-Requested-With",
+      "Accept",
+    ],
+    exposedHeaders: ["Content-Length", "X-JSON-Response-Length"],
     optionsSuccessStatus: 204,
     preflightContinue: false,
   };
-  
+
   app.use(cors(corsOptions));
 
   // ====================================
@@ -135,9 +145,7 @@ export const createApp = () => {
   app.use(async (req, res, next) => {
     const start = Date.now();
     res.on("finish", () => {
-      const duration = Date.now() - start;
-      if (duration > 500)
-        console.log(`${req.method} ${req.path} - ${duration}ms`);
+      // Performance monitoring disabled
     });
     next();
   });
@@ -187,8 +195,11 @@ export const createApp = () => {
 
   // 404 handler - Ensure CORS headers on 404
   app.use((_req, res) => {
-    res.header('Access-Control-Allow-Origin', res.getHeader('Access-Control-Allow-Origin') as string || '*');
-    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header(
+      "Access-Control-Allow-Origin",
+      (res.getHeader("Access-Control-Allow-Origin") as string) || "*"
+    );
+    res.header("Access-Control-Allow-Credentials", "true");
     res.status(404).json({ success: false, message: "Not Found" });
   });
 
@@ -200,14 +211,23 @@ export const createApp = () => {
       res: express.Response,
       _next: express.NextFunction
     ) => {
-      console.error("Global error handler:", err);
-      
+      // Error logged by morgan middleware
+
       // Ensure CORS headers are present on error responses
-      res.header('Access-Control-Allow-Origin', res.getHeader('Access-Control-Allow-Origin') as string || '*');
-      res.header('Access-Control-Allow-Credentials', 'true');
-      res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS,HEAD');
-      res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-CSRF-Token,X-Requested-With,Accept');
-      
+      res.header(
+        "Access-Control-Allow-Origin",
+        (res.getHeader("Access-Control-Allow-Origin") as string) || "*"
+      );
+      res.header("Access-Control-Allow-Credentials", "true");
+      res.header(
+        "Access-Control-Allow-Methods",
+        "GET,POST,PUT,DELETE,PATCH,OPTIONS,HEAD"
+      );
+      res.header(
+        "Access-Control-Allow-Headers",
+        "Content-Type,Authorization,X-CSRF-Token,X-Requested-With,Accept"
+      );
+
       res.status(err.status || 500).json({
         success: false,
         message: err.message || "Internal Server Error",

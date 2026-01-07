@@ -18,13 +18,9 @@ export default function Login() {
         const phone = credentials.loginInput.trim();
         const password = credentials.password;
 
-        console.log("🔐 Attempting login for:", phone);
-
         try {
             // Try real API first
             const { data } = await api.post('/auth/login', { phone, password });
-
-            console.log("✅ API Login successful:", data);
 
             // Save real data from backend
             localStorage.setItem("token", data.data.token);
@@ -40,7 +36,6 @@ export default function Login() {
 
             setIsLoading(false);
         } catch (apiError: any) {
-            console.warn("⚠️ API unavailable, falling back to mock auth:", apiError.message);
 
             // FALLBACK: Mock authentication if backend is down
             if (phone === "01706276447" && password === "@M.jabed3834") {
@@ -59,7 +54,6 @@ export default function Login() {
     };
 
     const loginUserMock = (role: string, identifier: string) => {
-        console.log("📱 Mock login as:", role);
         try {
             localStorage.setItem("userRole", role);
             localStorage.setItem("user", JSON.stringify({ identifier, role }));
@@ -70,7 +64,6 @@ export default function Login() {
             else if (role === "guardian") router.push("/guardian");
             else router.push("/student");
         } catch (err) {
-            console.error("Login error:", err);
             setError("Login Error");
             setIsLoading(false);
         }

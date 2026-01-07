@@ -35,7 +35,7 @@ export const helmetConfig = helmet({
 // 2. Rate Limiting - Global
 export const globalRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 300, // Limit each IP to 300 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
   message: 'Too many requests from this IP, please try again later.',
@@ -48,7 +48,7 @@ export const globalRateLimiter = rateLimit({
 // 3. Rate Limiting - Authentication Endpoints (Stricter)
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5, // Only 5 attempts per 15 minutes
+  max: 100, // Only 100 attempts per 15 minutes
   standardHeaders: true,
   legacyHeaders: false,
   message: 'Too many login attempts. Please try again after 15 minutes.',
@@ -58,7 +58,7 @@ export const authRateLimiter = rateLimit({
 // 4. Rate Limiting - API Endpoints
 export const apiRateLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 30, // 30 requests per minute
+  max: 100, // 30 requests per minute
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -237,16 +237,6 @@ export const securityLogger = (req: Request, res: Response, next: NextFunction) 
       duration > 5000 || // Slow requests
       req.body && Object.keys(req.body).length > 50 // Too many fields
     ) {
-      console.warn('[Security Log]', {
-        timestamp: new Date().toISOString(),
-        method: req.method,
-        path: req.path,
-        status: res.statusCode,
-        duration: `${duration}ms`,
-        ip: req.ip,
-        userAgent: req.get('user-agent'),
-        bodyKeys: req.body ? Object.keys(req.body).length : 0,
-      });
     }
   });
 

@@ -20,17 +20,7 @@ export default function MyCoursesPage() {
         refetch();
     }, [currentPage, refetch]);
 
-    // Debug logging
-    React.useEffect(() => {
-        if (data) {
-            console.log("[MyCoursesPage] Data received:", {
-                coursesCount: safeCourses.length,
-                hasQuarterlyAccess,
-                pagination,
-                firstCourse: safeCourses[0]
-            });
-        }
-    }, [data, courses, safeCourses, hasQuarterlyAccess, pagination]);
+
 
     if (isLoading) {
         return (

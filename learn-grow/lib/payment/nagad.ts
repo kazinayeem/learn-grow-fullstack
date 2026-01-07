@@ -36,7 +36,6 @@ export class NagadPayment {
     async initializePayment(paymentData: NagadPaymentRequest): Promise<NagadPaymentResponse> {
         // Mock functionality for demo/testing if keys are missing
         if (!this.merchantId) {
-            console.warn("Nagad Merchant ID missing. Using MOCK payment flow.");
             // Simulate API delay
             await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -77,7 +76,6 @@ export class NagadPayment {
 
             throw new Error(data.message || "Payment initialization failed");
         } catch (error) {
-            console.error("Nagad Initialize Payment Error:", error);
             throw error;
         }
     }
@@ -118,7 +116,6 @@ export class NagadPayment {
 
             throw new Error(data.message || "Payment completion failed");
         } catch (error) {
-            console.error("Nagad Complete Payment Error:", error);
             throw error;
         }
     }
@@ -137,7 +134,6 @@ export class NagadPayment {
             const data = await response.json();
             return data;
         } catch (error) {
-            console.error("Nagad Verify Payment Error:", error);
             throw error;
         }
     }

@@ -247,7 +247,7 @@ export const emailOrderAction = async (req: Request, res: Response) => {
       return res.status(400).send("Invalid token payload");
     }
 
-    const order = await Order.findById(orderId).populate("userId", "name email");
+    const order = await Order.findById(orderId).populate("userId", "name email").populate("courseId", "title").populate("paymentMethodId");
     if (!order) {
       return res.status(404).send("Order not found");
     }
@@ -268,18 +268,47 @@ export const emailOrderAction = async (req: Request, res: Response) => {
       return res.status(500).send(result.message || "Failed to process order");
     }
 
-    const updated = await Order.findById(orderId).populate("userId", "name email").populate("courseId", "title");
+    const updated = await Order.findById(orderId).populate("userId", "name email").populate("courseId", "title").populate("paymentMethodId");
 
-    // Notify user via email
+    // Notify user via email with professional template
     try {
       const transporter = await getSMTPTransporter();
       const toUser = (updated as any)?.userId?.email;
       if (toUser) {
-        const subject = action === "approve" ? "Your Order Has Been Approved" : "Your Order Has Been Rejected";
-        const html = action === "approve"
-          ? `<p>Hello ${(updated as any)?.userId?.name || "Student"},</p><p>Your order has been approved. You now have access${(updated as any)?.courseId ? ` to ${(updated as any)?.courseId?.title}` : ""}.</p>`
-          : `<p>Hello ${(updated as any)?.userId?.name || "Student"},</p><p>Your order has been rejected. If you think this is a mistake, please contact support.</p>`;
-        await transporter.sendMail({ from: ENV.EMAIL_USER, to: toUser, subject, html });
+        const user = (updated as any)?.userId;
+        const course = (updated as any)?.courseId;
+        const paymentMethod = (updated as any)?.paymentMethodId;
+        
+        const orderDetails = {
+          orderId: String(updated?._id),
+          studentName: user?.name || "Student",
+          studentEmail: user?.email || "",
+          planType: (updated as any)?.planType,
+          courseTitle: course?.title || undefined,
+          price: (updated as any)?.price,
+          transactionId: (updated as any)?.transactionId,
+          paymentMethod: paymentMethod?.name || undefined,
+          deliveryAddress: (updated as any)?.deliveryAddress || undefined,
+          createdAt: new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" }),
+        };
+        
+        if (action === "approve") {
+          const { getOrderApprovedEmail } = await import("@/utils/emailTemplates");
+          await transporter.sendMail({
+            from: ENV.EMAIL_USER,
+            to: toUser,
+            subject: "🎉 Your Order Has Been Approved | Learn & Grow",
+            html: getOrderApprovedEmail(orderDetails),
+          });
+        } else {
+          const { getOrderRejectedEmail } = await import("@/utils/emailTemplates");
+          await transporter.sendMail({
+            from: ENV.EMAIL_USER,
+            to: toUser,
+            subject: "Order Status Update | Learn & Grow",
+            html: getOrderRejectedEmail(orderDetails, "Payment verification failed"),
+          });
+        }
       }
     } catch (mailErr) {
       console.error("Failed to send user notification:", mailErr);

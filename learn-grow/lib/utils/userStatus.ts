@@ -9,7 +9,6 @@ export const refreshUserStatus = async (): Promise<any | null> => {
   try {
     const token = Cookies.get("accessToken") || localStorage.getItem("token");
     if (!token) {
-      console.warn("No token found for refreshing user status");
       return null;
     }
 
@@ -23,7 +22,6 @@ export const refreshUserStatus = async (): Promise<any | null> => {
     });
 
     if (!response.ok) {
-      console.warn("Failed to refresh user status:", response.status);
       return null;
     }
 
@@ -35,12 +33,10 @@ export const refreshUserStatus = async (): Promise<any | null> => {
     // Update localStorage with fresh user data
     if (typeof window !== "undefined" && userData) {
       localStorage.setItem("user", JSON.stringify(userData));
-      console.log("User status refreshed. isApproved:", userData.isApproved);
     }
 
     return userData;
   } catch (error) {
-    console.error("Error refreshing user status:", error);
     return null;
   }
 };

@@ -53,7 +53,6 @@ export default function TakeQuizPage({ params }: { params: Promise<{ id: string 
                     setScore(attempt.score);
                     setQuizSubmitted(true);
                 } catch (e) {
-                    console.error("Error loading previous attempt:", e);
                 }
             }
         }

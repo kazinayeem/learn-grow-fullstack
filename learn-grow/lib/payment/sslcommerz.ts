@@ -40,7 +40,6 @@ export class SSLCommerzPayment {
     async initializePayment(paymentData: SSLCommerzPaymentRequest): Promise<SSLCommerzPaymentResponse> {
         // Mock functionality for demo/testing if keys are missing
         if (!this.storeId) {
-            console.warn("SSLCommerz Store ID missing. Using MOCK payment flow.");
             // Simulate API delay
             await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -116,7 +115,6 @@ export class SSLCommerzPayment {
 
             throw new Error(result.failedreason || "Payment initialization failed");
         } catch (error) {
-            console.error("SSLCommerz Initialize Payment Error:", error);
             throw error;
         }
     }
@@ -156,7 +154,6 @@ export class SSLCommerzPayment {
                 data: data,
             };
         } catch (error) {
-            console.error("SSLCommerz Validate Payment Error:", error);
             throw error;
         }
     }
@@ -188,7 +185,6 @@ export class SSLCommerzPayment {
             const result = await response.json();
             return result;
         } catch (error) {
-            console.error("SSLCommerz Refund Payment Error:", error);
             throw error;
         }
     }
@@ -213,7 +209,6 @@ export class SSLCommerzPayment {
             const data = await response.json();
             return data;
         } catch (error) {
-            console.error("SSLCommerz Query Transaction Error:", error);
             throw error;
         }
     }

@@ -106,11 +106,8 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
 
                 const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
                 const userStr = localStorage.getItem("user");
-                
-                console.log("[Dashboard] Auth check - Token:", !!token, "User:", !!userStr);
 
                 if (!token || !userStr) {
-                    console.warn("[Dashboard] No token or user found, redirecting to login");
                     toast.error("Please login to access this course");
                     setIsAuthorized(false);
                     setAuthChecked(true);
@@ -126,11 +123,9 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                 // Validate user can be parsed
                 try {
                     const user = JSON.parse(userStr);
-                    console.log("[Dashboard] User authenticated:", user._id);
                     setIsAuthorized(true);
                     setAuthChecked(true);
                 } catch (parseErr) {
-                    console.error("[Dashboard] Failed to parse user:", parseErr);
                     toast.error("Session invalid. Please login again.");
                     setIsAuthorized(false);
                     setAuthChecked(true);
@@ -142,7 +137,6 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                     return () => clearTimeout(timer);
                 }
             } catch (err) {
-                console.error("[Dashboard] Auth check error:", err);
                 setIsAuthorized(false);
                 setAuthChecked(true);
                 toast.error("Authentication error");
@@ -177,18 +171,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
     });
     const certificate = certificateResponse?.data || null;
 
-    // Log course fetch status
-    useEffect(() => {
-        if (authChecked && isAuthorized) {
-            console.log("[Dashboard] Course fetch status - Loading:", isLoading, "Has data:", !!courseData, "Error:", error);
-            if (courseData) {
-                console.log("[Dashboard] Course loaded:", courseData.title, "Modules:", courseData.modules?.length || 0);
-            }
-            if (error) {
-                console.error("[Dashboard] Course fetch error:", error);
-            }
-        }
-    }, [isLoading, courseData, error, authChecked, isAuthorized]);
+
 
     const modules: Module[] = courseData?.modules || [];
 

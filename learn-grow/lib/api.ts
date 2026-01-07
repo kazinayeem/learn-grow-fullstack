@@ -52,17 +52,14 @@ api.interceptors.response.use(
 
                 case 403:
                     // Forbidden - user doesn't have permission
-                    console.error('Access forbidden');
                     break;
 
                 case 404:
                     // Not found
-                    console.error('Resource not found');
                     break;
 
                 case 500:
                     // Server error
-                    console.error('Server error occurred');
                     break;
             }
 

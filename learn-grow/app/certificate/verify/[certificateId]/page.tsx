@@ -196,7 +196,7 @@ export default function VerifyCertificatePage() {
         {/* Footer Info */}
         <div className="text-center mt-8 text-gray-600 text-sm">
           <p>Learn & Grow - Online Learning Platform</p>
-          <p className="mt-2">For any queries, please contact support@learnandgrow.com</p>
+          <p className="mt-2">For any queries, please contact support@learnandgrow.io</p>
         </div>
       </div>
     </div>

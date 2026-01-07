@@ -16,7 +16,6 @@ export function getDashboardUrl(role?: string): string {
                         role = user.role;
                     }
                 } catch (e) {
-                    console.error("Error parsing user for dashboard url", e);
                 }
             }
 

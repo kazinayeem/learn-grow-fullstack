@@ -8,15 +8,17 @@ import mongoose from "mongoose";
 import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
 import { getSMTPTransporter } from "@/modules/settings/service/smtp.service";
+import { getOrderConfirmationEmail, getAdminOrderApprovalEmail, getOrderApprovedEmail, getOrderRejectedEmail } from "@/utils/emailTemplates";
 
 // ENROLLMENT PRICING
 export const ENROLLMENT_PRICES = {
-  single: 3500,      // Single Course - 3 months
-  quarterly: 9999,   // All Courses - 3 months
-  kit: 4500,         // Kit Only
+  single: 3500, // Single Course - 3 months
+  quarterly: 9999, // All Courses - 3 months
+  kit: 4500, // Kit Only
 };
 
-const formatPrice = (amount: number) => `৳${Number(amount || 0).toLocaleString("en-US")}`;
+const formatPrice = (amount: number) =>
+  `৳${Number(amount || 0).toLocaleString("en-US")}`;
 
 const sendOrderEmail = async (order: any) => {
   try {
@@ -26,80 +28,62 @@ const sendOrderEmail = async (order: any) => {
     const course = order.courseId || {};
     const paymentMethod = order.paymentMethodId || {};
 
-    const deliverySection = order.deliveryAddress
-      ? `
-        <h3 style="margin:16px 0 8px;font-size:16px;">Delivery Address</h3>
-        <div style="background:#f7fafc;padding:12px;border-radius:8px;line-height:1.6;">
-          <div><strong>Name:</strong> ${order.deliveryAddress.name || ""}</div>
-          <div><strong>Phone:</strong> ${order.deliveryAddress.phone || ""}</div>
-          <div><strong>Address:</strong> ${order.deliveryAddress.fullAddress || ""}</div>
-          <div><strong>City:</strong> ${order.deliveryAddress.city || ""}</div>
-          <div><strong>Postal Code:</strong> ${order.deliveryAddress.postalCode || ""}</div>
-        </div>
-      `
-      : "";
+    // Prepare order details for templates
+    const orderDetails = {
+      orderId: String(order._id),
+      studentName: user.name || "Student",
+      studentEmail: user.email || "",
+      planType: order.planType,
+      courseTitle: course.title || undefined,
+      price: order.price,
+      transactionId: order.transactionId,
+      paymentMethod: paymentMethod.name || undefined,
+      paymentAccount: paymentMethod.accountNumber || undefined,
+      deliveryAddress: order.deliveryAddress || undefined,
+      bankDetails: paymentMethod.bankDetails || undefined,
+      createdAt: new Date(order.createdAt || Date.now()).toLocaleString("en-US", { timeZone: "Asia/Dhaka" }),
+    };
 
-    // 1) Send acknowledgement to student
+    // 1) Send acknowledgement to student with professional template
     if (user.email) {
       await transporter.sendMail({
         from: ENV.EMAIL_USER,
         to: user.email,
-        subject: `Order Received - ${order.planType.toUpperCase()}`,
-        html: `
-          <div style="max-width:640px;margin:0 auto;font-family:Arial,sans-serif;color:#111;">
-            <div style="background:#10b981;padding:18px 20px;border-radius:10px 10px 0 0;color:white;">
-              <h2 style="margin:0;font-size:20px;">We received your order</h2>
-              <p style="margin:4px 0 0;">${new Date(order.createdAt || Date.now()).toLocaleString("en-US", { timeZone: "Asia/Dhaka" })}</p>
-            </div>
-            <div style="border:1px solid #e2e8f0;border-top:0;border-radius:0 0 10px 10px;padding:20px;background:#fff;">
-              <div style="line-height:1.7;">
-                <div><strong>Plan:</strong> ${order.planType}</div>
-                <div><strong>Amount:</strong> ${formatPrice(order.price)}</div>
-                <div><strong>Transaction ID:</strong> ${order.transactionId}</div>
-                ${course.title ? `<div><strong>Course:</strong> ${course.title}</div>` : ""}
-              </div>
-              <p style="margin:16px 0;color:#4a5568;font-size:14px;">Our admin team will verify your payment shortly.</p>
-            </div>
-          </div>
-        `,
+        subject: `Order Confirmation - ${order.planType.toUpperCase()} | Learn & Grow`,
+        html: getOrderConfirmationEmail(orderDetails),
       });
     }
 
     // 2) Send admin email with approve/reject buttons (no auth, signed token)
     if (ENV.EMAIL_USER) {
       const payloadBase = { orderId: String(order._id) } as any;
-      const approveToken = jwt.sign({ ...payloadBase, action: "approve" }, ENV.JWT_SECRET, { expiresIn: "2d" });
-      const rejectToken = jwt.sign({ ...payloadBase, action: "reject" }, ENV.JWT_SECRET, { expiresIn: "2d" });
-      const approveUrl = `${ENV.BACKEND_URL}/api/orders/email-action/${approveToken}`;
-      const rejectUrl = `${ENV.BACKEND_URL}/api/orders/email-action/${rejectToken}`;
+      const approveToken = jwt.sign(
+        { ...payloadBase, action: "approve" },
+        ENV.JWT_SECRET,
+        { expiresIn: "2d" }
+      );
+      const rejectToken = jwt.sign(
+        { ...payloadBase, action: "reject" },
+        ENV.JWT_SECRET,
+        { expiresIn: "2d" }
+      );
+
+      // Construct the email action URLs - handle BACKEND_URL with or without /api suffix
+      let baseUrl = ENV.BACKEND_URL || "http://localhost:5000";
+
+      // Remove trailing /api if present to avoid double /api
+      if (baseUrl.endsWith("/api")) {
+        baseUrl = baseUrl.slice(0, -4);
+      }
+
+      const approveUrl = `${baseUrl}/api/orders/email-action/${approveToken}`;
+      const rejectUrl = `${baseUrl}/api/orders/email-action/${rejectToken}`;
 
       await transporter.sendMail({
         from: ENV.EMAIL_USER,
         to: ENV.EMAIL_USER,
-        subject: `Approve/Reject Order - ${user.name || "Student"}`,
-        html: `
-          <div style="max-width:640px;margin:0 auto;font-family:Arial,sans-serif;color:#111;">
-            <div style="background:#0ea5e9;padding:18px 20px;border-radius:10px 10px 0 0;color:white;">
-              <h2 style="margin:0;font-size:20px;">New Order Pending</h2>
-            </div>
-            <div style="border:1px solid #e2e8f0;border-top:0;border-radius:0 0 10px 10px;padding:20px;background:#fff;">
-              <div style="line-height:1.7;">
-                <div><strong>Student:</strong> ${user.name || ""} (${user.email || ""})</div>
-                <div><strong>Plan:</strong> ${order.planType}</div>
-                <div><strong>Amount:</strong> ${formatPrice(order.price)}</div>
-                <div><strong>Transaction ID:</strong> ${order.transactionId}</div>
-                ${paymentMethod.name ? `<div><strong>Payment Method:</strong> ${paymentMethod.name}${paymentMethod.accountNumber ? ` (${paymentMethod.accountNumber})` : ""}</div>` : ""}
-                ${course.title ? `<div><strong>Course:</strong> ${course.title}</div>` : ""}
-                ${deliverySection}
-              </div>
-              <div style="display:flex;gap:12px;margin-top:20px;">
-                <a href="${approveUrl}" style="background:#10b981;color:white;padding:10px 14px;border-radius:6px;text-decoration:none;font-weight:600">Approve</a>
-                <a href="${rejectUrl}" style="background:#ef4444;color:white;padding:10px 14px;border-radius:6px;text-decoration:none;font-weight:600">Reject</a>
-              </div>
-              <p style="margin-top:12px;color:#64748b;font-size:12px;">These links are signed and expire in 48 hours.</p>
-            </div>
-          </div>
-        `,
+        subject: `🔔 New Order Pending Review - ${user.name || "Student"} | Learn & Grow`,
+        html: getAdminOrderApprovalEmail(orderDetails, approveUrl, rejectUrl),
       });
     }
   } catch (error) {
@@ -145,7 +129,15 @@ export const createOrderService = async (
       return { success: false, message: "Only students can make purchases" };
     }
 
-    const { planType, courseId, paymentMethodId, transactionId, senderNumber, paymentNote, deliveryAddress } = data;
+    const {
+      planType,
+      courseId,
+      paymentMethodId,
+      transactionId,
+      senderNumber,
+      paymentNote,
+      deliveryAddress,
+    } = data;
 
     // Validate payment method exists and is active
     const paymentMethod = await PaymentMethod.findById(paymentMethodId);
@@ -155,13 +147,19 @@ export const createOrderService = async (
     }
     if (!paymentMethod.isActive) {
       console.error("Payment method inactive:", paymentMethodId);
-      return { success: false, message: "This payment method is currently inactive" };
+      return {
+        success: false,
+        message: "This payment method is currently inactive",
+      };
     }
 
     // Validate courseId for single plan
     if (planType === "single") {
       if (!courseId) {
-        return { success: false, message: "Course ID is required for single course purchase" };
+        return {
+          success: false,
+          message: "Course ID is required for single course purchase",
+        };
       }
       const course = await Course.findById(courseId);
       if (!course) {
@@ -172,9 +170,17 @@ export const createOrderService = async (
     }
 
     // Validate delivery address for quarterly and kit
-    if ((planType === "quarterly" || planType === "kit")) {
-      if (!deliveryAddress || !deliveryAddress.name || !deliveryAddress.phone || !deliveryAddress.fullAddress) {
-        return { success: false, message: "Complete delivery address is required for this plan" };
+    if (planType === "quarterly" || planType === "kit") {
+      if (
+        !deliveryAddress ||
+        !deliveryAddress.name ||
+        !deliveryAddress.phone ||
+        !deliveryAddress.fullAddress
+      ) {
+        return {
+          success: false,
+          message: "Complete delivery address is required for this plan",
+        };
       }
     }
 
@@ -227,14 +233,21 @@ export const createOrderService = async (
     };
   } catch (error: any) {
     console.error("Create order service error:", error);
-    return { success: false, message: error.message || "Failed to create order" };
+    return {
+      success: false,
+      message: error.message || "Failed to create order",
+    };
   }
 };
 
 /**
  * Get orders for a user
  */
-export const getUserOrdersService = async (userId: string, page = 1, limit = 6) => {
+export const getUserOrdersService = async (
+  userId: string,
+  page = 1,
+  limit = 6
+) => {
   try {
     const safePage = Math.max(1, page);
     const safeLimit = Math.min(Math.max(1, limit), 50);
@@ -270,7 +283,13 @@ export const getUserOrdersService = async (userId: string, page = 1, limit = 6) 
 /**
  * Get all orders (admin)
  */
-export const getAllOrdersService = async (filter?: { status?: string; planType?: string; userId?: string; page?: number; limit?: number }) => {
+export const getAllOrdersService = async (filter?: {
+  status?: string;
+  planType?: string;
+  userId?: string;
+  page?: number;
+  limit?: number;
+}) => {
   try {
     const query: any = {};
     if (filter?.status) query.paymentStatus = filter.status;
@@ -300,8 +319,8 @@ export const getAllOrdersService = async (filter?: { status?: string; planType?:
         total,
         page,
         limit,
-        totalPages
-      }
+        totalPages,
+      },
     };
   } catch (error: any) {
     return { success: false, message: error.message };
@@ -339,8 +358,12 @@ export const approveOrderService = async (orderId: string) => {
       if (existingActiveOrder && existingActiveOrder.endDate) {
         // Extend from existing end date
         startDate = existingActiveOrder.endDate;
-        endDate = new Date(existingActiveOrder.endDate.getTime() + 90 * 24 * 60 * 60 * 1000);
-        console.log(`Extending quarterly subscription from ${existingActiveOrder.endDate} to ${endDate}`);
+        endDate = new Date(
+          existingActiveOrder.endDate.getTime() + 90 * 24 * 60 * 60 * 1000
+        );
+        console.log(
+          `Extending quarterly subscription from ${existingActiveOrder.endDate} to ${endDate}`
+        );
       } else {
         // New subscription - 3 months from now
         endDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
@@ -370,7 +393,9 @@ export const approveOrderService = async (orderId: string) => {
           completedQuizzes: [],
           completedProjects: [],
         });
-        console.log(`Enrollment created for user ${order.userId} in course ${order.courseId}`);
+        console.log(
+          `Enrollment created for user ${order.userId} in course ${order.courseId}`
+        );
       }
     }
 
@@ -428,7 +453,10 @@ export const rejectOrderService = async (orderId: string) => {
 /**
  * Check if student has access to a course
  */
-export const checkCourseAccessService = async (userId: string, courseId: string) => {
+export const checkCourseAccessService = async (
+  userId: string,
+  courseId: string
+) => {
   try {
     const now = new Date();
 
@@ -450,20 +478,31 @@ export const checkCourseAccessService = async (userId: string, courseId: string)
     // Check plan type
     if (activeOrder.planType === "quarterly") {
       // All courses access
-      return { hasAccess: true, planType: "quarterly", endDate: activeOrder.endDate };
+      return {
+        hasAccess: true,
+        planType: "quarterly",
+        endDate: activeOrder.endDate,
+      };
     }
 
     if (activeOrder.planType === "single") {
       // Only specific course
       if (activeOrder.courseId?.toString() === courseId) {
-        return { hasAccess: true, planType: "single", endDate: activeOrder.endDate };
+        return {
+          hasAccess: true,
+          planType: "single",
+          endDate: activeOrder.endDate,
+        };
       }
       return { hasAccess: false, reason: "Different course purchased" };
     }
 
     if (activeOrder.planType === "kit") {
       // No course access
-      return { hasAccess: false, reason: "Kit purchase does not include course access" };
+      return {
+        hasAccess: false,
+        reason: "Kit purchase does not include course access",
+      };
     }
 
     return { hasAccess: false, reason: "Unknown plan type" };
@@ -545,7 +584,10 @@ export const getEnrolledStudentsService = async (
     }
 
     if (course.instructorId.toString() !== instructorId) {
-      return { success: false, message: "You don't have permission to view students for this course" };
+      return {
+        success: false,
+        message: "You don't have permission to view students for this course",
+      };
     }
 
     const now = new Date();
@@ -561,10 +603,7 @@ export const getEnrolledStudentsService = async (
           isActive: true,
           $and: [
             {
-              $or: [
-                { endDate: { $gt: now } },
-                { endDate: null },
-              ],
+              $or: [{ endDate: { $gt: now } }, { endDate: null }],
             },
             {
               $or: [
@@ -618,9 +657,7 @@ export const getEnrolledStudentsService = async (
       },
       {
         $facet: {
-          metadata: [
-            { $count: "totalCount" },
-          ],
+          metadata: [{ $count: "totalCount" }],
           students: [
             { $skip: skip },
             { $limit: limit },
@@ -660,6 +697,9 @@ export const getEnrolledStudentsService = async (
     };
   } catch (error: any) {
     console.error("Get enrolled students error:", error);
-    return { success: false, message: error.message || "Failed to fetch enrolled students" };
+    return {
+      success: false,
+      message: error.message || "Failed to fetch enrolled students",
+    };
   }
 };

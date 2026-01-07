@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { token: string } }
-) {
-  const token = params.token;
-  
-  // Redirect to backend API
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-  const redirectUrl = `${backendUrl}/api/orders/email-action/${token}`;
-  
-  return NextResponse.redirect(redirectUrl);
+// Disabled: Order actions are backend-only. Keep 410 to avoid Next.js handling.
+export async function GET(_req: NextRequest) {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "This route has been removed. Use backend /api/orders/email-action/:token",
+    },
+    { status: 410 }
+  );
 }

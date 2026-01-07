@@ -63,15 +63,7 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
       return;
     }
 
-    console.log("🔄 Navbar: Checking auth...");
-    console.log("🔄 Navbar: tokenCookie =", tokenCookie ? "EXISTS" : "MISSING");
-    console.log("🔄 Navbar: tokenLocal =", tokenLocal ? "EXISTS" : "MISSING");
-    console.log("🔄 Navbar: token =", token ? "EXISTS" : "MISSING");
-    console.log("🔄 Navbar: userStr =", userStr ? "EXISTS" : "MISSING");
-    console.log("🔄 Navbar: role =", role);
-
     if (!token && !userStr) {
-      console.log("🔄 Navbar: No auth data, setting unauthenticated");
       setIsAuthenticated(false);
       setUser(null);
       setIsLoading(false);
@@ -79,16 +71,12 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
     }
 
     try {
-      console.log("🔄 Navbar: Auth data found, setting authenticated");
       const parsed = userStr ? JSON.parse(userStr) : null;
-      console.log("🔄 Navbar: Parsed user =", parsed);
       setIsAuthenticated(true);
       setUser(parsed);
       const resolvedRole = parsed?.role || role || undefined;
-      console.log("🔄 Navbar: Resolved role =", resolvedRole);
       setDashboardUrl(getDashboardUrl(resolvedRole));
     } catch (e) {
-      console.error("🔄 Navbar: Error parsing user:", e);
       setIsAuthenticated(false);
       setUser(null);
     }
@@ -100,16 +88,13 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
     syncAuth();
 
     const onAuthChange = () => {
-      console.log("🔄 Navbar: Auth change event received");
       syncAuth();
     };
     const onStorage = () => {
-      console.log("🔄 Navbar: Storage event detected");
       syncAuth();
     };
     const onVisibility = () => {
       if (document.visibilityState === "visible") {
-        console.log("🔄 Navbar: Visibility change sync");
         syncAuth();
       }
     };
@@ -126,40 +111,44 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
   }, [syncAuth]);
 
   const handleLogout = async () => {
-    console.log("🚪 Navbar: Logout initiated");
-
-    // Set logout flag FIRST
-    sessionStorage.setItem("loggingOut", "1");
-    console.log("🚪 Navbar: Set loggingOut flag");
-
-    // Call API logout (don't wait for it)
     try {
-      await apiLogout();
-      console.log("🚪 Navbar: API logout successful");
-    } catch (e) {
-      console.log("🚪 Navbar: API logout failed (ignored):", e);
+      // Set logout flag FIRST
+      sessionStorage.setItem("loggingOut", "1");
+
+      // Call API logout (don't wait for it)
+      try {
+        await apiLogout();
+      } catch (e) {
+        // API logout failed, continuing with client-side logout
+      }
+
+      // Clear cookies
+      Cookies.remove("accessToken", { path: "/" });
+      Cookies.remove("refreshToken", { path: "/" });
+      Cookies.remove("userRole", { path: "/" });
+
+      // Clear localStorage (minimal)
+      localStorage.removeItem("user");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("token");
+
+      // Update local state
+      setIsAuthenticated(false);
+      setUser(null);
+      // Use router.replace for Next.js, with window.location.href as fallback for mobile reliability
+      setTimeout(() => {
+        router.replace("/");
+        // Fallback for mobile devices that might have issues with router
+        setTimeout(() => {
+          if (window.location.pathname !== "/") {
+            window.location.href = "/";
+          }
+        }, 500);
+      }, 100);
+    } catch (error) {
+      // Emergency logout - just go to home page
+      window.location.href = "/";
     }
-
-    // Clear cookies
-    Cookies.remove("accessToken", { path: "/" });
-    Cookies.remove("refreshToken", { path: "/" });
-    Cookies.remove("userRole", { path: "/" });
-    console.log("🚪 Navbar: Cleared cookies");
-
-    // Clear localStorage (minimal)
-    localStorage.removeItem("user");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("token");
-    console.log("🚪 Navbar: Cleared localStorage");
-
-    // Update local state
-    setIsAuthenticated(false);
-    setUser(null);
-    console.log("🚪 Navbar: Updated local state");
-
-    // Single redirect using router.replace (NO window.location.href)
-    console.log("🚪 Navbar: Redirecting to home page");
-    router.replace("/");
   };
 
 
@@ -193,7 +182,12 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
           <DropdownItem key="settings" onPress={() => router.push("/profile")}>
             My Profile
           </DropdownItem>
-          <DropdownItem key="logout" color="danger" onPress={handleLogout}>
+          <DropdownItem 
+            key="logout" 
+            color="danger" 
+            onPress={handleLogout}
+            className="cursor-pointer touch-manipulation active:opacity-80"
+          >
             Log Out
           </DropdownItem>
         </DropdownMenu>
@@ -330,7 +324,7 @@ export const Navbar = () => {
             <div className="flex flex-col min-w-0">
               <p
                 className={clsx(
-                  "font-extrabold text-base sm:text-lg lg:text-xl tracking-tight",
+                  "font-extrabold text-base sm:text-lg lg:text-xl tracking-tight whitespace-nowrap leading-tight",
                   isScrolled 
                     ? "bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"
                     : "text-white drop-shadow-lg"
@@ -457,17 +451,20 @@ export const Navbar = () => {
                     try {
                       sessionStorage.setItem("loggingOut", "1");
                       await apiLogout();
-                      Cookies.remove("accessToken");
-                      Cookies.remove("refreshToken");
-                      Cookies.remove("userRole");
+                      // Ensure cookie removal matches original path
+                      Cookies.remove("accessToken", { path: "/" });
+                      Cookies.remove("refreshToken", { path: "/" });
+                      Cookies.remove("userRole", { path: "/" });
                       localStorage.removeItem("user");
                       localStorage.removeItem("userRole");
                       localStorage.removeItem("token");
+                      localStorage.removeItem("accessToken");
+                      // Proactively sync UI on all listeners
+                      window.dispatchEvent(new Event("auth-change"));
                       setMobileAuth({ authed: false });
                       setIsMenuOpen(false);
                       window.location.href = "/";
                     } catch (error) {
-                      console.error("Logout error:", error);
                       window.location.href = "/";
                     }
                   }}

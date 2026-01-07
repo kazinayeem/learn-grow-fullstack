@@ -20,7 +20,8 @@ import {
     ModalFooter,
     useDisclosure,
 } from "@nextui-org/react";
-import { FiCamera, FiEdit2, FiCheck, FiX, FiLock, FiPhone } from "react-icons/fi";
+import { FiCamera, FiEdit2, FiCheck, FiX, FiLock, FiPhone, FiLogOut } from "react-icons/fi";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 import { toast } from "react-toastify";
 import Cookies from "js-cookie";
@@ -31,6 +32,7 @@ import {
 } from "@/redux/api/userApi";
 
 export default function UserProfile() {
+    const router = useRouter();
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
     const { isOpen: isPasswordModalOpen, onOpen: onPasswordModalOpen, onOpenChange: onPasswordModalOpenChange } = useDisclosure();
     const { isOpen: isPhoneModalOpen, onOpen: onPhoneModalOpen, onOpenChange: onPhoneModalOpenChange } = useDisclosure();
@@ -41,6 +43,7 @@ export default function UserProfile() {
     const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [profilePhoto, setProfilePhoto] = useState<string>("");
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     // Password change states
     const [passwordOtpSent, setPasswordOtpSent] = useState(false);
@@ -236,6 +239,56 @@ export default function UserProfile() {
             toast.error("Failed to update profile");
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleLogout = async () => {
+        try {
+            setIsLoggingOut(true);
+            console.log("🚪 Profile: Logout initiated");
+
+            // Set logout flag
+            sessionStorage.setItem("loggingOut", "1");
+
+            // Try to call logout API
+            try {
+                await axios.post(
+                    `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/users/logout`,
+                    {},
+                    { headers: { Authorization: `Bearer ${Cookies.get("accessToken")}` } }
+                );
+                console.log("🚪 Profile: API logout successful");
+            } catch (e) {
+                console.log("🚪 Profile: API logout failed (continuing anyway):", e);
+            }
+
+            // Clear all auth data
+            Cookies.remove("accessToken", { path: "/" });
+            Cookies.remove("refreshToken", { path: "/" });
+            Cookies.remove("userRole", { path: "/" });
+            localStorage.removeItem("user");
+            localStorage.removeItem("userRole");
+            localStorage.removeItem("token");
+            console.log("🚪 Profile: Cleared all auth data");
+
+            // Show success message and redirect
+            toast.success("Logged out successfully");
+            
+            // Use router.replace with window.location fallback for mobile reliability
+            setTimeout(() => {
+                router.replace("/");
+                // Fallback for mobile devices
+                setTimeout(() => {
+                    if (window.location.pathname !== "/") {
+                        window.location.href = "/";
+                    }
+                }, 500);
+            }, 200);
+        } catch (error) {
+            console.error("🚪 Profile: Unexpected error during logout:", error);
+            toast.error("Logout error - redirecting to home page");
+            // Emergency logout
+            window.location.href = "/";
         }
     };
 
@@ -522,6 +575,29 @@ export default function UserProfile() {
                                 Update Phone Number
                             </Button>
                         </div>
+                    </div>
+
+                    <Divider />
+
+                    {/* Logout Section */}
+                    <div>
+                        <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+                            🚪 Session
+                        </h2>
+                        <Button
+                            color="danger"
+                            variant="solid"
+                            startContent={<FiLogOut />}
+                            onPress={handleLogout}
+                            isLoading={isLoggingOut}
+                            size="lg"
+                            className="w-full font-semibold cursor-pointer touch-manipulation"
+                        >
+                            {isLoggingOut ? "Logging out..." : "Log Out"}
+                        </Button>
+                        <p className="text-xs sm:text-sm text-gray-500 mt-2">
+                            You will be logged out from this device and redirected to the home page.
+                        </p>
                     </div>
                 </CardBody>
             </Card>

@@ -47,7 +47,6 @@ if (typeof window !== "undefined") {
         try {
             store.dispatch(loadEnrollments(JSON.parse(savedEnrollments)));
         } catch (e) {
-            console.error("Failed to load enrollments", e);
         }
     }
 
@@ -57,7 +56,6 @@ if (typeof window !== "undefined") {
         try {
             store.dispatch(loadPayments(JSON.parse(savedPayments)));
         } catch (e) {
-            console.error("Failed to load payments", e);
         }
     }
 
@@ -67,7 +65,6 @@ if (typeof window !== "undefined") {
         try {
             store.dispatch(loadQuizzes(JSON.parse(savedQuizzes)));
         } catch (e) {
-            console.error("Failed to load quizzes", e);
         }
     }
 
@@ -77,7 +74,6 @@ if (typeof window !== "undefined") {
         try {
             store.dispatch(loadQuizAttempts(JSON.parse(savedQuizAttempts)));
         } catch (e) {
-            console.error("Failed to load quiz attempts", e);
         }
     }
 
@@ -87,7 +83,6 @@ if (typeof window !== "undefined") {
         try {
             store.dispatch(loadAssignments(JSON.parse(savedAssignments)));
         } catch (e) {
-            console.error("Failed to load assignments", e);
         }
     }
 
@@ -97,7 +92,6 @@ if (typeof window !== "undefined") {
         try {
             store.dispatch(loadSubmissions(JSON.parse(savedSubmissions)));
         } catch (e) {
-            console.error("Failed to load submissions", e);
         }
     }
 
@@ -107,7 +101,6 @@ if (typeof window !== "undefined") {
         try {
             store.dispatch(loadClasses(JSON.parse(savedClasses)));
         } catch (e) {
-            console.error("Failed to load classes", e);
         }
     }
 
@@ -117,7 +110,6 @@ if (typeof window !== "undefined") {
         try {
             store.dispatch(loadAttendance(JSON.parse(savedAttendance)));
         } catch (e) {
-            console.error("Failed to load attendance", e);
         }
     }
 
@@ -127,7 +119,6 @@ if (typeof window !== "undefined") {
         try {
             store.dispatch(loadModules(JSON.parse(savedModules)));
         } catch (e) {
-            console.error("Failed to load modules", e);
         }
     }
 
@@ -137,7 +128,6 @@ if (typeof window !== "undefined") {
         try {
             store.dispatch(loadLectureProgress(JSON.parse(savedLectureProgress)));
         } catch (e) {
-            console.error("Failed to load lecture progress", e);
         }
     }
 }
@@ -182,7 +172,6 @@ if (typeof window !== "undefined") {
                 JSON.stringify(state.courseContent.lectureProgress)
             );
         } catch (e) {
-            console.error("Failed to save to localStorage", e);
         }
     });
 }

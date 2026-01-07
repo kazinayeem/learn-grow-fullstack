@@ -56,7 +56,6 @@ export class BkashPayment {
             }
             throw new Error("Failed to get bKash token");
         } catch (error) {
-            console.error("bKash Grant Token Error:", error);
             throw error;
         }
     }
@@ -65,7 +64,7 @@ export class BkashPayment {
     async createPayment(paymentData: BkashPaymentRequest): Promise<BkashPaymentResponse> {
         // Mock functionality for demo/testing if keys are missing
         if (!this.appKey || !this.appSecret) {
-            console.warn("bKash keys missing. Using MOCK payment flow.");
+            // Using MOCK payment flow when keys are missing
             // Simulate API delay
             await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -113,7 +112,6 @@ export class BkashPayment {
 
             throw new Error(data.statusMessage || "Payment creation failed");
         } catch (error) {
-            console.error("bKash Create Payment Error:", error);
             throw error;
         }
     }
@@ -136,7 +134,6 @@ export class BkashPayment {
             const data = await response.json();
             return data;
         } catch (error) {
-            console.error("bKash Execute Payment Error:", error);
             throw error;
         }
     }
@@ -159,7 +156,6 @@ export class BkashPayment {
             const data = await response.json();
             return data;
         } catch (error) {
-            console.error("bKash Query Payment Error:", error);
             throw error;
         }
     }

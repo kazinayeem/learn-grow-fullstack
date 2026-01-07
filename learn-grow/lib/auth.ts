@@ -365,8 +365,6 @@ export const handleOAuthCallback = (params: URLSearchParams) => {
  */
 const fetchUserProfile = async (token: string) => {
   try {
-    console.log("[Auth] Fetching user profile from:", `${API_URL}/users/profile`);
-    
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
     
@@ -381,28 +379,15 @@ const fetchUserProfile = async (token: string) => {
     
     clearTimeout(timeoutId);
     
-    console.log("[Auth] Profile fetch response status:", response.status);
-    
     if (response.ok) {
       const data = await response.json();
-      console.log("[Auth] Profile data received:", data);
       
       if (data.success && data.data) {
         localStorage.setItem("user", JSON.stringify(data.data));
-        console.log("[Auth] User profile saved to localStorage");
       }
-    } else {
-      console.warn("[Auth] Profile fetch failed with status:", response.status);
-      const errorText = await response.text();
-      console.warn("[Auth] Error response:", errorText);
     }
   } catch (error: any) {
-    if (error.name === 'AbortError') {
-      console.error("[Auth] Profile fetch timeout");
-    } else {
-      console.error("[Auth] Failed to fetch user profile:", error);
-    }
-    // Don't re-throw, allow the app to continue
+    // Profile fetch error handled silently, allow the app to continue
   }
 };
 
