@@ -67,10 +67,10 @@ export const courseApi = baseApi.injectEndpoints({
             providesTags: (result, error, id) => [{ type: "Course", id: `stats-${id}` }],
         }),
         getInstructorCourses: build.query({
-            query: ({ instructorId, page = 1, limit = 12 }: { instructorId: string; page?: number; limit?: number }) => ({
+            query: ({ instructorId, page = 1, limit = 12, search }: { instructorId: string; page?: number; limit?: number; search?: string }) => ({
                 url: `/course/get-instructor-courses/${instructorId}`,
                 method: "GET",
-                params: { page, limit },
+                params: { page, limit, search },
             }),
             providesTags: ["Course"],
         }),

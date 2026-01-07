@@ -76,11 +76,34 @@ export default function StudentTicketDetailPage() {
   const params = useParams();
   const router = useRouter();
   const ticketId = params.id as string;
+  
+  // Get user role from localStorage
+  const [userRole, setUserRole] = useState<string>("");
+  
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser);
+          setUserRole(user.role || "");
+        } catch (e) {
+          console.error("Failed to parse user:", e);
+        }
+      }
+    }
+  }, []);
 
   const { data, isLoading, error } = useGetTicketByIdQuery(ticketId);
   const [addReply, { isLoading: isAddingReply }] = useAddReplyMutation();
 
   const [replyMessage, setReplyMessage] = useState("");
+  
+  // Determine back route based on user role
+  const getBackRoute = () => {
+    if (userRole === "instructor") return "/instructor/tickets";
+    return "/student/tickets";
+  };
 
   const ticket: Ticket | undefined = data?.data;
 
@@ -132,7 +155,7 @@ export default function StudentTicketDetailPage() {
     return (
       <div className="container mx-auto px-4 py-8 max-w-5xl text-center">
         <p className="text-danger">Failed to load ticket</p>
-        <Button onPress={() => router.back()} className="mt-4">
+        <Button onPress={() => router.push(getBackRoute())} className="mt-4">
           Go Back
         </Button>
       </div>
@@ -147,7 +170,7 @@ export default function StudentTicketDetailPage() {
       {/* Back Button */}
       <Button
         startContent={<FaArrowLeft />}
-        onPress={() => router.push("/student/tickets")}
+        onPress={() => router.push(getBackRoute())}
         variant="light"
         className="mb-6"
       >

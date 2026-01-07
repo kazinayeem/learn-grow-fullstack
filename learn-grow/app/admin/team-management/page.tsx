@@ -42,7 +42,7 @@ import {
     FaCheck,
     FaUpload
 } from "react-icons/fa";
-import ImageUploadBase64 from "@/components/admin/ImageUploadBase64";
+// Removed base64 image uploader in favor of URL input
 import {
     useGetAllTeamMembersQuery,
     useCreateTeamMemberMutation,
@@ -99,16 +99,15 @@ export default function TeamManagementPage() {
         twitter: "",
         bio: "",
     });
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
-    const [imageSize, setImageSize] = useState(0);
+    const [imageUrl, setImageUrl] = useState<string>("");
 
     const teamMembers = (teamData?.data || []) as TeamMember[];
     const instructors = (instructorsData?.data || []) as Instructor[];
 
     // Handle Add Member
     const handleAddMember = async () => {
-        if (!formData.name || !formData.role || !selectedImage) {
-            toast.error("Name, Role, and Image are required");
+        if (!formData.name || !formData.role || !imageUrl) {
+            toast.error("Name, Role, and Image URL are required");
             return;
         }
 
@@ -116,7 +115,7 @@ export default function TeamManagementPage() {
             await createTeamMember({
                 name: formData.name,
                 role: formData.role,
-                image: selectedImage,
+                image: imageUrl,
                 linkedIn: formData.linkedIn,
                 twitter: formData.twitter,
                 bio: formData.bio,
@@ -124,8 +123,7 @@ export default function TeamManagementPage() {
 
             toast.success("Team member added successfully!");
             setFormData({ name: "", role: "", linkedIn: "", twitter: "", bio: "" });
-            setSelectedImage(null);
-            setImageSize(0);
+            setImageUrl("");
         } catch (error) {
             toast.error((error as any)?.data?.message || "Failed to add member");
         }
@@ -306,23 +304,23 @@ export default function TeamManagementPage() {
                                         variant="bordered"
                                     />
 
-                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                                        <p className="text-sm font-semibold mb-3 text-gray-600">Profile Picture *</p>
-                                        <div className="flex flex-col items-center justify-center">
-                                            <ImageUploadBase64
-                                                onImageSelected={(base64, size) => {
-                                                    setSelectedImage(base64);
-                                                    setImageSize(size);
-                                                }}
-                                                preview={selectedImage ?? undefined}
-                                                isLoading={createLoading}
+                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
+                                        <p className="text-sm font-semibold text-gray-600">Profile Picture URL *</p>
+                                        <Input
+                                            placeholder="https://example.com/image.jpg"
+                                            value={imageUrl}
+                                            onChange={(e) => setImageUrl(e.target.value)}
+                                            variant="bordered"
+                                        />
+                                        {imageUrl && (
+                                            <Image
+                                                src={imageUrl}
+                                                alt="Preview"
+                                                width={160}
+                                                height={160}
+                                                className="rounded-xl border"
                                             />
-                                            {imageSize > 0 && (
-                                                <Chip size="sm" color="success" variant="flat" className="mt-2">
-                                                    Size: {(imageSize / 1024).toFixed(2)} KB
-                                                </Chip>
-                                            )}
-                                        </div>
+                                        )}
                                     </div>
 
                                     <Button
@@ -457,7 +455,7 @@ export default function TeamManagementPage() {
                                                 <div className="relative h-48 bg-gray-100 overflow-hidden">
                                                     {member.image ? (
                                                         <Image
-                                                            src={`data:image/jpeg;base64,${member.image}`}
+                                                            src={member.image.startsWith("http") ? member.image : `data:image/jpeg;base64,${member.image}`}
                                                             alt={member.name}
                                                             width="100%"
                                                             height="100%"
@@ -571,7 +569,7 @@ export default function TeamManagementPage() {
                                         <div className="flex items-center gap-4 mb-2">
                                             {editingMember.image && (
                                                 <Image
-                                                    src={`data:image/jpeg;base64,${editingMember.image}`}
+                                                    src={editingMember.image.startsWith("http") ? editingMember.image : `data:image/jpeg;base64,${editingMember.image}`}
                                                     alt={editingMember.name}
                                                     width={64}
                                                     height={64}

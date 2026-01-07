@@ -6,8 +6,6 @@ import {
   CardBody,
   Button,
   Chip,
-  Select,
-  SelectItem,
   Input,
   Table,
   TableHeader,
@@ -23,10 +21,14 @@ import {
   useDisclosure,
   Textarea,
   Spinner,
+  Autocomplete,
+  AutocompleteItem,
+  Select,
+  SelectItem,
 } from "@nextui-org/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FaEye, FaEdit, FaSearch, FaFilter } from "react-icons/fa";
-import { useGetAllCoursesQuery } from "@/redux/api/courseApi";
+import { useGetInstructorCoursesQuery } from "@/redux/api/courseApi";
 import { useGetQuizzesByCourseQuery } from "@/redux/api/quizApi";
 import {
   useGetAssignmentsByCourseQuery,
@@ -41,6 +43,7 @@ function InstructorAssessmentsContent() {
   const courseIdFromUrl = searchParams.get("courseId");
 
   const [selectedCourse, setSelectedCourse] = useState(courseIdFromUrl || "");
+  const [courseSearch, setCourseSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
@@ -50,8 +53,25 @@ function InstructorAssessmentsContent() {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  // Fetch instructor's courses
-  const { data: coursesResp } = useGetAllCoursesQuery({});
+  // Determine instructor id (from localStorage user)
+  const [instructorId, setInstructorId] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        const id = parsed?._id || parsed?.id;
+        if (id) setInstructorId(id as string);
+      } catch {}
+    }
+  }, []);
+
+  // Fetch instructor's courses with search
+  const { data: coursesResp } = useGetInstructorCoursesQuery(
+    { instructorId: instructorId || "", page: 1, limit: 200, search: courseSearch || undefined },
+    { skip: !instructorId }
+  );
   const courses = coursesResp?.data || [];
 
   // Fetch quizzes for selected course
@@ -190,19 +210,19 @@ function InstructorAssessmentsContent() {
         <CardBody className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Course Selection */}
-            <Select
+            <Autocomplete
               label="Select Course"
-              placeholder="Choose a course"
-              selectedKeys={selectedCourse ? [selectedCourse] : []}
-              onChange={(e) => setSelectedCourse(e.target.value)}
-              disableAnimation
+              placeholder="Type to search..."
+              selectedKey={selectedCourse || null}
+              onInputChange={setCourseSearch}
+              onSelectionChange={(key) => setSelectedCourse((key as string) || "")}
             >
               {courses.map((course: any) => (
-                <SelectItem key={course._id} value={course._id}>
+                <AutocompleteItem key={course._id} value={course._id}>
                   {course.title}
-                </SelectItem>
+                </AutocompleteItem>
               ))}
-            </Select>
+            </Autocomplete>
 
             {/* Search */}
             <Input

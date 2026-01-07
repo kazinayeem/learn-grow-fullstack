@@ -127,7 +127,7 @@ export default function ManageCoursesPage() {
   const handleReject = async (id: string) => {
     try {
       await rejectCourse(id).unwrap();
-      toast.success("Course approval revoked successfully");
+      toast.success("Course approval rejectedd successfully");
     } catch (error: any) {
       console.error("Failed to reject course:", error);
       toast.error(error?.data?.message || "Failed to reject course");
@@ -504,7 +504,7 @@ export default function ManageCoursesPage() {
                         startContent={<FaTimes />}
                         className="flex-1"
                       >
-                        Revoke
+                        rejected
                       </Button>
                     )}
                     <Button
@@ -841,7 +841,7 @@ export default function ManageCoursesPage() {
                       size="md"
                       className="min-h-[44px]"
                     >
-                      Revoke Approval
+                      rejected Approval
                     </Button>
                   )}
                   <Button

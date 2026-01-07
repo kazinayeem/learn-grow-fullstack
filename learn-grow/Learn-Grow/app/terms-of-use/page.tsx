@@ -83,7 +83,7 @@ export default function TermsOfUsePage() {
                 <ul className="list-disc pl-6 mb-6 space-y-2">
                     <li>You must complete all course modules and pass required quizzes to earn a certificate</li>
                     <li>Certificates are issued digitally and can be downloaded or shared</li>
-                    <li>We reserve the right to revoke certificates if cheating or misconduct is detected</li>
+                    <li>We reserve the right to rejected certificates if cheating or misconduct is detected</li>
                     <li>Certificates do not guarantee employment or professional certification</li>
                 </ul>
 

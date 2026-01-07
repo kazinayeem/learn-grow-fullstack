@@ -24,7 +24,7 @@ import {
   ModalFooter,
 } from "@nextui-org/react";
 import { FaSearch, FaUserTie, FaEnvelope, FaPhone, FaBan, FaCheck, FaPlus, FaTicketAlt, FaUserShield } from "react-icons/fa";
-import { useGetUsersAdminQuery, useGetAdminDashboardStatsQuery } from "@/redux/api/userApi";
+import { useGetUsersAdminQuery, useGetAdminDashboardStatsQuery, useUpdateUserMutation } from "@/redux/api/userApi";
 import { toast } from "react-hot-toast";
 
 export default function ManagersPage() {
@@ -48,6 +48,8 @@ export default function ManagersPage() {
     search: searchQuery
   });
 
+  const [updateUser, { isLoading: isUpdatingUser }] = useUpdateUserMutation();
+
   const managers = data?.data || [];
   const totalPages = data?.pagination?.totalPages || 1;
   const totalManagers = statsData?.data?.managers || 0;
@@ -58,9 +60,13 @@ export default function ManagersPage() {
     onClose();
   };
 
-  const handleStatusToggle = async (userId: string, currentStatus: string) => {
-    // Implement status toggle logic here
-    console.log("Toggle status for manager:", userId, currentStatus);
+  const handleStatusToggle = async (userId: string, isBlocked: boolean) => {
+    try {
+      await updateUser({ id: userId, isBlocked: !isBlocked }).unwrap();
+      toast.success(!isBlocked ? "Manager blocked" : "Manager unblocked");
+    } catch (e: any) {
+      toast.error(e?.data?.message || "Failed to update status");
+    }
   };
 
   return (

@@ -72,7 +72,33 @@ const refreshAccessToken = async (): Promise<string | null> => {
     }
 };
 
+// Optional proactive refresh: if token near expiry, refresh silently
+let lastRefreshAttempt = 0;
+const isTokenExpiringSoon = (): boolean => {
+    try {
+        const token = Cookies.get("accessToken") || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
+        if (!token) return false;
+        const [, payload] = token.split(".");
+        if (!payload) return false;
+        const decoded = JSON.parse(typeof window !== "undefined" ? atob(payload) : Buffer.from(payload, "base64").toString());
+        const expMs = (decoded.exp || 0) * 1000;
+        const now = Date.now();
+        const fiveMinutes = 5 * 60 * 1000;
+        return expMs > 0 && expMs - now < fiveMinutes;
+    } catch {
+        return false;
+    }
+};
+
 const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
+    // Proactively refresh if token is within 5 minutes of expiry, but not more than once per minute
+    if (isTokenExpiringSoon()) {
+        const now = Date.now();
+        if (now - lastRefreshAttempt > 60 * 1000) {
+            lastRefreshAttempt = now;
+            await refreshAccessToken();
+        }
+    }
     let result = await baseQuery(args, api, extraOptions);
 
     if (result.error && result.error.status === 401) {

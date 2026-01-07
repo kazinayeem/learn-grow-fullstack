@@ -877,7 +877,7 @@ export const rejectInstructor = async (
 
     return {
       success: true,
-      message: "Instructor approval revoked successfully",
+      message: "Instructor approval rejectedd successfully",
       data: {
         id: instructor._id,
         name: instructor.name,
@@ -1132,13 +1132,14 @@ export const getUserByIdAdmin = async (id: string) => {
 };
 
 /** Admin: Update user */
-export const updateUserAdmin = async (id: string, updates: Partial<{ name: string; email: string; phone: string; password: string; role: string }>) => {
+export const updateUserAdmin = async (id: string, updates: Partial<{ name: string; email: string; phone: string; password: string; role: string; isBlocked: boolean }>) => {
   try {
     const toSet: any = {};
     if (updates.name) toSet.name = updates.name;
     if (updates.email) toSet.email = updates.email;
     if (updates.phone) toSet.phone = updates.phone;
     if (updates.password) toSet.password = await bcrypt.hash(updates.password, 10);
+    if (typeof updates.isBlocked === 'boolean') toSet.isBlocked = updates.isBlocked;
     const user = await User.findByIdAndUpdate(id, { $set: toSet }, { new: true });
     if (!user) return { success: false, message: "User not found" };
     const safe = await User.findById(id).select("-password -otp -otpExpiresAt -refreshToken -verificationToken");

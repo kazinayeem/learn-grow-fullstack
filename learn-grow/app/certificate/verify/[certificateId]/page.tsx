@@ -174,7 +174,7 @@ export default function VerifyCertificatePage() {
 
                 <div className="text-center">
                   <p className="text-lg text-gray-700 mb-4">
-                    {data?.message || "Certificate not found or has been revoked."}
+                    {data?.message || "Certificate not found or has been rejectedd."}
                   </p>
                   <p className="text-sm text-gray-600">
                     Please verify the certificate ID and try again.

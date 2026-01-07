@@ -368,8 +368,9 @@ export const getCoursesByInstructor = async (req: Request, res: Response) => {
     const targetInstructorId =
       req.userRole === "instructor" ? req.userId! : req.params.instructorId;
 
-    const { page, limit } = parsePagination(req.query, { defaultLimit: 10, maxLimit: 10 });
-    const result = await service.getCoursesByInstructor(targetInstructorId, { page, limit });
+    const { page, limit } = parsePagination(req.query, { defaultLimit: 12, maxLimit: 200 });
+    const search = typeof req.query.search === "string" ? req.query.search : undefined;
+    const result = await service.getCoursesByInstructor(targetInstructorId, { page, limit, search });
     res.json({
       success: true,
       message: "Instructor courses retrieved successfully",
@@ -781,13 +782,13 @@ export const rejectCourseApproval = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: "Course approval revoked successfully",
+      message: "Course approval rejected successfully",
       data: course,
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to revoke course approval",
+      message: error.message || "Failed to rejected course approval",
     });
   }
 };

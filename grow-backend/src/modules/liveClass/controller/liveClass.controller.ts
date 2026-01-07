@@ -141,7 +141,11 @@ export const updateLiveClass = async (req: Request, res: Response) => {
     console.log(`   User role: ${userRole}`);
 
     // Allow instructors to update their own classes, or admins/managers to update any class
-    const isOwner = liveClass.instructorId.toString() === instructorId.toString();
+    // Handle both populated (object) and non-populated (ObjectId) instructorId
+    const classInstructorId = typeof liveClass.instructorId === 'object' && liveClass.instructorId !== null
+      ? (liveClass.instructorId as any)._id?.toString() || liveClass.instructorId.toString()
+      : liveClass.instructorId.toString();
+    const isOwner = classInstructorId === instructorId.toString();
     const isAdmin = userRole === "admin" || userRole === "manager";
 
     if (!isOwner && !isAdmin) {
@@ -183,7 +187,11 @@ export const deleteLiveClass = async (req: Request, res: Response) => {
     }
 
     // Allow instructors to delete their own classes, or admins/managers to delete any class
-    const isOwner = liveClass.instructorId.toString() === instructorId.toString();
+    // Handle both populated (object) and non-populated (ObjectId) instructorId
+    const classInstructorId = typeof liveClass.instructorId === 'object' && liveClass.instructorId !== null
+      ? (liveClass.instructorId as any)._id?.toString() || liveClass.instructorId.toString()
+      : liveClass.instructorId.toString();
+    const isOwner = classInstructorId === instructorId.toString();
     const isAdmin = userRole === "admin" || userRole === "manager";
 
     if (!isOwner && !isAdmin) {

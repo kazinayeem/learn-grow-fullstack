@@ -6,6 +6,7 @@ import { Enrollment } from "../../enrollment/model/enrollment.model";
 import { ENV } from "@/config/env";
 import mongoose from "mongoose";
 import nodemailer from "nodemailer";
+import jwt from "jsonwebtoken";
 import { getSMTPTransporter } from "@/modules/settings/service/smtp.service";
 
 // ENROLLMENT PRICING
@@ -24,11 +25,6 @@ const sendOrderEmail = async (order: any) => {
     const user = order.userId || {};
     const course = order.courseId || {};
     const paymentMethod = order.paymentMethodId || {};
-    const recipients = [user.email, ENV.EMAIL_USER].filter(Boolean).join(",");
-
-    if (!recipients) {
-      return;
-    }
 
     const deliverySection = order.deliveryAddress
       ? `
@@ -43,40 +39,69 @@ const sendOrderEmail = async (order: any) => {
       `
       : "";
 
-    await transporter.sendMail({
-      from: ENV.EMAIL_USER,
-      to: recipients,
-      subject: `New Order - ${order.planType.toUpperCase()} | ${user.name || "Student"}`,
-      html: `
-        <div style="max-width:640px;margin:0 auto;font-family:Arial,sans-serif;color:#111;">
-          <div style="background:linear-gradient(135deg,#0ea5e9,#8b5cf6);padding:18px 20px;border-radius:10px 10px 0 0;color:white;">
-            <h2 style="margin:0;font-size:20px;">Order Submitted</h2>
-            <p style="margin:4px 0 0;">${new Date(order.createdAt || Date.now()).toLocaleString("en-US", { timeZone: "Asia/Dhaka" })}</p>
-          </div>
-          <div style="border:1px solid #e2e8f0;border-top:0;border-radius:0 0 10px 10px;padding:20px;background:#fff;">
-            <h3 style="margin:0 0 12px;font-size:18px;">Order Details</h3>
-            <div style="line-height:1.7;">
-              <div><strong>Plan:</strong> ${order.planType}</div>
-              <div><strong>Amount:</strong> ${formatPrice(order.price)}</div>
-              <div><strong>Transaction ID:</strong> ${order.transactionId}</div>
-              <div><strong>Sender Number:</strong> ${order.senderNumber}</div>
-              <div><strong>Payment Method:</strong> ${paymentMethod.name || ""} ${paymentMethod.accountNumber ? `(${paymentMethod.accountNumber})` : ""}</div>
-              ${course.title ? `<div><strong>Course:</strong> ${course.title}</div>` : ""}
+    // 1) Send acknowledgement to student
+    if (user.email) {
+      await transporter.sendMail({
+        from: ENV.EMAIL_USER,
+        to: user.email,
+        subject: `Order Received - ${order.planType.toUpperCase()}`,
+        html: `
+          <div style="max-width:640px;margin:0 auto;font-family:Arial,sans-serif;color:#111;">
+            <div style="background:#10b981;padding:18px 20px;border-radius:10px 10px 0 0;color:white;">
+              <h2 style="margin:0;font-size:20px;">We received your order</h2>
+              <p style="margin:4px 0 0;">${new Date(order.createdAt || Date.now()).toLocaleString("en-US", { timeZone: "Asia/Dhaka" })}</p>
             </div>
-            ${deliverySection}
-
-            <h3 style="margin:20px 0 10px;font-size:16px;">Student</h3>
-            <div style="line-height:1.7;">
-              <div><strong>Name:</strong> ${user.name || ""}</div>
-              <div><strong>Email:</strong> ${user.email || ""}</div>
-              <div><strong>Phone:</strong> ${user.phone || "N/A"}</div>
+            <div style="border:1px solid #e2e8f0;border-top:0;border-radius:0 0 10px 10px;padding:20px;background:#fff;">
+              <div style="line-height:1.7;">
+                <div><strong>Plan:</strong> ${order.planType}</div>
+                <div><strong>Amount:</strong> ${formatPrice(order.price)}</div>
+                <div><strong>Transaction ID:</strong> ${order.transactionId}</div>
+                ${course.title ? `<div><strong>Course:</strong> ${course.title}</div>` : ""}
+              </div>
+              <p style="margin:16px 0;color:#4a5568;font-size:14px;">Our admin team will verify your payment shortly.</p>
             </div>
-
-            <p style="margin:20px 0 0;color:#4a5568;font-size:14px;">An admin will review and approve this order. Students can check status in their dashboard; admins can review it in the admin panel.</p>
           </div>
-        </div>
-      `,
-    });
+        `,
+      });
+    }
+
+    // 2) Send admin email with approve/reject buttons (no auth, signed token)
+    if (ENV.EMAIL_USER) {
+      const payloadBase = { orderId: String(order._id) } as any;
+      const approveToken = jwt.sign({ ...payloadBase, action: "approve" }, ENV.JWT_SECRET, { expiresIn: "2d" });
+      const rejectToken = jwt.sign({ ...payloadBase, action: "reject" }, ENV.JWT_SECRET, { expiresIn: "2d" });
+      const approveUrl = `${ENV.FRONTEND_URL}/api/order/email-action/${approveToken}`;
+      const rejectUrl = `${ENV.FRONTEND_URL}/api/order/email-action/${rejectToken}`;
+
+      await transporter.sendMail({
+        from: ENV.EMAIL_USER,
+        to: ENV.EMAIL_USER,
+        subject: `Approve/Reject Order - ${user.name || "Student"}`,
+        html: `
+          <div style="max-width:640px;margin:0 auto;font-family:Arial,sans-serif;color:#111;">
+            <div style="background:#0ea5e9;padding:18px 20px;border-radius:10px 10px 0 0;color:white;">
+              <h2 style="margin:0;font-size:20px;">New Order Pending</h2>
+            </div>
+            <div style="border:1px solid #e2e8f0;border-top:0;border-radius:0 0 10px 10px;padding:20px;background:#fff;">
+              <div style="line-height:1.7;">
+                <div><strong>Student:</strong> ${user.name || ""} (${user.email || ""})</div>
+                <div><strong>Plan:</strong> ${order.planType}</div>
+                <div><strong>Amount:</strong> ${formatPrice(order.price)}</div>
+                <div><strong>Transaction ID:</strong> ${order.transactionId}</div>
+                ${paymentMethod.name ? `<div><strong>Payment Method:</strong> ${paymentMethod.name}${paymentMethod.accountNumber ? ` (${paymentMethod.accountNumber})` : ""}</div>` : ""}
+                ${course.title ? `<div><strong>Course:</strong> ${course.title}</div>` : ""}
+                ${deliverySection}
+              </div>
+              <div style="display:flex;gap:12px;margin-top:20px;">
+                <a href="${approveUrl}" style="background:#10b981;color:white;padding:10px 14px;border-radius:6px;text-decoration:none;font-weight:600">Approve</a>
+                <a href="${rejectUrl}" style="background:#ef4444;color:white;padding:10px 14px;border-radius:6px;text-decoration:none;font-weight:600">Reject</a>
+              </div>
+              <p style="margin-top:12px;color:#64748b;font-size:12px;">These links are signed and expire in 48 hours.</p>
+            </div>
+          </div>
+        `,
+      });
+    }
   } catch (error) {
     console.error("Order email send failed:", error);
   }

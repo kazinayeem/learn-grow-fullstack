@@ -7,6 +7,7 @@ export interface IUser {
   password: string;
   role: "admin" | "manager" | "instructor" | "student" | "guardian";
   profileImage?: string;
+  isBlocked?: boolean;
   otp?: string;
   otpExpiresAt?: Date;
   refreshToken?: string;
@@ -37,6 +38,7 @@ const userSchema = new Schema<IUser>(
       required: true,
     },
     profileImage: String,
+    isBlocked: { type: Boolean, default: false },
     otp: String,
     otpExpiresAt: Date,
     refreshToken: String,

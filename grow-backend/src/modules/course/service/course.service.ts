@@ -476,19 +476,27 @@ export const getCourseStats = async (courseId: string) => {
   }
 };
 
-export const getCoursesByInstructor = async (instructorId: string, options?: { page?: number; limit?: number }) => {
+export const getCoursesByInstructor = async (
+  instructorId: string,
+  options?: { page?: number; limit?: number; search?: string }
+) => {
   const page = options?.page || 1;
   const limit = options?.limit || 10;
   const skip = (page - 1) * limit;
 
+  const query: any = { instructorId };
+  if (options?.search) {
+    query.title = { $regex: options.search, $options: "i" };
+  }
+
   const [courses, total] = await Promise.all([
-    Course.find({ instructorId })
+    Course.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .select('_id title description category type price level language duration thumbnail isPublished isAdminApproved isRegistrationOpen registrationDeadline createdAt updatedAt instructorId')
       .lean(),
-    Course.countDocuments({ instructorId })
+    Course.countDocuments(query)
   ]);
 
   // Add module and lesson counts for each course (optimized)

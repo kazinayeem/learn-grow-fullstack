@@ -23,6 +23,7 @@ import {
 import { useRouter } from "next/navigation";
 import { FaPlus, FaEdit, FaTrash, FaEye, FaUsers, FaChartLine } from "react-icons/fa";
 import { useGetInstructorCoursesQuery, useCreateCourseMutation, useDeleteCourseMutation } from "@/redux/api/courseApi";
+import { useGetInstructorStatsQuery } from "@/redux/api/userApi";
 import { refreshUserStatus, getApprovalStatus } from "@/lib/utils/userStatus";
 
 // Course level options
@@ -108,6 +109,13 @@ export default function InstructorCoursesPage() {
         { instructorId: instructorId as string, page: currentPage, limit: itemsPerPage },
         { skip: !instructorId }
     );
+
+    // Get instructor stats for accurate totals
+    const { data: statsData } = useGetInstructorStatsQuery(
+        { instructorId: instructorId as string },
+        { skip: !instructorId }
+    );
+    const stats = statsData?.data;
 
     // Mutations
     const [createCourse, { isLoading: isCreating }] = useCreateCourseMutation();
@@ -323,7 +331,7 @@ export default function InstructorCoursesPage() {
                     <CardBody className="p-6">
                         <p className="text-sm text-gray-600 mb-1">Total Students</p>
                         <p className="text-3xl font-bold">
-                            {hydratedCourses?.reduce((sum: number, c: any) => sum + (c.studentsEnrolled || c.enrolled || 0), 0) || 0}
+                            {stats?.totalStudents || 0}
                         </p>
                     </CardBody>
                 </Card>

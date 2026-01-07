@@ -76,14 +76,14 @@ export default function AdminLiveClassesPage() {
         }
     };
 
-    const handleRevoke = async (id: string, title: string) => {
-        if (confirm(`Revoke approval for: "${title}"?`)) {
+    const handlerejected = async (id: string, title: string) => {
+        if (confirm(`rejected approval for: "${title}"?`)) {
             try {
                 await updateLiveClass({ id, isApproved: false }).unwrap();
-                toast.success("Approval revoked.");
+                toast.success("Approval rejectedd.");
                 refetch();
             } catch (error: any) {
-                toast.error(error?.data?.message || "Failed to revoke live class");
+                toast.error(error?.data?.message || "Failed to rejected live class");
             }
         }
     };
@@ -412,10 +412,10 @@ export default function AdminLiveClassesPage() {
                                                 color="warning"
                                                 variant="flat"
                                                 startContent={<FaBan />}
-                                                onPress={() => handleRevoke(cls._id, cls.title)}
+                                                onPress={() => handlerejected(cls._id, cls.title)}
                                                 className="flex-1 min-h-[44px] font-semibold"
                                             >
-                                                Revoke Approval
+                                                rejected Approval
                                             </Button>
                                         )}
                                         <Button

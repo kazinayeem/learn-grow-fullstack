@@ -159,6 +159,15 @@ export const enforceHttps = (req: Request, res: Response, next: NextFunction) =>
 export const validateContentType = (req: Request, res: Response, next: NextFunction) => {
   // Only validate POST, PUT, PATCH requests with body
   if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+    // Skip validation when there is no request body (e.g., PATCH without payload)
+    const hasBody =
+      Number(req.headers['content-length'] || 0) > 0 ||
+      (req.body && Object.keys(req.body).length > 0);
+
+    if (!hasBody) {
+      return next();
+    }
+
     const contentType = req.headers['content-type'];
 
     if (!contentType) {

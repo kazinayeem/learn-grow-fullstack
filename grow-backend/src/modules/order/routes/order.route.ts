@@ -11,6 +11,7 @@ import {
   getEnrolledStudents,
   sendOrderEmail,
   getStudentOrdersForGuardian,
+  emailOrderAction,
 } from "../controller/order.controller";
 import { requireAuth, requireRoles } from "../../../middleware/auth";
 import { validateGuardianStudentAccess } from "../../../middleware/guardian-validation";
@@ -28,6 +29,9 @@ router.get("/course/:courseId/students", requireAuth, getEnrolledStudents);
 // (student views own data, guardian views linked student's data)
 // Add validation to ensure guardians can only access their linked students
 router.get("/student-data", requireAuth, validateGuardianStudentAccess, getStudentOrdersForGuardian);
+
+// Unauthenticated email action route (approve/reject via signed token)
+router.get("/email-action/:token", emailOrderAction);
 
 // Get list of guardian's children
 router.get("/guardian/children", requireAuth, async (req, res) => {

@@ -16,21 +16,25 @@ import {
   Input,
   Skeleton,
   Pagination,
+  Select,
+  SelectItem,
+  Spinner,
 } from "@nextui-org/react";
 import { FaSearch, FaUser, FaEnvelope, FaPhone, FaBan, FaCheck, FaEye, FaUserGraduate } from "react-icons/fa";
-import { useGetUsersAdminQuery, useGetAdminDashboardStatsQuery } from "@/redux/api/userApi";
+import { useGetUsersAdminQuery, useGetAdminDashboardStatsQuery, useUpdateUserMutation } from "@/redux/api/userApi";
 import { useRouter } from "next/navigation";
 
 export default function StudentsPage() {
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const limit = 20;
+  const [pageSize, setPageSize] = useState("10");
+  const limit = parseInt(pageSize, 10);
 
-  // Reset to page 1 when search changes
+  // Reset to page 1 when search changes or page size changes
   React.useEffect(() => {
     setPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, pageSize]);
 
   // Fetch dashboard stats for total count
   const { data: statsData } = useGetAdminDashboardStatsQuery(undefined);
@@ -42,13 +46,22 @@ export default function StudentsPage() {
     search: searchQuery
   });
 
+  const [updateUser, { isLoading: isUpdatingUser }] = useUpdateUserMutation();
+
   const students = data?.data || [];
   const totalPages = data?.pagination?.totalPages || 1;
   const totalStudents = statsData?.data?.students || 0;
+  
+  // Calculate total pages based on total students and current limit
+  const calculatedTotalPages = Math.ceil(totalStudents / limit);
 
-  const handleStatusToggle = async (userId: string, currentStatus: string) => {
-    // Implement status toggle logic here
-    console.log("Toggle status for user:", userId, currentStatus);
+  const handleStatusToggle = async (userId: string, isBlocked: boolean) => {
+    try {
+      await updateUser({ id: userId, isBlocked: !isBlocked }).unwrap();
+      // nothing else; query is cached by RTK; optional UI tweaks could refetch
+    } catch (e: any) {
+      console.error(e);
+    }
   };
 
   return (
@@ -118,28 +131,62 @@ export default function StudentsPage() {
         </Card>
       </div>
 
-      {/* Search */}
+      {/* Search and Page Size Controls */}
       <Card className="mb-5 sm:mb-6 shadow-md">
         <CardBody className="p-4 sm:p-5">
-          <Input
-            placeholder="Search students by name or email..."
-            startContent={<FaSearch className="text-gray-400 text-base sm:text-lg" />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            variant="bordered"
-            size="lg"
-            isClearable
-            onClear={() => setSearchQuery("")}
-            classNames={{
-              input: "text-sm sm:text-base",
-              inputWrapper: "min-h-[44px]",
-            }}
-          />
+          <div className="flex flex-col gap-4">
+            <Input
+              placeholder="Search students by name or email..."
+              startContent={<FaSearch className="text-gray-400 text-base sm:text-lg" />}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              variant="bordered"
+              size="lg"
+              isClearable
+              onClear={() => setSearchQuery("")}
+              classNames={{
+                input: "text-sm sm:text-base",
+                inputWrapper: "min-h-[44px]",
+              }}
+            />
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Items per page:</label>
+              <Select
+                selectedKeys={[pageSize]}
+                onChange={(e) => setPageSize(e.target.value)}
+                className="max-w-xs"
+                size="md"
+                variant="bordered"
+              >
+                <SelectItem key="10" value="10">
+                  10 per page
+                </SelectItem>
+                <SelectItem key="20" value="20">
+                  20 per page
+                </SelectItem>
+                <SelectItem key="50" value="50">
+                  50 per page
+                </SelectItem>
+                <SelectItem key="100" value="100">
+                  100 per page
+                </SelectItem>
+              </Select>
+            </div>
+          </div>
         </CardBody>
       </Card>
 
       {/* Students Table */}
-      <Card className="shadow-lg">
+      <Card className="shadow-lg relative">
+        {/* Loading Overlay */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm flex items-center justify-center rounded-lg z-50">
+            <div className="flex flex-col items-center gap-3">
+              <Spinner size="lg" color="primary" />
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Loading students...</p>
+            </div>
+          </div>
+        )}
         <CardBody className="p-0 sm:p-4 lg:p-6">
           {isLoading ? (
             <div className="space-y-3 sm:space-y-4 p-4">
@@ -215,15 +262,25 @@ export default function StudentsPage() {
                           </Chip>
                         </TableCell>
                         <TableCell>
-                          <Button
-                            size="sm"
-                            color="primary"
-                            variant="flat"
-                            startContent={<FaEye />}
-                            onPress={() => router.push(`/admin/students/${student._id}`)}
-                          >
-                            View Details
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              color="primary"
+                              variant="flat"
+                              startContent={<FaEye />}
+                              onPress={() => router.push(`/admin/students/${student._id}`)}
+                            >
+                              View
+                            </Button>
+                            <Button
+                              size="sm"
+                              color={student.isBlocked ? "success" : "danger"}
+                              variant="flat"
+                              onPress={() => handleStatusToggle(student._id, student.isBlocked)}
+                            >
+                              {student.isBlocked ? "Unblock" : "Block"}
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -280,26 +337,37 @@ export default function StudentsPage() {
                         </div>
                       </div>
 
-                      <Button
-                        size="md"
-                        color="primary"
-                        variant="flat"
-                        startContent={<FaEye />}
-                        className="w-full min-h-[44px] font-semibold"
-                        onPress={() => router.push(`/admin/students/${student._id}`)}
-                      >
-                        View Details
-                      </Button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          size="md"
+                          color="primary"
+                          variant="flat"
+                          startContent={<FaEye />}
+                          className="w-full min-h-[44px] font-semibold"
+                          onPress={() => router.push(`/admin/students/${student._id}`)}
+                        >
+                          View
+                        </Button>
+                        <Button
+                          size="md"
+                          color={student.isBlocked ? "success" : "danger"}
+                          variant="flat"
+                          className="w-full min-h-[44px] font-semibold"
+                          onPress={() => handleStatusToggle(student._id, student.isBlocked)}
+                        >
+                          {student.isBlocked ? "Unblock" : "Block"}
+                        </Button>
+                      </div>
                     </CardBody>
                   </Card>
                 ))}
               </div>
 
               {/* Pagination */}
-              {totalPages > 1 && (
+              {calculatedTotalPages > 1 && (
                 <div className="flex justify-center mt-6 px-4 pb-4">
                   <Pagination
-                    total={totalPages}
+                    total={calculatedTotalPages}
                     page={page}
                     onChange={setPage}
                     showControls

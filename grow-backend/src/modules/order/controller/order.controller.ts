@@ -2,8 +2,10 @@ import { Request, Response } from "express";
 import { Order } from "../model/order.model";
 import mongoose from "mongoose";
 import nodemailer from "nodemailer";
+import jwt from "jsonwebtoken";
 import { Course } from "../../course/model/course.model";
 import { getSMTPTransporter } from "../../settings/service/smtp.service";
+import { ENV } from "@/config/env";
 import {
   createOrderService,
   getUserOrdersService,
@@ -222,6 +224,72 @@ export const rejectOrder = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error("Reject order error:", error);
     res.status(500).json({ success: false, message: "Failed to reject order", error: error.message });
+  }
+};
+
+// Approve/Reject via signed email token (no auth)
+export const emailOrderAction = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    if (!token) {
+      return res.status(400).send("Missing token");
+    }
+
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, ENV.JWT_SECRET);
+    } catch (e: any) {
+      return res.status(401).send("Invalid or expired token");
+    }
+
+    const { orderId, action } = decoded || {};
+    if (!orderId || !["approve", "reject"].includes(action)) {
+      return res.status(400).send("Invalid token payload");
+    }
+
+    const order = await Order.findById(orderId).populate("userId", "name email");
+    if (!order) {
+      return res.status(404).send("Order not found");
+    }
+
+    // Only allow when pending to prevent replay
+    if (order.paymentStatus !== "pending") {
+      return res.status(400).send("Order already processed");
+    }
+
+    let result;
+    if (action === "approve") {
+      result = await approveOrderService(orderId);
+    } else {
+      result = await rejectOrderService(orderId);
+    }
+
+    if (!result.success) {
+      return res.status(500).send(result.message || "Failed to process order");
+    }
+
+    const updated = await Order.findById(orderId).populate("userId", "name email").populate("courseId", "title");
+
+    // Notify user via email
+    try {
+      const transporter = await getSMTPTransporter();
+      const toUser = (updated as any)?.userId?.email;
+      if (toUser) {
+        const subject = action === "approve" ? "Your Order Has Been Approved" : "Your Order Has Been Rejected";
+        const html = action === "approve"
+          ? `<p>Hello ${(updated as any)?.userId?.name || "Student"},</p><p>Your order has been approved. You now have access${(updated as any)?.courseId ? ` to ${(updated as any)?.courseId?.title}` : ""}.</p>`
+          : `<p>Hello ${(updated as any)?.userId?.name || "Student"},</p><p>Your order has been rejected. If you think this is a mistake, please contact support.</p>`;
+        await transporter.sendMail({ from: ENV.EMAIL_USER, to: toUser, subject, html });
+      }
+    } catch (mailErr) {
+      console.error("Failed to send user notification:", mailErr);
+    }
+
+    // Simple HTML response for email clients
+    return res.send(`<!doctype html><html><head><meta charset="utf-8"><title>Order ${action}</title></head><body style="font-family:Arial;max-width:640px;margin:40px auto;padding:20px;border:1px solid #eee;border-radius:8px"><h2>Order ${action === "approve" ? "Approved" : "Rejected"}</h2><p>Order ID: ${String(orderId)}</p><p>Status updated successfully.</p><p>You may close this window.</p></body></html>`);
+  } catch (error: any) {
+    console.error("Email order action error:", error);
+    return res.status(500).send("Server error");
   }
 };
 

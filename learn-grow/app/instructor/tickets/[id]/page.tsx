@@ -214,16 +214,16 @@ function InstructorTicketDetailContent() {
               {ticket.replies.map((reply: any, index: number) => (
                 <div key={index} className="flex gap-4">
                   <Avatar
-                    src={reply.user?.profileImage}
-                    name={reply.user?.name || "User"}
+                    src={reply.userId?.profileImage}
+                    name={reply.userId?.name || "User"}
                     size="sm"
                     fallback={<FaUser />}
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <p className="font-semibold">{reply.user?.name || "User"}</p>
+                      <p className="font-semibold">{reply.userId?.name || "User"}</p>
                       <Chip size="sm" variant="flat">
-                        {reply.user?.role || "user"}
+                        {reply.userRole || "user"}
                       </Chip>
                       <span className="text-xs text-gray-500">
                         {new Date(reply.createdAt).toLocaleDateString("en-US", {
@@ -236,7 +236,7 @@ function InstructorTicketDetailContent() {
                     </div>
                     <div
                       className="prose max-w-none bg-gray-50 p-4 rounded-lg"
-                      dangerouslySetInnerHTML={{ __html: reply.content }}
+                      dangerouslySetInnerHTML={{ __html: reply.message }}
                     />
                   </div>
                 </div>
@@ -247,29 +247,24 @@ function InstructorTicketDetailContent() {
       )}
 
       {/* Add Reply */}
-      <Card>
-        <CardHeader>
-          <h3 className="font-semibold text-lg">
-            {isClosed ? "Ticket Closed" : "Add Reply"}
-          </h3>
-        </CardHeader>
-        <Divider />
-        <CardBody className="p-6">
-          {isClosed ? (
-            <p className="text-gray-600">
-              This ticket is closed. No new replies can be added.
-            </p>
-          ) : (
-            <>
-              <ReactQuill
-                theme="snow"
-                value={replyContent}
-                onChange={setReplyContent}
-                modules={quillModules}
-                formats={formats}
-                placeholder="Write your reply here..."
-                className="mb-4 bg-white"
-              />
+      {!isClosed && (
+        <Card>
+          <CardHeader>
+            <h3 className="font-semibold text-lg">Add Reply</h3>
+          </CardHeader>
+          <Divider />
+          <CardBody className="p-6">
+            <ReactQuill
+              theme="snow"
+              value={replyContent}
+              onChange={setReplyContent}
+              modules={quillModules}
+              formats={formats}
+              placeholder="Write your reply here..."
+              className="bg-white mb-12"
+              style={{ height: "200px" }}
+            />
+            <div className="flex justify-end pt-4">
               <Button
                 color="primary"
                 startContent={<FaPaperPlane />}
@@ -279,10 +274,25 @@ function InstructorTicketDetailContent() {
               >
                 Send Reply
               </Button>
-            </>
-          )}
-        </CardBody>
-      </Card>
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
+      {/* Closed Ticket Message */}
+      {isClosed && (
+        <Card>
+          <CardHeader>
+            <h3 className="font-semibold text-lg">Ticket Closed</h3>
+          </CardHeader>
+          <Divider />
+          <CardBody className="p-6">
+            <p className="text-gray-600">
+              This ticket is closed. No new replies can be added.
+            </p>
+          </CardBody>
+        </Card>
+      )}
     </div>
   );
 }

@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardBody, Button, Chip, Input, Tabs, Tab, Skeleton, Avatar } from "@nextui-org/react";
-import { FaCheckCircle, FaTimesCircle, FaUserCheck, FaUserClock, FaArrowLeft, FaSearch, FaChalkboardTeacher, FaEnvelope, FaPhone, FaIdCard } from "react-icons/fa";
+import { Card, CardBody, Button, Chip, Input, Tabs, Tab, Skeleton, Avatar, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@nextui-org/react";
+import { FaCheckCircle, FaTimesCircle, FaUserCheck, FaUserClock, FaArrowLeft, FaSearch, FaChalkboardTeacher, FaEnvelope, FaPhone, FaIdCard, FaTrash } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import {
     useGetAllInstructorsQuery,
     useApproveInstructorMutation,
     useRejectInstructorMutation,
     useGetAdminDashboardStatsQuery,
+    useDeleteUserMutation,
 } from "@/redux/api/userApi";
 
 export default function InstructorApprovalPage() {
@@ -53,7 +54,13 @@ export default function InstructorApprovalPage() {
 
     const [approveInstructor, { isLoading: isApproving }] = useApproveInstructorMutation();
     const [rejectInstructor, { isLoading: isRejecting }] = useRejectInstructorMutation();
+    const [deleteUser, { isLoading: isDeleting }] = useDeleteUserMutation();
     const [processingId, setProcessingId] = React.useState<string | null>(null);
+
+    // Delete modal state
+    const { isOpen, onOpen, onOpenChange } = useDisclosure();
+    const [deleteConfirmText, setDeleteConfirmText] = useState("");
+    const [instructorToDelete, setInstructorToDelete] = useState<any>(null);
 
     const handleApprove = async (instructorId: string) => {
         if (confirm("Are you sure you want to approve this instructor?")) {
@@ -71,17 +78,44 @@ export default function InstructorApprovalPage() {
     };
 
     const handleReject = async (instructorId: string) => {
-        if (confirm("Are you sure you want to reject/revoke approval for this instructor?")) {
+        if (confirm("Are you sure you want to reject/rejected approval for this instructor?")) {
             try {
                 setProcessingId(instructorId);
                 await rejectInstructor(instructorId).unwrap();
-                alert("Instructor approval revoked! A notification email has been sent.");
+                alert("Instructor approval rejectedd! A notification email has been sent.");
                 refetch();
             } catch (error: any) {
                 alert(error?.data?.message || "Failed to reject instructor");
             } finally {
                 setProcessingId(null);
             }
+        }
+    };
+
+    const openDeleteModal = (instructor: any) => {
+        setInstructorToDelete(instructor);
+        setDeleteConfirmText("");
+        onOpen();
+    };
+
+    const handleDelete = async () => {
+        if (deleteConfirmText !== "delete") {
+            alert("Please type 'delete' exactly to confirm deletion.");
+            return;
+        }
+
+        try {
+            setProcessingId(instructorToDelete._id);
+            await deleteUser(instructorToDelete._id).unwrap();
+            alert("Instructor deleted successfully!");
+            setInstructorToDelete(null);
+            setDeleteConfirmText("");
+            onOpenChange();
+            refetch();
+        } catch (error: any) {
+            alert(error?.data?.message || "Failed to delete instructor");
+        } finally {
+            setProcessingId(null);
         }
     };
 
@@ -314,46 +348,59 @@ export default function InstructorApprovalPage() {
                                 </div>
 
                                 {/* Action Buttons */}
-                                <div className="flex gap-2">
-                                    {!instructor.isApproved ? (
-                                        <>
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex gap-2">
+                                        {!instructor.isApproved ? (
+                                            <>
+                                                <Button
+                                                    color="success"
+                                                    size="md"
+                                                    className="flex-1 min-h-[44px] font-semibold shadow-md hover:shadow-lg transition-shadow"
+                                                    startContent={<FaCheckCircle />}
+                                                    onPress={() => handleApprove(instructor._id)}
+                                                    isLoading={processingId === instructor._id && isApproving}
+                                                    isDisabled={processingId !== null}
+                                                >
+                                                    Approve
+                                                </Button>
+                                                <Button
+                                                    color="danger"
+                                                    size="md"
+                                                    className="flex-1 min-h-[44px] font-semibold"
+                                                    variant="flat"
+                                                    startContent={<FaTimesCircle />}
+                                                    onPress={() => handleReject(instructor._id)}
+                                                    isLoading={processingId === instructor._id && isRejecting}
+                                                    isDisabled={processingId !== null}
+                                                >
+                                                    Reject
+                                                </Button>
+                                            </>
+                                        ) : (
                                             <Button
-                                                color="success"
+                                                color="warning"
                                                 size="md"
-                                                className="flex-1 min-h-[44px] font-semibold shadow-md hover:shadow-lg transition-shadow"
-                                                startContent={<FaCheckCircle />}
-                                                onPress={() => handleApprove(instructor._id)}
-                                                isLoading={processingId === instructor._id && isApproving}
-                                                isDisabled={processingId !== null}
-                                            >
-                                                Approve
-                                            </Button>
-                                            <Button
-                                                color="danger"
-                                                size="md"
-                                                className="flex-1 min-h-[44px] font-semibold"
-                                                variant="flat"
+                                                className="w-full min-h-[44px] font-semibold shadow-md hover:shadow-lg transition-shadow"
                                                 startContent={<FaTimesCircle />}
                                                 onPress={() => handleReject(instructor._id)}
                                                 isLoading={processingId === instructor._id && isRejecting}
                                                 isDisabled={processingId !== null}
                                             >
-                                                Reject
+                                                rejected Approval
                                             </Button>
-                                        </>
-                                    ) : (
-                                        <Button
-                                            color="warning"
-                                            size="md"
-                                            className="w-full min-h-[44px] font-semibold shadow-md hover:shadow-lg transition-shadow"
-                                            startContent={<FaTimesCircle />}
-                                            onPress={() => handleReject(instructor._id)}
-                                            isLoading={processingId === instructor._id && isRejecting}
-                                            isDisabled={processingId !== null}
-                                        >
-                                            Revoke Approval
-                                        </Button>
-                                    )}
+                                        )}
+                                    </div>
+                                    <Button
+                                        color="danger"
+                                        size="md"
+                                        className="w-full min-h-[44px] font-semibold"
+                                        variant="flat"
+                                        startContent={<FaTrash />}
+                                        onPress={() => openDeleteModal(instructor)}
+                                        isDisabled={processingId !== null}
+                                    >
+                                        Delete
+                                    </Button>
                                 </div>
                             </CardBody>
                         </Card>
@@ -422,6 +469,73 @@ export default function InstructorApprovalPage() {
                     </CardBody>
                 </Card>
             )}
+
+            {/* Delete Confirmation Modal */}
+            <Modal isOpen={isOpen} onOpenChange={onOpenChange} backdrop="blur" size="md">
+                <ModalContent>
+                    {(onClose) => (
+                        <>
+                            <ModalHeader className="flex flex-col gap-1 text-danger">
+                                <div className="flex items-center gap-2">
+                                    <FaTrash className="text-lg" />
+                                    Delete Instructor
+                                </div>
+                            </ModalHeader>
+                            <ModalBody>
+                                <div className="space-y-4">
+                                    <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
+                                        <p className="text-sm text-red-800 font-semibold mb-2">⚠️ Warning: This action cannot be undone!</p>
+                                        <p className="text-sm text-red-700">
+                                            You are about to permanently delete <span className="font-bold">{instructorToDelete?.name}</span> and all their associated data.
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-gray-50 rounded-lg p-4">
+                                        <p className="text-sm text-gray-700 mb-3">
+                                            To confirm deletion, type the word <span className="font-bold bg-yellow-100 px-2 py-1 rounded">delete</span> in the field below:
+                                        </p>
+                                        <Input
+                                            placeholder='Type "delete" to confirm'
+                                            value={deleteConfirmText}
+                                            onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                            variant="bordered"
+                                            size="lg"
+                                            isClearable
+                                            onClear={() => setDeleteConfirmText("")}
+                                            classNames={{
+                                                input: "text-sm font-mono",
+                                                inputWrapper: "min-h-[44px]",
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </ModalBody>
+                            <ModalFooter>
+                                <Button
+                                    color="default"
+                                    variant="light"
+                                    onPress={onClose}
+                                    size="md"
+                                    className="min-h-[44px] font-semibold"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    color="danger"
+                                    onPress={handleDelete}
+                                    isDisabled={deleteConfirmText !== "delete"}
+                                    isLoading={processingId === instructorToDelete?._id && isDeleting}
+                                    size="md"
+                                    className="min-h-[44px] font-semibold"
+                                    startContent={<FaTrash />}
+                                >
+                                    Delete Permanently
+                                </Button>
+                            </ModalFooter>
+                        </>
+                    )}
+                </ModalContent>
+            </Modal>
         </div>
     );
 }

@@ -16,6 +16,7 @@ import { defaultAboutData } from "@/lib/aboutData";
 import { useGetSiteContentQuery, useUpdateSiteContentMutation } from "@/redux/api/siteContentApi";
 import "react-quill-new/dist/quill.snow.css";
 import TeamManagementTab from "@/components/admin/TeamManagementTab";
+import AboutPageTab from "@/components/admin/AboutPageTab";
 import toast from "react-hot-toast";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), {
@@ -303,6 +304,19 @@ export default function ContentManagerPage() {
                                     </Card>
                                 </div>
                             </div>
+                        </div>
+                    </Tab>
+                    <Tab
+                        key="about"
+                        title={
+                            <div className="flex items-center space-x-2">
+                                <span>ℹ️</span>
+                                <span>About Page</span>
+                            </div>
+                        }
+                    >
+                        <div className="p-4 sm:p-6 lg:p-8">
+                            <AboutPageTab />
                         </div>
                     </Tab>
                     <Tab

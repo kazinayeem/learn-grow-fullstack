@@ -29,6 +29,7 @@ import {
     useUpdateRecordedLinkMutation,
     useUpdateLiveClassMutation,
 } from "@/redux/api/liveClassApi";
+import { Autocomplete, AutocompleteItem } from "@nextui-org/react";
 import RequireAuth from "@/components/Auth/RequireAuth";
 
 export default function InstructorLiveClassesPage() {
@@ -81,6 +82,9 @@ export default function InstructorLiveClassesPage() {
     const [approvalFilter, setApprovalFilter] = useState("all");
     const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
     const [recordedLink, setRecordedLink] = useState("");
+    const [markDoneModalOpen, setMarkDoneModalOpen] = useState(false);
+    const [completingClassId, setCompletingClassId] = useState<string | null>(null);
+    const [completionRecordedLink, setCompletionRecordedLink] = useState("");
     const [editingClassId, setEditingClassId] = useState<string | null>(null);
     const [editForm, setEditForm] = useState({
         title: "",
@@ -95,8 +99,9 @@ export default function InstructorLiveClassesPage() {
     const itemsPerPage = 12;
 
     // API Queries - skip until authenticated
+    const [courseSearch, setCourseSearch] = useState("");
     const { data: coursesData, isLoading: coursesLoading } = useGetInstructorCoursesQuery(
-        { instructorId: instructorId as string, page: 1, limit: 100 },
+        { instructorId: instructorId as string, page: 1, limit: 200, search: courseSearch || undefined },
         {
             skip: !isAuthed || !instructorId,
         }
@@ -192,17 +197,38 @@ export default function InstructorLiveClassesPage() {
     };
 
     const handleMarkAsDone = async (classId: string) => {
-        if (confirm("Mark this class as completed? You'll then be able to add the recorded link.")) {
-            try {
-                await updateLiveClass({
-                    id: classId,
-                    status: "Completed",
-                }).unwrap();
-                refetch();
-                alert("Class marked as completed");
-            } catch (error: any) {
-                alert("Failed to mark class as done: " + (error?.data?.message || "Unknown error"));
+        setCompletingClassId(classId);
+        setCompletionRecordedLink("");
+        setMarkDoneModalOpen(true);
+    };
+
+    const handleConfirmMarkAsDone = async () => {
+        if (!completingClassId) return;
+        
+        try {
+            console.log("Marking class as done:", completingClassId);
+            const updateData: any = {
+                id: completingClassId,
+                status: "Completed",
+            };
+            
+            // Add recordedLink if provided
+            if (completionRecordedLink.trim()) {
+                updateData.recordedLink = completionRecordedLink.trim();
             }
+            
+            const result = await updateLiveClass(updateData).unwrap();
+            console.log("Mark as done result:", result);
+            refetch();
+            setMarkDoneModalOpen(false);
+            setCompletingClassId(null);
+            setCompletionRecordedLink("");
+            alert("Class marked as completed successfully!");
+        } catch (error: any) {
+            console.error("Mark as done error:", error);
+            console.error("Error details:", JSON.stringify(error, null, 2));
+            const errorMsg = error?.data?.message || error?.message || error?.error || "Failed to update class status";
+            alert("Failed to mark class as done: " + errorMsg);
         }
     };
 
@@ -440,7 +466,7 @@ export default function InstructorLiveClassesPage() {
                 )}
 
                 {/* Courses Check */}
-                {instructorCourses.length === 0 && (
+                {!coursesLoading && instructorCourses.length === 0 && (
                     <Card className="mb-6 bg-yellow-50 border-yellow-200">
                         <CardBody className="p-6 flex-row gap-4">
                             <FaExclamationTriangle className="text-2xl text-yellow-600 flex-shrink-0" />
@@ -463,8 +489,18 @@ export default function InstructorLiveClassesPage() {
                     </Card>
                 )}
 
+                {/* Loading State for Courses */}
+                {coursesLoading && (
+                    <Card className="mb-6">
+                        <CardBody className="p-6 flex items-center justify-center">
+                            <Spinner size="lg" color="primary" />
+                            <p className="ml-3 text-gray-600">Loading courses...</p>
+                        </CardBody>
+                    </Card>
+                )}
+
                 {/* Statistics */}
-                {instructorCourses.length > 0 && (
+                {!coursesLoading && instructorCourses.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <Card>
                             <CardBody className="p-6">
@@ -784,22 +820,24 @@ export default function InstructorLiveClassesPage() {
                                             isRequired
                                         />
 
-                                        <Select
-                                            label="Course"
-                                            placeholder="Select a course"
-                                            selectedKeys={newClass.courseId ? [newClass.courseId] : []}
-                                            onSelectionChange={(keys) =>
-                                                setNewClass({ ...newClass, courseId: Array.from(keys)[0] as string })
-                                            }
-                                            isRequired
-                                            isLoading={coursesLoading}
-                                        >
-                                            {instructorCourses.map((course: any) => (
-                                                <SelectItem key={course._id} value={course._id}>
-                                                    {course.title}
-                                                </SelectItem>
-                                            ))}
-                                        </Select>
+                                        <div className="space-y-2">
+                                            <Autocomplete
+                                                label="Course"
+                                                placeholder="Type to search..."
+                                                selectedKey={newClass.courseId || null}
+                                                onInputChange={setCourseSearch}
+                                                onSelectionChange={(key) =>
+                                                    setNewClass({ ...newClass, courseId: (key as string) || "" })
+                                                }
+                                                isLoading={coursesLoading}
+                                            >
+                                                {instructorCourses.map((course: any) => (
+                                                    <AutocompleteItem key={course._id} value={course._id}>
+                                                        {course.title}
+                                                    </AutocompleteItem>
+                                                ))}
+                                            </Autocomplete>
+                                        </div>
 
                                         <div className="grid grid-cols-2 gap-4">
                                             <Input
@@ -895,21 +933,21 @@ export default function InstructorLiveClassesPage() {
                                 isRequired
                             />
 
-                            <Select
+                            <Autocomplete
                                 label="Course"
-                                selectedKeys={editForm.courseId ? [editForm.courseId] : []}
-                                onSelectionChange={(keys) =>
-                                    setEditForm({ ...editForm, courseId: Array.from(keys)[0] as string })
+                                selectedKey={editForm.courseId || null}
+                                onInputChange={setCourseSearch}
+                                onSelectionChange={(key) =>
+                                    setEditForm({ ...editForm, courseId: (key as string) || "" })
                                 }
-                                isRequired
                                 isLoading={coursesLoading}
                             >
                                 {instructorCourses.map((course: any) => (
-                                    <SelectItem key={course._id} value={course._id}>
+                                    <AutocompleteItem key={course._id} value={course._id}>
                                         {course.title}
-                                    </SelectItem>
+                                    </AutocompleteItem>
                                 ))}
-                            </Select>
+                            </Autocomplete>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <Input
@@ -977,6 +1015,40 @@ export default function InstructorLiveClassesPage() {
                                 onPress={handleSaveEdit}
                             >
                                 Save Changes
+                            </Button>
+                        </ModalFooter>
+                    </ModalContent>
+                </Modal>
+
+                {/* Mark as Done Modal */}
+                <Modal isOpen={markDoneModalOpen} onClose={() => setMarkDoneModalOpen(false)}>
+                    <ModalContent>
+                        <ModalHeader>Mark Class as Completed</ModalHeader>
+                        <ModalBody>
+                            <p className="text-gray-600 mb-4">
+                                Are you sure you want to mark this class as completed?
+                            </p>
+                            <Input
+                                label="Recording Link (Optional)"
+                                placeholder="https://youtube.com/watch?v=... or https://drive.google.com/..."
+                                value={completionRecordedLink}
+                                onChange={(e) => setCompletionRecordedLink(e.target.value)}
+                                description="You can add the recorded class link now or later"
+                            />
+                        </ModalBody>
+                        <ModalFooter>
+                            <Button
+                                color="default"
+                                variant="light"
+                                onPress={() => setMarkDoneModalOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                color="success"
+                                onPress={handleConfirmMarkAsDone}
+                            >
+                                Mark as Completed
                             </Button>
                         </ModalFooter>
                     </ModalContent>

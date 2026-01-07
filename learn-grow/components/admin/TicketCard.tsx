@@ -59,8 +59,12 @@ export default function TicketCard({ ticket }: TicketCardProps) {
   const statusInfo = statusConfig[ticket.status];
   const StatusIcon = statusInfo.icon;
 
-  // Determine the base path (admin or student)
-  const basePath = pathname.includes("/admin/") ? "/admin/tickets" : "/student/tickets";
+  // Determine the base path (admin, instructor, or student)
+  const basePath = pathname.includes("/admin/") 
+    ? "/admin/tickets" 
+    : pathname.includes("/instructor/")
+    ? "/instructor/tickets"
+    : "/student/tickets";
 
   const timeAgo = (date: string) => {
     const seconds = Math.floor(
