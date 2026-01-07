@@ -229,15 +229,7 @@ const CoursesSection = () => {
                     className="bg-gradient-to-r from-primary-500 to-primary-600 text-white font-bold shadow-md hover:shadow-lg transition-shadow"
                     size="lg"
                     onPress={() => {
-                      // Check if user is logged in
-                      const token = localStorage.getItem("token");
-                      if (!token) {
-                        // Redirect to register if not logged in
-                        router.push("/register");
-                      } else {
-                        // Go to course details if logged in
-                        router.push(`/courses/${course._id || course.id}`);
-                      }
+                      router.push(`/courses/${course._id || course.id}`);
                     }}
                   >
                     <span className={language === "bn" ? "font-siliguri" : ""}>
