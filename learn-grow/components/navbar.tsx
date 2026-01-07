@@ -25,7 +25,7 @@ import {
   DropdownMenu,
   DropdownItem,
   Avatar,
-  Skeleton
+  Skeleton,
 } from "@nextui-org/react";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
@@ -45,7 +45,8 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
     const loggingOut = sessionStorage.getItem("loggingOut");
 
     const tokenCookie = Cookies.get("accessToken");
-    const tokenLocal = localStorage.getItem("token") || localStorage.getItem("accessToken");
+    const tokenLocal =
+      localStorage.getItem("token") || localStorage.getItem("accessToken");
     const token = tokenCookie || tokenLocal;
     const userStr = localStorage.getItem("user");
     const role = Cookies.get("userRole") || localStorage.getItem("userRole");
@@ -151,7 +152,6 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
     }
   };
 
-
   if (isLoading && !mounted) {
     return <Skeleton className="rounded-full w-10 h-10" />;
   }
@@ -174,17 +174,22 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
         <DropdownMenu aria-label="Profile Actions" variant="flat">
           <DropdownItem key="profile" className="h-14 gap-2">
             <p className="font-semibold">Signed in as</p>
-            <p className="font-semibold">{user?.email || user?.phone || "User"}</p>
+            <p className="font-semibold">
+              {user?.email || user?.phone || "User"}
+            </p>
           </DropdownItem>
-          <DropdownItem key="dashboard" onPress={() => router.push(dashboardUrl)}>
+          <DropdownItem
+            key="dashboard"
+            onPress={() => router.push(dashboardUrl)}
+          >
             Dashboard
           </DropdownItem>
           <DropdownItem key="settings" onPress={() => router.push("/profile")}>
             My Profile
           </DropdownItem>
-          <DropdownItem 
-            key="logout" 
-            color="danger" 
+          <DropdownItem
+            key="logout"
+            color="danger"
             onPress={handleLogout}
             className="cursor-pointer touch-manipulation active:opacity-80"
           >
@@ -238,7 +243,10 @@ const AuthButtons = ({ isScrolled }: { isScrolled: boolean }) => {
 export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
-  const [mobileAuth, setMobileAuth] = React.useState<{ authed: boolean; user?: any }>({ authed: false });
+  const [mobileAuth, setMobileAuth] = React.useState<{
+    authed: boolean;
+    user?: any;
+  }>({ authed: false });
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -254,9 +262,13 @@ export const Navbar = () => {
     const syncMobile = () => {
       const loggingOut = sessionStorage.getItem("loggingOut");
       const tokenCookie = Cookies.get("accessToken");
-      const tokenLocal = typeof window !== "undefined" ? localStorage.getItem("token") || localStorage.getItem("accessToken") : null;
+      const tokenLocal =
+        typeof window !== "undefined"
+          ? localStorage.getItem("token") || localStorage.getItem("accessToken")
+          : null;
       const token = tokenCookie || tokenLocal;
-      const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+      const userStr =
+        typeof window !== "undefined" ? localStorage.getItem("user") : null;
 
       if (loggingOut === "1" && (token || userStr)) {
         sessionStorage.removeItem("loggingOut");
@@ -269,7 +281,10 @@ export const Navbar = () => {
 
       if (token || userStr) {
         try {
-          setMobileAuth({ authed: true, user: userStr ? JSON.parse(userStr) : undefined });
+          setMobileAuth({
+            authed: true,
+            user: userStr ? JSON.parse(userStr) : undefined,
+          });
         } catch {
           setMobileAuth({ authed: true });
         }
@@ -294,48 +309,58 @@ export const Navbar = () => {
       isBlurred={false}
       classNames={{
         base: clsx(
-          "py-2 transition-all duration-500",
+          "py-3 transition-all duration-500 !h-auto !min-h-[96px] top-0 z-50 overflow-visible",
           isScrolled
             ? "bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-lg"
             : "bg-gradient-to-r from-blue-900/40 via-teal-800/40 to-amber-900/40 backdrop-blur-md"
         ),
-        wrapper: "px-4 sm:px-6 lg:px-8",
+        wrapper: "px-4 sm:px-6 lg:px-8 items-center",
       }}
-      height="70px"
+      height="auto"
       maxWidth="full"
       position="sticky"
       isMenuOpen={isMenuOpen}
       onMenuOpenChange={setIsMenuOpen}
     >
       <NavbarContent className="basis-1/5 sm:basis-auto" justify="start">
-        <NavbarBrand as="li" className="gap-2 sm:gap-3 max-w-fit">
-          <NextLink className="flex justify-start items-center gap-2 sm:gap-3 group" href="/">
+        <NavbarBrand as="li" className="gap-2 sm:gap-3 max-w-fit shrink-0">
+          <NextLink
+            className="flex justify-start items-center gap-2 sm:gap-3 group"
+            href="/"
+          >
             <div className="relative flex-shrink-0">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl blur-lg opacity-60 group-hover:opacity-90 transition-opacity duration-300"></div>
               <Image
                 priority
                 alt="Learn & Grow Logo"
-                className="relative w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 object-contain rounded-xl transform group-hover:scale-105 transition-transform duration-300"
+                className={clsx(
+                  "relative object-contain rounded-xl transform group-hover:scale-105 transition-all duration-300",
+                  isScrolled
+                    ? "w-10 h-10 sm:w-12 sm:h-12"
+                    : "w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16"
+                )}
                 src={Logo}
                 width={64}
                 height={64}
               />
             </div>
-            <div className="flex flex-col min-w-0">
+            <div className="flex flex-col shrink-0">
               <p
                 className={clsx(
-                  "font-extrabold text-base sm:text-lg lg:text-xl tracking-tight whitespace-nowrap leading-tight",
-                  isScrolled 
-                    ? "bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"
-                    : "text-white drop-shadow-lg"
+                  "font-extrabold tracking-tight whitespace-nowrap leading-tight",
+                  isScrolled
+                    ? "text-sm sm:text-base lg:text-lg bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"
+                    : "text-base sm:text-lg lg:text-xl text-white drop-shadow-lg"
                 )}
               >
                 {siteConfig.name}
               </p>
-              <p className={clsx(
-                "text-[9px] sm:text-xs font-medium -mt-0.5",
-                isScrolled ? "text-gray-600" : "text-white/90"
-              )}>
+              <p
+                className={clsx(
+                  "text-[9px] sm:text-xs font-medium mt-0 leading-tight whitespace-nowrap",
+                  isScrolled ? "text-gray-600" : "text-white/90"
+                )}
+              >
                 Empowering Education
               </p>
             </div>
@@ -357,28 +382,29 @@ export const Navbar = () => {
                 href={item.href}
               >
                 <span className="relative z-10">{item.label}</span>
-                <span className={clsx(
-                  "absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300",
-                  isScrolled 
-                    ? "bg-gradient-to-r from-blue-500/10 to-purple-500/10"
-                    : "bg-white/20"
-                )}></span>
-                <span className={clsx(
-                  "absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 group-hover:w-3/4 transition-all duration-300",
-                  isScrolled 
-                    ? "bg-gradient-to-r from-blue-600 to-purple-600"
-                    : "bg-white"
-                )}></span>
+                <span
+                  className={clsx(
+                    "absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+                    isScrolled
+                      ? "bg-gradient-to-r from-blue-500/10 to-purple-500/10"
+                      : "bg-white/20"
+                  )}
+                ></span>
+                <span
+                  className={clsx(
+                    "absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 group-hover:w-3/4 transition-all duration-300",
+                    isScrolled
+                      ? "bg-gradient-to-r from-blue-600 to-purple-600"
+                      : "bg-white"
+                  )}
+                ></span>
               </NextLink>
             </NavbarItem>
           ))}
         </ul>
       </NavbarContent>
 
-      <NavbarContent
-        className="hidden sm:flex basis-auto"
-        justify="end"
-      >
+      <NavbarContent className="hidden sm:flex basis-auto" justify="end">
         <NavbarItem>
           <AuthButtons isScrolled={isScrolled} />
         </NavbarItem>
@@ -390,12 +416,13 @@ export const Navbar = () => {
         />
       </NavbarContent>
 
-      <NavbarMenu 
-        className="pt-8" 
+      <NavbarMenu
+        className="pt-8"
         style={{
-          background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.95) 0%, rgba(20, 83, 136, 0.95) 50%, rgba(180, 83, 9, 0.95) 100%)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)'
+          background:
+            "linear-gradient(135deg, rgba(30, 58, 138, 0.95) 0%, rgba(20, 83, 136, 0.95) 50%, rgba(180, 83, 9, 0.95) 100%)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
         }}
       >
         <div className="px-2">

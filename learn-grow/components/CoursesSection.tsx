@@ -1,6 +1,14 @@
 "use client";
 import React, { useMemo, useState } from "react";
-import { Card, CardBody, CardFooter, Button, Chip, Spinner, Image } from "@nextui-org/react";
+import {
+  Card,
+  CardBody,
+  CardFooter,
+  Button,
+  Chip,
+  Spinner,
+  Image,
+} from "@nextui-org/react";
 import { useGetFeaturedCoursesQuery } from "@/redux/api/courseApi";
 import { useRouter } from "next/navigation";
 import DOMPurify from "isomorphic-dompurify";
@@ -10,11 +18,10 @@ const CoursesSection = () => {
   const { data, isLoading, error } = useGetFeaturedCoursesQuery();
   const router = useRouter();
 
-
   if (error) {
     // If API fails, show sample courses instead of error message
     console.warn("API Error: Using sample courses for display.");
-    // We mutate the courses array below if it's empty, but since 'courses' is derived from data, 
+    // We mutate the courses array below if it's empty, but since 'courses' is derived from data,
     // we'll just handle it in the render logic or re-assign here if we were using a let.
     // Better strategy: Return content using sampleCourses directly here.
   }
@@ -22,9 +29,11 @@ const CoursesSection = () => {
   // Use API data or fallback to sampleCourses if error exists
   const displayCourses = useMemo(() => {
     const fromApi = data?.data || data || [];
-    const filtered = fromApi.filter((c: any) => c.isPublished && c.isAdminApproved && c.isFeatured);
+    const filtered = fromApi.filter(
+      (c: any) => c.isPublished && c.isAdminApproved && c.isFeatured
+    );
     if (filtered.length > 0) return filtered;
-   
+
     return [];
   }, [data, error]);
 
@@ -99,12 +108,21 @@ const CoursesSection = () => {
                   <Image
                     removeWrapper
                     alt={course.title}
-                      className="z-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      src={course.thumbnail || course.img || "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=1000&auto=format&fit=crop"}
+                    className="z-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    src={
+                      course.thumbnail ||
+                      course.img ||
+                      "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=1000&auto=format&fit=crop"
+                    }
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-blue-900/50 via-blue-900/20 to-transparent z-10" />
                   <div className="absolute bottom-4 left-4 z-20">
-                    <Chip color="primary" size="sm" variant="flat" className="bg-white/90 text-primary-700 font-bold shadow-sm">
+                    <Chip
+                      color="primary"
+                      size="sm"
+                      variant="flat"
+                      className="bg-white/90 text-primary-700 font-bold shadow-sm"
+                    >
                       {course.level}
                     </Chip>
                   </div>
@@ -129,12 +147,20 @@ const CoursesSection = () => {
 
                   {/* Description - Parse HTML with basic tags only (h1, h2, p) */}
                   <div
-                    className={`text-gray-600 text-sm mb-4 line-clamp-3 ${language === "bn" ? "font-siliguri" : ""}`}
+                    className={`text-gray-600 text-sm mb-4 line-clamp-3 
+    [&_h1]:text-inherit [&_h1]:font-normal [&_h1]:m-0
+    [&_h2]:text-inherit [&_h2]:font-normal [&_h2]:m-0
+    [&_h3]:text-inherit [&_h3]:font-normal [&_h3]:m-0
+    ${language === "bn" ? "font-siliguri" : ""}
+  `}
                     dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(String(course.description || ""), {
-                        ALLOWED_TAGS: ["h1", "h2", "h3", "p", "br"],
-                        ALLOWED_ATTR: [],
-                      }),
+                      __html: DOMPurify.sanitize(
+                        String(course.description || ""),
+                        {
+                          ALLOWED_TAGS: ["h1", "h2", "h3", "p", "br"],
+                          ALLOWED_ATTR: [],
+                        }
+                      ),
                     }}
                   />
 
@@ -143,13 +169,21 @@ const CoursesSection = () => {
                     {course.duration && (
                       <div className="flex items-center gap-1 text-sm text-gray-600">
                         <span>⏱️</span>
-                        <span className={language === "bn" ? "font-siliguri" : ""}>{course.duration}</span>
+                        <span
+                          className={language === "bn" ? "font-siliguri" : ""}
+                        >
+                          {course.duration}
+                        </span>
                       </div>
                     )}
                     {course.ageRange && (
                       <div className="flex items-center gap-1 text-sm text-gray-600">
                         <span>👥</span>
-                        <span className={language === "bn" ? "font-siliguri" : ""}>{course.ageRange}</span>
+                        <span
+                          className={language === "bn" ? "font-siliguri" : ""}
+                        >
+                          {course.ageRange}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -158,9 +192,16 @@ const CoursesSection = () => {
                   {course.features && course.features.length > 0 && (
                     <ul className="space-y-2 mb-4">
                       {course.features.map((feature: string, idx: number) => (
-                        <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                        <li
+                          key={idx}
+                          className="flex items-start gap-2 text-sm text-gray-700"
+                        >
                           <span className="text-green-500 mt-0.5">✓</span>
-                          <span className={language === "bn" ? "font-siliguri" : ""}>{feature}</span>
+                          <span
+                            className={language === "bn" ? "font-siliguri" : ""}
+                          >
+                            {feature}
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -246,7 +287,6 @@ const CoursesSection = () => {
         </div>
       </div>
     </section>
-
   );
 };
 
