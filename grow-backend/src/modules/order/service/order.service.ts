@@ -70,8 +70,8 @@ const sendOrderEmail = async (order: any) => {
       const payloadBase = { orderId: String(order._id) } as any;
       const approveToken = jwt.sign({ ...payloadBase, action: "approve" }, ENV.JWT_SECRET, { expiresIn: "2d" });
       const rejectToken = jwt.sign({ ...payloadBase, action: "reject" }, ENV.JWT_SECRET, { expiresIn: "2d" });
-      const approveUrl = `${ENV.FRONTEND_URL}/api/order/email-action/${approveToken}`;
-      const rejectUrl = `${ENV.FRONTEND_URL}/api/order/email-action/${rejectToken}`;
+      const approveUrl = `${ENV.BACKEND_URL}/api/orders/email-action/${approveToken}`;
+      const rejectUrl = `${ENV.BACKEND_URL}/api/orders/email-action/${rejectToken}`;
 
       await transporter.sendMail({
         from: ENV.EMAIL_USER,

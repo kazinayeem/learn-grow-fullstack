@@ -14,7 +14,7 @@ export const ENV = {
   // Email Configuration
   EMAIL_HOST: process.env.EMAIL_HOST || "smtp.gmail.com",
   EMAIL_PORT: Number(process.env.EMAIL_PORT || 587),
-  EMAIL_USER: process.env.EMAIL_USER || "your-email@gmail.com",
+  EMAIL_USER: process.env.EMAIL_USER || "kazinayeem55085@gmail.com",
   EMAIL_PASSWORD: process.env.EMAIL_PASSWORD || "your-app-password",
   
   // SMS Configuration (Twilio)
@@ -29,6 +29,9 @@ export const ENV = {
   
   // Frontend URL
   FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:3000",
+  
+  // Backend URL
+  BACKEND_URL: process.env.BACKEND_URL || "http://localhost:5000",
 
   // Optional: external payment gateway health check URL
   PAYMENT_HEALTH_URL: process.env.PAYMENT_HEALTH_URL || "",
