@@ -17,6 +17,24 @@ const CoursesSection = () => {
   const [language] = useState<"en" | "bn">("bn");
   const { data, isLoading, error } = useGetFeaturedCoursesQuery();
   const router = useRouter();
+  const sanitizeDescription = (value: string, maxLength = 120) => {
+    if (!value) return "";
+
+    const cleanText = value
+      .replace(/<[^>]*>/g, " ") // remove HTML tags
+      .replace(/&nbsp;|&#160;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (!cleanText) return "";
+
+    return cleanText.length > maxLength
+      ? `${cleanText.slice(0, maxLength)}...`
+      : cleanText;
+  };
 
   if (error) {
     // If API fails, show sample courses instead of error message
@@ -146,23 +164,10 @@ const CoursesSection = () => {
                   )}
 
                   {/* Description - Parse HTML with basic tags only (h1, h2, p) */}
-                  <div
-                    className={`text-gray-600 text-sm mb-4 line-clamp-3
-    [&_h1]:inline [&_h1]:text-inherit [&_h1]:font-normal [&_h1]:leading-normal [&_h1]:m-0
-    [&_h2]:inline [&_h2]:text-inherit [&_h2]:font-normal [&_h2]:leading-normal [&_h2]:m-0
-    [&_h3]:inline [&_h3]:text-inherit [&_h3]:font-normal [&_h3]:leading-normal [&_h3]:m-0
-    ${language === "bn" ? "font-siliguri" : ""}
-  `}
-                    dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(
-                        String(course.description || ""),
-                        {
-                          ALLOWED_TAGS: ["h1", "h2", "h3", "p", "br"],
-                           ALLOWED_ATTR: [],
-                        }
-                      ),
-                    }}
-                  />
+                  <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
+                    {sanitizeDescription(course.description) ||
+                      "No description available"}
+                  </p>
 
                   {/* Duration & Age Range */}
                   <div className="flex gap-4 mb-4">

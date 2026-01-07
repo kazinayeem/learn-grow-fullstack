@@ -19,7 +19,14 @@ import {
 import { useGetPublishedCoursesQuery } from "@/redux/api/courseApi";
 import { useGetAllCategoriesQuery } from "@/redux/api/categoryApi";
 import { useRouter } from "next/navigation";
-import { FaSearch, FaClock, FaBook, FaUser, FaStar, FaPlayCircle } from "react-icons/fa";
+import {
+  FaSearch,
+  FaClock,
+  FaBook,
+  FaUser,
+  FaStar,
+  FaPlayCircle,
+} from "react-icons/fa";
 
 // Skeleton Loader Component
 const CourseCardSkeleton = () => (
@@ -51,8 +58,12 @@ const CourseCardSkeleton = () => (
 
 export default function CourseList() {
   const [page, setPage] = useState(1);
-  const { data, isLoading, error } = useGetPublishedCoursesQuery({ page, limit: 6 });
-  const { data: categoriesData, isLoading: isCategoriesLoading } = useGetAllCategoriesQuery(undefined);
+  const { data, isLoading, error } = useGetPublishedCoursesQuery({
+    page,
+    limit: 6,
+  });
+  const { data: categoriesData, isLoading: isCategoriesLoading } =
+    useGetAllCategoriesQuery(undefined);
   const router = useRouter();
   const [language] = useState<"en" | "bn">("bn");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
@@ -82,35 +93,42 @@ export default function CourseList() {
     let filtered = apiCourses.filter(
       (c: any) => c.isPublished && c.isAdminApproved
     );
-    
+
     // Filter by category if selected
     if (selectedCategory) {
       filtered = filtered.filter((c: any) => {
-        const categoryId = typeof c.category === 'object' ? c.category._id : c.category;
+        const categoryId =
+          typeof c.category === "object" ? c.category._id : c.category;
         return categoryId === selectedCategory;
       });
     }
-    
+
     // Filter by search term (search in title and description)
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter((c: any) => {
         const title = (c.title || "").toLowerCase();
-        const description = sanitizeDescription(c.description || "").toLowerCase();
+        const description = sanitizeDescription(
+          c.description || ""
+        ).toLowerCase();
         return title.includes(searchLower) || description.includes(searchLower);
       });
     }
-    
+
     return filtered.length > 0 ? filtered : [];
   }, [apiCourses, selectedCategory, searchTerm]);
 
   // Get level badge color
   const getLevelColor = (level: string) => {
-    switch(level?.toLowerCase()) {
-      case 'beginner': return 'success';
-      case 'intermediate': return 'warning';
-      case 'advanced': return 'danger';
-      default: return 'default';
+    switch (level?.toLowerCase()) {
+      case "beginner":
+        return "success";
+      case "intermediate":
+        return "warning";
+      case "advanced":
+        return "danger";
+      default:
+        return "default";
     }
   };
 
@@ -149,7 +167,8 @@ export default function CourseList() {
           radius="lg"
           classNames={{
             input: "text-base",
-            inputWrapper: "bg-white shadow-sm border border-gray-200 hover:border-primary transition-colors"
+            inputWrapper:
+              "bg-white shadow-sm border border-gray-200 hover:border-primary transition-colors",
           }}
           isClearable
           onClear={() => setSearchTerm("")}
@@ -166,24 +185,37 @@ export default function CourseList() {
           size="lg"
           radius="lg"
           classNames={{
-            trigger: "bg-white shadow-sm border border-gray-200 hover:border-primary transition-colors"
+            trigger:
+              "bg-white shadow-sm border border-gray-200 hover:border-primary transition-colors",
           }}
           isLoading={isCategoriesLoading}
         >
-          {[<SelectItem key="" value="">All Categories</SelectItem>,
-          ...categories.map((cat: any) => (
-            <SelectItem key={cat._id} value={cat._id}>
-              {cat.name}
-            </SelectItem>
-          ))]}
+          {[
+            <SelectItem key="" value="">
+              All Categories
+            </SelectItem>,
+            ...categories.map((cat: any) => (
+              <SelectItem key={cat._id} value={cat._id}>
+                {cat.name}
+              </SelectItem>
+            )),
+          ]}
         </Select>
       </div>
-      
+
       {/* Results count */}
       {courses.length > 0 && (
         <div className="flex items-center justify-between px-2">
           <p className="text-gray-600 text-sm">
-            Showing <span className="font-semibold text-gray-900">{courses.length}</span> of <span className="font-semibold text-gray-900">{totalCourses || courses.length}</span> courses
+            Showing{" "}
+            <span className="font-semibold text-gray-900">
+              {courses.length}
+            </span>{" "}
+            of{" "}
+            <span className="font-semibold text-gray-900">
+              {totalCourses || courses.length}
+            </span>{" "}
+            courses
           </p>
         </div>
       )}
@@ -212,132 +244,155 @@ export default function CourseList() {
           </div>
         ) : (
           courses.map((course: any, index: number) => {
-            const categoryName = typeof course.category === "object" ? course.category?.name : null;
-            const instructorName = typeof course.instructor === "object" ? course.instructor?.name : "Instructor";
-            
-            return (
-            <Card
-              key={course._id || index}
-              className="group cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl border border-gray-100"
-              radius="lg"
-            >
-              {/* Course Image with Overlay Badge */}
-              <div 
-                className="relative h-52 overflow-hidden cursor-pointer"
-                onClick={() => router.push(`/courses/${course._id || course.id}`)}
-              >
-                <Image
-                  removeWrapper
-                  alt={course.title}
-                  className="z-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  src={
-                    course.img ||
-                    course.thumbnail ||
-                    "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=1000&auto=format&fit=crop"
-                  }
-                />
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                
-                {/* Level Badge on Image */}
-                <div className="absolute top-3 left-3">
-                  <Chip
-                    color={getLevelColor(course.level)}
-                    size="sm"
-                    variant="solid"
-                    className="font-semibold shadow-lg"
-                  >
-                    {course.level || "Beginner"}
-                  </Chip>
-                </div>
+            const categoryName =
+              typeof course.category === "object"
+                ? course.category?.name
+                : null;
+            const instructorName =
+              typeof course.instructor === "object"
+                ? course.instructor?.name
+                : "Instructor";
 
-                {/* Type Badge */}
-                {course.type && (
-                  <div className="absolute top-3 right-3">
+            return (
+              <Card
+                key={course._id || index}
+                className="group cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl border border-gray-100"
+                radius="lg"
+              >
+                {/* Course Image with Overlay Badge */}
+                <div
+                  className="relative h-52 overflow-hidden cursor-pointer"
+                  onClick={() =>
+                    router.push(`/courses/${course._id || course.id}`)
+                  }
+                >
+                  <Image
+                    removeWrapper
+                    alt={course.title}
+                    className="z-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    src={
+                      course.img ||
+                      course.thumbnail ||
+                      "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=1000&auto=format&fit=crop"
+                    }
+                  />
+                  {/* Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+
+                  {/* Level Badge on Image */}
+                  <div className="absolute top-3 left-3">
                     <Chip
-                      color="default"
+                      color={getLevelColor(course.level)}
                       size="sm"
                       variant="solid"
-                      className="bg-white/90 text-gray-800 font-medium shadow-lg"
-                      startContent={course.type === "Live" ? <FaPlayCircle className="text-red-500" /> : undefined}
+                      className="font-semibold shadow-lg"
                     >
-                      {course.type}
+                      {course.level || "Beginner"}
                     </Chip>
                   </div>
-                )}
-              </div>
 
-              <CardBody className="p-5 space-y-3">
-                {/* Category Tag */}
-                {categoryName && (
-                  <Chip
-                    size="sm"
-                    variant="flat"
-                    color="secondary"
-                    className="w-fit"
+                  {/* Type Badge */}
+                  {course.type && (
+                    <div className="absolute top-3 right-3">
+                      <Chip
+                        color="default"
+                        size="sm"
+                        variant="solid"
+                        className="bg-white/90 text-gray-800 font-medium shadow-lg"
+                        startContent={
+                          course.type === "Live" ? (
+                            <FaPlayCircle className="text-red-500" />
+                          ) : undefined
+                        }
+                      >
+                        {course.type}
+                      </Chip>
+                    </div>
+                  )}
+                </div>
+
+                <CardBody className="p-5 space-y-3">
+                  {/* Category Tag */}
+                  {categoryName && (
+                    <Chip
+                      size="sm"
+                      variant="flat"
+                      color="secondary"
+                      className="w-fit"
+                    >
+                      {categoryName}
+                    </Chip>
+                  )}
+
+                  {/* Course Title */}
+                  <h3
+                    className="text-lg font-bold text-gray-900 line-clamp-2 leading-snug group-hover:text-primary transition-colors cursor-pointer"
+                    onClick={() =>
+                      router.push(`/courses/${course._id || course.id}`)
+                    }
                   >
-                    {categoryName}
-                  </Chip>
-                )}
+                    {course.title}
+                  </h3>
 
-                {/* Course Title */}
-                <h3 
-                  className="text-lg font-bold text-gray-900 line-clamp-2 leading-snug group-hover:text-primary transition-colors cursor-pointer"
-                  onClick={() => router.push(`/courses/${course._id || course.id}`)}
-                >
-                  {course.title}
-                </h3>
+                  {/* Description */}
+                  <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
+                    {(() => {
+                      const clean = sanitizeDescription(
+                        String(course.description || "")
+                      );
+                      if (!clean) return "No description available";
+                      return clean.length > 120
+                        ? `${clean.substring(0, 120)}...`
+                        : clean;
+                    })()}
+                  </p>
 
-                {/* Description */}
-                <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
-                  {(() => {
-                    const clean = sanitizeDescription(String(course.description || ""));
-                    if (!clean) return "No description available";
-                    return clean.length > 120 ? `${clean.substring(0, 120)}...` : clean;
-                  })()}
-                </p>
+                  {/* Meta Information */}
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {course.duration && (
+                      <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-2.5 py-1.5 rounded-lg">
+                        <FaClock className="text-primary" />
+                        <span className="font-medium">{course.duration}h</span>
+                      </div>
+                    )}
+                    {course.modules && course.modules.length > 0 && (
+                      <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-2.5 py-1.5 rounded-lg">
+                        <FaBook className="text-primary" />
+                        <span className="font-medium">
+                          {course.modules.length} Modules
+                        </span>
+                      </div>
+                    )}
+                    {course.enrolled !== undefined && course.enrolled > 0 && (
+                      <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-2.5 py-1.5 rounded-lg">
+                        <FaUser className="text-primary" />
+                        <span className="font-medium">{course.enrolled}</span>
+                      </div>
+                    )}
+                  </div>
+                </CardBody>
 
-                {/* Meta Information */}
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {course.duration && (
-                    <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-2.5 py-1.5 rounded-lg">
-                      <FaClock className="text-primary" />
-                      <span className="font-medium">{course.duration}h</span>
-                    </div>
-                  )}
-                  {course.modules && course.modules.length > 0 && (
-                    <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-2.5 py-1.5 rounded-lg">
-                      <FaBook className="text-primary" />
-                      <span className="font-medium">{course.modules.length} Modules</span>
-                    </div>
-                  )}
-                  {course.enrolled !== undefined && course.enrolled > 0 && (
-                    <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-2.5 py-1.5 rounded-lg">
-                      <FaUser className="text-primary" />
-                      <span className="font-medium">{course.enrolled}</span>
-                    </div>
-                  )}
-                 
-                </div>
-              </CardBody>
-
-              {/* Footer with Price and CTA */}
-              <CardFooter className="p-5 flex items-center justify-between bg-gray-50/50">
-                <div className="flex flex-col">
-                  <span className="text-xs text-gray-500 mb-1">Price</span>
-                  <span className="text-3xl font-bold text-primary">৳{course.price || 0}</span>
-                </div>
-                <Button
-                  color="primary"
-                  variant="shadow"
-                  size="lg"
-                  className="font-semibold"
-                  onPress={() => router.push(`/courses/${course._id || course.id}`)}
-                >
-                  Enroll Now
-                </Button>
-              </CardFooter>
-            </Card>
+                {/* Footer with Price and CTA */}
+                <CardFooter className="p-5 flex items-center justify-between bg-gray-50/50">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-gray-500 mb-1">Price</span>
+                    <span className="text-3xl font-bold text-primary">
+                      ৳{course.price || 0}
+                    </span>
+                  </div>
+                  <Button
+                    color="primary"
+                    variant="shadow"
+                    size="lg"
+                    className="font-semibold"
+                    onPress={() =>
+                      router.push(`/courses/${course._id || course.id}`)
+                    }
+                  >
+                    Enroll Now
+                  </Button>
+                </CardFooter>
+              </Card>
             );
           })
         )}
