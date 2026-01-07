@@ -147,10 +147,10 @@ const CoursesSection = () => {
 
                   {/* Description - Parse HTML with basic tags only (h1, h2, p) */}
                   <div
-                    className={`text-gray-600 text-sm mb-4 line-clamp-3 
-    [&_h1]:text-inherit [&_h1]:font-normal [&_h1]:m-0
-    [&_h2]:text-inherit [&_h2]:font-normal [&_h2]:m-0
-    [&_h3]:text-inherit [&_h3]:font-normal [&_h3]:m-0
+                    className={`text-gray-600 text-sm mb-4 line-clamp-3
+    [&_h1]:inline [&_h1]:text-inherit [&_h1]:font-normal [&_h1]:leading-normal [&_h1]:m-0
+    [&_h2]:inline [&_h2]:text-inherit [&_h2]:font-normal [&_h2]:leading-normal [&_h2]:m-0
+    [&_h3]:inline [&_h3]:text-inherit [&_h3]:font-normal [&_h3]:leading-normal [&_h3]:m-0
     ${language === "bn" ? "font-siliguri" : ""}
   `}
                     dangerouslySetInnerHTML={{
@@ -158,7 +158,7 @@ const CoursesSection = () => {
                         String(course.description || ""),
                         {
                           ALLOWED_TAGS: ["h1", "h2", "h3", "p", "br"],
-                          ALLOWED_ATTR: [],
+                           ALLOWED_ATTR: [],
                         }
                       ),
                     }}
