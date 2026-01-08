@@ -110,15 +110,7 @@ export default function InstructorLayout({
               </Chip>
             )}
 
-            {/* Notifications */}
-            <Button
-              isIconOnly
-              variant="light"
-              className="text-gray-600"
-              aria-label="Notifications"
-            >
-              <FaBell className="text-xl" />
-            </Button>
+         
 
             {/* User Dropdown */}
             <Dropdown placement="bottom-end">

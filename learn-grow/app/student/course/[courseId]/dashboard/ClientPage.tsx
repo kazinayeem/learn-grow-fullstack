@@ -685,7 +685,9 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                 </p>
                             </CardBody>
                         </Card>
-                        <CertificateComponent certificate={certificate} />
+                        <div className="px-2 sm:px-0 w-full">
+                            <CertificateComponent certificate={certificate} />
+                        </div>
                     </div>
                 )}
             </div>

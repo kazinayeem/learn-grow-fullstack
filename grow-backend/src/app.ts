@@ -25,6 +25,7 @@ import teamRoutes from "./modules/team/routes/team.routes.js";
 import googleRoutes from "./modules/user/routes/google.routes.js";
 import analyticsRoutes from "./modules/analytics/analytics.route.js";
 import ticketRoutes from "./modules/ticket/route/ticket.route.js";
+import contactRoutes from "./modules/contact/routes/contact.route.js";
 import certificateRoutes from "./modules/certificate/routes/certificate.routes.js";
 import { ENV } from "./config/env.js";
 import "./config/passport.js";
@@ -64,15 +65,8 @@ export const createApp = () => {
         "http://localhost:3000",
         "http://localhost:3001",
         "http://localhost:3002",
-        "http://174.129.111.162:3000", // Production frontend
-        "http://174.129.111.162:3001",
-        "http://174.129.111.162:3002",
-        "http://174.129.111.162",
-        "https://174.129.111.162",
-        "https://learn-grow-fullstack-t7az.vercel.app",
-        "https://learn-grow-fullstack-t7az-2u0142onf.vercel.app",
-        "https://learn-grow-fullsta-git-996086-kazinayeem55085gmailcoms-projects.vercel.app",
-        "https://learn-grow-fullstack-t7az-9wt4j22we.vercel.app",
+        "https://learnandgrow.io",
+       
       ];
 
       // Allow requests with no origin (like mobile apps or Postman)
@@ -116,7 +110,7 @@ export const createApp = () => {
   // SECURITY LAYER 3: Input Validation & Sanitization
   // ====================================
   app.use(validateContentType); // Validate Content-Type header
-  app.use(requestTimeout(30000)); // 30 second timeout
+  app.use(requestTimeout(50000)); // 50 second timeout
   app.use(express.json(requestSizeLimiter.json));
   app.use(express.urlencoded(requestSizeLimiter.urlencoded));
   app.use(mongoSanitize); // Prevent NoSQL injection
@@ -180,6 +174,7 @@ export const createApp = () => {
   app.use("/api/v1/status", statusRoutes);
   app.use("/api/analytics", analyticsRoutes);
   app.use("/api/tickets", ticketRoutes); // Ticket system routes
+  app.use("/api/contact", contactRoutes); // Contact form routes
   app.use("/api/certificates", certificateRoutes); // Certificate system routes
   // Site Content (public + admin upsert)
   app.use("/api/site-content", siteContentRoutes);

@@ -107,6 +107,23 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
 
     const hasAccess = isLoggedIn && (hasAllAccess || hasPurchasedCourse || hasPaid || isEnrolled);
 
+    // Pending approval states
+    const hasPendingAllAccess = isLoggedIn && orders.some(
+        order =>
+            order.planType === "quarterly" &&
+            order.paymentStatus !== "approved" &&
+            order.isActive
+    );
+
+    const hasPendingCourseOrder = isLoggedIn && orders.some(
+        order =>
+            order.planType === "single" &&
+            order.courseId?._id === courseId &&
+            order.paymentStatus !== "approved"
+    );
+
+    const isAwaitingApproval = hasPendingAllAccess || hasPendingCourseOrder;
+
     const handleEnrollClick = () => {
         const token = getAuthToken();
         if (!token) {
@@ -645,7 +662,24 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                     {/* Action Buttons - Full width and responsive */}
                                     <div className="flex flex-col gap-2 sm:gap-3">
                                         {/* Registration gating logic */}
-                                        {hasAccess ? (
+                                        {isAwaitingApproval ? (
+                                            <>
+                                                <div className="bg-warning-50 border border-warning-200 rounded-lg p-3">
+                                                    <p className="text-warning-700 text-sm text-center font-semibold">
+                                                        Your purchase is pending admin approval. Please wait.
+                                                    </p>
+                                                </div>
+                                                <Button
+                                                    color="default"
+                                                    size="md"
+                                                    className="w-full font-semibold text-sm sm:text-base"
+                                                    variant="flat"
+                                                    isDisabled
+                                                >
+                                                    Awaiting Approval
+                                                </Button>
+                                            </>
+                                        ) : hasAccess ? (
                                             <Button
                                                 color="success"
                                                 size="md"

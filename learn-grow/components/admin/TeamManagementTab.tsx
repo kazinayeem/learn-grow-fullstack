@@ -20,6 +20,8 @@ import {
     Spinner,
     Checkbox,
     Avatar,
+    Select,
+    SelectItem,
 } from "@nextui-org/react";
 import toast from "react-hot-toast";
 import { FaTrash, FaEdit, FaEye, FaEyeSlash } from "react-icons/fa";
@@ -52,6 +54,20 @@ interface Instructor {
     name: string;
     profileImage?: string;
 }
+
+// Predefined role options
+const TEAM_ROLES = [
+    "Founder & CEO",
+    "Co-Founder",
+    "Head of Content",
+    "Lead Instructor",
+    "Senior Instructor",
+    "Instructor",
+    "Course Developer",
+    "Technical Lead",
+    "Operations Manager",
+    "Support Manager",
+];
 
 export default function TeamManagementTab() {
     // Queries and Mutations
@@ -202,12 +218,18 @@ export default function TeamManagementTab() {
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             />
-                            <Input
+                            <Select
                                 label="Role"
-                                placeholder="e.g., Senior Instructor, Course Creator"
+                                placeholder="Select a role"
                                 value={formData.role}
                                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                            />
+                            >
+                                {TEAM_ROLES.map((role) => (
+                                    <SelectItem key={role} value={role}>
+                                        {role}
+                                    </SelectItem>
+                                ))}
+                            </Select>
                             <Input
                                 label="LinkedIn URL (Optional)"
                                 placeholder="https://linkedin.com/in/..."
@@ -464,13 +486,19 @@ export default function TeamManagementTab() {
                                                 setEditingMember({ ...editingMember, name: e.target.value })
                                             }
                                         />
-                                        <Input
+                                        <Select
                                             label="Role"
                                             value={editingMember.role}
                                             onChange={(e) =>
                                                 setEditingMember({ ...editingMember, role: e.target.value })
                                             }
-                                        />
+                                        >
+                                            {TEAM_ROLES.map((role) => (
+                                                <SelectItem key={role} value={role}>
+                                                    {role}
+                                                </SelectItem>
+                                            ))}
+                                        </Select>
                                         <Input
                                             label="Bio"
                                             value={editingMember.bio || ""}

@@ -50,6 +50,9 @@ export default function AdminStudentDetailPage() {
   const studentId = params.id as string;
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [extensionMonths, setExtensionMonths] = useState(3);
+  const [extensionDays, setExtensionDays] = useState(10);
+  const [extensionType, setExtensionType] = useState<"monthly" | "daily">("monthly");
+  const [selectedOrderIdForDays, setSelectedOrderIdForDays] = useState<string | null>(null);
   const [extending, setExtending] = useState(false);
 
   const { data, isLoading, error, refetch } = useGetUserByIdQuery(studentId);
@@ -70,6 +73,16 @@ export default function AdminStudentDetailPage() {
       order.planType === "quarterly" &&
       order.paymentStatus === "approved" &&
       order.isActive &&
+      new Date(order.endDate) > new Date()
+  );
+
+  // Find single-course orders that are approved
+  const approvedSingleCourseOrders = orders.filter(
+    (order: any) =>
+      order.planType === "single" &&
+      order.paymentStatus === "approved" &&
+      order.isActive &&
+      order.courseId &&
       new Date(order.endDate) > new Date()
   );
 
@@ -94,13 +107,22 @@ export default function AdminStudentDetailPage() {
       setExtending(true);
       const token = Cookies.get("accessToken");
       
-      await axios.patch(
-        `${API_CONFIG.BASE_URL}/orders/${activeQuarterlyOrder._id}/extend`,
-        { months: extensionMonths },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      if (extensionType === "monthly" && activeQuarterlyOrder) {
+        await axios.patch(
+          `${API_CONFIG.BASE_URL}/orders/${activeQuarterlyOrder._id}/extend`,
+          { months: extensionMonths },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        toast.success(`Subscription extended by ${extensionMonths} month(s)`);
+      } else if (extensionType === "daily" && selectedOrderIdForDays) {
+        await axios.patch(
+          `${API_CONFIG.BASE_URL}/orders/${selectedOrderIdForDays}/extend-days`,
+          { days: extensionDays },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        toast.success(`Access extended by ${extensionDays} day(s)`);
+      }
 
-      toast.success(`Subscription extended by ${extensionMonths} month(s)`);
       refetchOrders();
       onClose();
     } catch (error: any) {
@@ -290,7 +312,11 @@ export default function AdminStudentDetailPage() {
                   color="success"
                   variant="flat"
                   startContent={<FaPlus />}
-                  onPress={onOpen}
+                  onPress={() => {
+                    setExtensionType("monthly");
+                    setSelectedOrderIdForDays(null);
+                    onOpen();
+                  }}
                 >
                   Extend
                 </Button>
@@ -323,6 +349,43 @@ export default function AdminStudentDetailPage() {
                 </div>
               </CardBody>
             </Card>
+          )}
+
+          {/* Single-Course Subscriptions */}
+          {approvedSingleCourseOrders.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg text-gray-800">Single-Course Access</h3>
+              {approvedSingleCourseOrders.map((order: any) => (
+                <Card key={order._id} className="border-l-4 border-blue-300 bg-gradient-to-br from-blue-50 to-cyan-50">
+                  <CardBody className="p-4 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-semibold text-gray-900">{order.courseId?.title || "Course"}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Expires: {new Date(order.endDate).toLocaleDateString("en-GB")}
+                        </p>
+                        <p className="text-xs text-blue-600 mt-1">
+                          {calculateRemainingTime(order.endDate)} remaining
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        color="primary"
+                        variant="flat"
+                        startContent={<FaPlus />}
+                        onPress={() => {
+                          setExtensionType("daily");
+                          setSelectedOrderIdForDays(order._id);
+                          onOpen();
+                        }}
+                      >
+                        Extend
+                      </Button>
+                    </div>
+                  </CardBody>
+                </Card>
+              ))}
+            </div>
           )}
         </div>
 
@@ -487,57 +550,144 @@ export default function AdminStudentDetailPage() {
       </div>
 
       {/* Extension Modal */}
-      <Modal isOpen={isOpen} onClose={onClose}>
+      <Modal isOpen={isOpen} onClose={onClose} size="lg">
         <ModalContent>
-          <ModalHeader>Extend Subscription</ModalHeader>
-          <ModalBody>
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Extend the student's quarterly subscription by adding more months to their current end date.
-              </p>
-              {activeQuarterlyOrder && (
-                <div className="bg-blue-50 p-4 rounded-lg space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Current End Date:</span>
-                    <span className="font-semibold">
-                      {new Date(activeQuarterlyOrder.endDate).toLocaleDateString("en-GB")}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-green-700">New End Date:</span>
-                    <span className="font-bold text-green-700">
-                      {(() => {
-                        const newDate = new Date(activeQuarterlyOrder.endDate);
-                        newDate.setMonth(newDate.getMonth() + extensionMonths);
-                        return newDate.toLocaleDateString("en-GB");
-                      })()}
-                    </span>
-                  </div>
+          {extensionType === "monthly" ? (
+            <>
+              <ModalHeader>Extend Quarterly Subscription</ModalHeader>
+              <ModalBody>
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600">
+                    Extend the student's quarterly subscription by adding more months to their current end date.
+                  </p>
+                  {activeQuarterlyOrder && (
+                    <div className="bg-blue-50 p-4 rounded-lg space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Current End Date:</span>
+                        <span className="font-semibold">
+                          {new Date(activeQuarterlyOrder.endDate).toLocaleDateString("en-GB")}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-green-700">New End Date:</span>
+                        <span className="font-bold text-green-700">
+                          {(() => {
+                            const newDate = new Date(activeQuarterlyOrder.endDate);
+                            newDate.setMonth(newDate.getMonth() + extensionMonths);
+                            return newDate.toLocaleDateString("en-GB");
+                          })()}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <Input
+                    type="number"
+                    label="Months to Add"
+                    placeholder="Enter number of months"
+                    value={String(extensionMonths)}
+                    onChange={(e) => setExtensionMonths(Number(e.target.value) || 1)}
+                    min={1}
+                    max={12}
+                  />
                 </div>
-              )}
-              <Input
-                type="number"
-                label="Months to Add"
-                placeholder="Enter number of months"
-                value={String(extensionMonths)}
-                onChange={(e) => setExtensionMonths(Number(e.target.value) || 1)}
-                min={1}
-                max={12}
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onClose}>
-              Cancel
-            </Button>
-            <Button
-              color="success"
-              onPress={handleExtendSubscription}
-              isLoading={extending}
-            >
-              Extend by {extensionMonths} Month{extensionMonths > 1 ? 's' : ''}
-            </Button>
-          </ModalFooter>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="light" onPress={onClose}>
+                  Cancel
+                </Button>
+                <Button
+                  color="success"
+                  onPress={handleExtendSubscription}
+                  isLoading={extending}
+                >
+                  Extend by {extensionMonths} Month{extensionMonths > 1 ? 's' : ''}
+                </Button>
+              </ModalFooter>
+            </>
+          ) : (
+            <>
+              <ModalHeader>Extend Single-Course Access</ModalHeader>
+              <ModalBody>
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600">
+                    Extend the student's course access by adding more days.
+                  </p>
+                  {selectedOrderIdForDays && approvedSingleCourseOrders.find((o: any) => o._id === selectedOrderIdForDays) && (
+                    <>
+                      {(() => {
+                        const selectedOrder = approvedSingleCourseOrders.find((o: any) => o._id === selectedOrderIdForDays);
+                        return (
+                          <div className="bg-blue-50 p-4 rounded-lg space-y-2">
+                            <p className="text-sm font-semibold text-gray-900 mb-2">
+                              {selectedOrder.courseId?.title || "Course"}
+                            </p>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Current End Date:</span>
+                              <span className="font-semibold">
+                                {new Date(selectedOrder.endDate).toLocaleDateString("en-GB")}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-green-700">New End Date:</span>
+                              <span className="font-bold text-green-700">
+                                {(() => {
+                                  const newDate = new Date(selectedOrder.endDate);
+                                  newDate.setDate(newDate.getDate() + extensionDays);
+                                  return newDate.toLocaleDateString("en-GB");
+                                })()}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold">Quick Options</label>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant={extensionDays === 10 ? "solid" : "bordered"}
+                            color={extensionDays === 10 ? "primary" : "default"}
+                            onPress={() => setExtensionDays(10)}
+                          >
+                            10 Days
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={extensionDays === 20 ? "solid" : "bordered"}
+                            color={extensionDays === 20 ? "primary" : "default"}
+                            onPress={() => setExtensionDays(20)}
+                          >
+                            20 Days
+                          </Button>
+                        </div>
+                      </div>
+                      <Input
+                        type="number"
+                        label="Days to Add"
+                        placeholder="Enter number of days"
+                        value={String(extensionDays)}
+                        onChange={(e) => setExtensionDays(Number(e.target.value) || 1)}
+                        min={1}
+                        max={365}
+                      />
+                    </>
+                  )}
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="light" onPress={onClose}>
+                  Cancel
+                </Button>
+                <Button
+                  color="success"
+                  onPress={handleExtendSubscription}
+                  isLoading={extending}
+                >
+                  Extend by {extensionDays} Day{extensionDays > 1 ? 's' : ''}
+                </Button>
+              </ModalFooter>
+            </>
+          )}
         </ModalContent>
       </Modal>
     </div>

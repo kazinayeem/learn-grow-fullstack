@@ -103,27 +103,32 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
 
   return (
     <div className="w-full">
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end mb-2 sm:mb-4 px-2 sm:px-0 overflow-x-auto">
         <Button
           color="primary"
-          size="lg"
+          size="sm"
+          className="sm:size-lg font-semibold flex-shrink-0"
           startContent={downloading ? <Spinner size="sm" color="white" /> : <FaDownload />}
           onPress={downloadCertificate}
           isDisabled={downloading}
-          className="font-semibold"
         >
-          {downloading ? "Generating PDF..." : "Download Certificate"}
+          <span className="hidden sm:inline">
+            {downloading ? "Generating PDF..." : "Download Certificate"}
+          </span>
+          <span className="sm:hidden">
+            {downloading ? "Generating..." : "Download"}
+          </span>
         </Button>
       </div>
 
       <div
         ref={containerRef}
-        className="relative w-full flex justify-center"
-        style={{ height: BASE_HEIGHT * displayScale }}
+        className="relative w-full flex justify-center overflow-x-auto"
+        style={{ height: BASE_HEIGHT * displayScale, overflowY: "hidden" }}
       >
         <div
           ref={certificateRef}
-          className="bg-primary-500 shadow-2xl overflow-hidden"
+          className="bg-primary-500 shadow-2xl overflow-hidden flex-shrink-0"
           style={{
             width: BASE_WIDTH,
             height: BASE_HEIGHT,

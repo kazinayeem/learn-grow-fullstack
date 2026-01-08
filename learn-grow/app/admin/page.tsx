@@ -92,6 +92,13 @@ function AdminDashboardContent() {
       iconBg: "bg-purple-500",
       href: "/admin/analytics",
     },
+    {
+      title: "Team Management",
+      description: "Manage team members and roles",
+      icon: <FaUsers className="text-2xl sm:text-3xl" />,
+      iconBg: "bg-indigo-500",
+      href: "/admin/team-management",
+    },
   ];
 
   const recentActivity = [

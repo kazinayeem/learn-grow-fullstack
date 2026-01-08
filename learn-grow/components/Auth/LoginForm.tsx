@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Input,
   Button,
@@ -11,18 +11,26 @@ import {
   Link,
   Spinner,
 } from "@nextui-org/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
 import { login, loginWithGoogle } from "@/lib/auth";
 import { FcGoogle } from "react-icons/fc";
 
 export default function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const sessionExpired = searchParams?.get("session_expired") === "true";
+
+  useEffect(() => {
+    if (sessionExpired) {
+      toast.warning("Your session has expired. Please login again to continue.");
+    }
+  }, [sessionExpired]);
 
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -102,6 +110,12 @@ export default function LoginForm() {
         <Divider />
 
         <CardBody className="gap-6 p-6">
+          {sessionExpired && (
+            <div className="p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-yellow-800 text-sm">
+              ⏱️ Your session has expired. Please login again to continue.
+            </div>
+          )}
+          
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               {error}

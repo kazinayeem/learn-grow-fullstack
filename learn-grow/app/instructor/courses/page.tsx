@@ -380,10 +380,7 @@ export default function InstructorCoursesPage() {
 
                             {/* Stats */}
                             <div className="grid grid-cols-2 gap-2 mb-4">
-                                <div className="flex items-center gap-2 text-sm text-gray-600">
-                                    <FaUsers />
-                                    <span>{course.enrolled || 0} students</span>
-                                </div>
+                              
                                 <div className="text-sm text-gray-600">
                                     <span className="font-semibold text-green-600">{course.price} BDT</span>
                                 </div>

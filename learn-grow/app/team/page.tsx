@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardBody, Avatar, Chip, Spinner } from "@nextui-org/react";
 import { FaLinkedin, FaTwitter } from "react-icons/fa";
-import { defaultTeamData } from "@/lib/teamData";
 import { useGetSiteContentQuery } from "@/redux/api/siteContentApi";
+import { useGetAllTeamMembersQuery } from "@/redux/api/teamApi";
 import { apiRequest } from "@/lib/api";
 
 type ApprovedInstructor = {
@@ -14,15 +14,32 @@ type ApprovedInstructor = {
     profileImage?: string;
 };
 
+interface TeamMember {
+    _id: string;
+    name: string;
+    role: string;
+    image: string;
+    linkedIn?: string;
+    twitter?: string;
+    bio?: string;
+    showOnHome: boolean;
+}
+
 export default function TeamPage() {
-    const { data: apiData, isLoading } = useGetSiteContentQuery("team");
+    const { data: apiData, isLoading: contentLoading } = useGetSiteContentQuery("team");
+    const { data: teamData, isLoading: teamLoading } = useGetAllTeamMembersQuery();
     const [approvedInstructors, setApprovedInstructors] = useState<ApprovedInstructor[] | null>(null);
     const [loadingInstructors, setLoadingInstructors] = useState<boolean>(true);
 
-    // Use API data if available, otherwise default
+    // Use only API data - no default fallback
     const data = (apiData?.data?.content && Object.keys(apiData.data.content).length > 0)
         ? apiData.data.content
-        : defaultTeamData;
+        : null;
+
+    // Get team members to show on home page
+    const teamMembers = (teamData?.data && Array.isArray(teamData.data))
+        ? teamData.data.filter((member: TeamMember) => member.showOnHome)
+        : [];
 
     useEffect(() => {
         let mounted = true;
@@ -42,11 +59,49 @@ export default function TeamPage() {
         return () => { mounted = false; };
     }, []);
 
-    if (isLoading) {
+    if (contentLoading || teamLoading) {
         return <div className="min-h-screen flex items-center justify-center"><Spinner size="lg" label="Loading Team..." /></div>;
     }
 
-    const { hero, leadership, instructors, operations } = data;
+    // Show message if no data available
+    if (!data && teamMembers.length === 0) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <Card className="max-w-md">
+                    <CardBody className="text-center p-8">
+                        <p className="text-lg text-gray-600 mb-4">Team information is not available yet.</p>
+                        <p className="text-sm text-gray-500">Please check back later or contact support.</p>
+                    </CardBody>
+                </Card>
+            </div>
+        );
+    }
+
+    // Default hero section if data is not available
+    const hero = data?.hero || { 
+        tag: "Our Team", 
+        title: "Meet Our Amazing Team", 
+        subtitle: "Dedicated professionals committed to your success" 
+    };
+    const leadership = data?.leadership || [];
+    const instructors = data?.instructors || [];
+    const operations = data?.operations || [];
+
+    // Show team members from database if available
+    const displayTeamMembers = teamMembers.length > 0 ? teamMembers : instructors;
+    
+    // Group team members by role
+    const membersByRole = displayTeamMembers.reduce((acc: Record<string, any[]>, member: any) => {
+        const role = member.role || "Other";
+        if (!acc[role]) {
+            acc[role] = [];
+        }
+        acc[role].push(member);
+        return acc;
+    }, {});
+    
+    // Get unique roles that have members
+    const rolesWithMembers = Object.keys(membersByRole).sort();
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
@@ -103,31 +158,51 @@ export default function TeamPage() {
                     </div>
                 </div>
 
-                {/* Instructors */}
-                <div className="mb-16">
-                    <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center">Our Instructors</h2>
-                    {loadingInstructors ? (
-                        <div className="flex justify-center"><Spinner size="md" label="Loading instructors..." /></div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {(approvedInstructors && approvedInstructors.length > 0 ? approvedInstructors : instructors).map((instructor: any, index: number) => (
-                                <Card key={instructor._id || index} className="hover:shadow-lg transition-shadow h-full">
-                                    <CardBody className="text-center p-6 flex flex-col items-center h-full">
-                                        <Avatar
-                                            src={(instructor.profileImage || instructor.img) || undefined}
-                                            name={instructor.name}
-                                            className="w-24 h-24 mx-auto mb-4"
-                                            isBordered
-                                            color="success"
-                                        />
-                                        <h3 className="font-bold text-lg mb-1">{instructor.name}</h3>
-                                        <p className="text-sm text-gray-600 mb-3">{instructor.role || "Instructor"}</p>
-                                    </CardBody>
-                                </Card>
-                            ))}
+                {/* Team Members from Database - Grouped by Role */}
+                {rolesWithMembers.length === 0 ? (
+                    <Card>
+                        <CardBody className="text-center p-8">
+                            <p className="text-gray-600">No team members to display yet. Please add team members from the admin panel.</p>
+                        </CardBody>
+                    </Card>
+                ) : (
+                    rolesWithMembers.map((role: string) => (
+                        <div key={role} className="mb-12">
+                            <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center text-blue-600">{role}</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {membersByRole[role].map((member: any, index: number) => (
+                                    <Card key={member._id || index} className="hover:shadow-lg transition-shadow h-full">
+                                        <CardBody className="text-center p-6 flex flex-col items-center h-full">
+                                            <Avatar
+                                                src={member.image || member.img || undefined}
+                                                name={member.name}
+                                                className="w-24 h-24 mx-auto mb-4"
+                                                isBordered
+                                                color="success"
+                                            />
+                                            <h3 className="font-bold text-lg mb-1">{member.name}</h3>
+                                            {member.bio && <p className="text-sm text-gray-500 flex-grow">{member.bio}</p>}
+                                            {(member.linkedIn || member.twitter) && (
+                                                <div className="flex justify-center gap-3 mt-auto pt-4">
+                                                    {member.linkedIn && (
+                                                        <a href={member.linkedIn} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
+                                                            <FaLinkedin size={18} />
+                                                        </a>
+                                                    )}
+                                                    {member.twitter && (
+                                                        <a href={member.twitter} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-600">
+                                                            <FaTwitter size={18} />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </CardBody>
+                                    </Card>
+                                ))}
+                            </div>
                         </div>
-                    )}
-                </div>
+                    ))
+                )}
 
                 {/* Operations Team */}
                 <div className="mb-16">

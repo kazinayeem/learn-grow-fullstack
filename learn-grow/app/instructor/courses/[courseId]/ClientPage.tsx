@@ -1022,67 +1022,7 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                         />
 
                         {/* Module Resource Section */}
-                        <div className="mt-4">
-                            <label className="text-sm font-medium mb-2 block">Module Resources (Optional)</label>
-                            <p className="text-xs text-gray-500 mb-3">Upload lecture notes, slides, or source code for this module.</p>
-                            <Tabs
-                                aria-label="Module Content Source"
-                                size="sm"
-                                classNames={{
-                                    tabList: "w-full",
-                                    cursor: "w-full bg-primary",
-                                }}
-                            >
-                                <Tab key="upload" title={
-                                    <div className="flex items-center space-x-2">
-                                        <FaCloudUploadAlt />
-                                        <span>Upload File</span>
-                                    </div>
-                                }>
-                                    <div className="mt-4 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:bg-gray-50 transition cursor-pointer relative group bg-gray-50/50">
-                                        <input
-                                            type="file"
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                            onChange={(e) => {
-                                                if (e.target.files && e.target.files[0]) {
-                                                    const file = e.target.files[0];
-                                                    setNewModuleResource(URL.createObjectURL(file));
-                                                    alert(`Resources attached: ${file.name}`);
-                                                }
-                                            }}
-                                        />
-                                        <div className="flex flex-col items-center justify-center text-gray-500 group-hover:text-primary transition-colors">
-                                            <div className="p-4 bg-white rounded-full shadow-sm mb-3">
-                                                <FaCloudUploadAlt className="text-3xl" />
-                                            </div>
-                                            <p className="font-semibold">Drop module resources here</p>
-                                            <p className="text-xs mt-1">ZIP, PDF, PPTX (Max 50MB)</p>
-                                        </div>
-                                    </div>
-                                    {newModuleResource && newModuleResource.startsWith("blob:") && (
-                                        <div className="mt-2 p-2 bg-green-50 text-green-700 text-sm rounded-md flex items-center gap-2">
-                                            <FaCheckCircle /> File selected
-                                        </div>
-                                    )}
-                                </Tab>
-                                <Tab key="url" title={
-                                    <div className="flex items-center space-x-2">
-                                        <FaLink />
-                                        <span>External Link</span>
-                                    </div>
-                                }>
-                                    <Input
-                                        className="mt-4"
-                                        label="Resource URL"
-                                        placeholder={`https://drive.google.com/...`}
-                                        startContent={<FaLink className="text-gray-400" />}
-                                        value={newModuleResource || ""}
-                                        onChange={(e) => setNewModuleResource(e.target.value)}
-                                        description="Link to cloud folder, GitHub repo, or slides"
-                                    />
-                                </Tab>
-                            </Tabs>
-                        </div>
+                      
 
                     </ModalBody>
                     <ModalFooter>

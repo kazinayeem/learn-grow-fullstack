@@ -2,13 +2,32 @@
 
 import Link from "next/link";
 import { Button, Card, CardBody, CardHeader } from "@nextui-org/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Cookies from "js-cookie";
-import { FaArrowLeft, FaHome, FaShieldAlt } from "react-icons/fa";
+import { FaArrowLeft, FaHome, FaShieldAlt, FaExclamationTriangle } from "react-icons/fa";
+import { useEffect, useState, Suspense } from "react";
 
-export default function UnauthorizedPage() {
+function UnauthorizedContent() {
   const router = useRouter();
-  const userRole = Cookies.get("userRole");
+  const searchParams = useSearchParams();
+  const [userRole, setUserRole] = useState<string | undefined>();
+  const sessionExpired = searchParams?.get("session_expired") === "true";
+
+  useEffect(() => {
+    // Get role from cookies or try to get from localStorage
+    let role = Cookies.get("userRole");
+    if (!role && typeof window !== "undefined") {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        try {
+          role = JSON.parse(storedUser)?.role || undefined;
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+    setUserRole(role);
+  }, []);
 
   const getRoleDashboard = (role?: string) => {
     const roleRedirects: Record<string, string> = {
@@ -48,66 +67,74 @@ export default function UnauthorizedPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="flex flex-col gap-3 p-6 border-b bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-t-lg">
           <div className="flex items-center gap-2">
-            <FaShieldAlt size={24} />
-            <h1 className="text-2xl font-bold">Access Denied</h1>
+            {sessionExpired ? <FaExclamationTriangle size={24} /> : <FaShieldAlt size={24} />}
+            <h1 className="text-2xl font-bold">{sessionExpired ? "Session Expired" : "Access Denied"}</h1>
           </div>
-          <p className="text-sm opacity-90">You don't have permission to access this page</p>
+          <p className="text-sm opacity-90">
+            {sessionExpired 
+              ? "Your session has expired. Please login again to continue." 
+              : "You don't have permission to access this page"}
+          </p>
         </CardHeader>
 
         <CardBody className="p-6 space-y-4">
-          <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-            <p className="text-gray-700">
-              Your current role: <strong className="text-orange-600 uppercase">{userRole || "unknown"}</strong>
-            </p>
-            <p className="text-sm text-gray-600 mt-2">
-              You are not authorized to view this page. Please return to your dashboard.
-            </p>
-          </div>
+          {sessionExpired ? (
+            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-300">
+              <p className="text-gray-700 font-semibold">
+                🕐 Your session has expired after being logged in for an extended period.
+              </p>
+              <p className="text-sm text-gray-600 mt-2">
+                For security reasons, you need to login again to continue using the platform.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+              <p className="text-gray-700">
+                Your current role:{" "}
+                <strong className="text-orange-600 uppercase">
+                  {userRole || "unknown"}
+                </strong>
+              </p>
+              <p className="text-sm text-gray-600 mt-2">
+                You are not authorized to view this page. Please login with an
+                account that has the necessary permissions.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-3">
-            <Link href={getRoleDashboard(userRole)} className="block">
+            {sessionExpired ? (
+              <Link href="/login" className="block">
+                <Button
+                  color="primary"
+                  size="lg"
+                  className="w-full font-semibold"
+                >
+                  Login Again
+                </Button>
+              </Link>
+            ) : (
               <Button
-                color="primary"
+                color="danger"
+                variant="flat"
                 size="lg"
+                onClick={handleLogout}
                 className="w-full font-semibold"
-                startContent={<FaHome />}
               >
-                Go to My Dashboard
+                Logout & Go to Login
               </Button>
-            </Link>
-            <Button
-              variant="bordered"
-              size="lg"
-              onClick={() => router.back()}
-              startContent={<FaArrowLeft />}
-              className="w-full"
-            >
-              Go Back
-            </Button>
-            <Button
-              color="danger"
-              variant="flat"
-              size="lg"
-              onClick={handleLogout}
-              className="w-full font-semibold"
-            >
-              Logout & Go to Login
-            </Button>
-          </div>
-
-          {/* Role Info */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-xs font-semibold text-gray-700 mb-2">Role Access:</p>
-            <ul className="text-xs text-gray-600 space-y-1">
-              <li>👤 <strong>Student:</strong> /student</li>
-              <li>👨‍🏫 <strong>Instructor:</strong> /instructor</li>
-              <li>👪 <strong>Guardian:</strong> /guardian</li>
-              <li>⚙️ <strong>Admin:</strong> /admin</li>
-              <li>💼 <strong>Manager:</strong> /manager</li>
-            </ul>
+            )}
           </div>
         </CardBody>
       </Card>
     </div>
+  );
+}
+
+export default function UnauthorizedPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <UnauthorizedContent />
+    </Suspense>
   );
 }

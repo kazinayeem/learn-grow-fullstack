@@ -128,6 +128,53 @@ router.patch("/:id/extend", requireAuth, requireRoles("admin", "manager"), async
     res.status(500).json({ success: false, message: "Failed to extend subscription", error: error.message });
   }
 });
+
+// Extend single-course order by days (admin)
+router.patch("/:id/extend-days", requireAuth, requireRoles("admin", "manager"), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { days } = req.body;
+
+    if (!days || days < 1 || days > 30) {
+      return res.status(400).json({ success: false, message: "Invalid days. Must be between 1 and 30." });
+    }
+
+    const { Order } = await import("../model/order.model");
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    if (order.planType !== "single") {
+      return res.status(400).json({ success: false, message: "Only single-course orders can be extended by days" });
+    }
+
+    if (!order.endDate) {
+      return res.status(400).json({ success: false, message: "Order has no end date" });
+    }
+
+    if (order.paymentStatus !== "approved") {
+      return res.status(400).json({ success: false, message: "Only approved orders can be extended" });
+    }
+
+    const newEndDate = new Date(order.endDate);
+    newEndDate.setDate(newEndDate.getDate() + Number(days));
+
+    order.endDate = newEndDate;
+    await order.save();
+
+    res.json({
+      success: true,
+      message: `Access extended by ${days} day(s)`,
+      data: order,
+    });
+  } catch (error: any) {
+    console.error("Extend days error:", error);
+    res.status(500).json({ success: false, message: "Failed to extend access", error: error.message });
+  }
+});
+
 router.post("/send-email", sendOrderEmail);
 
 // Debug endpoint - admin only

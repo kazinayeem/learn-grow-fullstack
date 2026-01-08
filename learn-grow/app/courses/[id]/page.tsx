@@ -7,18 +7,18 @@ interface Props {
     };
 }
 
-// Dynamic/SSR route now
-// Dynamic Render used
+// Dynamic/SSR route - not using static generation since courses come from API
 import { courses } from "@/lib/coursesData";
 
 export async function generateMetadata(props: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const params = await props.params;
   const course = courses.find(c => String(c.id) === params.id);
   
+  // Use generic metadata for API-based courses; client will handle loading
   if (!course) {
     return {
-      title: "Course Not Found",
-      description: "The requested course could not be found.",
+      title: "Course Details - Learn & Grow",
+      description: "Explore our comprehensive course offerings. Hands-on learning with expert instructors.",
     };
   }
 
@@ -74,6 +74,9 @@ export function generateStaticParams() {
         id: String(course.id),
     }));
 }
+
+// Mark page as dynamic to allow rendering of courses not in static params
+export const dynamic = 'force-dynamic';
 
 export default async function CourseDetailsPage(props: { params: Promise<{ id: string }> }) {
     const params = await props.params;

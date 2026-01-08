@@ -14,6 +14,7 @@ import {
     Tab,
 } from "@nextui-org/react";
 import { useGetCourseByIdQuery } from "@/redux/api/courseApi";
+import { useGetMyOrdersQuery } from "@/redux/api/orderApi";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
@@ -42,6 +43,14 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
     const hasPaid = payments.some(
         (p) => p.courseId === courseId && p.status === "completed"
     );
+
+    // Check for pending single-course purchase for this course
+    const { data: myOrdersData } = useGetMyOrdersQuery();
+    const myOrders = (myOrdersData as any)?.orders || (myOrdersData as any)?.data || [];
+    const hasPendingPurchase = myOrders.some((o: any) => {
+        const cid = (o.courseId && (o.courseId._id || o.courseId)) || undefined;
+        return o.planType === "single" && cid === courseId && o.paymentStatus === "pending";
+    });
 
     const handleEnrollClick = () => {
         const token = localStorage.getItem("token");
@@ -247,6 +256,16 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                                         onPress={() => router.push("/dashboard")}
                                     >
                                         Go to Dashboard
+                                    </Button>
+                                ) : hasPendingPurchase ? (
+                                    <Button
+                                        color="warning"
+                                        size="lg"
+                                        className="w-full font-semibold shadow-lg"
+                                        variant="shadow"
+                                        isDisabled
+                                    >
+                                        ⏳ Purchase pending approval. Please wait.
                                     </Button>
                                 ) : (
                                     <Button

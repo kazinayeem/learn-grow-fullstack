@@ -5,9 +5,18 @@ import { Input, Textarea, Button, Card, CardBody, Chip, Spinner } from "@nextui-
 import { MdEmail, MdLocationOn, MdPhone } from "react-icons/md";
 import { defaultContactData } from "@/lib/contactData";
 import { useGetSiteContentQuery } from "@/redux/api/siteContentApi";
+import toast from "react-hot-toast";
 
 export default function ContactPage() {
     const { data: apiData, isLoading } = useGetSiteContentQuery("contact");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [formData, setFormData] = useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+        subject: "",
+        message: "",
+    });
 
     // Use API data if available, otherwise default
     const data = (apiData?.data?.content && Object.keys(apiData.data.content).length > 0)
@@ -20,9 +29,51 @@ export default function ContactPage() {
 
     const { hero, info, form } = data;
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value,
+        }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        alert("Thank you for your message! We will get back to you soon.");
+        
+        if (!formData.firstName || !formData.lastName || !formData.email || !formData.subject || !formData.message) {
+            toast.error("Please fill in all fields");
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+            const res = await fetch(`${base.replace(/\/$/, "")}/contact`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData),
+            });
+
+            const json = await res.json();
+
+            if (json.success) {
+                toast.success("Thank you for your message! We will get back to you soon.");
+                setFormData({
+                    firstName: "",
+                    lastName: "",
+                    email: "",
+                    subject: "",
+                    message: "",
+                });
+            } else {
+                toast.error(json.message || "Failed to send message");
+            }
+        } catch (error) {
+            console.error("Error submitting contact form:", error);
+            toast.error("Failed to send message. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -94,15 +145,64 @@ export default function ContactPage() {
                             <h2 className="text-2xl font-bold mb-6">{form.title}</h2>
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <Input label="First Name" placeholder="John" variant="bordered" isRequired />
-                                    <Input label="Last Name" placeholder="Doe" variant="bordered" isRequired />
+                                    <Input 
+                                        label="First Name" 
+                                        placeholder="John" 
+                                        variant="bordered" 
+                                        isRequired 
+                                        name="firstName"
+                                        value={formData.firstName}
+                                        onChange={handleChange}
+                                    />
+                                    <Input 
+                                        label="Last Name" 
+                                        placeholder="Doe" 
+                                        variant="bordered" 
+                                        isRequired 
+                                        name="lastName"
+                                        value={formData.lastName}
+                                        onChange={handleChange}
+                                    />
                                 </div>
-                                <Input type="email" label="Email Address" placeholder="john@example.com" variant="bordered" isRequired />
-                                <Input label="Subject" placeholder="How can we help?" variant="bordered" isRequired />
-                                <Textarea label="Message" placeholder="Write your message here..." minRows={4} variant="bordered" isRequired />
+                                <Input 
+                                    type="email" 
+                                    label="Email Address" 
+                                    placeholder="john@example.com" 
+                                    variant="bordered" 
+                                    isRequired 
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                />
+                                <Input 
+                                    label="Subject" 
+                                    placeholder="How can we help?" 
+                                    variant="bordered" 
+                                    isRequired 
+                                    name="subject"
+                                    value={formData.subject}
+                                    onChange={handleChange}
+                                />
+                                <Textarea 
+                                    label="Message" 
+                                    placeholder="Write your message here..." 
+                                    minRows={4} 
+                                    variant="bordered" 
+                                    isRequired 
+                                    name="message"
+                                    value={formData.message}
+                                    onChange={handleChange}
+                                />
 
-                                <Button type="submit" color="primary" size="lg" className="w-full md:w-auto px-12 font-semibold shadow-lg">
-                                    {form.btnText}
+                                <Button 
+                                    type="submit" 
+                                    color="primary" 
+                                    size="lg" 
+                                    className="w-full md:w-auto px-12 font-semibold shadow-lg"
+                                    isLoading={isSubmitting}
+                                    disabled={isSubmitting}
+                                >
+                                    {isSubmitting ? "Sending..." : form.btnText}
                                 </Button>
                             </form>
                         </Card>

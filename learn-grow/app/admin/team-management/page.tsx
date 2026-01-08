@@ -25,6 +25,8 @@ import {
     TableRow,
     TableCell,
     Checkbox,
+    Select,
+    SelectItem,
 } from "@nextui-org/react";
 import toast from "react-hot-toast";
 import {
@@ -43,6 +45,19 @@ import {
     FaUpload
 } from "react-icons/fa";
 // Removed base64 image uploader in favor of URL input
+const TEAM_ROLES = [
+    "Founder & CEO",
+    "Co-Founder",
+    "Head of Content",
+    "Lead Instructor",
+    "Senior Instructor",
+    "Instructor",
+    "Course Developer",
+    "Technical Lead",
+    "Operations Manager",
+    "Support Manager"
+];
+
 import {
     useGetAllTeamMembersQuery,
     useCreateTeamMemberMutation,
@@ -269,14 +284,20 @@ export default function TeamManagementPage() {
                                             variant="bordered"
                                             isRequired
                                         />
-                                        <Input
+                                        <Select
                                             label="Role"
-                                            placeholder="e.g. Senior Instructor"
+                                            placeholder="Select a role"
                                             value={formData.role}
                                             onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                                             variant="bordered"
                                             isRequired
-                                        />
+                                        >
+                                            {TEAM_ROLES.map((role) => (
+                                                <SelectItem key={role} value={role}>
+                                                    {role}
+                                                </SelectItem>
+                                            ))}
+                                        </Select>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <Input
@@ -591,14 +612,20 @@ export default function TeamManagementPage() {
                                                 }
                                                 variant="bordered"
                                             />
-                                            <Input
+                                            <Select
                                                 label="Role"
                                                 value={editingMember.role}
                                                 onChange={(e) =>
                                                     setEditingMember({ ...editingMember, role: e.target.value })
                                                 }
                                                 variant="bordered"
-                                            />
+                                            >
+                                                {TEAM_ROLES.map((role) => (
+                                                    <SelectItem key={role} value={role}>
+                                                        {role}
+                                                    </SelectItem>
+                                                ))}
+                                            </Select>
                                         </div>
                                         <Input
                                             label="Bio"

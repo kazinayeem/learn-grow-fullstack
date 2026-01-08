@@ -56,8 +56,13 @@ export default function InstructorSidebar() {
       icon: FaClipboardList,
       href: "/instructor/assessments",
     },
+     {
+      label: "Quizzes",
+      icon: FaUpload,
+      href: "/instructor/quizzes",
+    },
     { label: "Live Classes", icon: FaVideo, href: "/instructor/live-classes" },
-    { label: "Students", icon: FaUsers, href: "/instructor/students" },
+    // { label: "Students", icon: FaUsers, href: "/instructor/students" },
     { label: "Analytics", icon: FaChartLine, href: "/instructor/analytics" },
     { label: "My Blogs", icon: FaFileAlt, href: "/instructor/blogs" },
 

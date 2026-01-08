@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@nextui-org/react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay, Pagination, EffectFade } from "swiper/modules";
@@ -13,6 +14,7 @@ import Image from "next/image";
 import { content } from "@/lib/content";
 
 const ModernBanner = () => {
+  const router = useRouter();
   const [language, setLanguage] = useState<"en" | "bn">("bn");
   const heroContent = content.hero[language];
 
@@ -118,6 +120,7 @@ const ModernBanner = () => {
                     <Button
                       className="bg-gradient-to-r from-primary-500 to-primary-600 text-white font-bold px-8 py-6 text-lg rounded-2xl shadow-glow-primary hover:scale-105 transition-transform"
                       size="lg"
+                      onClick={() => router.push("/courses")}
                     >
                       {heroContent.cta.primary} →
                     </Button>
@@ -125,6 +128,7 @@ const ModernBanner = () => {
                       className="border-2 border-white text-white font-bold px-8 py-6 text-lg rounded-2xl hover:bg-white/10 backdrop-blur-sm transition-all"
                       size="lg"
                       variant="bordered"
+                      onClick={() => router.push("/pricing")}
                     >
                       {heroContent.cta.secondary}
                     </Button>
