@@ -118,62 +118,64 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-5xl">
+    <div className="container mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 max-w-5xl">
       {/* Header with Gradient */}
-      <div className="mb-6 sm:mb-8 bg-gradient-to-r from-gray-800 via-gray-900 to-black rounded-2xl p-6 sm:p-8 text-white shadow-xl">
+      <div className="mb-4 sm:mb-6 md:mb-8 bg-gradient-to-r from-gray-800 via-gray-900 to-black rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 text-white shadow-xl">
         <Button
           variant="light"
-          startContent={<FaArrowLeft />}
+          startContent={<FaArrowLeft className="text-sm sm:text-base" />}
           onPress={() => router.push("/admin")}
-          className="mb-3 sm:mb-4 text-white hover:bg-white/20 min-h-[44px]"
-          size="lg"
+          className="mb-2 sm:mb-3 md:mb-4 text-white hover:bg-white/20 min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm"
+          size="sm"
         >
-          Back to Dashboard
+          <span className="hidden xs:inline">Back to Dashboard</span>
+          <span className="xs:hidden">Back</span>
         </Button>
-        <div className="flex items-center gap-3 sm:gap-4">
-          <div className="bg-white/20 p-3 sm:p-4 rounded-xl backdrop-blur-sm">
-            <FaCogs className="text-3xl sm:text-4xl" />
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+          <div className="bg-white/20 p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl backdrop-blur-sm">
+            <FaCogs className="text-2xl sm:text-3xl md:text-4xl" />
           </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold truncate">
               Platform Settings
             </h1>
-            <p className="text-sm sm:text-base text-white/90 mt-1">
+            <p className="text-xs sm:text-sm md:text-base text-white/90 mt-0.5 sm:mt-1 line-clamp-2">
               Configure commission rates, email (SMTP) settings, and more
             </p>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden min-h-[600px]">
+      <div className="bg-white rounded-xl sm:rounded-2xl md:rounded-3xl shadow-xl border border-gray-100 overflow-hidden min-h-[400px] sm:min-h-[600px]">
         <Tabs
           aria-label="Settings Tabs"
           color="primary"
           variant="underlined"
           classNames={{
-            tabList: "gap-6 w-full relative rounded-none p-0 border-b border-divider px-6 pt-4",
+            tabList: "gap-2 sm:gap-4 md:gap-6 w-full relative rounded-none p-0 border-b border-divider px-2 sm:px-4 md:px-6 pt-2 sm:pt-3 md:pt-4 overflow-x-auto",
             cursor: "w-full bg-blue-600",
-            tab: "max-w-fit px-4 h-14",
-            tabContent: "group-data-[selected=true]:text-blue-600 font-bold text-lg"
+            tab: "max-w-fit px-2 sm:px-3 md:px-4 h-12 sm:h-14 min-w-fit whitespace-nowrap",
+            tabContent: "group-data-[selected=true]:text-blue-600 font-bold text-xs sm:text-sm md:text-base lg:text-lg"
           }}
         >
           <Tab
             key="finance"
             title={
-              <div className="flex items-center space-x-2">
-                <FaWallet className="text-purple-600" />
-                <span>Finance & Commission</span>
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <FaWallet className="text-purple-600 text-xs sm:text-sm" />
+                <span className="hidden sm:inline">Finance & Commission</span>
+                <span className="sm:hidden">Finance</span>
               </div>
             }
           >
-            <div className="p-6 sm:p-8 max-w-3xl mx-auto">
-              <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-100">
-                <div className="p-3 bg-purple-100 text-purple-600 rounded-xl">
-                  <FaPercentage size={24} />
+            <div className="p-3 sm:p-4 md:p-6 lg:p-8 max-w-3xl mx-auto">
+              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-gray-100">
+                <div className="p-2 sm:p-3 bg-purple-100 text-purple-600 rounded-lg sm:rounded-xl">
+                  <FaPercentage size={20} className="sm:w-6 sm:h-6" />
                 </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-800">Commission Structure</h2>
-                  <p className="text-gray-500">Manage how revenue is split between the platform and instructors</p>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 truncate">Commission Structure</h2>
+                  <p className="text-xs sm:text-sm text-gray-500 line-clamp-2">Manage how revenue is split between the platform and instructors</p>
                 </div>
               </div>
 
@@ -182,9 +184,9 @@ export default function AdminSettingsPage() {
                   <Spinner size="lg" label="Loading financial settings..." />
                 </div>
               ) : (
-                <div className="space-y-8">
-                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-6 rounded-2xl border border-purple-100">
-                    <div className="flex justify-between mb-4 font-bold text-lg">
+                <div className="space-y-4 sm:space-y-6 md:space-y-8">
+                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl border border-purple-100">
+                    <div className="flex justify-between mb-3 sm:mb-4 font-bold text-sm sm:text-base md:text-lg">
                       <span className="text-purple-700">Platform Share: {commission}%</span>
                       <span className="text-green-700">Instructor Share: {payout}%</span>
                     </div>
@@ -204,7 +206,7 @@ export default function AdminSettingsPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
                     <Input
                       type="number"
                       label="Platform Commission (%)"
@@ -232,20 +234,20 @@ export default function AdminSettingsPage() {
                     />
                   </div>
 
-                  <div className="flex items-start gap-3 bg-blue-50 p-4 rounded-xl text-sm text-blue-800 border border-blue-100">
-                    <FaGlobe className="text-xl shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-2 sm:gap-3 bg-blue-50 p-3 sm:p-4 rounded-lg sm:rounded-xl text-xs sm:text-sm text-blue-800 border border-blue-100">
+                    <FaGlobe className="text-base sm:text-xl shrink-0 mt-0.5" />
                     <div>
                       <strong>Global Policy:</strong> This commission rate applies to all course sales unless overridden by specific instructor agreements. Changes take effect immediately for new transactions.
                     </div>
                   </div>
 
-                  <div className="pt-4">
+                  <div className="pt-3 sm:pt-4">
                     <Button
                       color="secondary"
                       onPress={handleSave}
                       isLoading={saving}
                       size="lg"
-                      className="font-bold shadow-lg bg-gradient-to-r from-purple-600 to-indigo-600 min-w-[200px]"
+                      className="font-bold shadow-lg bg-gradient-to-r from-purple-600 to-indigo-600 w-full sm:w-auto sm:min-w-[200px] min-h-[44px] text-sm sm:text-base"
                     >
                       Save Changes
                     </Button>
@@ -258,26 +260,27 @@ export default function AdminSettingsPage() {
           <Tab
             key="smtp"
             title={
-              <div className="flex items-center space-x-2">
-                <FaEnvelope className="text-blue-600" />
-                <span>Email Configuration (SMTP)</span>
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <FaEnvelope className="text-blue-600 text-xs sm:text-sm" />
+                <span className="hidden sm:inline">Email Configuration (SMTP)</span>
+                <span className="sm:hidden">Email</span>
               </div>
             }
           >
-            <div className="p-6 sm:p-8 max-w-4xl mx-auto">
-              <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
-                    <FaServer size={24} />
+            <div className="p-3 sm:p-4 md:p-6 lg:p-8 max-w-4xl mx-auto">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6 md:mb-8 pb-3 sm:pb-4 border-b border-gray-100">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="p-2 sm:p-3 bg-blue-100 text-blue-600 rounded-lg sm:rounded-xl">
+                    <FaServer size={20} className="sm:w-6 sm:h-6" />
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-800">SMTP Server</h2>
-                    <p className="text-gray-500">Configure outbound email delivery settings</p>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 truncate">SMTP Server</h2>
+                    <p className="text-xs sm:text-sm text-gray-500 line-clamp-1">Configure outbound email delivery settings</p>
                   </div>
                 </div>
                 {smtpSource && (
-                  <Chip size="md" variant="flat" color="primary" startContent={<FaGlobe size={12} />}>
-                    Source: {smtpSource}
+                  <Chip size="sm" variant="flat" color="primary" startContent={<FaGlobe size={10} className="sm:w-3 sm:h-3" />}>
+                    <span className="text-xs">Source: {smtpSource}</span>
                   </Chip>
                 )}
               </div>
@@ -287,14 +290,14 @@ export default function AdminSettingsPage() {
                   <Spinner size="lg" label="Loading SMTP settings..." />
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                   {/* Left Column: Form */}
-                  <div className="lg:col-span-2 space-y-8">
-                    <div className="space-y-5">
-                      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-blue-500"></span> Server Details
+                  <div className="lg:col-span-2 space-y-4 sm:space-y-6 md:space-y-8">
+                    <div className="space-y-3 sm:space-y-4 md:space-y-5">
+                      <h3 className="text-xs sm:text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5 sm:gap-2">
+                        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500"></span> Server Details
                       </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
                         <Input
                           label="SMTP Host"
                           placeholder="smtp.gmail.com"
@@ -315,24 +318,24 @@ export default function AdminSettingsPage() {
                           classNames={{ inputWrapper: "border-gray-300" }}
                         />
                       </div>
-                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 hover:border-blue-300 transition-colors">
+                      <div className="bg-gray-50 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-gray-200 hover:border-blue-300 transition-colors">
                         <Checkbox
                           isSelected={smtp.secure}
                           onValueChange={(checked) => setSMTP({ ...smtp, secure: checked })}
-                          size="lg"
+                          size="md"
                           color="primary"
                         >
-                          <span className="font-semibold text-gray-700 ml-2">Use Secure Connection (TLS/SSL)</span>
+                          <span className="font-semibold text-sm sm:text-base text-gray-700 ml-1 sm:ml-2">Use Secure Connection (TLS/SSL)</span>
                         </Checkbox>
-                        <p className="text-xs text-gray-500 ml-9 mt-1">Recommended for production environments</p>
+                        <p className="text-xs text-gray-500 ml-6 sm:ml-9 mt-1">Recommended for production environments</p>
                       </div>
                     </div>
 
-                    <div className="space-y-5">
-                      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-green-500"></span> Authentication
+                    <div className="space-y-3 sm:space-y-4 md:space-y-5">
+                      <h3 className="text-xs sm:text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5 sm:gap-2">
+                        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500"></span> Authentication
                       </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
                         <Input
                           label="SMTP Username"
                           placeholder="user@example.com"
@@ -357,11 +360,11 @@ export default function AdminSettingsPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-5">
-                      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-orange-500"></span> Sender Info
+                    <div className="space-y-3 sm:space-y-4 md:space-y-5">
+                      <h3 className="text-xs sm:text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5 sm:gap-2">
+                        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-orange-500"></span> Sender Info
                       </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
                         <Input
                           label="From Name"
                           placeholder="Learn & Grow"
@@ -399,7 +402,7 @@ export default function AdminSettingsPage() {
                       onPress={handleSMTPSave}
                       isLoading={smtpSaving}
                       size="lg"
-                      className="font-bold shadow-lg bg-gradient-to-r from-blue-600 to-cyan-600 min-w-[200px]"
+                      className="font-bold shadow-lg bg-gradient-to-r from-blue-600 to-cyan-600 w-full sm:w-auto sm:min-w-[200px] min-h-[44px] text-sm sm:text-base"
                     >
                       Save Configuration
                     </Button>
@@ -407,17 +410,17 @@ export default function AdminSettingsPage() {
 
                   {/* Right Column: Test Panel */}
                   <div className="lg:col-span-1">
-                    <Card className="bg-gradient-to-br from-gray-50 to-blue-50 border-2 border-blue-100 shadow-none sticky top-6">
-                      <CardBody className="p-6">
-                        <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">
+                    <Card className="bg-gradient-to-br from-gray-50 to-blue-50 border-2 border-blue-100 shadow-none lg:sticky lg:top-6">
+                      <CardBody className="p-4 sm:p-5 md:p-6">
+                        <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 text-gray-800">
                           <FaShieldAlt className="text-green-600" />
                           Connection Test
                         </h3>
-                        <p className="text-sm text-gray-600 mb-6">
+                        <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">
                           Send a test email to verify that your SMTP settings are correct before saving.
                         </p>
 
-                        <div className="space-y-4">
+                        <div className="space-y-3 sm:space-y-4">
                           <Input
                             type="email"
                             label="Recipient Email"
@@ -435,7 +438,7 @@ export default function AdminSettingsPage() {
                             onPress={handleTestSMTP}
                             isLoading={smtpTesting}
                             fullWidth
-                            className="font-semibold bg-white border border-purple-200 hover:bg-purple-50 text-purple-700"
+                            className="font-semibold bg-white border border-purple-200 hover:bg-purple-50 text-purple-700 min-h-[44px] text-sm sm:text-base"
                             startContent={<FaPaperPlane />}
                           >
                             Send Test Email

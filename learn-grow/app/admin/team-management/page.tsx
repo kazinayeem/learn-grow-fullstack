@@ -214,67 +214,69 @@ export default function TeamManagementPage() {
     };
 
     return (
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl">
+        <div className="container mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 max-w-7xl">
             {/* Header with Gradient */}
-            <div className="mb-6 sm:mb-8 bg-gradient-to-r from-teal-600 via-emerald-600 to-green-600 rounded-2xl p-6 sm:p-8 text-white shadow-xl">
+            <div className="mb-4 sm:mb-6 md:mb-8 bg-gradient-to-r from-teal-600 via-emerald-600 to-green-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 text-white shadow-xl">
                 <Button
                     variant="light"
-                    startContent={<FaArrowLeft />}
+                    startContent={<FaArrowLeft className="text-sm sm:text-base" />}
                     onPress={() => router.push("/admin")}
-                    className="mb-3 sm:mb-4 text-white hover:bg-white/20 min-h-[44px]"
-                    size="lg"
+                    className="mb-2 sm:mb-3 md:mb-4 text-white hover:bg-white/20 min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm"
+                    size="sm"
                 >
-                    Back to Dashboard
+                    <span className="hidden xs:inline">Back to Dashboard</span>
+                    <span className="xs:hidden">Back</span>
                 </Button>
-                <div className="flex items-center gap-3 sm:gap-4">
-                    <div className="bg-white/20 p-3 sm:p-4 rounded-xl backdrop-blur-sm">
-                        <FaUsers className="text-3xl sm:text-4xl" />
+                <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+                    <div className="bg-white/20 p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl backdrop-blur-sm">
+                        <FaUsers className="text-2xl sm:text-3xl md:text-4xl" />
                     </div>
-                    <div>
-                        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold truncate">
                             Team Management
                         </h1>
-                        <p className="text-sm sm:text-base text-white/90 mt-1">
+                        <p className="text-xs sm:text-sm md:text-base text-white/90 mt-0.5 sm:mt-1 line-clamp-2">
                             Manage "Our Experts" section displayed on home page
                         </p>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden min-h-[600px]">
+            <div className="bg-white rounded-xl sm:rounded-2xl md:rounded-3xl shadow-xl border border-gray-100 overflow-hidden min-h-[400px] sm:min-h-[600px]">
                 <Tabs
                     aria-label="Team Management Tabs"
                     color="primary"
                     variant="underlined"
                     classNames={{
-                        tabList: "gap-6 w-full relative rounded-none p-0 border-b border-divider px-6 pt-4",
+                        tabList: "gap-2 sm:gap-4 md:gap-6 w-full relative rounded-none p-0 border-b border-divider px-2 sm:px-4 md:px-6 pt-2 sm:pt-3 md:pt-4 overflow-x-auto",
                         cursor: "w-full bg-emerald-600",
-                        tab: "max-w-fit px-4 h-14",
-                        tabContent: "group-data-[selected=true]:text-emerald-600 font-bold text-lg"
+                        tab: "max-w-fit px-2 sm:px-3 md:px-4 h-12 sm:h-14 min-w-fit whitespace-nowrap",
+                        tabContent: "group-data-[selected=true]:text-emerald-600 font-bold text-xs sm:text-sm md:text-base lg:text-lg"
                     }}
                 >
                     {/* Add Member Tab */}
                     <Tab
                         key="add"
                         title={
-                            <div className="flex items-center space-x-2">
-                                <FaPlus />
-                                <span>Add New Member</span>
+                            <div className="flex items-center space-x-1 sm:space-x-2">
+                                <FaPlus className="text-xs sm:text-sm" />
+                                <span className="hidden sm:inline">Add New Member</span>
+                                <span className="sm:hidden">Add</span>
                             </div>
                         }
                     >
-                        <div className="p-6 sm:p-8 max-w-2xl mx-auto">
+                        <div className="p-2 sm:p-4 md:p-6 lg:p-8 max-w-2xl mx-auto">
                             <Card className="shadow-lg border border-gray-100">
-                                <CardHeader className="flex gap-3 px-6 pt-6 pb-0">
-                                    <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl">
-                                        <FaUserTie size={24} />
+                                <CardHeader className="flex gap-2 sm:gap-3 px-3 sm:px-4 md:px-6 pt-4 sm:pt-6 pb-0">
+                                    <div className="p-2 sm:p-3 bg-emerald-100 text-emerald-600 rounded-lg sm:rounded-xl">
+                                        <FaUserTie size={20} className="sm:w-6 sm:h-6" />
                                     </div>
-                                    <div>
-                                        <p className="text-xl font-bold text-gray-800">New Team Member</p>
-                                        <p className="text-sm text-gray-500">Add details manually for a custom team member.</p>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-base sm:text-lg md:text-xl font-bold text-gray-800">New Team Member</p>
+                                        <p className="text-xs sm:text-sm text-gray-500 line-clamp-2">Add details manually for a custom team member.</p>
                                     </div>
                                 </CardHeader>
-                                <CardBody className="space-y-6 p-6">
+                                <CardBody className="space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <Input
                                             label="Name"
@@ -348,7 +350,7 @@ export default function TeamManagementPage() {
                                         size="lg"
                                         onPress={handleAddMember}
                                         isLoading={createLoading}
-                                        className="w-full font-bold text-white shadow-lg bg-gradient-to-r from-emerald-500 to-green-600"
+                                        className="w-full font-bold text-white shadow-lg bg-gradient-to-r from-emerald-500 to-green-600 min-h-[44px] text-sm sm:text-base"
                                         startContent={<FaPlus />}
                                     >
                                         Add Member
@@ -362,24 +364,25 @@ export default function TeamManagementPage() {
                     <Tab
                         key="import"
                         title={
-                            <div className="flex items-center space-x-2">
-                                <FaDownload />
-                                <span>Import Instructors</span>
+                            <div className="flex items-center space-x-1 sm:space-x-2">
+                                <FaDownload className="text-xs sm:text-sm" />
+                                <span className="hidden sm:inline">Import Instructors</span>
+                                <span className="sm:hidden">Import</span>
                             </div>
                         }
                     >
-                        <div className="p-6 sm:p-8 max-w-3xl mx-auto">
+                        <div className="p-2 sm:p-4 md:p-6 lg:p-8 max-w-3xl mx-auto">
                             <Card className="shadow-lg border border-gray-100">
-                                <CardHeader className="flex gap-3 px-6 pt-6 pb-0">
-                                    <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
-                                        <FaUpload size={24} />
+                                <CardHeader className="flex gap-2 sm:gap-3 px-3 sm:px-4 md:px-6 pt-4 sm:pt-6 pb-0">
+                                    <div className="p-2 sm:p-3 bg-blue-100 text-blue-600 rounded-lg sm:rounded-xl">
+                                        <FaUpload size={20} className="sm:w-6 sm:h-6" />
                                     </div>
-                                    <div>
-                                        <p className="text-xl font-bold text-gray-800">Import Approved Instructors</p>
-                                        <p className="text-sm text-gray-500">Quickly add existing instructors to your team showcase.</p>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-base sm:text-lg md:text-xl font-bold text-gray-800">Import Approved Instructors</p>
+                                        <p className="text-xs sm:text-sm text-gray-500 line-clamp-2">Quickly add existing instructors to your team showcase.</p>
                                     </div>
                                 </CardHeader>
-                                <CardBody className="p-6">
+                                <CardBody className="p-3 sm:p-4 md:p-6">
                                     {instructorsLoading ? (
                                         <div className="h-60 flex items-center justify-center">
                                             <Spinner size="lg" label="Loading instructors..." color="primary" />
@@ -434,7 +437,7 @@ export default function TeamManagementPage() {
                                                 color="primary"
                                                 onClick={handleImportInstructors}
                                                 isLoading={importLoading}
-                                                className="w-full font-bold shadow-lg"
+                                                className="w-full font-bold shadow-lg min-h-[44px] text-sm sm:text-base"
                                                 isDisabled={selectedInstructors.length === 0}
                                                 startContent={<FaDownload />}
                                             >
@@ -451,13 +454,14 @@ export default function TeamManagementPage() {
                     <Tab
                         key="list"
                         title={
-                            <div className="flex items-center space-x-2">
-                                <FaUsers />
-                                <span>All Members ({teamMembers.length})</span>
+                            <div className="flex items-center space-x-1 sm:space-x-2">
+                                <FaUsers className="text-xs sm:text-sm" />
+                                <span className="hidden sm:inline">All Members ({teamMembers.length})</span>
+                                <span className="sm:hidden">List ({teamMembers.length})</span>
                             </div>
                         }
                     >
-                        <div className="p-6 sm:p-8">
+                        <div className="p-2 sm:p-4 md:p-6 lg:p-8">
                             {teamLoading ? (
                                 <div className="h-60 flex items-center justify-center">
                                     <Spinner size="lg" label="Loading team..." color="primary" />
@@ -469,7 +473,7 @@ export default function TeamManagementPage() {
                                     <p className="text-gray-500 mt-2">Add or import members to display them here.</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
                                     {teamMembers.map((member) => (
                                         <Card key={member._id} className="group hover:shadow-xl transition-all duration-300 border border-gray-100">
                                             <CardBody className="p-0">
@@ -503,9 +507,9 @@ export default function TeamManagementPage() {
                                                     </div>
                                                 </div>
 
-                                                <div className="p-5">
-                                                    <h3 className="font-bold text-lg text-gray-800 truncate">{member.name}</h3>
-                                                    <p className="text-sm text-emerald-600 font-medium mb-2 truncate">{member.role}</p>
+                                                <div className="p-3 sm:p-4 md:p-5">
+                                                    <h3 className="font-bold text-base sm:text-lg text-gray-800 truncate">{member.name}</h3>
+                                                    <p className="text-xs sm:text-sm text-emerald-600 font-medium mb-2 truncate">{member.role}</p>
 
                                                     {member.bio && (
                                                         <p className="text-xs text-gray-500 line-clamp-2 mb-4 h-8">
@@ -526,13 +530,13 @@ export default function TeamManagementPage() {
                                                         )}
                                                     </div>
 
-                                                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-100">
+                                                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2 pt-2 border-t border-gray-100">
                                                         <Button
                                                             size="sm"
                                                             variant="flat"
                                                             color={member.showOnHome ? "default" : "success"}
                                                             onClick={() => handleToggleShowHome(member._id, member.showOnHome)}
-                                                            className="w-full"
+                                                            className="w-full min-h-[36px] text-xs px-1"
                                                         >
                                                             {member.showOnHome ? "Hide" : "Show"}
                                                         </Button>
@@ -545,9 +549,9 @@ export default function TeamManagementPage() {
                                                                 setIsEditOpen(true);
                                                             }}
                                                             isIconOnly
-                                                            className="w-full"
+                                                            className="w-full min-h-[36px]"
                                                         >
-                                                            <FaEdit />
+                                                            <FaEdit className="text-sm" />
                                                         </Button>
                                                         <Button
                                                             size="sm"
@@ -555,9 +559,9 @@ export default function TeamManagementPage() {
                                                             color="danger"
                                                             onClick={() => handleDeleteMember(member._id, member.name)}
                                                             isIconOnly
-                                                            className="w-full"
+                                                            className="w-full min-h-[36px]"
                                                         >
-                                                            <FaTrash />
+                                                            <FaTrash className="text-sm" />
                                                         </Button>
                                                     </div>
                                                 </div>
@@ -576,34 +580,37 @@ export default function TeamManagementPage() {
                 isOpen={isEditOpen}
                 onOpenChange={setIsEditOpen}
                 size="lg"
+                scrollBehavior="inside"
                 classNames={{
-                    backdrop: "bg-gradient-to-t from-zinc-900 to-zinc-900/10 backdrop-opacity-20"
+                    backdrop: "bg-gradient-to-t from-zinc-900 to-zinc-900/10 backdrop-opacity-20",
+                    wrapper: "overflow-y-auto",
+                    base: "m-2 sm:m-4"
                 }}
             >
                 <ModalContent>
                     {(onClose) => (
                         <>
-                            <ModalHeader className="bg-gray-50 border-b border-gray-100">Edit Team Member</ModalHeader>
-                            <ModalBody className="space-y-4 p-6">
+                            <ModalHeader className="bg-gray-50 border-b border-gray-100 text-base sm:text-lg">Edit Team Member</ModalHeader>
+                            <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-4 md:p-6">
                                 {editingMember && (
                                     <>
-                                        <div className="flex items-center gap-4 mb-2">
+                                        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-2">
                                             {editingMember.image && (
                                                 <Image
                                                     src={editingMember.image.startsWith("http") ? editingMember.image : `data:image/jpeg;base64,${editingMember.image}`}
                                                     alt={editingMember.name}
-                                                    width={64}
-                                                    height={64}
-                                                    className="rounded-full shadow-sm border-2 border-white"
+                                                    width={48}
+                                                    height={48}
+                                                    className="rounded-full shadow-sm border-2 border-white sm:w-16 sm:h-16"
                                                 />
                                             )}
-                                            <div>
-                                                <p className="font-bold text-lg">{editingMember.name}</p>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-bold text-base sm:text-lg truncate">{editingMember.name}</p>
                                                 <p className="text-xs text-gray-500">Updating profile details</p>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                             <Input
                                                 label="Name"
                                                 value={editingMember.name}
@@ -635,7 +642,7 @@ export default function TeamManagementPage() {
                                             }
                                             variant="bordered"
                                         />
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                             <Input
                                                 label="LinkedIn URL"
                                                 value={editingMember.linkedIn || ""}
