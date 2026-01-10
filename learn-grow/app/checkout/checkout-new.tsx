@@ -17,6 +17,7 @@ import {
   Banknote,
   ChevronRight
 } from "lucide-react";
+import { useCreateOrderMutation } from "@/redux/api/orderApi";
 
 interface CourseData {
   _id: string;
@@ -65,7 +66,9 @@ export default function CheckoutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const courseId = searchParams.get("courseId") || "";
-  const planType = (searchParams.get("plan") || "single") as "single" | "quarterly" | "kit" | "school";
+  const planType = (searchParams.get("plan") || "single") as "single" | "quarterly" | "kit" | "school" | "combo";
+  const comboId = searchParams.get("comboId") || "";
+  const [createOrder] = useCreateOrderMutation();
 
   const [courseData, setCourseData] = useState<CourseData | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -85,6 +88,8 @@ export default function CheckoutPage() {
     postalCode: "",
   });
   const [existingSubscription, setExistingSubscription] = useState<any>(null);
+  const [hasPurchasedCombo, setHasPurchasedCombo] = useState<boolean>(false);
+  const [existingComboOrder, setExistingComboOrder] = useState<any>(null);
 
   // Pricing based on plan type
   const PLAN_PRICES = {
@@ -92,6 +97,7 @@ export default function CheckoutPage() {
     quarterly: 9999,
     kit: 4500,
     school: 0,
+    combo: 0,
   };
 
   const planPrice = PLAN_PRICES[planType];
@@ -122,6 +128,22 @@ export default function CheckoutPage() {
             `${API_CONFIG.BASE_URL}/course/get-course/${courseId}`
           );
           setCourseData(courseResponse.data?.data || courseResponse.data);
+        } else if (planType === "combo") {
+          if (!comboId) {
+            toast.error("Bundle is missing. Please reopen from the bundle page.");
+            router.push("/bundle");
+            return;
+          }
+          const comboResponse = await axios.get(
+            `${API_CONFIG.BASE_URL}/combo/${comboId}`
+          );
+          const combo = comboResponse.data?.data || comboResponse.data;
+          setCourseData({
+            _id: combo._id,
+            title: combo.name,
+            price: combo.discountPrice || combo.price,
+            thumbnail: combo.thumbnail,
+          });
         } else if (planType !== "single") {
           // For non-single plans, create dummy course data
           setCourseData({
@@ -180,6 +202,23 @@ export default function CheckoutPage() {
           }
         }
 
+        // Precheck: Has user already purchased this combo?
+        if (planType === "combo" && comboId) {
+          try {
+            const purchasesResponse = await axios.get(
+              `${API_CONFIG.BASE_URL}/combo/my/purchases`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const purchases = purchasesResponse.data?.data || purchasesResponse.data?.orders || [];
+            const existing = purchases.find((p: any) => p?.comboId?._id === comboId && p.paymentStatus === "approved" && p.isActive === true);
+            if (existing) {
+              setHasPurchasedCombo(true);
+              setExistingComboOrder(existing);
+            }
+          } catch (error) {
+          }
+        }
+
         // Fetch payment methods
         const paymentResponse = await axios.get(
           `${API_CONFIG.BASE_URL}/payment-methods`
@@ -199,7 +238,7 @@ export default function CheckoutPage() {
     };
 
     fetchData();
-  }, [courseId, router]);
+  }, [courseId, comboId, planType, router]);
 
   const handlePlaceOrder = async () => {
     if (!selectedPaymentMethod) {
@@ -229,9 +268,15 @@ export default function CheckoutPage() {
       return;
     }
 
+    const effectiveComboId = planType === "combo" ? (comboId || (courseData?._id?.length === 24 ? courseData._id : "")) : "";
+
+    if (planType === "combo" && !effectiveComboId) {
+      toast.error("Bundle ID missing. Please reopen from the bundle page.");
+      return;
+    }
+
     try {
       setSubmitting(true);
-      const token = getAuthToken();
 
       // Validate payment details
       if (!senderNumber.trim()) {
@@ -252,7 +297,7 @@ export default function CheckoutPage() {
         paymentMethodId: selectedPaymentMethod,
         transactionId: transactionId.trim(),
         senderNumber: senderNumber.trim(),
-        price: planPrice,
+        price: planType === "combo" ? (courseData?.price || 0) : planPrice,
       };
 
       // Add courseId only for single course plan
@@ -260,20 +305,18 @@ export default function CheckoutPage() {
         orderPayload.courseId = courseData._id;
       }
 
+      // Add comboId for combo plan
+      if (planType === "combo") {
+        orderPayload.comboId = effectiveComboId;
+      }
+
       // Add delivery address for kit and quarterly plans
       if (planType === "kit" || planType === "quarterly") {
         orderPayload.deliveryAddress = deliveryAddress;
       }
 
-      const orderResponse = await axios.post(
-        `${API_CONFIG.BASE_URL}/orders`,
-        orderPayload,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      const order = orderResponse.data?.data;
+      const res = await createOrder(orderPayload).unwrap();
+      const order = (res as any)?.order || (res as any)?.data || res;
       if (order?._id) {
         // Redirect to payment processing page
         router.push(`/payment-processing?orderId=${order._id}`);
@@ -282,7 +325,8 @@ export default function CheckoutPage() {
       }
     } catch (error: any) {
       console.error("Order creation error:", error);
-      toast.error(error.response?.data?.message || "Failed to create order");
+      const msg = error?.data?.message || error?.message || "Failed to create order";
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -421,8 +465,22 @@ export default function CheckoutPage() {
             )}
 
             {/* Order Summary Card */}
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 md:p-8">
+                <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 md:p-8">
               <h2 className="text-xl font-bold text-slate-900 mb-6">Order Summary / অর্ডার সারাংশ</h2>
+
+                  {/* Combo precheck notice */}
+                  {planType === "combo" && hasPurchasedCombo && (
+                    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-sm text-green-900 font-semibold">
+                        You already purchased this bundle. Please go to My Courses.
+                      </p>
+                      <div className="mt-3">
+                        <Link href="/student/courses" className="inline-block px-4 py-2 bg-green-600 text-white rounded-md text-sm">
+                          Go to My Courses
+                        </Link>
+                      </div>
+                    </div>
+                  )}
 
               {/* Course Item */}
               <div className="flex gap-4 pb-6 border-b border-slate-200">
@@ -797,9 +855,9 @@ export default function CheckoutPage() {
 
                 <button
                   onClick={handlePlaceOrder}
-                  disabled={submitting || !agreeTerms || !selectedPaymentMethod || !senderNumber.trim() || !transactionId.trim()}
+                  disabled={hasPurchasedCombo || submitting || !agreeTerms || !selectedPaymentMethod || !senderNumber.trim() || !transactionId.trim()}
                   className={`w-full py-3 px-4 rounded-lg font-semibold text-white text-lg transition flex items-center justify-center gap-2 ${
-                    submitting || !agreeTerms || !selectedPaymentMethod || !senderNumber.trim() || !transactionId.trim()
+                    hasPurchasedCombo || submitting || !agreeTerms || !selectedPaymentMethod || !senderNumber.trim() || !transactionId.trim()
                       ? "bg-slate-400 cursor-not-allowed"
                       : "bg-blue-600 hover:bg-blue-700 active:scale-95"
                   }`}
@@ -811,7 +869,7 @@ export default function CheckoutPage() {
                     </>
                   ) : (
                     <>
-                      Place Order / অর্ডার করুন
+                      {hasPurchasedCombo ? "Already Purchased" : "Place Order / অর্ডার করুন"}
                       <ChevronRight size={18} />
                     </>
                   )}

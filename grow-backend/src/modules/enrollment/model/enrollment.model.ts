@@ -11,6 +11,12 @@ export interface IEnrollment {
   completedAssignments: Types.ObjectId[];
   completedQuizzes: Types.ObjectId[];
   completedProjects: Types.ObjectId[];
+  // Access control fields
+  accessDuration?: "1-month" | "2-months" | "3-months" | "lifetime";
+  accessStartDate?: Date;
+  accessEndDate?: Date; // Null = lifetime access
+  purchaseType?: "single" | "combo"; // How user got access (single course or combo)
+  comboId?: Types.ObjectId; // If purchased as part of combo
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -29,10 +35,38 @@ const enrollmentSchema = new Schema<IEnrollment>(
     completedAssignments: [{ type: Schema.Types.ObjectId, ref: "Assignment" }],
     completedQuizzes: [{ type: Schema.Types.ObjectId, ref: "Quiz" }],
     completedProjects: [{ type: Schema.Types.ObjectId, ref: "Assignment" }],
+
+    // Access control fields
+    accessDuration: {
+      type: String,
+      enum: ["1-month", "2-months", "3-months", "lifetime"],
+      default: "lifetime",
+    },
+    accessStartDate: {
+      type: Date,
+      default: () => new Date(),
+    },
+    accessEndDate: {
+      type: Date,
+      default: null, // null = lifetime access
+    },
+    purchaseType: {
+      type: String,
+      enum: ["single", "combo"],
+      default: "single",
+    },
+    comboId: {
+      type: Schema.Types.ObjectId,
+      ref: "Combo",
+    },
   },
   { timestamps: true }
 );
 
 enrollmentSchema.index({ studentId: 1, courseId: 1 }, { unique: true });
+
+// Index for checking access expiry
+enrollmentSchema.index({ accessEndDate: 1 });
+enrollmentSchema.index({ studentId: 1, accessEndDate: 1 });
 
 export const Enrollment = model<IEnrollment>("Enrollment", enrollmentSchema);

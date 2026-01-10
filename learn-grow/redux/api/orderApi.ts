@@ -15,11 +15,15 @@ export interface Order {
     name: string;
     email: string;
   };
-  planType: "single" | "quarterly" | "kit" | "school";
+  planType: "single" | "quarterly" | "kit" | "school" | "combo";
   courseId?: {
     _id: string;
     title: string;
     thumbnail: string;
+  };
+  comboId?: {
+    _id: string;
+    name: string;
   };
   paymentMethodId: {
     _id: string;
@@ -40,8 +44,9 @@ export interface Order {
 }
 
 export interface CreateOrderPayload {
-  planType: "single" | "quarterly" | "kit" | "school";
+  planType: "single" | "quarterly" | "kit" | "school" | "combo";
   courseId?: string;
+  comboId?: string;
   paymentMethodId: string;
   transactionId: string;
   senderNumber: string;

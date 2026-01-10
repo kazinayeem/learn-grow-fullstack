@@ -382,7 +382,12 @@ export default function InstructorCoursesPage() {
                             <div className="grid grid-cols-2 gap-2 mb-4">
                               
                                 <div className="text-sm text-gray-600">
-                                    <span className="font-semibold text-green-600">{course.price} BDT</span>
+                                    <span className="font-semibold text-green-600">{course.price || "N/A"} BDT</span>
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                    <span className="font-semibold text-blue-600">
+                                      {course.accessDuration === "lifetime" ? "♾️ Lifetime" : `${course.accessDuration || "N/A"} Mo`}
+                                    </span>
                                 </div>
                                 <div className="flex items-center gap-2 text-sm text-gray-600 col-span-2">
                                     <span className="font-semibold">{course.modulesCount ?? course.modules?.length ?? 0}</span>

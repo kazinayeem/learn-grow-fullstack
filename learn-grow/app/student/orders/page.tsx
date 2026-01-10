@@ -11,6 +11,7 @@ const PLAN_NAMES = {
   quarterly: "All Access",
   kit: "Robotics Kit",
   school: "School Plan",
+  combo: "Course Bundle",
 };
 
 const PLAN_ICONS = {
@@ -18,6 +19,7 @@ const PLAN_ICONS = {
   quarterly: "🎓",
   kit: "🤖",
   school: "🏫",
+  combo: "🧩",
 };
 
 const STATUS_COLORS = {
@@ -133,6 +135,14 @@ export default function StudentOrdersPage() {
                       </div>
                     )}
 
+                    {/* Combo Info */}
+                    {order.comboId && (
+                      <div className="bg-purple-50 p-3 rounded-lg mb-3">
+                        <p className="text-xs text-purple-600 mb-1">Bundle</p>
+                        <p className="font-semibold text-sm">{order.comboId.name}</p>
+                      </div>
+                    )}
+
                     {/* Access Period */}
                     {order.startDate && order.endDate && (
                       <div className="flex items-center gap-4 text-sm mb-3">
@@ -173,10 +183,12 @@ export default function StudentOrdersPage() {
                             router.push("/student");
                           } else if (order.planType === "single" && order.courseId) {
                             router.push(`/courses/${order.courseId._id}`);
+                          } else if (order.planType === "combo") {
+                            router.push("/student/my-courses");
                           }
                         }}
                       >
-                        {order.planType === "quarterly" ? "Go to Dashboard" : "Start Learning"}
+                        {order.planType === "quarterly" ? "Go to Dashboard" : order.planType === "combo" ? "View My Courses" : "Start Learning"}
                       </Button>
                     )}
 

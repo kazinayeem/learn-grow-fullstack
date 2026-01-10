@@ -2,8 +2,9 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IOrder extends Document {
   userId: mongoose.Types.ObjectId;
-  planType: "single" | "quarterly" | "kit" | "school";
+  planType: "single" | "quarterly" | "kit" | "school" | "combo";
   courseId?: mongoose.Types.ObjectId;
+  comboId?: mongoose.Types.ObjectId; // For combo purchases
   paymentMethodId: mongoose.Types.ObjectId;
   transactionId: string;
   senderNumber: string;
@@ -34,7 +35,7 @@ const orderSchema = new Schema<IOrder>(
     },
     planType: {
       type: String,
-      enum: ["single", "quarterly", "kit", "school"],
+      enum: ["single", "quarterly", "kit", "school", "combo"],
       required: true,
     },
     courseId: {
@@ -42,6 +43,13 @@ const orderSchema = new Schema<IOrder>(
       ref: "Course",
       required: function (this: IOrder) {
         return this.planType === "single";
+      },
+    },
+    comboId: {
+      type: Schema.Types.ObjectId,
+      ref: "Combo",
+      required: function (this: IOrder) {
+        return this.planType === "combo";
       },
     },
     paymentMethodId: {

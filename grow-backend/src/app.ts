@@ -9,7 +9,7 @@ import rateLimit from "express-rate-limit";
 import { userRoutes } from "./modules/user/index.js";
 import { categoryRoutes } from "./modules/category/index.js";
 import { jobRoutes } from "./modules/job/index.js";
-import { courseRoutes } from "./modules/course/index.js";
+import { courseRoutes, comboRoutes } from "./modules/course/index.js";
 import { assessmentRoutes } from "./modules/assessment/index.js";
 import { quizRoutes } from "./modules/quiz/index.js";
 import { assignmentRoutes } from "./modules/assignment/index.js";
@@ -166,6 +166,7 @@ export const createApp = () => {
   app.use("/api/team", teamRoutes);
   app.use("/api/job", jobRoutes);
   app.use("/api/course", courseRoutes);
+  app.use("/api/combo", comboRoutes);
   app.use("/api/live-classes", liveClassRoutes);
   app.use("/api/assessment", assessmentRoutes);
   app.use("/api/quiz", quizRoutes);

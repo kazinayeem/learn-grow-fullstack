@@ -3,6 +3,7 @@ import { baseApi } from "./api/baseApi";
 import { userApi } from "./api/userApi";
 import { quizApi } from "./api/quizApi";
 import { assignmentApi } from "./api/assignmentApi";
+import { comboApi } from "./api/comboApi";
 import "./api/analyticsApi"; // Import to inject endpoints
 import enrollmentReducer, { loadEnrollments } from "./slices/enrollmentSlice";
 import paymentReducer, { loadPayments } from "./slices/paymentSlice";
@@ -24,6 +25,7 @@ export const store = configureStore({
         [userApi.reducerPath]: userApi.reducer,
         [quizApi.reducerPath]: quizApi.reducer,
         [assignmentApi.reducerPath]: assignmentApi.reducer,
+        [comboApi.reducerPath]: comboApi.reducer,
         enrollment: enrollmentReducer,
         payment: paymentReducer,
         quizAssignment: quizAssignmentReducer,
@@ -35,7 +37,8 @@ export const store = configureStore({
             baseApi.middleware, 
             userApi.middleware, 
             quizApi.middleware, 
-            assignmentApi.middleware
+            assignmentApi.middleware,
+            comboApi.middleware
         ),
 });
 

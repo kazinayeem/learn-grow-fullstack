@@ -18,6 +18,7 @@ import {
   FaTimes,
   FaChevronLeft,
   FaChevronRight,
+  FaPlus,
 } from "react-icons/fa";
 
 interface NavItem {
@@ -145,6 +146,20 @@ export default function InstructorSidebar() {
           >
             <FaTimes className="text-xl" />
           </button>
+        </div>
+
+        {/* Quick Action Buttons */}
+        <div
+          className={`p-3 border-b border-gray-200 space-y-2 ${
+            isCollapsed ? "lg:hidden" : ""
+          }`}
+        >
+          <Link href="/instructor/courses/create">
+            <button className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-3 rounded-lg transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 text-sm">
+              <FaPlus />
+              New Course
+            </button>
+          </Link>
         </div>
 
         {/* Navigation */}

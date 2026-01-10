@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
 import { Course } from "../../course/model/course.model";
+import { Enrollment } from "../../enrollment/model/enrollment.model";
 import { getSMTPTransporter } from "../../settings/service/smtp.service";
 import { ENV } from "@/config/env";
 import {
@@ -15,6 +16,10 @@ import {
   getStudentEnrollmentService,
   checkCourseAccessService,
   getEnrolledStudentsService,
+  setCourseAccessDurationService,
+  extendCourseAccessService,
+  reduceCourseAccessService,
+  getUserActiveCourseAccessService,
 } from "../service/order.service";
 
 // Create new order
@@ -27,8 +32,9 @@ export const createOrder = async (req: Request, res: Response) => {
     }
 
     // Validate required fields
-    const { planType, paymentMethodId, transactionId, senderNumber, price } = req.body;
-    
+    const { planType, paymentMethodId, transactionId, senderNumber } = req.body;
+    const allowedPlans = ["single", "quarterly", "kit", "combo"];
+
     if (!planType || !paymentMethodId || !transactionId || !senderNumber) {
       return res.status(400).json({ 
         success: false, 
@@ -36,11 +42,22 @@ export const createOrder = async (req: Request, res: Response) => {
       });
     }
 
+    if (!allowedPlans.includes(planType)) {
+      return res.status(400).json({ success: false, message: "Invalid plan type" });
+    }
+
     // Validate courseId for single course purchases
     if (planType === "single" && !req.body.courseId) {
       return res.status(400).json({ 
         success: false, 
         message: "courseId is required for single course purchases" 
+      });
+    }
+
+    if (planType === "combo" && !req.body.comboId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "comboId is required for combo purchases" 
       });
     }
 
@@ -121,6 +138,7 @@ export const getOrderById = async (req: Request, res: Response) => {
     const order = await Order.findById(id)
       .populate("userId", "name email role phone")
       .populate("courseId", "title thumbnail instructor")
+      .populate("comboId", "name duration")
       .populate("paymentMethodId", "name accountNumber paymentNote");
 
     if (!order) {
@@ -886,6 +904,148 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
       success: false, 
       message: "Failed to fetch student data", 
       error: error.message 
+    });
+  }
+};
+// ===== ADMIN: Course Access Duration Management =====
+
+/**
+ * Set course access duration for a single enrollment (Admin only)
+ */
+export const setAccessDuration = async (req: Request, res: Response) => {
+  try {
+    const { enrollmentId, duration } = req.body;
+
+    if (!enrollmentId || !duration) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: enrollmentId, duration",
+      });
+    }
+
+    if (!["1-month", "2-months", "3-months", "lifetime"].includes(duration)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid duration. Must be: 1-month, 2-months, 3-months, or lifetime",
+      });
+    }
+
+    const result = await setCourseAccessDurationService(enrollmentId, duration);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    return res.json(result);
+  } catch (error: any) {
+    console.error("Set access duration error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to set access duration",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Extend course access for a user (Admin only)
+ */
+export const extendAccess = async (req: Request, res: Response) => {
+  try {
+    const { enrollmentId, newDuration } = req.body;
+
+    if (!enrollmentId || !newDuration) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: enrollmentId, newDuration",
+      });
+    }
+
+    if (!["1-month", "2-months", "3-months", "lifetime"].includes(newDuration)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid duration. Must be: 1-month, 2-months, 3-months, or lifetime",
+      });
+    }
+
+    const result = await extendCourseAccessService(enrollmentId, newDuration);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    return res.json(result);
+  } catch (error: any) {
+    console.error("Extend access error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to extend access",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Reduce course access for a user (Admin only)
+ */
+export const reduceAccess = async (req: Request, res: Response) => {
+  try {
+    const { enrollmentId, newDuration } = req.body;
+
+    if (!enrollmentId || !newDuration) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: enrollmentId, newDuration",
+      });
+    }
+
+    if (!["1-month", "2-months", "3-months", "lifetime"].includes(newDuration)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid duration. Must be: 1-month, 2-months, 3-months, or lifetime",
+      });
+    }
+
+    const result = await reduceCourseAccessService(enrollmentId, newDuration);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    return res.json(result);
+  } catch (error: any) {
+    console.error("Reduce access error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to reduce access",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Get user's active and expired course access info
+ */
+export const getUserCourseAccess = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required",
+      });
+    }
+
+    const result = await getUserActiveCourseAccessService(userId);
+
+    return res.json(result);
+  } catch (error: any) {
+    console.error("Get user course access error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch user course access",
+      error: error.message,
     });
   }
 };

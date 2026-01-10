@@ -37,6 +37,10 @@ export const siteConfig = {
       href: "/courses",
     },
     {
+      label: "Bundles",
+      href: "/bundle",
+    },
+    {
       label: "About",
       href: "/about",
     },

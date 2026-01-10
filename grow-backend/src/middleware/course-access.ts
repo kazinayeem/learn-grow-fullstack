@@ -1,12 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 import { Order } from "../modules/order/model/order.model";
+import { Enrollment } from "../modules/enrollment/model/enrollment.model";
 import mongoose from "mongoose";
+import { hasValidAccess } from "../utils/access-control";
 
 /**
  * Middleware to check if user has access to a specific course
  * User has access if:
- * 1. Has an active quarterly subscription
+ * 1. Has an active quarterly subscription (deprecated but still supported)
  * 2. Has purchased the specific single course and it's still valid
+ * 3. Is enrolled in the course with valid access duration
+ * 4. Is enrolled in a combo that includes this course with valid access
  */
 export const checkCourseAccess = async (
   req: Request,
@@ -26,10 +30,12 @@ export const checkCourseAccess = async (
     }
 
     const now = new Date();
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const courseObjectId = new mongoose.Types.ObjectId(courseId);
 
-    // Check for active quarterly subscription (all courses access)
+    // 1. Check for active quarterly subscription (legacy, all courses access)
     const quarterlySubscription = await Order.findOne({
-      userId,
+      userId: userObjectId,
       planType: "quarterly",
       paymentStatus: "approved",
       isActive: true,
@@ -40,23 +46,53 @@ export const checkCourseAccess = async (
       return next(); // User has full access
     }
 
-    // Check for single course purchase
+    // 2. Check for single course purchase (new system with endDate)
     const singleCoursePurchase = await Order.findOne({
-      userId,
+      userId: userObjectId,
       planType: "single",
-      courseId: new mongoose.Types.ObjectId(courseId),
+      courseId: courseObjectId,
       paymentStatus: "approved",
       isActive: true,
-      endDate: { $gte: now },
     });
 
     if (singleCoursePurchase) {
-      return next(); // User has access to this specific course
+      // Check if access is still valid (handle both endDate and null for lifetime)
+      if (singleCoursePurchase.endDate === null || singleCoursePurchase.endDate > now) {
+        return next(); // User has access to this specific course
+      }
+    }
+
+    // 3. Check enrollment with access duration
+    const enrollment = await Enrollment.findOne({
+      studentId: userObjectId,
+      courseId: courseObjectId,
+    });
+
+    if (enrollment && hasValidAccess(enrollment.accessEndDate || null)) {
+      return next(); // User has valid enrollment access
+    }
+
+    // 4. Check combo purchase that includes this course
+    const comboOrder = await Order.findOne({
+      userId: userObjectId,
+      planType: "combo",
+      paymentStatus: "approved",
+      isActive: true,
+    }).populate("comboId");
+
+    if (comboOrder && (comboOrder as any).comboId) {
+      const combo = (comboOrder as any).comboId;
+      if (combo.courses.some((cId: any) => cId.toString() === courseId)) {
+        // Check if combo access is still valid
+        if (comboOrder.endDate === null || comboOrder.endDate > now) {
+          return next(); // User has access via combo
+        }
+      }
     }
 
     // No valid access found
     return res.status(403).json({
-      message: "You don't have access to this course. Please purchase a subscription or this course.",
+      message: "You don't have access to this course. Please purchase this course or a combo that includes it.",
       needsSubscription: true,
     });
   } catch (error: any) {
@@ -108,29 +144,45 @@ export const requireActiveSubscription = async (
 };
 
 /**
- * Auto-expire expired subscriptions
+ * Auto-expire expired subscriptions and enrollments
  * Can be called periodically or on-demand
  */
 export const expireOldSubscriptions = async () => {
   try {
     const now = new Date();
 
-    const result = await Order.updateMany(
+    // Expire old orders
+    const orderResult = await Order.updateMany(
       {
-        planType: { $in: ["quarterly", "single"] },
+        planType: { $in: ["quarterly", "single", "combo"] },
         paymentStatus: "approved",
         isActive: true,
         endDate: { $lt: now },
+        endDate: { $ne: null },
       },
       {
         $set: { isActive: false },
       }
     );
 
-    console.log(`Expired ${result.modifiedCount} subscriptions`);
-    return result.modifiedCount;
+    // Expire old enrollments
+    const enrollmentResult = await Enrollment.updateMany(
+      {
+        accessEndDate: { $lt: now },
+        accessEndDate: { $ne: null },
+      },
+      {
+        $set: { accessEndDate: now },
+      }
+    );
+
+    console.log(`[Access Control] Expired ${orderResult.modifiedCount} orders and ${enrollmentResult.modifiedCount} enrollments`);
+    return {
+      ordersExpired: orderResult.modifiedCount,
+      enrollmentsExpired: enrollmentResult.modifiedCount,
+    };
   } catch (error) {
-    console.error("Expire subscriptions error:", error);
-    return 0;
+    console.error("[Access Control] Expire subscriptions error:", error);
+    return { ordersExpired: 0, enrollmentsExpired: 0 };
   }
 };

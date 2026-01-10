@@ -69,6 +69,7 @@ export default function AdminSidebar() {
     { label: "Users", icon: FaUserShield, href: "/admin/users" },
     { label: "Guests", icon: FaUserPlus, href: "/admin/guests" },
     { label: "Courses", icon: FaBook, href: "/admin/courses" },
+    { label: "Combos", icon: FaShoppingCart, href: "/admin/combos" },
     { label: "Orders", icon: FaShoppingCart, href: "/admin/orders" },
     { label: "Payment Methods", icon: FaCreditCard, href: "/admin/payment-methods" },
     { label: "Live Classes", icon: FaVideo, href: "/admin/live-classes" },

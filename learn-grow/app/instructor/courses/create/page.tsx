@@ -13,6 +13,7 @@ const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
 const COURSE_LEVELS = ["Beginner", "Intermediate", "Advanced", "Expert"];
 const COURSE_LANGUAGES = ["English", "Bangla", "Spanish", "French", "German", "Chinese", "Japanese", "Arabic", "Hindi", "Portuguese"];
+const ACCESS_DURATIONS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "lifetime"];
 
 export default function InstructorCreateCoursePage() {
   const router = useRouter();
@@ -33,6 +34,7 @@ export default function InstructorCreateCoursePage() {
     level: "Beginner",
     language: "English",
     duration: "",
+    accessDuration: "lifetime",
     thumbnailUrl: "",
     isRegistrationOpen: false,
     registrationDeadline: "",
@@ -83,6 +85,7 @@ export default function InstructorCreateCoursePage() {
         level: form.level,
         language: form.language,
         duration: parseInt(form.duration),
+        accessDuration: form.accessDuration,
         thumbnail: form.thumbnailUrl,
         isRegistrationOpen: !!form.isRegistrationOpen,
         registrationDeadline: form.registrationDeadline ? new Date(form.registrationDeadline + "T00:00:00.000Z").toISOString() : undefined,
@@ -156,6 +159,9 @@ export default function InstructorCreateCoursePage() {
             </Select>
             <Select label="Language" selectedKeys={new Set([form.language])} onSelectionChange={(keys) => setForm({ ...form, language: Array.from(keys)[0] as any })}>
               {COURSE_LANGUAGES.map((lng) => (<SelectItem key={lng}>{lng}</SelectItem>))}
+            </Select>
+            <Select label="Access Duration" selectedKeys={new Set([form.accessDuration])} onSelectionChange={(keys) => setForm({ ...form, accessDuration: Array.from(keys)[0] as string })}>
+              {ACCESS_DURATIONS.map((duration) => (<SelectItem key={duration}>{duration === "lifetime" ? "Lifetime Access" : `${duration} Month${duration !== "1" ? "s" : ""}`}</SelectItem>))}
             </Select>
             <div className="flex items-center gap-2">
               <span className="text-sm">Open Registration?</span>

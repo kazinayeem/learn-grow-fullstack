@@ -47,8 +47,9 @@ interface Order {
     name: string;
     email: string;
   };
-  planType: "single" | "quarterly" | "kit" | "school";
+  planType: "single" | "quarterly" | "kit" | "school" | "combo";
   courseId?: { _id: string; title: string };
+  comboId?: { _id: string; name: string };
   paymentMethodId: {
     _id: string;
     name: string;
@@ -70,6 +71,7 @@ const PLAN_LABELS = {
   quarterly: "Quarterly",
   kit: "Kit Only",
   school: "School Plan",
+  combo: "Course Bundle",
 };
 
 const STATUS_COLOR_MAP: Record<string, "default" | "primary" | "success" | "warning" | "danger"> = {
@@ -364,7 +366,7 @@ export default function OrdersAdminPage() {
                   <TableHeader>
                     <TableColumn>USER</TableColumn>
                     <TableColumn>PLAN</TableColumn>
-                    <TableColumn>COURSE/KIT</TableColumn>
+                    <TableColumn>COURSE/BUNDLE</TableColumn>
                     <TableColumn>PRICE</TableColumn>
                     <TableColumn>ACCESS TIME</TableColumn>
                     <TableColumn>STATUS</TableColumn>
@@ -401,6 +403,11 @@ export default function OrdersAdminPage() {
                             <div className="min-w-0">
                               <p className="font-semibold text-sm text-gray-800 truncate">{order.courseId.title}</p>
                               <p className="text-xs text-gray-500">ID: {order.courseId._id.slice(-6)}</p>
+                            </div>
+                          ) : order.comboId ? (
+                            <div className="min-w-0">
+                              <p className="font-semibold text-sm text-gray-800 truncate">{order.comboId.name}</p>
+                              <p className="text-xs text-gray-500">Bundle</p>
                             </div>
                           ) : order.planType === "kit" ? (
                             <p className="text-sm text-gray-600">📦 Delivery Required</p>
@@ -516,6 +523,12 @@ export default function OrdersAdminPage() {
                           <div className="text-sm">
                             <span className="text-gray-500 font-medium">Course:</span>
                             <span className="text-gray-700 ml-2 truncate block">{order.courseId.title}</span>
+                          </div>
+                        )}
+                        {order.comboId && (
+                          <div className="text-sm">
+                            <span className="text-gray-500 font-medium">Bundle:</span>
+                            <span className="text-gray-700 ml-2 truncate block">{order.comboId.name}</span>
                           </div>
                         )}
                         {order.startDate && order.endDate && (
@@ -670,7 +683,7 @@ export default function OrdersAdminPage() {
                       </div>
                     </div>
 
-                    {/* Course Info */}
+                    {/* Course/Bundle Info */}
                     {selectedOrder.courseId && (
                       <div className="bg-gradient-to-br from-green-50 to-teal-50 p-4 rounded-lg border border-green-200">
                         <h3 className="font-semibold mb-3 text-sm flex items-center gap-2">
@@ -679,6 +692,17 @@ export default function OrdersAdminPage() {
                         <div className="space-y-2 text-sm">
                           <p><span className="text-gray-600">Title:</span> <span className="ml-1 font-semibold text-green-900">{selectedOrder.courseId.title}</span></p>
                           <p><span className="text-gray-600">ID:</span> <code className="ml-1 bg-white px-2 py-1 rounded text-xs">{selectedOrder.courseId._id.slice(-6)}</code></p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedOrder.comboId && (
+                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200">
+                        <h3 className="font-semibold mb-3 text-sm flex items-center gap-2">
+                          🧩 Bundle
+                        </h3>
+                        <div className="space-y-2 text-sm">
+                          <p><span className="text-gray-600">Name:</span> <span className="ml-1 font-semibold text-purple-900">{selectedOrder.comboId.name}</span></p>
+                          <p><span className="text-gray-600">ID:</span> <code className="ml-1 bg-white px-2 py-1 rounded text-xs">{selectedOrder.comboId._id.slice(-6)}</code></p>
                         </div>
                       </div>
                     )}

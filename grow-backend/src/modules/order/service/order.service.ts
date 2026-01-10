@@ -1,6 +1,7 @@
 import { Order, IOrder } from "../model/order.model";
 import { User } from "../../user/model/user.model";
 import { Course } from "../../course/model/course.model";
+import { Combo } from "../../course/model/combo.model";
 import { PaymentMethod } from "../../payment/model/payment-method.model";
 import { Enrollment } from "../../enrollment/model/enrollment.model";
 import { ENV } from "@/config/env";
@@ -9,6 +10,7 @@ import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
 import { getSMTPTransporter } from "@/modules/settings/service/smtp.service";
 import { getOrderConfirmationEmail, getAdminOrderApprovalEmail, getOrderApprovedEmail, getOrderRejectedEmail } from "@/utils/emailTemplates";
+import { calculateAccessEndDate } from "@/utils/access-control";
 
 // ENROLLMENT PRICING
 export const ENROLLMENT_PRICES = {
@@ -97,8 +99,9 @@ const sendOrderEmail = async (order: any) => {
 export const createOrderService = async (
   userId: string,
   data: {
-    planType: "single" | "quarterly" | "kit";
+    planType: "single" | "quarterly" | "kit" | "combo";
     courseId?: string;
+    comboId?: string;
     paymentMethodId: string;
     transactionId: string;
     senderNumber: string;
@@ -132,12 +135,15 @@ export const createOrderService = async (
     const {
       planType,
       courseId,
+      comboId,
       paymentMethodId,
       transactionId,
       senderNumber,
       paymentNote,
       deliveryAddress,
     } = data;
+
+    let combo: any = null;
 
     // Validate payment method exists and is active
     const paymentMethod = await PaymentMethod.findById(paymentMethodId);
@@ -169,6 +175,24 @@ export const createOrderService = async (
       console.log("Course validated:", course.title);
     }
 
+    if (planType === "combo") {
+      if (!comboId) {
+        return {
+          success: false,
+          message: "Combo ID is required for combo purchase",
+        };
+      }
+
+      combo = await Combo.findById(comboId);
+      if (!combo) {
+        return { success: false, message: "Combo not found" };
+      }
+
+      if (!combo.isActive) {
+        return { success: false, message: "This combo is currently inactive" };
+      }
+    }
+
     // Validate delivery address for quarterly and kit
     if (planType === "quarterly" || planType === "kit") {
       if (
@@ -184,8 +208,18 @@ export const createOrderService = async (
       }
     }
 
-    // Get price (use provided price or default from ENROLLMENT_PRICES)
-    const price = data.price || ENROLLMENT_PRICES[planType];
+    // Determine price with server-side source of truth
+    let price = data.price as number | undefined;
+    if (planType === "combo" && combo) {
+      price = combo.discountPrice || combo.price;
+    } else if (!price) {
+      price = ENROLLMENT_PRICES[planType as keyof typeof ENROLLMENT_PRICES];
+    }
+
+    if (price === undefined || price === null) {
+      return { success: false, message: "Price is required for this plan" };
+    }
+
     console.log("Order price:", price);
 
     // Create order with pending status
@@ -201,12 +235,14 @@ export const createOrderService = async (
       price,
     };
 
-    // Add courseId for single course
     if (planType === "single" && courseId) {
       orderData.courseId = new mongoose.Types.ObjectId(courseId);
     }
 
-    // Add delivery address for quarterly and kit
+    if (planType === "combo" && comboId) {
+      orderData.comboId = new mongoose.Types.ObjectId(comboId);
+    }
+
     if ((planType === "quarterly" || planType === "kit") && deliveryAddress) {
       orderData.deliveryAddress = deliveryAddress;
     }
@@ -221,6 +257,7 @@ export const createOrderService = async (
     // Populate the order before returning
     const populatedOrder = await Order.findById(createdOrder._id)
       .populate("courseId", "title thumbnail")
+      .populate("comboId", "name duration")
       .populate("paymentMethodId", "name accountNumber")
       .populate("userId", "name email");
 
@@ -256,6 +293,7 @@ export const getUserOrdersService = async (
     const [orders, total] = await Promise.all([
       Order.find({ userId: new mongoose.Types.ObjectId(userId) })
         .populate("courseId", "title thumbnail")
+        .populate("comboId", "name duration")
         .populate("paymentMethodId", "name")
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -305,6 +343,7 @@ export const getAllOrdersService = async (filter?: {
     const orders = await Order.find(query)
       .populate("userId", "name email phone")
       .populate("courseId", "title")
+      .populate("comboId", "name duration")
       .populate("paymentMethodId", "name accountNumber")
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -342,7 +381,7 @@ export const approveOrderService = async (orderId: string) => {
 
     // Set dates based on plan type
     let startDate = now;
-    let endDate: Date | undefined;
+    let endDate: Date | null = null;
 
     // For quarterly plan, check if user has existing active subscription
     if (order.planType === "quarterly") {
@@ -368,9 +407,16 @@ export const approveOrderService = async (orderId: string) => {
         // New subscription - 3 months from now
         endDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
       }
-    } else if (order.planType === "single") {
-      // Single course - 3 months access
-      endDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+    } else if (order.planType === "single" && order.courseId) {
+      // Single course - default to lifetime access (admin can change)
+      // For now, setting to lifetime by not setting endDate
+      endDate = null; // Lifetime by default
+    } else if (order.planType === "combo" && order.comboId) {
+      // Combo purchase - use combo's default duration
+      const combo = await Combo.findById(order.comboId);
+      if (combo) {
+        endDate = calculateAccessEndDate(combo.duration, now);
+      }
     }
     // Kit only: no end date needed (one-time delivery)
 
@@ -392,17 +438,63 @@ export const approveOrderService = async (orderId: string) => {
           completedAssignments: [],
           completedQuizzes: [],
           completedProjects: [],
+          accessDuration: "lifetime",
+          accessStartDate: now,
+          accessEndDate: endDate, // null = lifetime
+          purchaseType: "single",
         });
         console.log(
           `Enrollment created for user ${order.userId} in course ${order.courseId}`
         );
+      } else {
+        // Update existing enrollment with new access dates
+        await Enrollment.findByIdAndUpdate(existingEnrollment._id, {
+          accessDuration: "lifetime",
+          accessStartDate: now,
+          accessEndDate: endDate,
+          purchaseType: "single",
+        });
+      }
+    } else if (order.planType === "combo" && order.comboId) {
+      // Handle combo enrollment - enroll user in all courses in the combo
+      const combo = await Combo.findById(order.comboId).populate("courses");
+      if (combo) {
+        const enrollmentUpdates = (combo.courses as any[]).map((courseId) => ({
+          updateOne: {
+            filter: {
+              studentId: order.userId,
+              courseId: courseId._id || courseId,
+            },
+            update: {
+              $set: {
+                studentId: order.userId,
+                courseId: courseId._id || courseId,
+                progress: 0,
+                isCompleted: false,
+                completedLessons: [],
+                completedModules: [],
+                completedAssignments: [],
+                completedQuizzes: [],
+                completedProjects: [],
+                accessDuration: combo.duration,
+                accessStartDate: now,
+                accessEndDate: endDate,
+                purchaseType: "combo",
+                comboId: order.comboId,
+              },
+            },
+            upsert: true,
+          },
+        }));
+
+        if (enrollmentUpdates.length > 0) {
+          await Enrollment.bulkWrite(enrollmentUpdates as any);
+          console.log(
+            `Enrollments created for user ${order.userId} in combo ${order.comboId}`
+          );
+        }
       }
     }
-
-    // TODO: Handle quarterly (all access) enrollment creation strategy if needed.
-    // Ideally, for all-access, we might create enrollments lazily or handle checks purely via order.
-    // But currently course.service.ts relies on Enrollment doc for progress.
-    // For now, we fix the single course purchase flow which is the user's immediate issue.
 
     const updatedOrder = await Order.findByIdAndUpdate(
       orderId,
@@ -700,6 +792,201 @@ export const getEnrolledStudentsService = async (
     return {
       success: false,
       message: error.message || "Failed to fetch enrolled students",
+    };
+  }
+};
+/**
+ * Set or update course access duration for a single course purchase (Admin only)
+ */
+export const setCourseAccessDurationService = async (
+  enrollmentId: string,
+  duration: "1-month" | "2-months" | "3-months" | "lifetime"
+) => {
+  try {
+    const enrollment = await Enrollment.findById(enrollmentId);
+    if (!enrollment) {
+      return { success: false, message: "Enrollment not found" };
+    }
+
+    const accessStartDate = new Date();
+    const accessEndDate = calculateAccessEndDate(duration, accessStartDate);
+
+    const updatedEnrollment = await Enrollment.findByIdAndUpdate(
+      enrollmentId,
+      {
+        accessDuration: duration,
+        accessStartDate,
+        accessEndDate,
+      },
+      { new: true }
+    );
+
+    return {
+      success: true,
+      message: "Course access duration set successfully",
+      data: updatedEnrollment,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: "Failed to set access duration",
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * Extend course access for a user (Admin only)
+ */
+export const extendCourseAccessService = async (
+  enrollmentId: string,
+  newDuration: "1-month" | "2-months" | "3-months" | "lifetime"
+) => {
+  try {
+    const enrollment = await Enrollment.findById(enrollmentId);
+    if (!enrollment) {
+      return { success: false, message: "Enrollment not found" };
+    }
+
+    const accessStartDate = new Date();
+    const accessEndDate = calculateAccessEndDate(newDuration, accessStartDate);
+
+    const updatedEnrollment = await Enrollment.findByIdAndUpdate(
+      enrollmentId,
+      {
+        accessDuration: newDuration,
+        accessStartDate,
+        accessEndDate,
+      },
+      { new: true }
+    );
+
+    return {
+      success: true,
+      message: "Course access extended successfully",
+      data: updatedEnrollment,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: "Failed to extend course access",
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * Reduce course access for a user (Admin only)
+ */
+export const reduceCourseAccessService = async (
+  enrollmentId: string,
+  newDuration: "1-month" | "2-months" | "3-months" | "lifetime"
+) => {
+  try {
+    const enrollment = await Enrollment.findById(enrollmentId);
+    if (!enrollment) {
+      return { success: false, message: "Enrollment not found" };
+    }
+
+    // For reducing, we calculate from today
+    const today = new Date();
+    const accessEndDate = calculateAccessEndDate(newDuration, today);
+
+    // But only if it's earlier than the current access end date
+    if (
+      enrollment.accessEndDate &&
+      accessEndDate &&
+      accessEndDate < enrollment.accessEndDate
+    ) {
+      // Reduce is allowed
+      const updatedEnrollment = await Enrollment.findByIdAndUpdate(
+        enrollmentId,
+        {
+          accessDuration: newDuration,
+          accessEndDate,
+        },
+        { new: true }
+      );
+
+      return {
+        success: true,
+        message: "Course access reduced successfully",
+        data: updatedEnrollment,
+      };
+    } else if (enrollment.accessEndDate === null && newDuration !== "lifetime") {
+      // User has lifetime, reducing to time-limited
+      const updatedEnrollment = await Enrollment.findByIdAndUpdate(
+        enrollmentId,
+        {
+          accessDuration: newDuration,
+          accessEndDate,
+        },
+        { new: true }
+      );
+
+      return {
+        success: true,
+        message: "Course access reduced successfully",
+        data: updatedEnrollment,
+      };
+    } else {
+      return {
+        success: false,
+        message: "Cannot reduce access to a later date",
+      };
+    }
+  } catch (error: any) {
+    return {
+      success: false,
+      message: "Failed to reduce course access",
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * Get user's active courses with access info
+ */
+export const getUserActiveCourseAccessService = async (userId: string) => {
+  try {
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    // Get all enrollments for the user with valid access
+    const enrollments = await Enrollment.find({
+      studentId: userObjectId,
+    })
+      .populate("courseId", "title description thumbnail price level rating")
+      .sort({ accessEndDate: -1 })
+      .lean();
+
+    const now = new Date();
+    const activeAccess = enrollments.filter((enrollment) => {
+      // If no end date, it's lifetime = active
+      if (enrollment.accessEndDate === null) return true;
+      // If end date is in future = active
+      return enrollment.accessEndDate > now;
+    });
+
+    const expiredAccess = enrollments.filter((enrollment) => {
+      // If no end date, not expired
+      if (enrollment.accessEndDate === null) return false;
+      // If end date is in past = expired
+      return enrollment.accessEndDate <= now;
+    });
+
+    return {
+      success: true,
+      data: {
+        activeAccess,
+        expiredAccess,
+        total: enrollments.length,
+      },
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: "Failed to fetch user course access",
+      error: error.message,
     };
   }
 };

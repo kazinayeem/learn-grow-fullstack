@@ -12,6 +12,10 @@ import {
   sendOrderEmail,
   getStudentOrdersForGuardian,
   emailOrderAction,
+  setAccessDuration,
+  extendAccess,
+  reduceAccess,
+  getUserCourseAccess,
 } from "../controller/order.controller";
 import { requireAuth, requireRoles } from "../../../middleware/auth";
 import { validateGuardianStudentAccess } from "../../../middleware/guardian-validation";
@@ -176,6 +180,35 @@ router.patch("/:id/extend-days", requireAuth, requireRoles("admin", "manager"), 
 });
 
 router.post("/send-email", sendOrderEmail);
+
+// ===== ADMIN: Access Duration Management =====
+router.post(
+  "/admin/set-access-duration",
+  requireAuth,
+  requireRoles("admin"),
+  setAccessDuration
+);
+
+router.post(
+  "/admin/extend-access",
+  requireAuth,
+  requireRoles("admin"),
+  extendAccess
+);
+
+router.post(
+  "/admin/reduce-access",
+  requireAuth,
+  requireRoles("admin"),
+  reduceAccess
+);
+
+router.get(
+  "/admin/user-course-access/:userId",
+  requireAuth,
+  requireRoles("admin"),
+  getUserCourseAccess
+);
 
 // Debug endpoint - admin only
 router.get("/debug/enrollments/:studentId", requireAuth, requireRoles("admin"), async (req, res) => {

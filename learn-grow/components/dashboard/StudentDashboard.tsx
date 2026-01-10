@@ -3,8 +3,7 @@
 import React, { useMemo } from "react";
 import { Card, CardBody, CardHeader, Button, Progress, Chip, Avatar, Spinner, Divider, Pagination } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
-import { useGetMyOrdersQuery } from "@/redux/api/orderApi";
-import { useGetAllCoursesQuery } from "@/redux/api/courseApi";
+import { useGetMyOrdersQuery, useGetUserPurchasedCoursesQuery } from "@/redux/api/orderApi";
 import { FaBook, FaCheckCircle, FaClock, FaTrophy, FaRocket, FaCalendar, FaShoppingCart, FaTicketAlt } from "react-icons/fa";
 import StudentLiveClasses from "./StudentLiveClasses";
 
@@ -14,11 +13,8 @@ export default function StudentDashboard() {
     const coursesPerPage = 6;
 
     const { data: ordersData, isLoading: ordersLoading } = useGetMyOrdersQuery();
-    // Now API will filter courses based on student's enrolled courses
-    const { data: coursesData, isLoading: coursesLoading } = useGetAllCoursesQuery({
-        page: currentPage,
-        limit: coursesPerPage
-    });
+    // Use purchased/enrolled courses endpoint (handles single, combo, quarterly)
+    const { data: purchasedData, isLoading: coursesLoading, refetch } = useGetUserPurchasedCoursesQuery(currentPage);
 
     const [user, setUser] = React.useState<any>(null);
 
@@ -30,10 +26,9 @@ export default function StudentDashboard() {
     }, []);
 
     const orders = ordersData?.orders || [];
-    // API now returns only enrolled courses for students
-    const purchasedCourses = coursesData?.data || coursesData?.courses || [];
-    const totalPurchasedCourses = coursesData?.pagination?.total || 0;
-    const totalPages = coursesData?.pagination?.totalPages || 1;
+    const purchasedCourses = purchasedData?.courses || [];
+    const totalPurchasedCourses = purchasedData?.pagination?.total || 0;
+    const totalPages = purchasedData?.pagination?.totalPages || 1;
 
     // Check if user has active quarterly (all access) subscription
     const hasAllAccess = useMemo(() => {
@@ -240,17 +235,17 @@ export default function StudentDashboard() {
                                 ) : (
                                     <>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                                            {displayedCourses.map((course: any) => (
+                                            {displayedCourses.map((item: any) => (
                                                 <Card
-                                                    key={course._id}
+                                                    key={item?.course?._id}
                                                     isPressable
-                                                    onPress={() => router.push(`/courses/${course._id}`)}
+                                                    onPress={() => router.push(`/courses/${item?.course?._id}`)}
                                                     className="hover:scale-[1.02] transition-all border border-divider hover:border-primary"
                                                 >
                                                     <div className="relative aspect-video">
                                                         <img
-                                                            src={course.thumbnail || "/images/course-placeholder.jpg"}
-                                                            alt={course.title}
+                                                            src={item?.course?.thumbnail || "/images/course-placeholder.jpg"}
+                                                            alt={item?.course?.title}
                                                             className="object-cover w-full h-full"
                                                         />
                                                         <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
@@ -259,13 +254,13 @@ export default function StudentDashboard() {
                                                         <div className="flex items-center justify-between gap-3">
                                                             <div className="flex-1 min-w-0">
                                                                 <h3 className="font-semibold text-base truncate mb-1">
-                                                                    {course.title}
+                                                                    {item?.course?.title}
                                                                 </h3>
                                                                 <div className="flex items-center gap-2 text-xs text-default-500">
-                                                                    <span>📚 {course.level || "Beginner"}</span>
+                                                                    <span>📚 {item?.course?.level || "Beginner"}</span>
                                                                     <span>•</span>
                                                                     <span className="truncate">
-                                                                        {course.instructorId?.name || "Instructor"}
+                                                                        {item?.course?.instructor?.name || "Instructor"}
                                                                     </span>
                                                                 </div>
                                                             </div>

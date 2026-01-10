@@ -11,6 +11,8 @@ import { FaPlus } from "react-icons/fa";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
+const ACCESS_DURATIONS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "lifetime"];
+
 function EditInstructorCourseContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -36,6 +38,7 @@ function EditInstructorCourseContent() {
     thumbnail: "",
     isPublished: true,
     type: "recorded",
+    accessDuration: "lifetime",
     isRegistrationOpen: false,
     registrationDeadline: "",
   });
@@ -55,6 +58,7 @@ function EditInstructorCourseContent() {
         category: categoryValue,
         thumbnail: course.thumbnail || "",
         type: course.type || "recorded",
+        accessDuration: course.accessDuration || "lifetime",
         isRegistrationOpen: !!course.isRegistrationOpen,
         registrationDeadline: course.registrationDeadline ? new Date(course.registrationDeadline).toISOString().slice(0, 10) : "",
         isPublished: course.isPublished ?? true,
@@ -194,6 +198,12 @@ function EditInstructorCourseContent() {
               }} variant="bordered">
                 <SelectItem key="live" value="live">Live</SelectItem>
                 <SelectItem key="recorded" value="recorded">Recorded</SelectItem>
+              </Select>
+              <Select label="Access Duration" selectedKeys={new Set([formData.accessDuration])} onSelectionChange={(keys) => {
+                const value = Array.from(keys)[0] as string;
+                setFormData({ ...formData, accessDuration: value });
+              }} variant="bordered">
+                {ACCESS_DURATIONS.map((duration) => (<SelectItem key={duration}>{duration === "lifetime" ? "Lifetime Access" : `${duration} Month${duration !== "1" ? "s" : ""}`}</SelectItem>))}
               </Select>
               <div className="flex items-center gap-2">
                 <span className="text-sm">Open Registration?</span>
