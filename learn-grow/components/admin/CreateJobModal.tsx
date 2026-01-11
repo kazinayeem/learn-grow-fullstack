@@ -269,6 +269,7 @@ export default function CreateJobModal({
                 variant="bordered"
                 size="lg"
                 isRequired
+                selectionMode="single"
                 classNames={{
                   trigger: "border-2 border-gray-200 hover:border-teal-400 focus:border-teal-500 transition-all duration-300",
                 }}

@@ -191,6 +191,7 @@ export default function CreateTicketModal({
                     }}
                     variant="bordered"
                     size="lg"
+                    selectionMode="single"
                     classNames={{
                       label: "text-sm font-semibold",
                     }}
@@ -215,6 +216,7 @@ export default function CreateTicketModal({
                     }}
                     variant="bordered"
                     size="lg"
+                    selectionMode="single"
                     classNames={{
                       label: "text-sm font-semibold",
                     }}
