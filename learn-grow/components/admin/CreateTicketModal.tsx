@@ -186,7 +186,13 @@ export default function CreateTicketModal({
                     label="Priority Level"
                     placeholder="Select priority"
                     selectedKeys={[priority]}
-                    onChange={(e) => setPriority(e.target.value)}
+                    onChange={(e) => {
+                      setPriority(e.target.value);
+                      // Auto-close if both priority and category are selected
+                      if (category !== "other") {
+                        setTimeout(() => onClose(), 150);
+                      }
+                    }}
                     variant="bordered"
                     size="lg"
                     classNames={{
@@ -208,7 +214,13 @@ export default function CreateTicketModal({
                     label="Category"
                     placeholder="Select category"
                     selectedKeys={[category]}
-                    onChange={(e) => setCategory(e.target.value)}
+                    onChange={(e) => {
+                      setCategory(e.target.value);
+                      // Auto-close if both priority and category are selected
+                      if (priority !== "") {
+                        setTimeout(() => onClose(), 150);
+                      }
+                    }}
                     variant="bordered"
                     size="lg"
                     classNames={{

@@ -264,6 +264,8 @@ export default function CreateJobModal({
                       ...prev,
                       jobType: value,
                     }));
+                    // Auto-close modal after selection
+                    setTimeout(() => onClose(), 150);
                   }
                 }}
                 variant="bordered"
