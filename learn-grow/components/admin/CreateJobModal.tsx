@@ -264,14 +264,11 @@ export default function CreateJobModal({
                       ...prev,
                       jobType: value,
                     }));
-                    // Auto-close modal after selection
-                    setTimeout(() => onClose(), 150);
                   }
                 }}
                 variant="bordered"
                 size="lg"
                 isRequired
-                disallowEmptySelection
                 classNames={{
                   trigger: "border-2 border-gray-200 hover:border-teal-400 focus:border-teal-500 transition-all duration-300",
                 }}
