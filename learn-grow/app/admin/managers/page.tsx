@@ -26,8 +26,10 @@ import {
 import { FaSearch, FaUserTie, FaEnvelope, FaPhone, FaBan, FaCheck, FaPlus, FaTicketAlt, FaUserShield } from "react-icons/fa";
 import { useGetUsersAdminQuery, useGetAdminDashboardStatsQuery, useUpdateUserMutation } from "@/redux/api/userApi";
 import { toast } from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 export default function ManagersPage() {
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -90,7 +92,7 @@ export default function ManagersPage() {
           <Button
             color="default"
             startContent={<FaPlus />}
-            onPress={onOpen}
+            onPress={() => router.push("/admin/users?openModal=true&role=manager")}
             size="lg"
             className="w-full sm:w-auto min-h-[44px] bg-white text-purple-600 font-semibold shadow-lg hover:shadow-xl transition-shadow"
           >

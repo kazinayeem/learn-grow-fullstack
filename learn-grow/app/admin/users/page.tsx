@@ -31,10 +31,11 @@ import {
 } from "@nextui-org/react";
 import { useGetUsersAdminQuery, useDeleteUserMutation, useCreateUserMutation, useUpdateUserMutation } from "@/redux/api/userApi";
 import { FaPlus, FaTrash, FaEdit, FaEllipsisV, FaSearch, FaArrowLeft, FaUsers, FaUserGraduate, FaChalkboardTeacher, FaUserShield } from "react-icons/fa";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function UserManagementPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(10);
     const [roleFilter, setRoleFilter] = useState("");
@@ -50,6 +51,20 @@ export default function UserManagementPage() {
             }
         }
     }, []);
+
+    // Auto-open modal if openModal=true in URL
+    useEffect(() => {
+        const shouldOpenModal = searchParams.get("openModal");
+        const roleFromUrl = searchParams.get("role");
+        if (shouldOpenModal === "true") {
+            if (roleFromUrl) {
+                setNewUser(prev => ({ ...prev, role: roleFromUrl }));
+            }
+            onOpen();
+            // Clean up URL after opening modal
+            router.replace("/admin/users", { scroll: false });
+        }
+    }, [searchParams, onOpen, router]);
 
     const { data, isLoading, refetch, isFetching } = useGetUsersAdminQuery({ page, limit, search: searchQuery, role: roleFilter });
     const [deleteUser] = useDeleteUserMutation();
@@ -303,20 +318,18 @@ export default function UserManagementPage() {
                                 <SelectItem key={opt.key}>{opt.label}</SelectItem>
                             ))}
                         </Select>
-                        <Select
-                            label="Rows per page"
-                            selectedKeys={[String(limit)]}
-                            onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
-                            size="lg"
-                            variant="bordered"
-                            classNames={{
-                                trigger: "min-h-[44px]",
-                            }}
-                        >
-                            {[10, 20, 50, 100].map((n) => (
-                                <SelectItem key={String(n)}>{n}</SelectItem>
-                            ))}
-                        </Select>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Rows per page</label>
+                            <select
+                                value={String(limit)}
+                                onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
+                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 hover:border-primary-400 focus:border-primary-500 focus:outline-none transition-all duration-300 bg-white text-base"
+                            >
+                                {[10, 20, 50, 100].map((n) => (
+                                    <option key={n} value={String(n)}>{n}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                 </CardBody>
             </Card>
