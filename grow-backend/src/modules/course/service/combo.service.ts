@@ -281,64 +281,64 @@ export const disableComboService = async (comboId: string) => {
     return {
       success: false,
       message: "Failed to disable combo",
-      /**
-       * Toggle combo active status
-       */
-      export const toggleComboStatusService = async (comboId: string) => {
-        try {
-          const combo = await Combo.findById(comboId);
+      error: error.message,
+    };
+  }
+};
 
-          if (!combo) {
-            return {
-              success: false,
-              message: "Combo not found",
-            };
-          }
+/**
+ * Toggle combo active status
+ */
+export const toggleComboStatusService = async (comboId: string) => {
+  try {
+    const combo = await Combo.findById(comboId);
 
-          combo.isActive = !combo.isActive;
-          await combo.save();
-
-          return {
-            success: true,
-            message: `Combo ${combo.isActive ? "activated" : "deactivated"} successfully`,
-            data: combo,
-          };
-        } catch (error: any) {
-          return {
-            success: false,
-            message: "Failed to toggle combo status",
-            error: error.message,
-          };
-        }
+    if (!combo) {
+      return {
+        success: false,
+        message: "Combo not found",
       };
+    }
 
-      /**
-       * Delete combo permanently
-       */
-      export const deleteComboService = async (comboId: string) => {
-        try {
-          const combo = await Combo.findByIdAndDelete(comboId);
+    combo.isActive = !combo.isActive;
+    await combo.save();
 
-          if (!combo) {
-            return {
-              success: false,
-              message: "Combo not found",
-            };
-          }
+    return {
+      success: true,
+      message: `Combo ${combo.isActive ? "activated" : "deactivated"} successfully`,
+      data: combo,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: "Failed to toggle combo status",
+      error: error.message,
+    };
+  }
+};
 
-          return {
-            success: true,
-            message: "Combo deleted permanently",
-          };
-        } catch (error: any) {
-          return {
-            success: false,
-            message: "Failed to delete combo",
-            error: error.message,
-          };
-        }
+/**
+ * Delete combo permanently
+ */
+export const deleteComboService = async (comboId: string) => {
+  try {
+    const combo = await Combo.findByIdAndDelete(comboId);
+
+    if (!combo) {
+      return {
+        success: false,
+        message: "Combo not found",
       };
+    }
 
+    return {
+      success: true,
+      message: "Combo deleted permanently",
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: "Failed to delete combo",
       error: error.message,
     };
   }
