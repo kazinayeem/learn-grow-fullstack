@@ -8,9 +8,13 @@ mongoose.set("toJSON", {
   },
 });
 
+const DatabaseProd =
+  "mongodb://admin:admin123@mongodb:27017/learn_grow?authSource=admin";
+const testDev =
+  "mongodb+srv://awsnayeem7_db_user:IbbqcElMtKJWCH6r@learn-grow.1vvwxhs.mongodb.net/?appName=learn-grow";
 export const connectDB = async (MONGODB_URI: string) => {
   try {
-    await mongoose.connect("mongodb+srv://awsnayeem7_db_user:IbbqcElMtKJWCH6r@learn-grow.1vvwxhs.mongodb.net/?appName=learn-grow");
+    await mongoose.connect(DatabaseProd);
     console.log("✅ MongoDB connected");
     console.log("📅 Timezone: Dates will be stored and retrieved in UTC");
   } catch (error) {

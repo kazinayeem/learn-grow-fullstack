@@ -53,10 +53,11 @@ const PricingSection = () => {
 
   const singleCoursePlan = pricing.plans.find((p) => p.id === "single-course");
 
-  // Build plan list: show single-course without price, inject combo, adjust kit price
+  // Build plan list: show single-course without price, inject combo (if exists) or show quarterly as default, adjust kit price
   const basePlans = pricing.plans.filter((p) => p.id !== "single-course");
 
   const transformedBasePlans = basePlans.map((plan) => {
+    // If combo exists and this is quarterly plan, replace with combo data
     if (plan.id === "quarterly" && firstCombo) {
       return {
         ...plan,
@@ -78,11 +79,21 @@ const PricingSection = () => {
       } as any;
     }
 
+    // If no combo exists and this is quarterly, keep it as default popular plan
+    if (plan.id === "quarterly" && !firstCombo) {
+      return {
+        ...plan,
+        popular: true, // Keep as popular if no combo exists
+      };
+    }
+
     if (plan.id === "robotics-kit") {
       const price = String(kitPriceSetting ?? kitPriceEnv ?? plan.price ?? "");
       return {
         ...plan,
         price,
+        // Add flag to indicate if price data exists
+        hasPriceData: !!(kitPriceSetting || kitPriceEnv || plan.price),
       };
     }
 
@@ -182,6 +193,13 @@ const PricingSection = () => {
                        </div>
                        <div className={`text-sm text-gray-500 ${language === "bn" ? "font-siliguri" : ""}`}>
                          {language === "bn" ? "প্রতিটি কোর্স পাতায় মূল্য দেখুন" : "See pricing on course pages"}
+                       </div>
+                     </div>
+                   ) : plan.id === "robotics-kit" && !(plan as any).hasPriceData ? (
+                     // Hide price section for robotics kit when no data
+                     <div>
+                       <div className={`text-sm text-gray-600 italic ${language === "bn" ? "font-siliguri" : ""}`}>
+                         {language === "bn" ? "মূল্য শীঘ্রই আসছে" : "Price coming soon"}
                        </div>
                      </div>
                    ) : plan.price === "Custom" || plan.price === "কাস্টম" ? (
