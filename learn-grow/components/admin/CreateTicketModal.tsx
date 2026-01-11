@@ -182,54 +182,43 @@ export default function CreateTicketModal({
 
                 {/* Priority and Category */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Select
-                    label="Priority Level"
-                    placeholder="Select priority"
-                    selectedKeys={[priority]}
-                    onChange={(e) => {
-                      setPriority(e.target.value);
-                    }}
-                    variant="bordered"
-                    size="lg"
-                    selectionMode="single"
-                    classNames={{
-                      label: "text-sm font-semibold",
-                    }}
-                  >
-                    {priorityOptions.map((option) => (
-                      <SelectItem key={option.key} value={option.key}>
-                        <div className="flex items-center gap-2">
-                          <Chip size="sm" color={option.color} variant="flat">
-                            {option.label}
-                          </Chip>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </Select>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700">
+                      Priority Level
+                    </label>
+                    <select
+                      value={priority}
+                      onChange={(e) => {
+                        setPriority(e.target.value);
+                      }}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 hover:border-primary-400 focus:border-primary-500 focus:outline-none transition-all duration-300 bg-white text-base"
+                    >
+                      {priorityOptions.map((option) => (
+                        <option key={option.key} value={option.key}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                  <Select
-                    label="Category"
-                    placeholder="Select category"
-                    selectedKeys={[category]}
-                    onChange={(e) => {
-                      setCategory(e.target.value);
-                    }}
-                    variant="bordered"
-                    size="lg"
-                    selectionMode="single"
-                    classNames={{
-                      label: "text-sm font-semibold",
-                    }}
-                  >
-                    {categoryOptions.map((option) => (
-                      <SelectItem key={option.key} value={option.key}>
-                        <div className="flex items-center gap-2">
-                          <span>{option.icon}</span>
-                          <span>{option.label}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </Select>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700">
+                      Category
+                    </label>
+                    <select
+                      value={category}
+                      onChange={(e) => {
+                        setCategory(e.target.value);
+                      }}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 hover:border-primary-400 focus:border-primary-500 focus:outline-none transition-all duration-300 bg-white text-base"
+                    >
+                      {categoryOptions.map((option) => (
+                        <option key={option.key} value={option.key}>
+                          {option.icon} {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 {/* Description */}

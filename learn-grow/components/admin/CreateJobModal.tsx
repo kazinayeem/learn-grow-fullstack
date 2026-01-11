@@ -253,33 +253,28 @@ export default function CreateJobModal({
                 }}
               />
 
-              <Select
-                label="Employment Type"
-                selectedKeys={formData.jobType ? [formData.jobType] : []}
-                onSelectionChange={(keys) => {
-                  const selectedArray = Array.from(keys);
-                  if (selectedArray.length > 0) {
-                    const value = selectedArray[0] as string;
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Employment Type <span className="text-danger">*</span>
+                </label>
+                <select
+                  value={formData.jobType}
+                  onChange={(e) => {
                     setFormData((prev) => ({
                       ...prev,
-                      jobType: value,
+                      jobType: e.target.value,
                     }));
-                  }
-                }}
-                variant="bordered"
-                size="lg"
-                isRequired
-                selectionMode="single"
-                classNames={{
-                  trigger: "border-2 border-gray-200 hover:border-teal-400 focus:border-teal-500 transition-all duration-300",
-                }}
-              >
-                {EMPLOYMENT_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </Select>
+                  }}
+                  required
+                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 hover:border-teal-400 focus:border-teal-500 focus:outline-none transition-all duration-300 bg-white text-base"
+                >
+                  {EMPLOYMENT_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
