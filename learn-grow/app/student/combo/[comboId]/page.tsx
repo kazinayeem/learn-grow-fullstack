@@ -1,5 +1,5 @@
 import React from "react";
-import { Breadcrumbs, BreadcrumbItem } from "@nextui-org/react";
+import Link from "next/link";
 import ComboDetails from "@/components/combo/ComboDetails";
 
 interface ComboDetailPageProps {
@@ -49,11 +49,19 @@ export default function ComboDetailPage({ params }: ComboDetailPageProps) {
       {/* Header Section */}
       <div className="bg-gradient-to-r from-primary to-primary-600 text-white py-8">
         <div className="container mx-auto px-4">
-          <Breadcrumbs className="mb-6">
-            <BreadcrumbItem href="/">Home</BreadcrumbItem>
-            <BreadcrumbItem href="/student/combos">Combos</BreadcrumbItem>
-            <BreadcrumbItem>Details</BreadcrumbItem>
-          </Breadcrumbs>
+          <nav aria-label="Breadcrumb" className="text-sm font-semibold">
+            <ol className="flex items-center gap-2 text-white/80">
+              <li>
+                <Link href="/" className="hover:text-white">Home</Link>
+              </li>
+              <li className="opacity-70">/</li>
+              <li>
+                <Link href="/student/combos" className="hover:text-white">Combos</Link>
+              </li>
+              <li className="opacity-70">/</li>
+              <li className="text-white">Details</li>
+            </ol>
+          </nav>
         </div>
       </div>
 

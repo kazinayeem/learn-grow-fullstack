@@ -25,7 +25,7 @@ import {
   FaPlus,
   FaSearch,
 } from "react-icons/fa";
-import { useGetInstructorCombosQuery, useDeleteComboMutation } from "@/redux/api/comboApi";
+import { useGetAllCombosQuery, useDisableComboMutation } from "@/redux/api/comboApi";
 
 const ROWS_PER_PAGE = 10;
 
@@ -33,8 +33,8 @@ export default function InstructorCombosPage() {
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: combosData, isLoading, error } = useGetInstructorCombosQuery(undefined);
-  const [deleteCombo] = useDeleteComboMutation();
+  const { data: combosData, isLoading, error } = useGetAllCombosQuery({ page: 1, limit: 100 });
+  const [disableCombo] = useDisableComboMutation();
 
   const combos = Array.isArray(combosData?.data) ? combosData.data : [];
 
@@ -54,7 +54,7 @@ export default function InstructorCombosPage() {
   const handleDelete = async (comboId: string) => {
     if (window.confirm("Are you sure you want to delete this combo?")) {
       try {
-        await deleteCombo(comboId).unwrap();
+        await disableCombo(comboId).unwrap();
       } catch (err: any) {
         alert(err?.data?.message || "Failed to delete combo");
       }
