@@ -7,6 +7,7 @@ export const ENV = {
   PORT: Number(process.env.PORT || 5000),
   MONGODB_URI: process.env.MONGODB_URI || "mongodb://admin:admin123@72.62.194.176:27017/learn_grow?authSource=admin",
 
+  JWT_SECRET: process.env.JWT_SECRET || "your_jwt_secret_key_change_in_production",
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || "your_refresh_secret_key_change_in_production",
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || "30d",
