@@ -14,11 +14,11 @@ export interface SMTPConfig {
 
 export const settingsApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
-    getCommission: build.query<{ success: boolean; data?: { platformCommissionPercent: number; instructorPayoutPercent: number } }, void>({
+    getCommission: build.query<{ success: boolean; data?: { platformCommissionPercent: number; instructorPayoutPercent: number; kitPrice?: number } }, void>({
       query: () => ({ url: "/settings/commission", method: "GET" }),
       providesTags: ["SiteContent"],
     }),
-    updateCommission: build.mutation<{ success: boolean; data?: { platformCommissionPercent: number; instructorPayoutPercent: number } }, { platformCommissionPercent: number }>({
+    updateCommission: build.mutation<{ success: boolean; data?: { platformCommissionPercent: number; instructorPayoutPercent: number; kitPrice?: number } }, { platformCommissionPercent: number; kitPrice?: number }>({
       query: (body) => ({ url: "/settings/commission", method: "PATCH", body }),
       invalidatesTags: ["SiteContent"],
     }),

@@ -120,6 +120,31 @@ class TeamController {
             res.status(500).json({ success: false, message: (error as Error).message });
         }
     }
+
+    async reorderMembers(req: Request, res: Response) {
+        try {
+            const { memberOrders } = req.body;
+            const result = await teamService.reorderMembers(memberOrders);
+            res.status(200).json(result);
+        } catch (error) {
+            res.status(500).json({ success: false, message: (error as Error).message });
+        }
+    }
+
+    async updateMemberPosition(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { position } = req.body;
+            const result = await teamService.updateMemberPosition(id, position);
+            if (!result.success) {
+                res.status(404).json(result);
+            } else {
+                res.status(200).json(result);
+            }
+        } catch (error) {
+            res.status(500).json({ success: false, message: (error as Error).message });
+        }
+    }
 }
 
 export default new TeamController();

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Card,
     CardBody,
@@ -11,19 +11,12 @@ import {
     Tab,
     Image,
     Chip,
-    Switch,
     Modal,
     ModalContent,
     ModalHeader,
     ModalBody,
     ModalFooter,
     Spinner,
-    Table,
-    TableHeader,
-    TableColumn,
-    TableBody,
-    TableRow,
-    TableCell,
     Checkbox,
     Select,
     SelectItem,
@@ -41,22 +34,27 @@ import {
     FaLinkedin,
     FaTwitter,
     FaArrowLeft,
-    FaCheck,
-    FaUpload
+    FaUpload,
+    FaGripVertical,
+    FaTags,
 } from "react-icons/fa";
-// Removed base64 image uploader in favor of URL input
-const TEAM_ROLES = [
-    "Founder & CEO",
-    "Co-Founder",
-    "Head of Content",
-    "Lead Instructor",
-    "Senior Instructor",
-    "Instructor",
-    "Course Developer",
-    "Technical Lead",
-    "Operations Manager",
-    "Support Manager"
-];
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+} from "@dnd-kit/core";
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 import {
     useGetAllTeamMembersQuery,
@@ -64,11 +62,24 @@ import {
     useUpdateTeamMemberMutation,
     useDeleteTeamMemberMutation,
     useToggleShowHomeMutation,
+    useReorderMembersMutation,
     useGetApprovedInstructorsForImportQuery,
     useImportInstructorsMutation,
+    useGetAllRolesQuery,
+    useCreateRoleMutation,
+    useReorderRolesMutation,
+    useDeleteRoleMutation,
+    useSeedDefaultRolesMutation,
 } from "@/redux/api/teamApi";
 import SweetAlert2 from "sweetalert2";
 import { useRouter } from "next/navigation";
+
+interface Role {
+    _id: string;
+    name: string;
+    position: number;
+    isActive: boolean;
+}
 
 interface TeamMember {
     _id: string;
@@ -81,6 +92,7 @@ interface TeamMember {
     bio?: string;
     showOnHome: boolean;
     userId?: string;
+    position: number;
 }
 
 interface Instructor {
@@ -89,22 +101,210 @@ interface Instructor {
     profileImage?: string;
 }
 
+// Sortable Role Item Component
+function SortableRoleItem({ role, onDelete }: { role: Role; onDelete: (id: string) => void }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+        id: role._id,
+    });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+        >
+            <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+                <FaGripVertical className="text-gray-400" />
+            </div>
+            <div className="flex-1">
+                <p className="font-semibold text-gray-800">{role.name}</p>
+                <p className="text-xs text-gray-500">Position: {role.position}</p>
+            </div>
+            <Button
+                size="sm"
+                color="danger"
+                variant="flat"
+                isIconOnly
+                onClick={() => onDelete(role._id)}
+            >
+                <FaTrash className="text-sm" />
+            </Button>
+        </div>
+    );
+}
+
+// Sortable Member Item Component
+function SortableMemberItem({
+    member,
+    onEdit,
+    onDelete,
+    onToggleShow,
+}: {
+    member: TeamMember;
+    onEdit: (member: TeamMember) => void;
+    onDelete: (id: string, name: string) => void;
+    onToggleShow: (id: string, currentValue: boolean) => void;
+}) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+        id: member._id,
+    });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className="group hover:shadow-xl transition-all duration-300 border border-gray-100 rounded-lg bg-white"
+        >
+            <Card className="shadow-none">
+                <CardBody className="p-0">
+                    <div className="relative h-48 bg-gray-100 overflow-hidden">
+                        {member.image && member.image !== "placeholder" ? (
+                            <Image
+                                src={
+                                    member.image.startsWith("http")
+                                        ? member.image
+                                        : `data:image/jpeg;base64,${member.image}`
+                                }
+                                alt={member.name}
+                                width="100%"
+                                height="100%"
+                                classNames={{
+                                    img: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500",
+                                }}
+                                radius="none"
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
+                                <FaUserTie size={48} />
+                            </div>
+                        )}
+                        <div className="absolute top-3 left-3 z-10 cursor-grab active:cursor-grabbing" {...attributes} {...listeners}>
+                            <div className="bg-white/90 p-2 rounded-full shadow-md">
+                                <FaGripVertical className="text-gray-600" />
+                            </div>
+                        </div>
+                        <div className="absolute top-3 right-3 z-10">
+                            <Chip
+                                startContent={member.showOnHome ? <FaEye size={12} /> : <FaEyeSlash size={12} />}
+                                variant="solid"
+                                color={member.showOnHome ? "success" : "default"}
+                                size="sm"
+                                className="shadow-md"
+                            >
+                                {member.showOnHome ? "Visible" : "Hidden"}
+                            </Chip>
+                        </div>
+                    </div>
+
+                    <div className="p-3 sm:p-4 md:p-5">
+                        <h3 className="font-bold text-base sm:text-lg text-gray-800 truncate">{member.name}</h3>
+                        <p className="text-xs sm:text-sm text-emerald-600 font-medium mb-2 truncate">{member.role}</p>
+
+                        {member.bio && (
+                            <p className="text-xs text-gray-500 line-clamp-2 mb-4 h-8">{member.bio}</p>
+                        )}
+
+                        <div className="flex gap-2 mb-4">
+                            {member.linkedIn && (
+                                <a
+                                    href={member.linkedIn}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-2 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors"
+                                >
+                                    <FaLinkedin />
+                                </a>
+                            )}
+                            {member.twitter && (
+                                <a
+                                    href={member.twitter}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-2 bg-sky-50 text-sky-500 rounded-full hover:bg-sky-100 transition-colors"
+                                >
+                                    <FaTwitter />
+                                </a>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-1.5 sm:gap-2 pt-2 border-t border-gray-100">
+                            <Button
+                                size="sm"
+                                variant="flat"
+                                color={member.showOnHome ? "default" : "success"}
+                                onClick={() => onToggleShow(member._id, member.showOnHome)}
+                                className="w-full min-h-[36px] text-xs px-1"
+                            >
+                                {member.showOnHome ? "Hide" : "Show"}
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="flat"
+                                color="primary"
+                                onClick={() => onEdit(member)}
+                                isIconOnly
+                                className="w-full min-h-[36px]"
+                            >
+                                <FaEdit className="text-sm" />
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="flat"
+                                color="danger"
+                                onClick={() => onDelete(member._id, member.name)}
+                                isIconOnly
+                                className="w-full min-h-[36px]"
+                            >
+                                <FaTrash className="text-sm" />
+                            </Button>
+                        </div>
+                    </div>
+                </CardBody>
+            </Card>
+        </div>
+    );
+}
+
 export default function TeamManagementPage() {
     const router = useRouter();
+
     // Queries and Mutations
     const { data: teamData, isLoading: teamLoading, refetch } = useGetAllTeamMembersQuery(undefined);
-    const { data: instructorsData, isLoading: instructorsLoading } = useGetApprovedInstructorsForImportQuery(undefined);
+    const { data: rolesData, isLoading: rolesLoading } = useGetAllRolesQuery(undefined);
+    const { data: instructorsData, isLoading: instructorsLoading } =
+        useGetApprovedInstructorsForImportQuery(undefined);
 
     const [createTeamMember, { isLoading: createLoading }] = useCreateTeamMemberMutation();
     const [updateTeamMember, { isLoading: updateLoading }] = useUpdateTeamMemberMutation();
     const [deleteTeamMember] = useDeleteTeamMemberMutation();
     const [toggleShowHome] = useToggleShowHomeMutation();
+    const [reorderMembers] = useReorderMembersMutation();
     const [importInstructors, { isLoading: importLoading }] = useImportInstructorsMutation();
+
+    const [createRole] = useCreateRoleMutation();
+    const [reorderRoles] = useReorderRolesMutation();
+    const [deleteRole] = useDeleteRoleMutation();
+    const [seedDefaultRoles, { isLoading: seedingRoles }] = useSeedDefaultRolesMutation();
 
     // State
     const [selectedInstructors, setSelectedInstructors] = useState<string[]>([]);
     const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const [newRoleName, setNewRoleName] = useState("");
+    const [localRoles, setLocalRoles] = useState<Role[]>([]);
+    const [selectedRole, setSelectedRole] = useState<string>("");
 
     // Add Member Form
     const [formData, setFormData] = useState({
@@ -117,7 +317,132 @@ export default function TeamManagementPage() {
     const [imageUrl, setImageUrl] = useState<string>("");
 
     const teamMembers = (teamData?.data || []) as TeamMember[];
+    const roles = (rolesData?.data || []) as Role[];
     const instructors = (instructorsData?.data || []) as Instructor[];
+
+    // Update local roles when data changes
+    useEffect(() => {
+        if (roles.length > 0) {
+            setLocalRoles([...roles]);
+        }
+    }, [roles]);
+
+    // Drag and drop sensors for roles
+    const roleSensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    // Drag and drop sensors for members
+    const memberSensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    // Handle role drag end
+    const handleRoleDragEnd = async (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (over && active.id !== over.id) {
+            const oldIndex = localRoles.findIndex((r) => r._id === active.id);
+            const newIndex = localRoles.findIndex((r) => r._id === over.id);
+
+            const newRoles = arrayMove(localRoles, oldIndex, newIndex);
+            setLocalRoles(newRoles);
+
+            // Update positions in backend
+            const roleOrders = newRoles.map((role, index) => ({
+                id: role._id,
+                position: index + 1,
+            }));
+
+            try {
+                await reorderRoles(roleOrders).unwrap();
+                toast.success("Roles reordered successfully!");
+            } catch (error) {
+                toast.error("Failed to reorder roles");
+                setLocalRoles([...roles]); // Revert on error
+            }
+        }
+    };
+
+    // Handle member drag end within a role
+    const handleMemberDragEnd = async (event: DragEndEvent, roleMembers: TeamMember[]) => {
+        const { active, over } = event;
+
+        if (over && active.id !== over.id) {
+            const oldIndex = roleMembers.findIndex((m) => m._id === active.id);
+            const newIndex = roleMembers.findIndex((m) => m._id === over.id);
+
+            const newMembers = arrayMove(roleMembers, oldIndex, newIndex);
+
+            // Update positions in backend
+            const memberOrders = newMembers.map((member, index) => ({
+                id: member._id,
+                position: index + 1,
+            }));
+
+            try {
+                await reorderMembers(memberOrders).unwrap();
+                toast.success("Members reordered successfully!");
+                refetch();
+            } catch (error) {
+                toast.error("Failed to reorder members");
+            }
+        }
+    };
+
+    // Handle Add Role
+    const handleAddRole = async () => {
+        if (!newRoleName.trim()) {
+            toast.error("Role name is required");
+            return;
+        }
+
+        try {
+            await createRole({ name: newRoleName }).unwrap();
+            toast.success("Role added successfully!");
+            setNewRoleName("");
+        } catch (error) {
+            toast.error((error as any)?.data?.message || "Failed to add role");
+        }
+    };
+
+    // Handle Delete Role
+    const handleDeleteRole = async (id: string) => {
+        const result = await SweetAlert2.fire({
+            title: "Delete Role",
+            text: "Are you sure you want to delete this role?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#dc2626",
+            cancelButtonColor: "#6b7280",
+            confirmButtonText: "Delete",
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await deleteRole(id).unwrap();
+                toast.success("Role deleted successfully!");
+            } catch (error) {
+                toast.error((error as any)?.data?.message || "Failed to delete role");
+            }
+        }
+    };
+
+    // Handle Seed Default Roles
+    const handleSeedRoles = async () => {
+        try {
+            await seedDefaultRoles({} as any).unwrap();
+            toast.success("Default roles seeded successfully!");
+        } catch (error) {
+            toast.error("Failed to seed roles");
+        }
+    };
 
     // Handle Add Member
     const handleAddMember = async () => {
@@ -213,6 +538,25 @@ export default function TeamManagementPage() {
         }
     };
 
+    // Group members by role
+    const membersByRole = teamMembers.reduce((acc: Record<string, TeamMember[]>, member) => {
+        if (!acc[member.role]) {
+            acc[member.role] = [];
+        }
+        acc[member.role].push(member);
+        return acc;
+    }, {});
+
+    // Sort members within each role by position
+    Object.keys(membersByRole).forEach((role) => {
+        membersByRole[role].sort((a, b) => a.position - b.position);
+    });
+
+    // Filter members by selected role
+    const filteredMembers = selectedRole
+        ? teamMembers.filter((m) => m.role === selectedRole).sort((a, b) => a.position - b.position)
+        : [];
+
     return (
         <div className="container mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 max-w-7xl">
             {/* Header with Gradient */}
@@ -236,7 +580,7 @@ export default function TeamManagementPage() {
                             Team Management
                         </h1>
                         <p className="text-xs sm:text-sm md:text-base text-white/90 mt-0.5 sm:mt-1 line-clamp-2">
-                            Manage "Our Experts" section displayed on home page
+                            Manage roles, members, and their display positions
                         </p>
                     </div>
                 </div>
@@ -248,12 +592,116 @@ export default function TeamManagementPage() {
                     color="primary"
                     variant="underlined"
                     classNames={{
-                        tabList: "gap-2 sm:gap-4 md:gap-6 w-full relative rounded-none p-0 border-b border-divider px-2 sm:px-4 md:px-6 pt-2 sm:pt-3 md:pt-4 overflow-x-auto",
+                        tabList:
+                            "gap-2 sm:gap-4 md:gap-6 w-full relative rounded-none p-0 border-b border-divider px-2 sm:px-4 md:px-6 pt-2 sm:pt-3 md:pt-4 overflow-x-auto",
                         cursor: "w-full bg-emerald-600",
                         tab: "max-w-fit px-2 sm:px-3 md:px-4 h-12 sm:h-14 min-w-fit whitespace-nowrap",
-                        tabContent: "group-data-[selected=true]:text-emerald-600 font-bold text-xs sm:text-sm md:text-base lg:text-lg"
+                        tabContent:
+                            "group-data-[selected=true]:text-emerald-600 font-bold text-xs sm:text-sm md:text-base lg:text-lg",
                     }}
                 >
+                    {/* Manage Roles Tab */}
+                    <Tab
+                        key="roles"
+                        title={
+                            <div className="flex items-center space-x-1 sm:space-x-2">
+                                <FaTags className="text-xs sm:text-sm" />
+                                <span className="hidden sm:inline">Manage Roles</span>
+                                <span className="sm:hidden">Roles</span>
+                            </div>
+                        }
+                    >
+                        <div className="p-2 sm:p-4 md:p-6 lg:p-8 max-w-4xl mx-auto">
+                            <Card className="shadow-lg border border-gray-100 mb-6">
+                                <CardHeader className="flex gap-2 sm:gap-3 px-3 sm:px-4 md:px-6 pt-4 sm:pt-6 pb-0">
+                                    <div className="p-2 sm:p-3 bg-purple-100 text-purple-600 rounded-lg sm:rounded-xl">
+                                        <FaTags size={20} className="sm:w-6 sm:h-6" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-base sm:text-lg md:text-xl font-bold text-gray-800">
+                                            Add New Role
+                                        </p>
+                                        <p className="text-xs sm:text-sm text-gray-500 line-clamp-2">
+                                            Create custom roles for team members
+                                        </p>
+                                    </div>
+                                </CardHeader>
+                                <CardBody className="space-y-4 p-3 sm:p-4 md:p-6">
+                                    <div className="flex gap-3">
+                                        <Input
+                                            label="Role Name"
+                                            placeholder="e.g. Senior Developer"
+                                            value={newRoleName}
+                                            onChange={(e) => setNewRoleName(e.target.value)}
+                                            variant="bordered"
+                                            className="flex-1"
+                                        />
+                                        <Button
+                                            color="primary"
+                                            onPress={handleAddRole}
+                                            startContent={<FaPlus />}
+                                            className="min-w-[120px]"
+                                        >
+                                            Add Role
+                                        </Button>
+                                    </div>
+                                    <Button
+                                        color="secondary"
+                                        variant="flat"
+                                        onPress={handleSeedRoles}
+                                        isLoading={seedingRoles}
+                                        className="w-full"
+                                    >
+                                        Seed Default Roles
+                                    </Button>
+                                </CardBody>
+                            </Card>
+
+                            <Card className="shadow-lg border border-gray-100">
+                                <CardHeader className="px-3 sm:px-4 md:px-6 pt-4 sm:pt-6 pb-4">
+                                    <p className="text-base sm:text-lg font-bold text-gray-800">
+                                        All Roles ({localRoles.length})
+                                    </p>
+                                    <p className="text-xs text-gray-500 ml-2">Drag to reorder</p>
+                                </CardHeader>
+                                <CardBody className="p-3 sm:p-4 md:p-6">
+                                    {rolesLoading ? (
+                                        <div className="h-40 flex items-center justify-center">
+                                            <Spinner size="lg" label="Loading roles..." />
+                                        </div>
+                                    ) : localRoles.length === 0 ? (
+                                        <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                                            <p className="text-gray-500 font-medium">
+                                                No roles available. Add or seed roles.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <DndContext
+                                            sensors={roleSensors}
+                                            collisionDetection={closestCenter}
+                                            onDragEnd={handleRoleDragEnd}
+                                        >
+                                            <SortableContext
+                                                items={localRoles.map((r) => r._id)}
+                                                strategy={verticalListSortingStrategy}
+                                            >
+                                                <div className="space-y-2">
+                                                    {localRoles.map((role) => (
+                                                        <SortableRoleItem
+                                                            key={role._id}
+                                                            role={role}
+                                                            onDelete={handleDeleteRole}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </SortableContext>
+                                        </DndContext>
+                                    )}
+                                </CardBody>
+                            </Card>
+                        </div>
+                    </Tab>
+
                     {/* Add Member Tab */}
                     <Tab
                         key="add"
@@ -272,8 +720,12 @@ export default function TeamManagementPage() {
                                         <FaUserTie size={20} className="sm:w-6 sm:h-6" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-base sm:text-lg md:text-xl font-bold text-gray-800">New Team Member</p>
-                                        <p className="text-xs sm:text-sm text-gray-500 line-clamp-2">Add details manually for a custom team member.</p>
+                                        <p className="text-base sm:text-lg md:text-xl font-bold text-gray-800">
+                                            New Team Member
+                                        </p>
+                                        <p className="text-xs sm:text-sm text-gray-500 line-clamp-2">
+                                            Add details manually for a custom team member.
+                                        </p>
                                     </div>
                                 </CardHeader>
                                 <CardBody className="space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
@@ -289,14 +741,14 @@ export default function TeamManagementPage() {
                                         <Select
                                             label="Role"
                                             placeholder="Select a role"
-                                            value={formData.role}
+                                            selectedKeys={formData.role ? [formData.role] : []}
                                             onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                                             variant="bordered"
                                             isRequired
                                         >
-                                            {TEAM_ROLES.map((role) => (
-                                                <SelectItem key={role} value={role}>
-                                                    {role}
+                                            {roles.map((role) => (
+                                                <SelectItem key={role.name} value={role.name}>
+                                                    {role.name}
                                                 </SelectItem>
                                             ))}
                                         </Select>
@@ -378,8 +830,12 @@ export default function TeamManagementPage() {
                                         <FaUpload size={20} className="sm:w-6 sm:h-6" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-base sm:text-lg md:text-xl font-bold text-gray-800">Import Approved Instructors</p>
-                                        <p className="text-xs sm:text-sm text-gray-500 line-clamp-2">Quickly add existing instructors to your team showcase.</p>
+                                        <p className="text-base sm:text-lg md:text-xl font-bold text-gray-800">
+                                            Import Approved Instructors
+                                        </p>
+                                        <p className="text-xs sm:text-sm text-gray-500 line-clamp-2">
+                                            Quickly add existing instructors to your team showcase.
+                                        </p>
                                     </div>
                                 </CardHeader>
                                 <CardBody className="p-3 sm:p-4 md:p-6">
@@ -389,7 +845,9 @@ export default function TeamManagementPage() {
                                         </div>
                                     ) : instructors.length === 0 ? (
                                         <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-300">
-                                            <p className="text-gray-500 font-medium">No approved instructors available to import.</p>
+                                            <p className="text-gray-500 font-medium">
+                                                No approved instructors available to import.
+                                            </p>
                                         </div>
                                     ) : (
                                         <>
@@ -397,21 +855,27 @@ export default function TeamManagementPage() {
                                                 {instructors.map((instructor) => (
                                                     <div
                                                         key={instructor._id}
-                                                        className={`flex items-center gap-3 p-3 border rounded-lg transition-all cursor-pointer ${selectedInstructors.includes(instructor._id)
+                                                        className={`flex items-center gap-3 p-3 border rounded-lg transition-all cursor-pointer ${
+                                                            selectedInstructors.includes(instructor._id)
                                                                 ? "bg-blue-50 border-blue-300 shadow-sm"
                                                                 : "bg-white hover:bg-gray-50 border-gray-100"
-                                                            }`}
+                                                        }`}
                                                         onClick={() => {
                                                             if (selectedInstructors.includes(instructor._id)) {
-                                                                setSelectedInstructors(selectedInstructors.filter(id => id !== instructor._id));
+                                                                setSelectedInstructors(
+                                                                    selectedInstructors.filter((id) => id !== instructor._id)
+                                                                );
                                                             } else {
-                                                                setSelectedInstructors([...selectedInstructors, instructor._id]);
+                                                                setSelectedInstructors([
+                                                                    ...selectedInstructors,
+                                                                    instructor._id,
+                                                                ]);
                                                             }
                                                         }}
                                                     >
                                                         <Checkbox
                                                             isSelected={selectedInstructors.includes(instructor._id)}
-                                                            pointerEvents="none"
+                                                            onValueChange={() => {}}
                                                             size="lg"
                                                             radius="full"
                                                         />
@@ -428,7 +892,9 @@ export default function TeamManagementPage() {
                                                                 <FaUserTie />
                                                             </div>
                                                         )}
-                                                        <span className="flex-1 font-semibold text-gray-800">{instructor.name}</span>
+                                                        <span className="flex-1 font-semibold text-gray-800">
+                                                            {instructor.name}
+                                                        </span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -450,7 +916,7 @@ export default function TeamManagementPage() {
                         </div>
                     </Tab>
 
-                    {/* Team Members List Tab */}
+                    {/* Team Members List Tab - Organized by Role */}
                     <Tab
                         key="list"
                         title={
@@ -473,101 +939,74 @@ export default function TeamManagementPage() {
                                     <p className="text-gray-500 mt-2">Add or import members to display them here.</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-                                    {teamMembers.map((member) => (
-                                        <Card key={member._id} className="group hover:shadow-xl transition-all duration-300 border border-gray-100">
-                                            <CardBody className="p-0">
-                                                <div className="relative h-48 bg-gray-100 overflow-hidden">
-                                                    {member.image ? (
-                                                        <Image
-                                                            src={member.image.startsWith("http") ? member.image : `data:image/jpeg;base64,${member.image}`}
-                                                            alt={member.name}
-                                                            width="100%"
-                                                            height="100%"
-                                                            classNames={{
-                                                                img: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                            }}
-                                                            radius="none"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
-                                                            <FaUserTie size={48} />
+                                <div className="space-y-8">
+                                    {/* Select role to manage */}
+                                    <Card className="shadow-lg border border-gray-100">
+                                        <CardBody className="p-4">
+                                            <Select
+                                                label="Select Role to Manage"
+                                                placeholder="Choose a role"
+                                                selectedKeys={selectedRole ? [selectedRole] : []}
+                                                onChange={(e) => setSelectedRole(e.target.value)}
+                                                variant="bordered"
+                                            >
+                                                {roles.map((role) => (
+                                                    <SelectItem key={role.name} value={role.name}>
+                                                        {role.name} ({membersByRole[role.name]?.length || 0} members)
+                                                    </SelectItem>
+                                                ))}
+                                            </Select>
+                                        </CardBody>
+                                    </Card>
+
+                                    {selectedRole && filteredMembers.length > 0 && (
+                                        <Card className="shadow-lg border border-gray-100">
+                                            <CardHeader className="px-4 pt-4 pb-2">
+                                                <h3 className="text-xl font-bold text-gray-800">{selectedRole}</h3>
+                                                <p className="text-sm text-gray-500 ml-2">Drag to reorder members</p>
+                                            </CardHeader>
+                                            <CardBody className="p-4">
+                                                <DndContext
+                                                    sensors={memberSensors}
+                                                    collisionDetection={closestCenter}
+                                                    onDragEnd={(event) => handleMemberDragEnd(event, filteredMembers)}
+                                                >
+                                                    <SortableContext
+                                                        items={filteredMembers.map((m) => m._id)}
+                                                        strategy={verticalListSortingStrategy}
+                                                    >
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                                            {filteredMembers.map((member) => (
+                                                                <SortableMemberItem
+                                                                    key={member._id}
+                                                                    member={member}
+                                                                    onEdit={setEditingMember}
+                                                                    onDelete={handleDeleteMember}
+                                                                    onToggleShow={handleToggleShowHome}
+                                                                />
+                                                            ))}
                                                         </div>
-                                                    )}
-                                                    <div className="absolute top-3 right-3 z-10">
-                                                        <Chip
-                                                            startContent={member.showOnHome ? <FaEye size={12} /> : <FaEyeSlash size={12} />}
-                                                            variant="solid"
-                                                            color={member.showOnHome ? "success" : "default"}
-                                                            size="sm"
-                                                            className="shadow-md"
-                                                        >
-                                                            {member.showOnHome ? "Visible" : "Hidden"}
-                                                        </Chip>
-                                                    </div>
-                                                </div>
-
-                                                <div className="p-3 sm:p-4 md:p-5">
-                                                    <h3 className="font-bold text-base sm:text-lg text-gray-800 truncate">{member.name}</h3>
-                                                    <p className="text-xs sm:text-sm text-emerald-600 font-medium mb-2 truncate">{member.role}</p>
-
-                                                    {member.bio && (
-                                                        <p className="text-xs text-gray-500 line-clamp-2 mb-4 h-8">
-                                                            {member.bio}
-                                                        </p>
-                                                    )}
-
-                                                    <div className="flex gap-2 mb-4">
-                                                        {member.linkedIn && (
-                                                            <a href={member.linkedIn} target="_blank" rel="noopener noreferrer" className="p-2 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors">
-                                                                <FaLinkedin />
-                                                            </a>
-                                                        )}
-                                                        {member.twitter && (
-                                                            <a href={member.twitter} target="_blank" rel="noopener noreferrer" className="p-2 bg-sky-50 text-sky-500 rounded-full hover:bg-sky-100 transition-colors">
-                                                                <FaTwitter />
-                                                            </a>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2 pt-2 border-t border-gray-100">
-                                                        <Button
-                                                            size="sm"
-                                                            variant="flat"
-                                                            color={member.showOnHome ? "default" : "success"}
-                                                            onClick={() => handleToggleShowHome(member._id, member.showOnHome)}
-                                                            className="w-full min-h-[36px] text-xs px-1"
-                                                        >
-                                                            {member.showOnHome ? "Hide" : "Show"}
-                                                        </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="flat"
-                                                            color="primary"
-                                                            onClick={() => {
-                                                                setEditingMember(member);
-                                                                setIsEditOpen(true);
-                                                            }}
-                                                            isIconOnly
-                                                            className="w-full min-h-[36px]"
-                                                        >
-                                                            <FaEdit className="text-sm" />
-                                                        </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="flat"
-                                                            color="danger"
-                                                            onClick={() => handleDeleteMember(member._id, member.name)}
-                                                            isIconOnly
-                                                            className="w-full min-h-[36px]"
-                                                        >
-                                                            <FaTrash className="text-sm" />
-                                                        </Button>
-                                                    </div>
-                                                </div>
+                                                    </SortableContext>
+                                                </DndContext>
                                             </CardBody>
                                         </Card>
-                                    ))}
+                                    )}
+
+                                    {selectedRole && filteredMembers.length === 0 && (
+                                        <Card className="shadow-lg border border-gray-100">
+                                            <CardBody className="text-center p-10">
+                                                <p className="text-gray-500">No members found for this role.</p>
+                                            </CardBody>
+                                        </Card>
+                                    )}
+
+                                    {!selectedRole && (
+                                        <Card className="shadow-lg border border-gray-100">
+                                            <CardBody className="text-center p-10">
+                                                <p className="text-gray-500">Select a role to view and manage members.</p>
+                                            </CardBody>
+                                        </Card>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -577,27 +1016,36 @@ export default function TeamManagementPage() {
 
             {/* Edit Modal */}
             <Modal
-                isOpen={isEditOpen}
-                onOpenChange={setIsEditOpen}
+                isOpen={isEditOpen || !!editingMember}
+                onOpenChange={(open) => {
+                    setIsEditOpen(open);
+                    if (!open) setEditingMember(null);
+                }}
                 size="lg"
                 scrollBehavior="inside"
                 classNames={{
                     backdrop: "bg-gradient-to-t from-zinc-900 to-zinc-900/10 backdrop-opacity-20",
                     wrapper: "overflow-y-auto",
-                    base: "m-2 sm:m-4"
+                    base: "m-2 sm:m-4",
                 }}
             >
                 <ModalContent>
                     {(onClose) => (
                         <>
-                            <ModalHeader className="bg-gray-50 border-b border-gray-100 text-base sm:text-lg">Edit Team Member</ModalHeader>
+                            <ModalHeader className="bg-gray-50 border-b border-gray-100 text-base sm:text-lg">
+                                Edit Team Member
+                            </ModalHeader>
                             <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-4 md:p-6">
                                 {editingMember && (
                                     <>
                                         <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-2">
-                                            {editingMember.image && (
+                                            {editingMember.image && editingMember.image !== "placeholder" && (
                                                 <Image
-                                                    src={editingMember.image.startsWith("http") ? editingMember.image : `data:image/jpeg;base64,${editingMember.image}`}
+                                                    src={
+                                                        editingMember.image.startsWith("http")
+                                                            ? editingMember.image
+                                                            : `data:image/jpeg;base64,${editingMember.image}`
+                                                    }
                                                     alt={editingMember.name}
                                                     width={48}
                                                     height={48}
@@ -605,7 +1053,9 @@ export default function TeamManagementPage() {
                                                 />
                                             )}
                                             <div className="flex-1 min-w-0">
-                                                <p className="font-bold text-base sm:text-lg truncate">{editingMember.name}</p>
+                                                <p className="font-bold text-base sm:text-lg truncate">
+                                                    {editingMember.name}
+                                                </p>
                                                 <p className="text-xs text-gray-500">Updating profile details</p>
                                             </div>
                                         </div>
@@ -621,15 +1071,15 @@ export default function TeamManagementPage() {
                                             />
                                             <Select
                                                 label="Role"
-                                                value={editingMember.role}
+                                                selectedKeys={[editingMember.role]}
                                                 onChange={(e) =>
                                                     setEditingMember({ ...editingMember, role: e.target.value })
                                                 }
                                                 variant="bordered"
                                             >
-                                                {TEAM_ROLES.map((role) => (
-                                                    <SelectItem key={role} value={role}>
-                                                        {role}
+                                                {roles.map((role) => (
+                                                    <SelectItem key={role.name} value={role.name}>
+                                                        {role.name}
                                                     </SelectItem>
                                                 ))}
                                             </Select>

@@ -157,8 +157,7 @@ export const expireOldSubscriptions = async () => {
         planType: { $in: ["quarterly", "single", "combo"] },
         paymentStatus: "approved",
         isActive: true,
-        endDate: { $lt: now },
-        endDate: { $ne: null },
+        endDate: { $lt: now, $ne: null },
       },
       {
         $set: { isActive: false },
@@ -168,8 +167,7 @@ export const expireOldSubscriptions = async () => {
     // Expire old enrollments
     const enrollmentResult = await Enrollment.updateMany(
       {
-        accessEndDate: { $lt: now },
-        accessEndDate: { $ne: null },
+        accessEndDate: { $lt: now, $ne: null },
       },
       {
         $set: { accessEndDate: now },

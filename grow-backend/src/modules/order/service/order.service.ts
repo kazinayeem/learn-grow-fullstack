@@ -3,6 +3,7 @@ import { User } from "../../user/model/user.model";
 import { Course } from "../../course/model/course.model";
 import { Combo } from "../../course/model/combo.model";
 import { PaymentMethod } from "../../payment/model/payment-method.model";
+import { getGlobalSettings } from "../../settings/service/settings.service";
 import { Enrollment } from "../../enrollment/model/enrollment.model";
 import { ENV } from "@/config/env";
 import mongoose from "mongoose";
@@ -17,6 +18,18 @@ export const ENROLLMENT_PRICES = {
   single: 3500, // Single Course - 3 months
   quarterly: 9999, // All Courses - 3 months
   kit: 4500, // Kit Only
+};
+
+let cachedKitPrice: number | null = null;
+const getKitPrice = async () => {
+  if (cachedKitPrice !== null) return cachedKitPrice;
+  try {
+    const settings = await getGlobalSettings();
+    cachedKitPrice = settings.kitPrice ?? ENROLLMENT_PRICES.kit;
+    return cachedKitPrice;
+  } catch (err) {
+    return ENROLLMENT_PRICES.kit;
+  }
 };
 
 const formatPrice = (amount: number) =>
@@ -213,7 +226,11 @@ export const createOrderService = async (
     if (planType === "combo" && combo) {
       price = combo.discountPrice || combo.price;
     } else if (!price) {
-      price = ENROLLMENT_PRICES[planType as keyof typeof ENROLLMENT_PRICES];
+      if (planType === "kit") {
+        price = await getKitPrice();
+      } else {
+        price = ENROLLMENT_PRICES[planType as keyof typeof ENROLLMENT_PRICES];
+      }
     }
 
     if (price === undefined || price === null) {
@@ -293,7 +310,14 @@ export const getUserOrdersService = async (
     const [orders, total] = await Promise.all([
       Order.find({ userId: new mongoose.Types.ObjectId(userId) })
         .populate("courseId", "title thumbnail")
-        .populate("comboId", "name duration")
+        .populate({
+          path: "comboId",
+          select: "name duration courses",
+          populate: {
+            path: "courses",
+            select: "_id title"
+          }
+        })
         .populate("paymentMethodId", "name")
         .sort({ createdAt: -1 })
         .skip(skip)

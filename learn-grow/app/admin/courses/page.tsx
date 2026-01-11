@@ -149,6 +149,15 @@ export default function ManageCoursesPage() {
     }
   };
 
+  const handleToggleFeature = async (courseId: string, isFeatured: boolean) => {
+    try {
+      await updateCourse({ id: courseId, isFeatured: !isFeatured }).unwrap();
+      toast.success(!isFeatured ? "Course marked as featured" : "Course removed from featured");
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Failed to update feature status");
+    }
+  };
+
   const handleToggleFeatured = async (courseId: string, isFeatured: boolean) => {
     try {
       await updateCourse({ id: courseId, isFeatured: !isFeatured }).unwrap();
@@ -459,29 +468,52 @@ export default function ManageCoursesPage() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-2 flex-wrap">
+                  <div className="flex gap-2 flex-wrap mb-2">
                     <Button
-                      size="md"
+                      size="sm"
                       color="primary"
                       variant="flat"
                       onPress={() => handleView(course)}
                       startContent={<FaEye />}
-                      className="flex-1 min-h-[44px] font-semibold"
+                      className="flex-1"
                     >
                       Details
                     </Button>
                     <Button
-                      size="md"
+                      size="sm"
                       color="default"
                       variant="flat"
                       onPress={() => router.push(`/admin/courses/edit?id=${course._id}`)}
                       startContent={<FaEdit />}
-                      className="flex-1 min-h-[44px] font-semibold"
+                      className="flex-1"
                     >
                       Edit
                     </Button>
                   </div>
-                  <div className="flex gap-2 mt-2 flex-wrap">
+                  
+                  {/* Publish & Feature Buttons */}
+                  <div className="flex gap-2 flex-wrap mb-2">
+                    <Button
+                      size="sm"
+                      color={course.isPublished ? "default" : "success"}
+                      variant="flat"
+                      onPress={() => handleTogglePublish(course._id, course.isPublished)}
+                      className="flex-1"
+                    >
+                      {course.isPublished ? "Unpublish" : "Publish"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      color={course.isFeatured ? "default" : "warning"}
+                      variant="flat"
+                      onPress={() => handleToggleFeature(course._id, course.isFeatured)}
+                      className="flex-1"
+                    >
+                      {course.isFeatured ? "Unfeature" : "Feature"}
+                    </Button>
+                  </div>
+                  
+                  <div className="flex gap-2 flex-wrap">
                     {!course.isAdminApproved ? (
                       <Button
                         size="sm"

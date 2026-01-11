@@ -18,6 +18,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { useCreateOrderMutation } from "@/redux/api/orderApi";
+import { useGetCommissionQuery } from "@/redux/api/settingsApi";
 
 interface CourseData {
   _id: string;
@@ -69,6 +70,13 @@ export default function CheckoutPage() {
   const planType = (searchParams.get("plan") || "single") as "single" | "quarterly" | "kit" | "school" | "combo";
   const comboId = searchParams.get("comboId") || "";
   const [createOrder] = useCreateOrderMutation();
+  const { data: settingsData } = useGetCommissionQuery();
+
+  const kitPriceSetting = Number(settingsData?.data?.kitPrice) || undefined;
+  const kitPriceEnv = process.env.NEXT_PUBLIC_KIT_PRICE ? Number(process.env.NEXT_PUBLIC_KIT_PRICE) : undefined;
+  const resolvedKitPrice = !Number.isNaN(kitPriceSetting as number) && kitPriceSetting !== undefined
+    ? kitPriceSetting
+    : (kitPriceEnv && !Number.isNaN(kitPriceEnv) ? kitPriceEnv : 4500);
 
   const [courseData, setCourseData] = useState<CourseData | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -92,15 +100,21 @@ export default function CheckoutPage() {
   const [existingComboOrder, setExistingComboOrder] = useState<any>(null);
 
   // Pricing based on plan type
-  const PLAN_PRICES = {
-    single: courseData?.price || 3500,
-    quarterly: 9999,
-    kit: 4500,
-    school: 0,
-    combo: 0,
-  };
-
-  const planPrice = PLAN_PRICES[planType];
+  const planPrice = React.useMemo(() => {
+    switch (planType) {
+      case "single":
+        return courseData?.price || 3500;
+      case "quarterly":
+        return 9999;
+      case "kit":
+        return resolvedKitPrice;
+      case "combo":
+        return courseData?.price || 0;
+      case "school":
+      default:
+        return 0;
+    }
+  }, [planType, courseData?.price, resolvedKitPrice]);
 
   const getAuthToken = () => {
     const cookieToken = Cookies.get("accessToken");
@@ -145,11 +159,12 @@ export default function CheckoutPage() {
             thumbnail: combo.thumbnail,
           });
         } else if (planType !== "single") {
-          // For non-single plans, create dummy course data
+          // For non-single plans, create dummy course data (kit uses dynamic price)
+          const fallbackPrice = planType === "kit" ? resolvedKitPrice : planType === "quarterly" ? 9999 : 0;
           setCourseData({
             _id: planType,
             title: planType === "quarterly" ? "ত্রৈমাসিক সাবস্ক্রিপশন - All Course Access" : planType === "kit" ? "Robotics Kit Only" : "School Partnership",
-            price: PLAN_PRICES[planType],
+            price: fallbackPrice,
             thumbnail: "/images/default-plan.jpg",
           });
         }
@@ -238,7 +253,7 @@ export default function CheckoutPage() {
     };
 
     fetchData();
-  }, [courseId, comboId, planType, router]);
+  }, [courseId, comboId, planType, router, resolvedKitPrice]);
 
   const handlePlaceOrder = async () => {
     if (!selectedPaymentMethod) {

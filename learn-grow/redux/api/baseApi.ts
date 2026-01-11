@@ -150,6 +150,7 @@ export const baseApi = createApi({
         "PaymentMethod",
         "Order",
         "Team",
+        "Roles",
         "Instructors",
         "JobApplication",
         "EmailHistory",

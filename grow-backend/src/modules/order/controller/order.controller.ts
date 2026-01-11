@@ -415,28 +415,61 @@ export const getUserPurchasedCourses = async (req: Request, res: Response) => {
 
     const now = new Date();
 
+    // Get single course purchases (active: not expired or lifetime)
     const singleCourses = await Order.find({
       userId,
       planType: "single",
       paymentStatus: "approved",
       isActive: true,
-      endDate: { $gte: now },
+      $or: [
+        { endDate: null }, // Lifetime access
+        { endDate: { $gte: now } } // Not expired
+      ]
     })
       .populate("courseId", "title thumbnail instructor duration")
       .select("courseId startDate endDate planType");
 
+    // Get combo purchases (active: not expired or lifetime)
+    const comboPurchases = await Order.find({
+      userId,
+      planType: "combo",
+      paymentStatus: "approved",
+      isActive: true,
+      $or: [
+        { endDate: null }, // Lifetime access
+        { endDate: { $gte: now } } // Not expired
+      ]
+    })
+      .populate({
+        path: "comboId",
+        populate: {
+          path: "courses",
+          select: "title thumbnail instructorId duration",
+          populate: {
+            path: "instructorId",
+            select: "name email"
+          }
+        }
+      })
+      .select("comboId startDate endDate planType");
+
+    // Get quarterly subscription (active: not expired or lifetime)
     const quarterlyOrder = await Order.findOne({
       userId,
       planType: "quarterly",
       paymentStatus: "approved",
       isActive: true,
-      endDate: { $gte: now },
+      $or: [
+        { endDate: null }, // Lifetime access
+        { endDate: { $gte: now } } // Not expired
+      ]
     });
 
     let allCourses: any[] = [];
     let totalCourses = 0;
 
     if (quarterlyOrder) {
+      // If user has quarterly access, show all published courses
       totalCourses = await Course.countDocuments({
         isPublished: true,
         isAdminApproved: true,
@@ -464,13 +497,47 @@ export const getUserPurchasedCourses = async (req: Request, res: Response) => {
         accessType: "quarterly",
       }));
     } else {
-      totalCourses = singleCourses.length;
-      const paginatedCourses = singleCourses.slice(skip, skip + limit);
-      allCourses = paginatedCourses.map(order => ({
-        course: order.courseId,
-        accessUntil: order.endDate,
-        accessType: "single",
-      }));
+      // Combine single and combo courses
+      const combinedCourses: any[] = [];
+
+      // Add single courses
+      singleCourses.forEach(order => {
+        if (order.courseId) {
+          combinedCourses.push({
+            course: order.courseId,
+            accessUntil: order.endDate,
+            accessType: "single",
+          });
+        }
+      });
+
+      // Add courses from combos with combo information
+      comboPurchases.forEach(order => {
+        if (order.comboId && (order.comboId as any).courses) {
+          const combo = order.comboId as any;
+          combo.courses.forEach((course: any) => {
+            combinedCourses.push({
+              course: {
+                _id: course._id,
+                title: course.title,
+                thumbnail: course.thumbnail,
+                instructor: course.instructorId,
+                duration: course.duration,
+              },
+              accessUntil: order.endDate,
+              accessType: "combo",
+              comboName: combo.name,
+              comboId: combo._id,
+            });
+          });
+        }
+      });
+
+      totalCourses = combinedCourses.length;
+      
+      // Paginate combined courses
+      const paginatedCourses = combinedCourses.slice(skip, skip + limit);
+      allCourses = paginatedCourses;
     }
 
     res.json({

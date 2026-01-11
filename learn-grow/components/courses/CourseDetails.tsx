@@ -86,14 +86,13 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
     const orders = ordersData?.orders || [];
     const now = new Date();
 
-    // Check for all-access subscription
+    // Check for all-access subscription (including lifetime)
     const hasAllAccess = isLoggedIn && orders.some(
         order =>
             order.planType === "quarterly" &&
             order.paymentStatus === "approved" &&
             order.isActive &&
-            order.endDate &&
-            new Date(order.endDate) > now
+            (order.endDate === null || (order.endDate && new Date(order.endDate) > now))
     );
 
     // Check for specific course purchase
@@ -102,10 +101,31 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
             order.planType === "single" &&
             order.paymentStatus === "approved" &&
             order.isActive &&
-            order.courseId?._id === courseId
+            order.courseId?._id === courseId &&
+            (order.endDate === null || (order.endDate && new Date(order.endDate) > now))
     );
 
-    const hasAccess = isLoggedIn && (hasAllAccess || hasPurchasedCourse || hasPaid || isEnrolled);
+    // Check if course is in any purchased combo/bundle
+    const hasComboAccess = isLoggedIn && orders.some(
+        order => {
+            if (order.planType === "combo" && 
+                order.paymentStatus === "approved" && 
+                order.isActive &&
+                (order.endDate === null || (order.endDate && new Date(order.endDate) > now)) &&
+                order.comboId) {
+                const combo = typeof order.comboId === "object" ? order.comboId : null;
+                if (combo && combo.courses && Array.isArray(combo.courses)) {
+                    return combo.courses.some((course: any) => {
+                        const cId = typeof course === "object" ? course._id : course;
+                        return cId?.toString() === courseId;
+                    });
+                }
+            }
+            return false;
+        }
+    );
+
+    const hasAccess = isLoggedIn && (hasAllAccess || hasPurchasedCourse || hasComboAccess || hasPaid || isEnrolled);
 
     // Pending approval states
     const hasPendingAllAccess = isLoggedIn && orders.some(
@@ -628,31 +648,74 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
 
                                     <Divider className="my-2" />
 
-                                    {/* Course Features - Responsive grid */}
+                                    {/* Course Features - Dynamic */}
                                     <div className="space-y-2 sm:space-y-3">
                                         <p className="font-semibold text-sm sm:text-base mb-2 sm:mb-3">
                                             Course Features:
                                         </p>
                                         <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
-                                            <li className="flex items-center gap-2 text-default-600">
-                                                <span className="text-success font-bold flex-shrink-0">✓</span>
-                                                <span className="leading-snug">3 month access</span>
-                                            </li>
+                                            {/* Duration */}
+                                            {course?.duration && (
+                                                <li className="flex items-center gap-2 text-default-600">
+                                                    <span className="text-success font-bold flex-shrink-0">✓</span>
+                                                    <span className="leading-snug">{course.duration} hours of content</span>
+                                                </li>
+                                            )}
+                                            
+                                            {/* Access Duration */}
+                                            {course?.accessDuration && (
+                                                <li className="flex items-center gap-2 text-default-600">
+                                                    <span className="text-success font-bold flex-shrink-0">✓</span>
+                                                    <span className="leading-snug">
+                                                        {course.accessDuration === "lifetime" 
+                                                            ? "♾️ Lifetime access" 
+                                                            : `${course.accessDuration} month${course.accessDuration === "1" ? "" : "s"} access`}
+                                                    </span>
+                                                </li>
+                                            )}
+                                            
+                                            {/* Certificate */}
                                             <li className="flex items-center gap-2 text-default-600">
                                                 <span className="text-success font-bold flex-shrink-0">✓</span>
                                                 <span className="leading-snug">Certificate of completion</span>
                                             </li>
+                                            
+                                            {/* Mobile Access */}
                                             <li className="flex items-center gap-2 text-default-600">
                                                 <span className="text-success font-bold flex-shrink-0">✓</span>
                                                 <span className="leading-snug">Access on mobile and TV</span>
                                             </li>
+                                            
+                                            {/* Course Type */}
+                                            {course?.type && (
+                                                <li className="flex items-center gap-2 text-default-600">
+                                                    <span className="text-success font-bold flex-shrink-0">✓</span>
+                                                    <span className="leading-snug">
+                                                        {course.type === "live" ? "Live class sessions" : "Pre-recorded video lessons"}
+                                                    </span>
+                                                </li>
+                                            )}
+                                            
+                                            {/* Modules Count */}
+                                            {modules && modules.length > 0 && (
+                                                <li className="flex items-center gap-2 text-default-600">
+                                                    <span className="text-success font-bold flex-shrink-0">✓</span>
+                                                    <span className="leading-snug">{modules.length} modules • {totalLessons} lessons</span>
+                                                </li>
+                                            )}
+                                            
+                                            {/* Language */}
+                                            {course?.language && (
+                                                <li className="flex items-center gap-2 text-default-600">
+                                                    <span className="text-success font-bold flex-shrink-0">✓</span>
+                                                    <span className="leading-snug">Taught in {course.language}</span>
+                                                </li>
+                                            )}
+                                            
+                                            {/* Assignments & Quizzes */}
                                             <li className="flex items-center gap-2 text-default-600">
                                                 <span className="text-success font-bold flex-shrink-0">✓</span>
                                                 <span className="leading-snug">Assignments & Quizzes</span>
-                                            </li>
-                                            <li className="flex items-center gap-2 text-default-600">
-                                                <span className="text-success font-bold flex-shrink-0">✓</span>
-                                                <span className="leading-snug">Live class sessions</span>
                                             </li>
                                         </ul>
                                     </div>

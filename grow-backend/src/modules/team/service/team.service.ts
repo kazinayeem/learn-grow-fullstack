@@ -5,7 +5,7 @@ class TeamService {
     // Get all team members
     async getAllTeamMembers() {
         try {
-            const members = await TeamMember.find().sort({ createdAt: -1 });
+            const members = await TeamMember.find().sort({ role: 1, position: 1 });
             return { success: true, data: members };
         } catch (error) {
             throw error;
@@ -15,7 +15,7 @@ class TeamService {
     // Get team members to display on home (showOnHome = true)
     async getHomeTeamMembers() {
         try {
-            const members = await TeamMember.find({ showOnHome: true }).sort({ createdAt: -1 });
+            const members = await TeamMember.find({ showOnHome: true }).sort({ role: 1, position: 1 });
             return { success: true, data: members };
         } catch (error) {
             throw error;
@@ -199,6 +199,41 @@ class TeamService {
                 .sort({ createdAt: -1 });
 
             return { success: true, data: instructors };
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // Reorder members within a role
+    async reorderMembers(memberOrders: { id: string; position: number }[]) {
+        try {
+            const updatePromises = memberOrders.map((order) =>
+                TeamMember.findByIdAndUpdate(order.id, { position: order.position }, { new: true })
+            );
+
+            await Promise.all(updatePromises);
+
+            const updatedMembers = await TeamMember.find().sort({ role: 1, position: 1 });
+            return { success: true, data: updatedMembers, message: "Members reordered successfully" };
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // Update member position
+    async updateMemberPosition(id: string, position: number) {
+        try {
+            const member = await TeamMember.findByIdAndUpdate(
+                id,
+                { position },
+                { new: true }
+            );
+
+            if (!member) {
+                return { success: false, message: "Team member not found" };
+            }
+
+            return { success: true, data: member, message: "Position updated successfully" };
         } catch (error) {
             throw error;
         }

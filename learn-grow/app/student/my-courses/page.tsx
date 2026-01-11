@@ -91,12 +91,12 @@ export default function MyCoursesPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                                     {safeCourses.map((item: any) => (
                                         <Card
-                                            key={item.course._id}
+                                            key={`${item.accessType}-${item.course._id}-${item.comboId || 'single'}`}
                                             className="hover:scale-[1.02] transition-all border border-transparent hover:border-primary"
                                         >
                                             <div 
                                                 className="relative aspect-video cursor-pointer"
-                                                onClick={() => router.push(`/courses/${item.course._id}`)}
+                                                onClick={() => router.push(`/student/course/${item.course._id}/dashboard`)}
                                             >
                                                 <img
                                                     src={item.course?.thumbnail || "/images/course-placeholder.jpg"}
@@ -104,8 +104,9 @@ export default function MyCoursesPage() {
                                                     className="object-cover w-full h-full"
                                                 />
                                                 <div className="absolute inset-0 bg-black/20 hover:bg-black/10 transition-colors" />
-                                                {item.accessType === "quarterly" && (
-                                                    <div className="absolute top-3 right-3 z-10">
+                                                {/* Access Type Badges */}
+                                                <div className="absolute top-3 right-3 z-10">
+                                                    {item.accessType === "quarterly" ? (
                                                         <Chip
                                                             startContent={<FaCrown className="text-xs" />}
                                                             size="sm"
@@ -113,13 +114,78 @@ export default function MyCoursesPage() {
                                                         >
                                                             All Access
                                                         </Chip>
-                                                    </div>
-                                                )}
+                                                    ) : item.accessType === "combo" ? (
+                                                        <Chip
+                                                            size="sm"
+                                                            color="secondary"
+                                                            variant="flat"
+                                                            className="font-bold"
+                                                        >
+                                                            🎁 Bundle
+                                                        </Chip>
+                                                    ) : (
+                                                        <Chip
+                                                            size="sm"
+                                                            color="primary"
+                                                            variant="flat"
+                                                            className="font-bold"
+                                                        >
+                                                            📚 Single
+                                                        </Chip>
+                                                    )}
+                                                </div>
                                             </div>
                                             <CardBody className="p-4">
-                                                <Chip size="sm" color="success" variant="flat" className="mb-2 w-fit">
-                                                    Enrolled
-                                                </Chip>
+                                                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                                    <Chip size="sm" color="success" variant="flat" className="w-fit">
+                                                        Enrolled
+                                                    </Chip>
+                                                    {/* Show bundle name if it's a combo purchase */}
+                                                    {item.accessType === "combo" && item.comboName && (
+                                                        <Chip 
+                                                            size="sm" 
+                                                            color="secondary" 
+                                                            variant="dot"
+                                                            className="w-fit"
+                                                        >
+                                                            {item.comboName}
+                                                        </Chip>
+                                                    )}
+                                                    {/* Show access duration */}
+                                                    {item.accessUntil === null ? (
+                                                        <Chip size="sm" color="warning" variant="flat" className="w-fit">
+                                                            ♾️ Lifetime
+                                                        </Chip>
+                                                    ) : item.accessUntil && (
+                                                        <Chip 
+                                                            size="sm" 
+                                                            color={(() => {
+                                                                const days = Math.ceil((new Date(item.accessUntil).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                                                                if (days > 30) return "success";
+                                                                if (days > 7) return "primary";
+                                                                if (days > 0) return "warning";
+                                                                return "danger";
+                                                            })()}
+                                                            variant="flat" 
+                                                            className="w-fit"
+                                                        >
+                                                            {(() => {
+                                                                const days = Math.ceil((new Date(item.accessUntil).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                                                                if (days > 0) {
+                                                                    if (days > 30) {
+                                                                        const months = Math.floor(days / 30);
+                                                                        const remainingDays = days % 30;
+                                                                        return months > 0 
+                                                                            ? `${months}mo ${remainingDays > 0 ? remainingDays + 'd' : ''} left`.trim()
+                                                                            : `${days} days left`;
+                                                                    }
+                                                                    return `${days} days left`;
+                                                                }
+                                                                return '⚠️ Expired';
+                                                            })()}
+                                                        </Chip>
+                                                    )}
+                                                </div>
                                                 <h3 className="font-bold text-lg mb-2 line-clamp-2">
                                                     {item.course.title}
                                                 </h3>

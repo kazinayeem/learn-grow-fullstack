@@ -676,10 +676,10 @@ export default function OrdersAdminPage() {
                         📋 Order Information
                       </h3>
                       <div className="space-y-2 text-sm">
-                        <p><span className="text-gray-600">Order ID:</span> <code className="ml-1 bg-white px-2 py-1 rounded text-xs">{selectedOrder._id.slice(-8)}</code></p>
-                        <p><span className="text-gray-600">Plan:</span> <Chip size="sm" color="primary" variant="flat" className="ml-1">{PLAN_LABELS[selectedOrder.planType]}</Chip></p>
-                        <p><span className="text-gray-600">Price:</span> <span className="ml-1 font-bold text-primary">৳{(selectedOrder.price || 0).toLocaleString()}</span></p>
-                        <p><span className="text-gray-600">Date:</span> <span className="ml-1">{new Date(selectedOrder.createdAt).toLocaleDateString()}</span> <span className="text-xs text-gray-500">({new Date(selectedOrder.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})</span></p>
+                        <div><span className="text-gray-600">Order ID:</span> <code className="ml-1 bg-white px-2 py-1 rounded text-xs">{selectedOrder._id.slice(-8)}</code></div>
+                        <div className="flex items-center gap-1"><span className="text-gray-600">Plan:</span> <Chip size="sm" color="primary" variant="flat" className="ml-1">{PLAN_LABELS[selectedOrder.planType]}</Chip></div>
+                        <div><span className="text-gray-600">Price:</span> <span className="ml-1 font-bold text-primary">৳{(selectedOrder.price || 0).toLocaleString()}</span></div>
+                        <div><span className="text-gray-600">Date:</span> <span className="ml-1">{new Date(selectedOrder.createdAt).toLocaleDateString()}</span> <span className="text-xs text-gray-500">({new Date(selectedOrder.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})</span></div>
                       </div>
                     </div>
 
@@ -717,6 +717,22 @@ export default function OrdersAdminPage() {
                         <p><span className="text-gray-600">Sender:</span> <span className="font-medium">{selectedOrder.senderNumber}</span></p>
                       </div>
                     </div>
+
+                    {/* Delivery Address - Show for Kit and Quarterly */}
+                    {selectedOrder.deliveryAddress && (selectedOrder.planType === "kit" || selectedOrder.planType === "quarterly") && (
+                      <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-lg border border-amber-200">
+                        <h3 className="font-semibold mb-3 text-sm flex items-center gap-2">
+                          📦 Delivery Address
+                        </h3>
+                        <div className="space-y-2 text-sm bg-white p-3 rounded">
+                          <p><span className="text-gray-600">Name:</span> <span className="ml-1 font-medium">{selectedOrder.deliveryAddress.name}</span></p>
+                          <p><span className="text-gray-600">Phone:</span> <span className="ml-1 font-medium">{selectedOrder.deliveryAddress.phone}</span></p>
+                          <p><span className="text-gray-600">Address:</span> <span className="ml-1 font-medium block mt-1">{selectedOrder.deliveryAddress.fullAddress}</span></p>
+                          <p><span className="text-gray-600">City:</span> <span className="ml-1 font-medium">{selectedOrder.deliveryAddress.city}</span></p>
+                          <p><span className="text-gray-600">Postal Code:</span> <span className="ml-1 font-medium">{selectedOrder.deliveryAddress.postalCode}</span></p>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Status */}
                     <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200">

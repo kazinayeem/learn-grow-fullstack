@@ -48,6 +48,26 @@ export const teamApi = baseApi.injectEndpoints({
             invalidatesTags: ["Team"],
         }),
 
+        // Reorder team members
+        reorderMembers: build.mutation({
+            query: (memberOrders: { id: string; position: number }[]) => ({
+                url: "/team/reorder",
+                method: "POST",
+                body: { memberOrders },
+            }),
+            invalidatesTags: ["Team"],
+        }),
+
+        // Update member position
+        updateMemberPosition: build.mutation({
+            query: ({ id, position }: { id: string; position: number }) => ({
+                url: `/team/${id}/position`,
+                method: "PATCH",
+                body: { position },
+            }),
+            invalidatesTags: (result, error, { id }) => [{ type: "Team", id }, "Team"],
+        }),
+
         // Get approved instructors for import
         getApprovedInstructorsForImport: build.query({
             query: () => ({ url: "/team/import/approved/instructors", method: "GET" }),
@@ -63,6 +83,51 @@ export const teamApi = baseApi.injectEndpoints({
             }),
             invalidatesTags: ["Team"],
         }),
+
+        // ===== ROLE MANAGEMENT =====
+        // Get all roles
+        getAllRoles: build.query({
+            query: () => ({ url: "/roles", method: "GET" }),
+            providesTags: ["Roles"],
+        }),
+
+        // Create role
+        createRole: build.mutation({
+            query: (data: { name: string }) => ({ url: "/roles", method: "POST", body: data }),
+            invalidatesTags: ["Roles"],
+        }),
+
+        // Update role
+        updateRole: build.mutation({
+            query: ({ id, ...data }: { id: string; name?: string }) => ({
+                url: `/roles/${id}`,
+                method: "PATCH",
+                body: data,
+            }),
+            invalidatesTags: ["Roles"],
+        }),
+
+        // Reorder roles
+        reorderRoles: build.mutation({
+            query: (roleOrders: { id: string; position: number }[]) => ({
+                url: "/roles/reorder",
+                method: "POST",
+                body: { roleOrders },
+            }),
+            invalidatesTags: ["Roles"],
+        }),
+
+        // Delete role
+        deleteRole: build.mutation({
+            query: (id: string) => ({ url: `/roles/${id}`, method: "DELETE" }),
+            invalidatesTags: ["Roles"],
+        }),
+
+        // Seed default roles
+        seedDefaultRoles: build.mutation({
+            query: () => ({ url: "/roles/seed", method: "POST" }),
+            invalidatesTags: ["Roles"],
+        }),
     }),
 });
 
@@ -74,6 +139,14 @@ export const {
     useUpdateTeamMemberMutation,
     useToggleShowHomeMutation,
     useDeleteTeamMemberMutation,
+    useReorderMembersMutation,
+    useUpdateMemberPositionMutation,
     useGetApprovedInstructorsForImportQuery,
     useImportInstructorsMutation,
+    useGetAllRolesQuery,
+    useCreateRoleMutation,
+    useUpdateRoleMutation,
+    useReorderRolesMutation,
+    useDeleteRoleMutation,
+    useSeedDefaultRolesMutation,
 } = teamApi;

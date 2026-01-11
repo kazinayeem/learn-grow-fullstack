@@ -40,9 +40,12 @@ import {
   FaTimes,
   FaTags,
   FaInfoCircle,
-  FaCalendarAlt
+  FaCalendarAlt,
+  FaClock
 } from "react-icons/fa";
 import { toast } from "react-toastify";
+
+const ACCESS_DURATIONS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "lifetime"];
 
 function EditCourseContent() {
   const router = useRouter();
@@ -74,6 +77,8 @@ function EditCourseContent() {
     category: "",
     thumbnail: "",
     type: "recorded",
+    duration: "",
+    accessDuration: "lifetime",
     isRegistrationOpen: false,
     registrationDeadline: "",
     isPublished: true,
@@ -93,6 +98,8 @@ function EditCourseContent() {
         category: categoryValue,
         thumbnail: course.thumbnail || "",
         type: course.type || "recorded",
+        duration: String(course.duration || ""),
+        accessDuration: course.accessDuration || "lifetime",
         isRegistrationOpen: !!course.isRegistrationOpen,
         registrationDeadline: course.registrationDeadline ? new Date(course.registrationDeadline).toISOString().split('T')[0] : "",
         isPublished: course.isPublished ?? true,
@@ -130,6 +137,7 @@ function EditCourseContent() {
       const payload = {
         id: courseId,
         ...formData,
+        duration: formData.duration ? parseInt(formData.duration) : undefined,
         price: Number(formData.price),
         registrationDeadline: formData.registrationDeadline || undefined,
       };
@@ -271,6 +279,34 @@ function EditCourseContent() {
                   startContent={<span className="text-gray-500 font-bold">৳</span>} // BDT Symbol
                 />
 
+                <Input
+                  type="number"
+                  label="Duration (hours)"
+                  name="duration"
+                  value={formData.duration}
+                  onChange={handleChange}
+                  variant="bordered"
+                  startContent={<FaClock className="text-gray-400" />}
+                />
+                <Select
+                  label="Access Duration"
+                  selectedKeys={new Set([formData.accessDuration])}
+                  onSelectionChange={(keys) => {
+                    const value = Array.from(keys)[0] as string;
+                    setFormData({ ...formData, accessDuration: value });
+                  }}
+                  variant="bordered"
+                  startContent={<FaCalendarAlt className="text-gray-400" />}
+                >
+                  {ACCESS_DURATIONS.map((duration) => (
+                    <SelectItem key={duration}>
+                      {duration === "lifetime" ? "♾️ Lifetime Access" : `${duration} Month${duration !== "1" ? "s" : ""}` }
+                    </SelectItem>
+                  ))}
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 mb-6">
                 <Select
                   label="Level"
                   selectedKeys={new Set([formData.level])}

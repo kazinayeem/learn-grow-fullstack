@@ -44,15 +44,14 @@ export default function AllLiveClassesPage() {
 
     // Filter classes based on student enrollment
     const accessibleClasses = useMemo(() => {
-        // Check if student has quarterly (premium) subscription
+        // Check if student has quarterly (premium) subscription or lifetime access
         const now = new Date();
         const hasQuarterly = orders.some(
             order =>
                 order.planType === "quarterly" &&
                 order.paymentStatus === "approved" &&
                 order.isActive &&
-                order.endDate &&
-                new Date(order.endDate) > now
+                (order.endDate === null || (order.endDate && new Date(order.endDate) > now))
         );
 
         if (hasQuarterly) {
@@ -67,7 +66,8 @@ export default function AllLiveClassesPage() {
                     order.planType === "single" &&
                     order.paymentStatus === "approved" &&
                     order.isActive &&
-                    order.courseId
+                    order.courseId &&
+                    (order.endDate === null || (order.endDate && new Date(order.endDate) > now))
             )
             .map(order => {
                 const id = typeof order.courseId === "object" && order.courseId ? order.courseId._id : order.courseId;
@@ -75,7 +75,31 @@ export default function AllLiveClassesPage() {
             })
             .filter(id => id != null);
 
-        if (enrolledCourseIds.length === 0) {
+        // Get course IDs from combo/bundle purchases
+        const comboCourseIds: string[] = [];
+        orders
+            .filter(
+                order =>
+                    order.planType === "combo" &&
+                    order.paymentStatus === "approved" &&
+                    order.isActive &&
+                    (order.endDate === null || (order.endDate && new Date(order.endDate) > now)) &&
+                    order.comboId
+            )
+            .forEach(order => {
+                const combo = typeof order.comboId === "object" ? order.comboId : null;
+                if (combo && combo.courses && Array.isArray(combo.courses)) {
+                    combo.courses.forEach((course: any) => {
+                        const courseId = typeof course === "object" ? course._id : course;
+                        if (courseId) comboCourseIds.push(courseId.toString());
+                    });
+                }
+            });
+
+        // Combine all enrolled course IDs (single + combo)
+        const allEnrolledCourseIds = [...enrolledCourseIds, ...comboCourseIds];
+
+        if (allEnrolledCourseIds.length === 0) {
             // No enrollment, show no classes
             return [];
         }
@@ -84,7 +108,7 @@ export default function AllLiveClassesPage() {
         return allClasses.filter((cls: any) => {
             if (!cls || !cls.courseId) return false;
             const courseId = typeof cls.courseId === "object" && cls.courseId ? cls.courseId._id : cls.courseId;
-            return courseId && enrolledCourseIds.includes(courseId);
+            return courseId && allEnrolledCourseIds.includes(courseId.toString());
         });
     }, [allClasses, orders]);
 

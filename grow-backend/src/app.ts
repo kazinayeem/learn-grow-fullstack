@@ -22,6 +22,7 @@ import eventRoutes from "./modules/event/routes/event.route.js";
 import paymentMethodRoutes from "./modules/payment/routes/payment-method.route.js";
 import orderRoutes from "./modules/order/routes/order.route.js";
 import teamRoutes from "./modules/team/routes/team.routes.js";
+import roleRoutes from "./modules/team/routes/role.routes.js";
 import googleRoutes from "./modules/user/routes/google.routes.js";
 import analyticsRoutes from "./modules/analytics/analytics.route.js";
 import ticketRoutes from "./modules/ticket/route/ticket.route.js";
@@ -164,6 +165,7 @@ export const createApp = () => {
   app.use("/api/payment-methods", paymentMethodRoutes);
   app.use("/api/orders", orderRoutes);
   app.use("/api/team", teamRoutes);
+  app.use("/api/roles", roleRoutes);
   app.use("/api/job", jobRoutes);
   app.use("/api/course", courseRoutes);
   app.use("/api/combo", comboRoutes);

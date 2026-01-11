@@ -21,7 +21,8 @@ import {
   FaPaperPlane,
   FaShieldAlt,
   FaWallet,
-  FaGlobe
+  FaGlobe,
+  FaBoxOpen
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 
@@ -30,6 +31,7 @@ export default function AdminSettingsPage() {
   const { data, isLoading, refetch } = useGetCommissionQuery();
   const [updateCommission, { isLoading: saving }] = useUpdateCommissionMutation();
   const [commission, setCommission] = useState<number>(20);
+  const [kitPrice, setKitPrice] = useState<number>(4500);
   const payout = Math.max(0, 100 - (Number.isFinite(commission) ? commission : 0));
 
   // SMTP state
@@ -53,6 +55,9 @@ export default function AdminSettingsPage() {
     if (data?.data?.platformCommissionPercent != null) {
       setCommission(data.data.platformCommissionPercent);
     }
+    if (data?.data?.kitPrice != null) {
+      setKitPrice(Number(data.data.kitPrice));
+    }
   }, [data]);
 
   useEffect(() => {
@@ -73,7 +78,7 @@ export default function AdminSettingsPage() {
 
   const handleSave = async () => {
     try {
-      await updateCommission({ platformCommissionPercent: Number(commission) || 0 }).unwrap();
+      await updateCommission({ platformCommissionPercent: Number(commission) || 0, kitPrice: Number(kitPrice) || 0 }).unwrap();
       await refetch();
       toast.success("Commission settings updated successfully");
     } catch (error: any) {
@@ -230,6 +235,20 @@ export default function AdminSettingsPage() {
                       startContent={<FaWallet className="text-green-600" />}
                       classNames={{
                         inputWrapper: "bg-green-50 border-2 border-green-200"
+                      }}
+                    />
+                    <Input
+                      type="number"
+                      label="Robotics Kit Price (BDT)"
+                      value={String(kitPrice)}
+                      onChange={(e) => setKitPrice(Math.max(0, Number(e.target.value)))}
+                      variant="bordered"
+                      size="lg"
+                      startContent={<FaBoxOpen className="text-gray-400" />}
+                      className="sm:col-span-2"
+                      description="Used for kit-only orders and displayed on pricing"
+                      classNames={{
+                        inputWrapper: "border-2 border-gray-200 hover:border-blue-500 focus-within:border-blue-600"
                       }}
                     />
                   </div>

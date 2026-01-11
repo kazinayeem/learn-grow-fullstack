@@ -55,4 +55,8 @@ router.post(
 // Get approved instructors for import preview
 router.get("/import/approved/instructors", requireAuth, requireRoles("admin"), teamController.getApprovedInstructors);
 
+// Position management routes
+router.post("/reorder", requireAuth, requireRoles("admin"), teamController.reorderMembers);
+router.patch("/:id/position", requireAuth, requireRoles("admin"), teamController.updateMemberPosition);
+
 export default router;

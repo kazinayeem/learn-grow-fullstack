@@ -4,8 +4,6 @@ import React from "react";
 import {
   Card,
   CardBody,
-  CardHeader,
-  CardFooter,
   Button,
   Badge,
   Image,
@@ -14,9 +12,10 @@ import {
   Alert,
 } from "@nextui-org/react";
 import Link from "next/link";
+import NextImage from "next/image";
 import { useRouter } from "next/navigation";
 import { useGetComboByIdQuery, useGetUserComboPurchasesQuery } from "@/redux/api/comboApi";
-import { getDurationLabel, formatDate } from "@/lib/access-control";
+import { getDurationLabel } from "@/lib/access-control";
 import { ICombo, IComboOrder } from "@/types/combo.types";
 
 interface ComboDetailsProps {
@@ -31,6 +30,7 @@ export default function ComboDetails({ comboId }: ComboDetailsProps) {
   const safeComboId = (comboId || "").split("?")[0];
   const combo = (comboData as any)?.data || (comboData as any)?.combo || (comboData as any);
   const purchases = purchasesData?.data || [];
+  const courses = combo?.courses || [];
 
   // Check if user already purchased this combo
   const hasPurchased = purchases.some(
@@ -58,17 +58,15 @@ export default function ComboDetails({ comboId }: ComboDetailsProps) {
 
   const primaryPrice = combo.discountPrice || combo.price;
   const savings = combo.discountPrice ? combo.price - combo.discountPrice : 0;
+  const instructorData = (combo as any)?.instructor || {};
   const instructor = {
-    name: "Lead Instructor",
-    title: "Senior Software Engineer",
-    experience: "8+ years",
-    bio: "Built and scaled production systems, mentoring 2k+ students across web and backend tracks.",
-    coursesTaught: combo.courses?.length || 0,
-    avatar: combo.thumbnail || "/logo.png",
-    socials: [
-      { label: "LinkedIn", href: "#" },
-      { label: "GitHub", href: "#" },
-    ],
+    name: combo.instructorName || instructorData.name || "",
+    title: instructorData.title || "",
+    experience: instructorData.experience || "",
+    bio: instructorData.bio || "",
+    coursesTaught: courses.length || 0,
+    avatar: instructorData.avatar || combo.thumbnail || "/logo.png",
+    socials: Array.isArray(instructorData.socials) ? instructorData.socials : [],
   };
 
   const learnings = [
@@ -87,14 +85,19 @@ export default function ComboDetails({ comboId }: ComboDetailsProps) {
       )}
 
       {/* Hero */}
-      <div className="relative w-full overflow-hidden rounded-2xl bg-default-100 mb-8">
-        <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/35 to-transparent" />
-        <Image
-          src={combo.thumbnail || "/logo.png"}
-          alt={combo.name}
-          className="w-full h-[320px] md:h-[400px] object-cover"
-        />
-        <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8 gap-3 text-white">
+      <div className="relative w-full overflow-hidden rounded-2xl bg-default-100 mb-8 min-h-[320px] md:min-h-[420px]">
+        <div className="absolute inset-0">
+          <NextImage
+            src={combo.thumbnail || "/logo.png"}
+            alt={combo.name}
+            fill
+            priority
+            sizes="(max-width: 768px) 100vw, 1000px"
+            className="object-cover"
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/10" />
+        <div className="relative z-10 inset-0 flex flex-col justify-end p-6 md:p-8 gap-3 text-white">
           <Badge color="success" variant="solid" className="w-fit">
             {combo.duration === "lifetime" ? "Lifetime Access" : `${getDurationLabel(combo.duration)}`}
           </Badge>
@@ -107,7 +110,7 @@ export default function ComboDetails({ comboId }: ComboDetailsProps) {
             </p>
           )}
           <div className="flex flex-wrap items-center gap-3 text-sm">
-            <Badge color="primary" variant="flat">📚 Includes {combo.courses.length} Courses</Badge>
+            <Badge color="primary" variant="flat">📚 Includes {courses.length} Courses</Badge>
             <Badge color="secondary" variant="flat">💼 Career-focused outcomes</Badge>
           </div>
           <div className="flex flex-wrap items-center gap-3 mt-2">
@@ -167,11 +170,11 @@ export default function ComboDetails({ comboId }: ComboDetailsProps) {
                   <h2 className="text-xl font-bold text-foreground">Included Courses</h2>
                   <p className="text-sm text-default-500">Access applies to these courses only.</p>
                 </div>
-                <Badge color="primary" variant="flat">{combo.courses.length} courses</Badge>
+                <Badge color="primary" variant="flat">{courses.length} courses</Badge>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {combo.courses.map((course: any, idx: number) => (
+                {courses.map((course: any, idx: number) => (
                   <Card key={idx} shadow="sm" className="border border-default-200 hover:shadow-md transition">
                     <CardBody className="space-y-3 p-4">
                       <div className="relative w-full h-32 rounded-lg overflow-hidden">
@@ -179,6 +182,7 @@ export default function ComboDetails({ comboId }: ComboDetailsProps) {
                           src={course.thumbnail || "/logo.png"}
                           alt={course.title}
                           className="w-full h-full object-cover"
+                          fallbackSrc="/logo.png"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                         <div className="absolute bottom-2 left-2">
@@ -187,13 +191,9 @@ export default function ComboDetails({ comboId }: ComboDetailsProps) {
                       </div>
                       <div className="space-y-1">
                         <h3 className="text-sm font-semibold text-foreground line-clamp-2">{course.title}</h3>
-                        <p className="text-xs text-default-500 line-clamp-2">{course.description || "Build skills step by step."}</p>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-default-600">
                         {course.level && <Badge size="sm" variant="flat">{course.level}</Badge>}
-                        {course.rating && (
-                          <Badge size="sm" color="warning" variant="flat">⭐ {course.rating}/5</Badge>
-                        )}
                       </div>
                       <Button
                         as={Link}
@@ -213,30 +213,34 @@ export default function ComboDetails({ comboId }: ComboDetailsProps) {
           </Card>
 
           {/* Instructor */}
-          <Card shadow="sm" className="border border-default-200">
-            <CardBody className="space-y-4">
-              <h2 className="text-xl font-bold text-foreground">Meet your instructor</h2>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="w-20 h-20 rounded-full overflow-hidden border border-default-200 bg-default-100">
-                  <Image src={instructor.avatar} alt={instructor.name} className="w-full h-full object-cover" />
-                </div>
-                <div className="flex-1 space-y-1">
-                  <p className="font-semibold text-foreground">{instructor.name}</p>
-                  <p className="text-sm text-default-500">{instructor.title}</p>
-                  <p className="text-sm text-default-500">Experience: {instructor.experience}</p>
-                  <p className="text-sm text-default-600 leading-relaxed">{instructor.bio}</p>
-                  <p className="text-xs text-default-500">Courses taught: {instructor.coursesTaught}</p>
-                  <div className="flex gap-3 text-xs text-primary-600">
-                    {instructor.socials.map((s, i) => (
-                      <Link key={i} href={s.href} className="hover:underline">
-                        {s.label}
-                      </Link>
-                    ))}
+          {(instructor.name || instructor.title || instructor.bio || instructor.experience) && (
+            <Card shadow="sm" className="border border-default-200">
+              <CardBody className="space-y-4">
+                <h2 className="text-xl font-bold text-foreground">Meet your instructor</h2>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="w-20 h-20 rounded-full overflow-hidden border border-default-200 bg-default-100">
+                    <Image src={instructor.avatar} alt={instructor.name || "Instructor avatar"} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    {instructor.name && <p className="font-semibold text-foreground">{instructor.name}</p>}
+                    {instructor.title && <p className="text-sm text-default-500">{instructor.title}</p>}
+                    {instructor.experience && <p className="text-sm text-default-500">Experience: {instructor.experience}</p>}
+                    {instructor.bio && <p className="text-sm text-default-600 leading-relaxed">{instructor.bio}</p>}
+                    <p className="text-xs text-default-500">Courses taught: {instructor.coursesTaught}</p>
+                    {instructor.socials.length > 0 && (
+                      <div className="flex gap-3 text-xs text-primary-600">
+                        {instructor.socials.map((s, i) => (
+                          <Link key={i} href={s.href} className="hover:underline">
+                            {s.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            </CardBody>
-          </Card>
+              </CardBody>
+            </Card>
+          )}
 
           {/* Value & Trust */}
           <Card shadow="sm" className="border border-default-200">
@@ -279,7 +283,7 @@ export default function ComboDetails({ comboId }: ComboDetailsProps) {
               </div>
               <div className="flex flex-wrap gap-2 text-sm">
                 <Badge color="success" variant="flat">{combo.duration === "lifetime" ? "Lifetime Access" : getDurationLabel(combo.duration)}</Badge>
-                <Badge color="primary" variant="flat">📚 {combo.courses.length} courses</Badge>
+                <Badge color="primary" variant="flat">📚 {courses.length} courses</Badge>
               </div>
 
               <Button

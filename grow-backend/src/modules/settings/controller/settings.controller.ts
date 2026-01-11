@@ -12,8 +12,8 @@ export const getCommission = async (_req: Request, res: Response) => {
 
 export const updateCommission = async (req: Request, res: Response) => {
   try {
-    const { platformCommissionPercent } = req.body as { platformCommissionPercent: number };
-    const result = await service.updateCommission(Number(platformCommissionPercent));
+    const { platformCommissionPercent, kitPrice } = req.body as { platformCommissionPercent: number; kitPrice?: number };
+    const result = await service.updateCommission(Number(platformCommissionPercent), kitPrice !== undefined ? Number(kitPrice) : undefined);
     return res.status(result.success ? 200 : 400).json(result);
   } catch (error: any) {
     return res.status(500).json({ success: false, message: error.message || "Failed to update commission" });

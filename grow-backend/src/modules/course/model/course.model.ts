@@ -11,6 +11,7 @@ export interface ICourse {
   level: "Beginner" | "Intermediate" | "Advanced";
   language: string;
   duration: number;
+  accessDuration?: string; // Access duration for course (e.g., "1", "2", "3", "lifetime")
   rating?: number;
   ratingsCount?: number;
   studentsEnrolled?: number;
@@ -74,6 +75,10 @@ const courseSchema = new Schema<ICourse>(
       type: Number,
       required: true,
       min: 0,
+    },
+    accessDuration: {
+      type: String,
+      default: "lifetime",
     },
     rating: {
       type: Number,

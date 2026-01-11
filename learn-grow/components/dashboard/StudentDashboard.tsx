@@ -237,9 +237,9 @@ export default function StudentDashboard() {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                                             {displayedCourses.map((item: any) => (
                                                 <Card
-                                                    key={item?.course?._id}
+                                                    key={`${item?.accessType}-${item?.course?._id}-${item?.comboId || 'single'}`}
                                                     isPressable
-                                                    onPress={() => router.push(`/courses/${item?.course?._id}`)}
+                                                    onPress={() => router.push(`/student/course/${item?.course?._id}/dashboard`)}
                                                     className="hover:scale-[1.02] transition-all border border-divider hover:border-primary"
                                                 >
                                                     <div className="relative aspect-video">
@@ -249,23 +249,71 @@ export default function StudentDashboard() {
                                                             className="object-cover w-full h-full"
                                                         />
                                                         <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+                                                        {/* Access Type Badge */}
+                                                        <div className="absolute top-2 right-2">
+                                                            {item?.accessType === "combo" ? (
+                                                                <Chip 
+                                                                    size="sm" 
+                                                                    color="secondary" 
+                                                                    variant="flat"
+                                                                    className="text-xs font-semibold"
+                                                                >
+                                                                    🎁 Bundle
+                                                                </Chip>
+                                                            ) : item?.accessType === "quarterly" ? (
+                                                                <Chip 
+                                                                    size="sm" 
+                                                                    color="success" 
+                                                                    variant="flat"
+                                                                    className="text-xs font-semibold"
+                                                                >
+                                                                    ⭐ All Access
+                                                                </Chip>
+                                                            ) : (
+                                                                <Chip 
+                                                                    size="sm" 
+                                                                    color="primary" 
+                                                                    variant="flat"
+                                                                    className="text-xs font-semibold"
+                                                                >
+                                                                    📚 Single
+                                                                </Chip>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <CardBody className="p-4">
-                                                        <div className="flex items-center justify-between gap-3">
-                                                            <div className="flex-1 min-w-0">
-                                                                <h3 className="font-semibold text-base truncate mb-1">
-                                                                    {item?.course?.title}
-                                                                </h3>
-                                                                <div className="flex items-center gap-2 text-xs text-default-500">
-                                                                    <span>📚 {item?.course?.level || "Beginner"}</span>
-                                                                    <span>•</span>
-                                                                    <span className="truncate">
-                                                                        {item?.course?.instructor?.name || "Instructor"}
-                                                                    </span>
+                                                        <div className="space-y-2">
+                                                            {/* Bundle Name - If from combo */}
+                                                            {item?.accessType === "combo" && item?.comboName && (
+                                                                <div className="flex items-center gap-1.5 mb-1">
+                                                                    <Chip 
+                                                                        size="sm" 
+                                                                        color="secondary" 
+                                                                        variant="dot"
+                                                                        className="text-xs"
+                                                                    >
+                                                                        {item.comboName}
+                                                                    </Chip>
                                                                 </div>
-                                                            </div>
-                                                            <div className="text-primary text-xl">
-                                                                <FaRocket />
+                                                            )}
+                                                            
+                                                            {/* Course Title & Info */}
+                                                            <div className="flex items-center justify-between gap-3">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <h3 className="font-semibold text-base truncate mb-1">
+                                                                        {item?.course?.title}
+                                                                    </h3>
+                                                                    <div className="flex items-center gap-2 text-xs text-default-500">
+                                                                        <span>📚 {item?.course?.level || "Beginner"}</span>
+                                                                        <span>•</span>
+                                                                        <span className="truncate">
+                                                                            {item?.course?.instructor?.name || "Instructor"}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-primary text-xl">
+                                                                    <FaRocket />
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </CardBody>
@@ -398,7 +446,11 @@ export default function StudentDashboard() {
                                                                 ? order.courseId.title
                                                                 : order.planType === "quarterly"
                                                                     ? "Quarterly All Access"
-                                                                    : "Robotics Kit"}
+                                                                    : order.planType === "combo" && order.comboId
+                                                                        ? `🎁 ${order.comboId.name || "Course Bundle"}`
+                                                                        : order.planType === "kit"
+                                                                            ? "Robotics Kit"
+                                                                            : "Order"}
                                                         </p>
                                                         <p className="text-xs text-gray-500">
                                                             {new Date(order.createdAt).toLocaleDateString()}
@@ -428,25 +480,7 @@ export default function StudentDashboard() {
                             </CardBody>
                         </Card>
 
-                        {/* Call to Action */}
-                        {!hasAllAccess && purchasedCourses.length > 0 && (
-                            <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200">
-                                <CardBody className="text-center p-6">
-                                    <div className="text-4xl mb-3">🚀</div>
-                                    <h4 className="font-bold text-lg mb-2">Upgrade to Premium!</h4>
-                                    <p className="text-sm text-gray-600 mb-4">
-                                        Get unlimited access to ALL courses for only ৳9,999
-                                    </p>
-                                    <Button
-                                        color="secondary"
-                                        className="w-full"
-                                        onPress={() => router.push("/checkout?plan=quarterly")}
-                                    >
-                                        Upgrade Now
-                                    </Button>
-                                </CardBody>
-                            </Card>
-                        )}
+
                     </div>
                 </div>
             </div>

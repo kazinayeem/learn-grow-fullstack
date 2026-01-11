@@ -391,51 +391,6 @@ export default function AdminStudentDetailPage() {
 
         {/* Right Column - Activity & Progress */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="border-l-4 border-blue-500">
-              <CardBody className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-100 p-3 rounded-lg">
-                    <FaBook className="text-xl text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Enrolled Courses</p>
-                    <p className="text-2xl font-bold">0</p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-
-            <Card className="border-l-4 border-green-500">
-              <CardBody className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-green-100 p-3 rounded-lg">
-                    <FaCheckCircle className="text-xl text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Completed</p>
-                    <p className="text-2xl font-bold">0</p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-
-            <Card className="border-l-4 border-orange-500">
-              <CardBody className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-orange-100 p-3 rounded-lg">
-                    <FaClock className="text-xl text-orange-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">In Progress</p>
-                    <p className="text-2xl font-bold">0</p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-          </div>
-
           {/* Orders/Purchases */}
           <Card>
           <CardHeader>
@@ -458,31 +413,42 @@ export default function AdminStudentDetailPage() {
                     >
                       <div className="flex items-start gap-3 flex-1">
                         <div className={`p-3 rounded-lg flex-shrink-0 ${
-                          order.planType === "quarterly" 
-                            ? "bg-green-100" 
-                            : order.planType === "kit" 
-                            ? "bg-amber-100" 
+                          order.planType === "quarterly"
+                            ? "bg-green-100"
+                            : order.planType === "kit"
+                            ? "bg-amber-100"
+                            : order.planType === "combo"
+                            ? "bg-purple-100"
                             : "bg-blue-100"
                         }`}>
                           {order.planType === "quarterly" ? (
                             <FaCrown className="text-green-600 text-lg" />
                           ) : order.planType === "kit" ? (
                             <FaBox className="text-amber-600 text-lg" />
+                          ) : order.planType === "combo" ? (
+                            <FaBox className="text-purple-600 text-lg" />
                           ) : (
                             <FaBook className="text-blue-600 text-lg" />
                           )}
                         </div>
                         <div className="flex-1">
                           <p className="font-semibold text-gray-900">
-                            {order.planType === "quarterly" 
-                              ? "Quarterly Subscription - Full Access" 
-                              : order.planType === "kit" 
-                              ? "Robotics Kit Only" 
+                            {order.planType === "quarterly"
+                              ? "Quarterly Subscription - Full Access"
+                              : order.planType === "kit"
+                              ? "Robotics Kit Only"
+                              : order.planType === "combo"
+                              ? order.comboId?.name || "Bundle Purchase"
                               : order.courseId?.title || "Course Purchase"}
                           </p>
                           {order.planType === "single" && order.courseId && (
                             <p className="text-xs text-blue-600 mt-1">
                               Course: {order.courseId.title}
+                            </p>
+                          )}
+                          {order.planType === "combo" && order.comboId?.courses?.length > 0 && (
+                            <p className="text-xs text-purple-600 mt-1">
+                              Includes: {order.comboId.courses.length} courses
                             </p>
                           )}
                           <p className="text-sm text-gray-600">
@@ -521,17 +487,13 @@ export default function AdminStudentDetailPage() {
                             }
                             variant="flat"
                             className="mt-2"
+                            startContent={order.paymentStatus === "approved" ? <FaCheckDouble className="text-xs" /> : null}
                           >
-                            {order.paymentStatus === "approved" ? (
-                              <div className="flex items-center gap-1">
-                                <FaCheckDouble className="text-xs" />
-                                <span>Approved</span>
-                              </div>
-                            ) : order.paymentStatus === "rejected" ? (
-                              "Rejected"
-                            ) : (
-                              "Pending"
-                            )}
+                            {order.paymentStatus === "approved" 
+                              ? "Approved"
+                              : order.paymentStatus === "rejected" 
+                              ? "Rejected"
+                              : "Pending"}
                           </Chip>
                         </div>
                       </div>

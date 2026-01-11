@@ -33,13 +33,12 @@ export default function StudentLiveClasses() {
         const courseIds = new Set<string>();
 
         orders.forEach((order: any) => {
-            // Check quarterly all access
+            // Check quarterly all access (including lifetime)
             if (
                 order.planType === "quarterly" &&
                 order.paymentStatus === "approved" &&
                 order.isActive &&
-                order.endDate &&
-                new Date(order.endDate) > now
+                (order.endDate === null || (order.endDate && new Date(order.endDate) > now))
             ) {
                 // Has all access - will be handled separately
                 return;
@@ -50,10 +49,28 @@ export default function StudentLiveClasses() {
                 order.planType === "single" &&
                 order.paymentStatus === "approved" &&
                 order.isActive &&
-                order.courseId
+                order.courseId &&
+                (order.endDate === null || (order.endDate && new Date(order.endDate) > now))
             ) {
                 const courseId = typeof order.courseId === "object" ? order.courseId._id : order.courseId;
                 courseIds.add(courseId);
+            }
+
+            // Check combo/bundle purchases
+            if (
+                order.planType === "combo" &&
+                order.paymentStatus === "approved" &&
+                order.isActive &&
+                order.comboId &&
+                (order.endDate === null || (order.endDate && new Date(order.endDate) > now))
+            ) {
+                const combo = typeof order.comboId === "object" ? order.comboId : null;
+                if (combo && combo.courses && Array.isArray(combo.courses)) {
+                    combo.courses.forEach((course: any) => {
+                        const courseId = typeof course === "object" ? course._id : course;
+                        if (courseId) courseIds.add(courseId.toString());
+                    });
+                }
             }
         });
 
@@ -68,8 +85,7 @@ export default function StudentLiveClasses() {
                 order.planType === "quarterly" &&
                 order.paymentStatus === "approved" &&
                 order.isActive &&
-                order.endDate &&
-                new Date(order.endDate) > now
+                (order.endDate === null || (order.endDate && new Date(order.endDate) > now))
         );
     }, [orders]);
 

@@ -118,6 +118,9 @@ export class LiveClassService {
       userId: new Types.ObjectId(options.studentId),
       paymentStatus: "approved",
       isActive: true,
+    }).populate({
+      path: "comboId",
+      select: "courses",
     });
 
     console.log(`[getAllLiveClasses] Found ${orders.length} approved orders`);
@@ -126,6 +129,16 @@ export class LiveClassService {
     const enrolledCourseIds = orders
       .filter((order) => order.planType === "single" && order.courseId)
       .map((order) => order.courseId);
+
+    // Get course IDs from combo purchases
+    orders
+      .filter((order) => order.planType === "combo" && order.comboId)
+      .forEach((order) => {
+        const combo = order.comboId as any;
+        if (combo && combo.courses && Array.isArray(combo.courses)) {
+          enrolledCourseIds.push(...combo.courses);
+        }
+      });
 
     // Check if student has quarterly subscription (access to all courses)
     const hasQuarterly = orders.some((order) => order.planType === "quarterly");

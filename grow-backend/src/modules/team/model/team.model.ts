@@ -10,6 +10,7 @@ interface ITeamMember extends Document {
     bio?: string;
     showOnHome: boolean; // Toggle for home page display
     userId?: string; // Reference to User if imported from instructors
+    position: number; // Position within the role for ordering
     createdAt: Date;
     updatedAt: Date;
 }
@@ -56,11 +57,18 @@ const TeamMemberSchema = new Schema<ITeamMember>(
             type: String,
             default: null,
         },
+        position: {
+            type: Number,
+            default: 0,
+        },
     },
     {
         timestamps: true,
     }
 );
+
+// Create compound index for efficient sorting by role and position
+TeamMemberSchema.index({ role: 1, position: 1 });
 
 const TeamMember = mongoose.model<ITeamMember>("TeamMember", TeamMemberSchema);
 

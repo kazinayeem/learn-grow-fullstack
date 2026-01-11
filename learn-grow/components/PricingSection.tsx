@@ -12,20 +12,31 @@ import {
 import { useRouter } from "next/navigation";
 
 import { pricingPlans } from "@/lib/platformData";
+import { useGetActiveCombosQuery } from "@/redux/api/comboApi";
+import { useGetCommissionQuery } from "@/redux/api/settingsApi";
 
 const PricingSection = () => {
   const router = useRouter();
   const [language] = useState<'en' | 'bn'>('bn');
   const pricing = pricingPlans[language];
+  const { data: combosData } = useGetActiveCombosQuery({ page: 1, limit: 1 });
+  const firstCombo = combosData?.data?.[0];
+  const { data: settingsData } = useGetCommissionQuery();
+  const kitPriceSetting = settingsData?.data?.kitPrice;
+
+  // Optional kit price override from env / admin config (fallback to static)
+  const kitPriceEnv = process.env.NEXT_PUBLIC_KIT_PRICE;
 
   // Map plan IDs to their target routes
-  const getPlanRoute = (planId: string) => {
+  const getPlanRoute = (planId: string, comboId?: string) => {
     switch (planId) {
       case "single-course":
         // Single course needs course selection first
         return "/courses";
       case "quarterly":
         return "/checkout?plan=quarterly";
+      case "combo":
+        return comboId ? `/bundle/${comboId}` : "/bundle";
       case "robotics-kit":
         return "/checkout?plan=kit";
       case "school":
@@ -35,10 +46,62 @@ const PricingSection = () => {
     }
   };
 
-  const handleCtaClick = (planId: string) => {
-    const target = getPlanRoute(planId);
+  const handleCtaClick = (planId: string, comboId?: string) => {
+    const target = getPlanRoute(planId, comboId);
     router.push(target);
   };
+
+  const singleCoursePlan = pricing.plans.find((p) => p.id === "single-course");
+
+  // Build plan list: show single-course without price, inject combo, adjust kit price
+  const basePlans = pricing.plans.filter((p) => p.id !== "single-course");
+
+  const transformedBasePlans = basePlans.map((plan) => {
+    if (plan.id === "quarterly" && firstCombo) {
+      return {
+        ...plan,
+        id: "combo",
+        name: firstCombo.name,
+        price: String(firstCombo.discountPrice || firstCombo.price || ""),
+        currency: language === "bn" ? "টাকা" : "BDT",
+        period: language === "bn" ? "বান্ডেল" : "bundle",
+        description: firstCombo.description || plan.description,
+        features: [
+          `${language === "bn" ? "কোর্স সংখ্যা" : "Courses"}: ${firstCombo.courses?.length || 0}`,
+          language === "bn" ? "লাইভ ও রেকর্ডেড ক্লাস" : "Live & recorded access",
+          language === "bn" ? "বান্ডেল ডিসকাউন্ট" : "Bundle discount",
+          language === "bn" ? "সার্টিফিকেট ও কমিউনিটি" : "Certificates & community",
+        ],
+        popular: true,
+        comboId: firstCombo._id,
+        cta: language === "bn" ? "বান্ডেল দেখুন" : "View Bundle",
+      } as any;
+    }
+
+    if (plan.id === "robotics-kit") {
+      const price = String(kitPriceSetting ?? kitPriceEnv ?? plan.price ?? "");
+      return {
+        ...plan,
+        price,
+      };
+    }
+
+      return plan;
+    });
+
+  const plans = [
+    singleCoursePlan
+      ? {
+          ...singleCoursePlan,
+          price: "", // hide price; course pages show pricing
+          currency: "",
+          period:
+            language === "bn" ? "কোর্স অনুযায়ী মূল্য" : "See course page",
+          cta: language === "bn" ? "কোর্স দেখুন" : "Browse Courses",
+        }
+      : null,
+    ...transformedBasePlans,
+  ].filter(Boolean) as typeof pricing.plans;
 
   return (
     <section className="pt-0 pb-10 bg-gradient-to-b from-white via-primary-50/30 to-white relative overflow-hidden">
@@ -74,7 +137,7 @@ const PricingSection = () => {
 
         {/* Pricing Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-12">
-          {pricing.plans.map((plan, index) => (
+          {plans.map((plan, index) => (
             <Card
               key={plan.id}
               className={`group transition-all duration-300 animate-slideUp overflow-visible ${plan.popular
@@ -110,39 +173,48 @@ const PricingSection = () => {
                   {plan.description}
                 </p>
 
-                {/* Pricing */}
-                <div className="w-full mb-4">
-                  {plan.price === "Custom" || plan.price === "কাস্টম" ? (
-                    <div>
-                      <div className="text-4xl font-black bg-gradient-cool bg-clip-text text-transparent">
-                        {plan.price}
-                      </div>
-                      <div
-                        className={`text-sm text-gray-500 ${language === "bn" ? "font-siliguri" : ""}`}
-                      >
-                        {plan.period}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap items-baseline gap-1">
-                      <span
-                        className={`text-2xl font-bold text-gray-600 ${language === "bn" ? "font-siliguri" : ""}`}
-                      >
-                        {plan.currency}
-                      </span>
-                      <span
-                        className={`text-5xl font-black bg-gradient-primary bg-clip-text text-transparent ${language === "bn" ? "font-siliguri" : ""}`}
-                      >
-                        {plan.price}
-                      </span>
-                      <span
-                        className={`text-sm text-gray-500 ml-1 whitespace-nowrap ${language === "bn" ? "font-siliguri" : ""}`}
-                      >
-                        /{plan.period}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                 {/* Pricing */}
+                 <div className="w-full mb-4">
+                   {plan.id === "single-course" ? (
+                     <div>
+                       <div className={`text-lg font-semibold text-gray-800 ${language === "bn" ? "font-siliguri" : ""}`}>
+                         {plan.period}
+                       </div>
+                       <div className={`text-sm text-gray-500 ${language === "bn" ? "font-siliguri" : ""}`}>
+                         {language === "bn" ? "প্রতিটি কোর্স পাতায় মূল্য দেখুন" : "See pricing on course pages"}
+                       </div>
+                     </div>
+                   ) : plan.price === "Custom" || plan.price === "কাস্টম" ? (
+                     <div>
+                       <div className="text-4xl font-black bg-gradient-cool bg-clip-text text-transparent">
+                         {plan.price}
+                       </div>
+                       <div
+                         className={`text-sm text-gray-500 ${language === "bn" ? "font-siliguri" : ""}`}
+                       >
+                         {plan.period}
+                       </div>
+                     </div>
+                   ) : (
+                     <div className="flex flex-wrap items-baseline gap-1">
+                       <span
+                         className={`text-2xl font-bold text-gray-600 ${language === "bn" ? "font-siliguri" : ""}`}
+                       >
+                         {plan.currency}
+                       </span>
+                       <span
+                         className={`text-5xl font-black bg-gradient-primary bg-clip-text text-transparent ${language === "bn" ? "font-siliguri" : ""}`}
+                       >
+                         {plan.price}
+                       </span>
+                       <span
+                         className={`text-sm text-gray-500 ml-1 whitespace-nowrap ${language === "bn" ? "font-siliguri" : ""}`}
+                       >
+                         /{plan.period}
+                       </span>
+                     </div>
+                   )}
+                 </div>
               </CardHeader>
 
               <CardBody className="p-6 pt-0">
@@ -172,7 +244,7 @@ const PricingSection = () => {
                     : "bg-gray-900 text-white hover:bg-gray-800"
                     }`}
                   size="lg"
-                  onPress={() => handleCtaClick(plan.id)}
+                  onPress={() => handleCtaClick(plan.id, (plan as any).comboId)}
                 >
                   <span className={language === "bn" ? "font-siliguri" : ""}>
                     {plan.cta}
