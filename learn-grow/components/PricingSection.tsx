@@ -95,9 +95,9 @@ const PricingSection = () => {
     })
     // Filter plans based on combo availability
     .filter((plan) => {
-      // If combo exists, only show combo (exclude quarterly, robotics-kit, and school)
+      // If combo exists, show combo plus robotics-kit and school
       if (firstCombo) {
-        return plan.id === "combo";
+        return plan.id === "combo" || plan.id === "robotics-kit" || plan.id === "school";
       }
       // If no combo, exclude quarterly but show robotics-kit and school
       return plan.id !== "quarterly";
