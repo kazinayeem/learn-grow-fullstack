@@ -645,15 +645,7 @@ export default function TeamManagementPage() {
                                             Add Role
                                         </Button>
                                     </div>
-                                    <Button
-                                        color="secondary"
-                                        variant="flat"
-                                        onPress={handleSeedRoles}
-                                        isLoading={seedingRoles}
-                                        className="w-full"
-                                    >
-                                        Seed Default Roles
-                                    </Button>
+                                  
                                 </CardBody>
                             </Card>
 
