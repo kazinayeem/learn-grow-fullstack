@@ -69,40 +69,53 @@ const Educators: React.FC = () => {
                     spaceBetween={30}
                 >
                     {teamMembers.length > 0 ? (
-                        teamMembers.map((member: TeamMember, index: number) => (
-                            <SwiperSlide key={index} className="h-auto">
-                                <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-8 border border-gray-100 h-full flex flex-col items-center">
-                                    {/* Profile Image */}
-                                    <div className="flex justify-center mb-6">
-                                        <Image
-                                            alt={`${member.name}'s profile`}
-                                            className="w-32 h-32 rounded-full object-cover border-4 border-primary-100"
-                                            height={120}
-                                            src={member.image}
-                                            width={120}
-                                        />
-                                    </div>
+                        teamMembers.map((member: TeamMember, index: number) => {
+                            // Get first word of name for fallback
+                            const firstName = member.name.split(' ')[0];
+                            // Check if image is available
+                            const hasImage = member.image && member.image.trim() !== '';
 
-                                    {/* Info */}
-                                    <div className="text-center space-y-4 flex-grow flex flex-col items-center w-full">
-                                        {/* Name */}
-                                        <h3 className="text-2xl font-bold text-gray-900">
-                                            {member.name}
-                                        </h3>
+                            return (
+                                <SwiperSlide key={index} className="h-full">
+                                    <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-8 border border-gray-100 h-96 flex flex-col items-center justify-between">
+                                        {/* Profile Image */}
+                                        <div className="flex justify-center mb-6 h-32 flex-shrink-0">
+                                            {hasImage ? (
+                                                <Image
+                                                    alt={`${member.name}'s profile`}
+                                                    className="w-32 h-32 rounded-full object-cover border-4 border-primary-100"
+                                                    height={128}
+                                                    src={member.image}
+                                                    width={128}
+                                                />
+                                            ) : (
+                                                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 border-4 border-primary-100 flex items-center justify-center text-white font-bold text-4xl">
+                                                    {firstName.charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
+                                        </div>
 
-                                        {/* Bio if available */}
-                                        {member.bio && (
-                                            <p className="text-gray-600 text-sm">{member.bio}</p>
-                                        )}
+                                        {/* Info */}
+                                        <div className="text-center space-y-3 flex-grow flex flex-col items-center w-full justify-center">
+                                            {/* Name */}
+                                            <h3 className="text-xl font-bold text-gray-900 line-clamp-2">
+                                                {member.name}
+                                            </h3>
 
-                                        {/* Designation Badge */}
-                                        <div className="inline-flex items-center gap-2 bg-primary-50 text-primary-700 px-4 py-2 rounded-full text-sm font-semibold">
-                                            <PiCertificateFill className="text-lg" />
-                                            <span>{member.role}</span>
+                                            {/* Bio if available */}
+                                            {member.bio && (
+                                                <p className="text-gray-600 text-xs line-clamp-2">{member.bio}</p>
+                                            )}
+
+                                            {/* Designation Badge */}
+                                            <div className="inline-flex items-center gap-2 bg-primary-50 text-primary-700 px-3 py-1 rounded-full text-xs font-semibold">
+                                                <PiCertificateFill className="text-sm" />
+                                                <span>{member.role}</span>
+                                            </div>
                                         </div>
 
                                         {/* Social Links */}
-                                        <div className="flex justify-center gap-3 pt-4 mt-auto">
+                                        <div className="flex justify-center gap-3 pt-4 flex-shrink-0">
                                             {member.linkedIn && (
                                                 <Link
                                                     aria-label="LinkedIn"
@@ -127,9 +140,9 @@ const Educators: React.FC = () => {
                                             )}
                                         </div>
                                     </div>
-                                </div>
-                            </SwiperSlide>
-                        ))
+                                </SwiperSlide>
+                            );
+                        })
                     ) : (
                         <div className="text-center py-10">
                             <p className="text-gray-600">No team members to display</p>

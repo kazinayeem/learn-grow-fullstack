@@ -297,7 +297,7 @@ export default function TeamPage() {
             <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-12">
                 {/* Leadership */}
                 <div className="mb-16">
-                    <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-center">Leadership</h2>
+                   
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
                         {leadership.map((member, index) => (
                             <Card key={index} className="shadow-lg h-full hover:shadow-xl transition-shadow">
@@ -359,7 +359,7 @@ export default function TeamPage() {
 
                 {/* Operations Team */}
                 <div className="mb-16">
-                    <h2 className="text-3xl font-bold mb-8 text-center">Operations & Support</h2>
+                 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
                         {operations.map((member, index) => (
                             <Card key={index} className="hover:shadow-lg transition-shadow">

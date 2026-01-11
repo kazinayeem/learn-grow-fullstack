@@ -53,51 +53,54 @@ const PricingSection = () => {
 
   const singleCoursePlan = pricing.plans.find((p) => p.id === "single-course");
 
-  // Build plan list: show single-course without price, inject combo (if exists) or show quarterly as default, adjust kit price
+  // Build plan list: 
+  // - If combo exists: show only single-course + combo
+  // - If no combo: show single-course + robotics-kit + school
   const basePlans = pricing.plans.filter((p) => p.id !== "single-course");
 
-  const transformedBasePlans = basePlans.map((plan) => {
-    // If combo exists and this is quarterly plan, replace with combo data
-    if (plan.id === "quarterly" && firstCombo) {
-      return {
-        ...plan,
-        id: "combo",
-        name: firstCombo.name,
-        price: String(firstCombo.discountPrice || firstCombo.price || ""),
-        currency: language === "bn" ? "টাকা" : "BDT",
-        period: language === "bn" ? "বান্ডেল" : "bundle",
-        description: firstCombo.description || plan.description,
-        features: [
-          `${language === "bn" ? "কোর্স সংখ্যা" : "Courses"}: ${firstCombo.courses?.length || 0}`,
-          language === "bn" ? "লাইভ ও রেকর্ডেড ক্লাস" : "Live & recorded access",
-          language === "bn" ? "বান্ডেল ডিসকাউন্ট" : "Bundle discount",
-          language === "bn" ? "সার্টিফিকেট ও কমিউনিটি" : "Certificates & community",
-        ],
-        popular: true,
-        comboId: firstCombo._id,
-        cta: language === "bn" ? "বান্ডেল দেখুন" : "View Bundle",
-      } as any;
-    }
+  const transformedBasePlans = basePlans
+    .map((plan) => {
+      // If combo exists, replace quarterly plan with combo data
+      if (plan.id === "quarterly" && firstCombo) {
+        return {
+          ...plan,
+          id: "combo",
+          name: firstCombo.name,
+          price: String(firstCombo.discountPrice || firstCombo.price || ""),
+          currency: language === "bn" ? "টাকা" : "BDT",
+          period: language === "bn" ? "বান্ডেল" : "bundle",
+          description: firstCombo.description || plan.description,
+          features: [
+            `${language === "bn" ? "কোর্স সংখ্যা" : "Courses"}: ${firstCombo.courses?.length || 0}`,
+            language === "bn" ? "লাইভ ও রেকর্ডেড ক্লাস" : "Live & recorded access",
+            language === "bn" ? "বান্ডেল ডিসকাউন্ট" : "Bundle discount",
+            language === "bn" ? "সার্টিফিকেট ও কমিউনিটি" : "Certificates & community",
+          ],
+          popular: true,
+          comboId: firstCombo._id,
+          cta: language === "bn" ? "বান্ডেল দেখুন" : "View Bundle",
+        } as any;
+      }
 
-    // If no combo exists and this is quarterly, keep it as default popular plan
-    if (plan.id === "quarterly" && !firstCombo) {
-      return {
-        ...plan,
-        popular: true, // Keep as popular if no combo exists
-      };
-    }
-
-    if (plan.id === "robotics-kit") {
-      const price = String(kitPriceSetting ?? kitPriceEnv ?? plan.price ?? "");
-      return {
-        ...plan,
-        price,
-        // Add flag to indicate if price data exists
-        hasPriceData: !!(kitPriceSetting || kitPriceEnv || plan.price),
-      };
-    }
+      if (plan.id === "robotics-kit") {
+        const price = String(kitPriceSetting ?? kitPriceEnv ?? plan.price ?? "");
+        return {
+          ...plan,
+          price,
+          hasPriceData: !!(kitPriceSetting || kitPriceEnv || plan.price),
+        };
+      }
 
       return plan;
+    })
+    // Filter plans based on combo availability
+    .filter((plan) => {
+      // If combo exists, only show combo (quarterly becomes combo), exclude robotics-kit and school
+      if (firstCombo) {
+        return plan.id === "combo" || plan.id === "quarterly";
+      }
+      // If no combo, exclude quarterly (2nd option), show robotics-kit and school (3rd and 4th)
+      return plan.id !== "quarterly";
     });
 
   const plans = [
