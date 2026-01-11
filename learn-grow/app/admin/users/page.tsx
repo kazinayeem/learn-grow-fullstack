@@ -52,6 +52,9 @@ export default function UserManagementPage() {
         }
     }, []);
 
+    const { isOpen, onOpen, onClose } = useDisclosure();
+    const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
+
     // Auto-open modal if openModal=true in URL
     useEffect(() => {
         const shouldOpenModal = searchParams.get("openModal");
@@ -70,9 +73,6 @@ export default function UserManagementPage() {
     const [deleteUser] = useDeleteUserMutation();
     const [createUser] = useCreateUserMutation();
     const [updateUser] = useUpdateUserMutation();
-
-    const { isOpen, onOpen, onClose } = useDisclosure();
-    const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
 
     const [newUser, setNewUser] = useState({
         name: "",
