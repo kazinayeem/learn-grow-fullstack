@@ -291,6 +291,12 @@ export const emailOrderAction = async (req: Request, res: Response) => {
     // Notify user via email with professional template
     try {
       const transporter = await getSMTPTransporter();
+      const smtpConfig = await (await import("@/modules/settings/model/smtpConfig.model")).SMTPConfig.findOne({ isActive: true }).select("fromEmail fromName").lean();
+      if (!smtpConfig) {
+        throw new Error("SMTP configuration not found");
+      }
+      const fromEmail = `"${smtpConfig.fromName || "Learn & Grow"}" <${smtpConfig.fromEmail}>`;
+      
       const toUser = (updated as any)?.userId?.email;
       if (toUser) {
         const user = (updated as any)?.userId;
@@ -313,7 +319,7 @@ export const emailOrderAction = async (req: Request, res: Response) => {
         if (action === "approve") {
           const { getOrderApprovedEmail } = await import("@/utils/emailTemplates");
           await transporter.sendMail({
-            from: ENV.EMAIL_USER,
+            from: fromEmail,
             to: toUser,
             subject: "🎉 Your Order Has Been Approved | Learn & Grow",
             html: getOrderApprovedEmail(orderDetails),
@@ -321,7 +327,7 @@ export const emailOrderAction = async (req: Request, res: Response) => {
         } else {
           const { getOrderRejectedEmail } = await import("@/utils/emailTemplates");
           await transporter.sendMail({
-            from: ENV.EMAIL_USER,
+            from: fromEmail,
             to: toUser,
             subject: "Order Status Update | Learn & Grow",
             html: getOrderRejectedEmail(orderDetails, "Payment verification failed"),
@@ -602,6 +608,11 @@ export const sendOrderEmail = async (req: Request, res: Response) => {
     }
 
     const transporter = await getSMTPTransporter();
+    const smtpConfig = await (await import("@/modules/settings/model/smtpConfig.model")).SMTPConfig.findOne({ isActive: true }).select("fromEmail fromName").lean();
+    if (!smtpConfig) {
+      throw new Error("SMTP configuration not found");
+    }
+    const fromEmail = `"${smtpConfig.fromName || "Learn & Grow"}" <${smtpConfig.fromEmail}>`;
 
     let htmlContent = "";
 
@@ -712,7 +723,7 @@ export const sendOrderEmail = async (req: Request, res: Response) => {
     }
 
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: fromEmail,
       to,
       subject,
       html: htmlContent,

@@ -12,12 +12,6 @@ export const ENV = {
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || "your_refresh_secret_key_change_in_production",
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || "30d",
   
-  // Email Configuration
-  EMAIL_HOST: process.env.EMAIL_HOST || "smtp.gmail.com",
-  EMAIL_PORT: Number(process.env.EMAIL_PORT || 587),
-  EMAIL_USER: process.env.EMAIL_USER || "kazinayeem55085@gmail.com",
-  EMAIL_PASSWORD: process.env.EMAIL_PASSWORD || "your-app-password",
-  
   // SMS Configuration (Twilio)
   TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID || "",
   TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN || "",

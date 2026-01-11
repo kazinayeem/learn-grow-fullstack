@@ -1,6 +1,5 @@
 import { SMTPConfig } from "../model/smtpConfig.model";
 import nodemailer from "nodemailer";
-import { ENV } from "@/config/env";
 
 /**
  * Get active SMTP config (exclude password)
@@ -10,21 +9,10 @@ export const getSMTPConfig = async () => {
     const config = await SMTPConfig.findOne({ isActive: true }).select("-password").lean();
     
     if (!config) {
-      // Return env-based defaults if no DB config
       return {
-        success: true,
-        message: "Using default SMTP config from environment",
-        data: {
-          host: ENV.EMAIL_HOST || "",
-          port: ENV.EMAIL_PORT || 587,
-          secure: ENV.EMAIL_PORT === 465,
-          user: ENV.EMAIL_USER || "",
-          fromName: "Learn & Grow",
-          fromEmail: ENV.EMAIL_USER || "",
-          replyTo: ENV.EMAIL_USER || "",
-          isActive: false, // Indicates it's from env, not DB
-          source: "env",
-        },
+        success: false,
+        message: "SMTP configuration not found in database. Please configure SMTP settings in admin panel.",
+        data: null,
       };
     }
 
@@ -115,29 +103,21 @@ export const testSMTPConnection = async (testEmail?: string) => {
     // Get config with password
     const configDoc = await SMTPConfig.findOne({ isActive: true }).select("+password").lean();
     
-    let transportConfig;
-    if (configDoc) {
-      transportConfig = {
-        host: configDoc.host,
-        port: configDoc.port,
-        secure: configDoc.secure,
-        auth: {
-          user: configDoc.user,
-          pass: configDoc.password,
-        },
-      };
-    } else {
-      // Fallback to env
-      transportConfig = {
-        host: ENV.EMAIL_HOST,
-        port: ENV.EMAIL_PORT,
-        secure: ENV.EMAIL_PORT === 465,
-        auth: {
-          user: ENV.EMAIL_USER,
-          pass: ENV.EMAIL_PASSWORD,
-        },
-      };
+    if (!configDoc) {
+      throw new Error(
+        "SMTP configuration not found in database. Please configure SMTP settings in admin panel."
+      );
     }
+
+    const transportConfig = {
+      host: configDoc.host,
+      port: configDoc.port,
+      secure: configDoc.secure,
+      auth: {
+        user: configDoc.user,
+        pass: configDoc.password,
+      },
+    };
 
     const transporter = nodemailer.createTransport(transportConfig);
 
@@ -146,8 +126,8 @@ export const testSMTPConnection = async (testEmail?: string) => {
 
     // If testEmail provided, send test message
     if (testEmail) {
-      const fromName = configDoc?.fromName || "Learn & Grow";
-      const fromEmail = configDoc?.fromEmail || ENV.EMAIL_USER;
+      const fromName = configDoc.fromName || "Learn & Grow";
+      const fromEmail = configDoc.fromEmail || configDoc.user;
       
       await transporter.sendMail({
         from: `"${fromName}" <${fromEmail}>`,
@@ -193,39 +173,23 @@ export const getSMTPTransporter = async () => {
   try {
     const configDoc = await SMTPConfig.findOne({ isActive: true }).select("+password").lean();
 
-    if (configDoc) {
-      return nodemailer.createTransport({
-        host: configDoc.host,
-        port: configDoc.port,
-        secure: configDoc.secure,
-        auth: {
-          user: configDoc.user,
-          pass: configDoc.password,
-        },
-      });
+    if (!configDoc) {
+      throw new Error(
+        "SMTP configuration not found in database. Please configure SMTP settings in admin panel."
+      );
     }
 
-    // Fallback to env
     return nodemailer.createTransport({
-      host: ENV.EMAIL_HOST,
-      port: ENV.EMAIL_PORT,
-      secure: ENV.EMAIL_PORT === 465,
+      host: configDoc.host,
+      port: configDoc.port,
+      secure: configDoc.secure,
       auth: {
-        user: ENV.EMAIL_USER,
-        pass: ENV.EMAIL_PASSWORD,
+        user: configDoc.user,
+        pass: configDoc.password,
       },
     });
-  } catch (error) {
-    console.error("Failed to create SMTP transporter:", error);
-    // Return env-based transport as last resort
-    return nodemailer.createTransport({
-      host: ENV.EMAIL_HOST,
-      port: ENV.EMAIL_PORT,
-      secure: ENV.EMAIL_PORT === 465,
-      auth: {
-        user: ENV.EMAIL_USER,
-        pass: ENV.EMAIL_PASSWORD,
-      },
-    });
+  } catch (error: any) {
+    console.error("SMTP Configuration Error:", error.message);
+    throw error;
   }
 };

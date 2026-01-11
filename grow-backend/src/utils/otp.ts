@@ -1,6 +1,21 @@
 import nodemailer from "nodemailer";
 import { ENV } from "@/config/env";
 import { getSMTPTransporter } from "@/modules/settings/service/smtp.service";
+import { SMTPConfig } from "@/modules/settings/model/smtpConfig.model";
+
+/**
+ * Get from email from database configuration
+ */
+const getFromEmailConfig = async (): Promise<{ fromEmail: string; fromName: string }> => {
+  const smtpConfig = await SMTPConfig.findOne({ isActive: true }).select("fromEmail fromName").lean();
+  if (!smtpConfig) {
+    throw new Error("SMTP configuration not found. Please configure email settings.");
+  }
+  return {
+    fromEmail: smtpConfig.fromEmail,
+    fromName: smtpConfig.fromName || "Learn & Grow",
+  };
+};
 
 /**
  * Send Course Approval Email to Instructor
@@ -13,9 +28,10 @@ export const sendCourseApprovalEmail = async (
 ): Promise<boolean> => {
   try {
     const transporter = await getSMTPTransporter();
+    const { fromEmail, fromName } = await getFromEmailConfig();
 
     const mailOptions = {
-      from: ENV.EMAIL_USER,
+      from: `"${fromName}" <${fromEmail}>`,
       to: email,
       subject: `🎉 Your Course "${courseTitle}" has been Approved!`,
       html: `
@@ -83,9 +99,10 @@ export const sendOTPEmail = async (
 ): Promise<boolean> => {
   try {
     const transporter = await getSMTPTransporter();
+    const { fromEmail, fromName } = await getFromEmailConfig();
 
     const mailOptions = {
-      from: ENV.EMAIL_USER,
+      from: `"${fromName}" <${fromEmail}>`,
       to: email,
       subject: "Your OTP for Learn & Grow - Email Verification",
       html: `
@@ -155,6 +172,7 @@ export const sendWelcomeEmail = async (
 ): Promise<boolean> => {
   try {
     const transporter = await getSMTPTransporter();
+    const { fromEmail, fromName } = await getFromEmailConfig();
 
     const roleMessages: Record<string, string> = {
       student: "Start learning with our wide range of courses!",
@@ -164,7 +182,7 @@ export const sendWelcomeEmail = async (
     };
 
     const mailOptions = {
-      from: ENV.EMAIL_USER,
+      from: `"${fromName}" <${fromEmail}>`,
       to: email,
       subject: "Welcome to Learn & Grow! 🎉",
       html: `
@@ -214,9 +232,10 @@ export const sendGuardianCredentialsEmail = async (
 ): Promise<boolean> => {
   try {
     const transporter = await getSMTPTransporter();
+    const { fromEmail, fromName } = await getFromEmailConfig();
 
     const mailOptions = {
-      from: ENV.EMAIL_USER,
+      from: `"${fromName}" <${fromEmail}>`,
       to: studentEmail,
       subject: "Guardian Account Created – Credentials Inside",
       html: `
@@ -260,13 +279,14 @@ export const sendInstructorApprovalEmail = async (
 ): Promise<boolean> => {
   try {
     const transporter = await getSMTPTransporter();
+    const { fromEmail, fromName } = await getFromEmailConfig();
 
     const subject = isApproved 
       ? "🎉 Your Instructor Account Has Been Approved!"
       : "Application Status Update";
 
     const mailOptions = {
-      from: ENV.EMAIL_USER,
+      from: `"${fromName}" <${fromEmail}>`,
       to: email,
       subject: subject,
       html: `

@@ -1,8 +1,8 @@
 import nodemailer, { Transporter } from "nodemailer";
 import { EmailLog } from "../model/emailLog.model";
-import { ENV } from "@/config/env";
 import mongoose from "mongoose";
 import { getSMTPTransporter } from "@/modules/settings/service/smtp.service";
+import { SMTPConfig } from "@/modules/settings/model/smtpConfig.model";
 
 // Create reusable transporter
 let transporter: Transporter;
@@ -27,6 +27,12 @@ export const emailService = {
     message: string
   ): Promise<any> {
     try {
+      // Get SMTP config from database for from email
+      const smtpConfig = await SMTPConfig.findOne({ isActive: true }).select("fromEmail fromName").lean();
+      if (!smtpConfig) {
+        throw new Error("SMTP configuration not found. Please configure email settings.");
+      }
+
       // Create email log record
       const emailLog = await EmailLog.create({
         applicationId: new mongoose.Types.ObjectId(applicationId),
@@ -43,7 +49,7 @@ export const emailService = {
       const htmlMessage = message.replace(/\n/g, "<br>");
 
       const mailOptions = {
-        from: `"Learn & Grow" <${ENV.EMAIL_USER}>`,
+        from: `"${smtpConfig.fromName || "Learn & Grow"}" <${smtpConfig.fromEmail}>`,
         to: recipientEmail,
         subject,
         html: `
@@ -56,7 +62,7 @@ export const emailService = {
                 </div>
                 <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
                 <p style="color: #666; font-size: 12px;">
-                  <strong>Learn & Grow Team</strong><br>
+                  <strong>${smtpConfig.fromName || "Learn & Grow"} Team</strong><br>
                   This is an automated message from our career portal.
                 </p>
               </div>

@@ -10,6 +10,7 @@ import mongoose from "mongoose";
 import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
 import { getSMTPTransporter } from "@/modules/settings/service/smtp.service";
+import { SMTPConfig } from "@/modules/settings/model/smtpConfig.model";
 import { getOrderConfirmationEmail, getAdminOrderApprovalEmail, getOrderApprovedEmail, getOrderRejectedEmail } from "@/utils/emailTemplates";
 import { calculateAccessEndDate } from "@/utils/access-control";
 
@@ -38,6 +39,13 @@ const formatPrice = (amount: number) =>
 const sendOrderEmail = async (order: any) => {
   try {
     const transporter = await getSMTPTransporter();
+    const smtpConfig = await SMTPConfig.findOne({ isActive: true }).select("fromEmail fromName").lean();
+    if (!smtpConfig) {
+      throw new Error("SMTP configuration not found");
+    }
+
+    const fromEmail = `"${smtpConfig.fromName || "Learn & Grow"}" <${smtpConfig.fromEmail}>`;
+    const adminEmail = smtpConfig.fromEmail;
 
     const user = order.userId || {};
     const course = order.courseId || {};
@@ -62,7 +70,7 @@ const sendOrderEmail = async (order: any) => {
     // 1) Send acknowledgement to student with professional template
     if (user.email) {
       await transporter.sendMail({
-        from: ENV.EMAIL_USER,
+        from: fromEmail,
         to: user.email,
         subject: `Order Confirmation - ${order.planType.toUpperCase()} | Learn & Grow`,
         html: getOrderConfirmationEmail(orderDetails),
@@ -70,7 +78,7 @@ const sendOrderEmail = async (order: any) => {
     }
 
     // 2) Send admin email with approve/reject buttons (no auth, signed token)
-    if (ENV.EMAIL_USER) {
+    if (adminEmail) {
       const payloadBase = { orderId: String(order._id) } as any;
       const approveToken = jwt.sign(
         { ...payloadBase, action: "approve" },
@@ -95,8 +103,8 @@ const sendOrderEmail = async (order: any) => {
       const rejectUrl = `${baseUrl}/api/orders/email-action/${rejectToken}`;
 
       await transporter.sendMail({
-        from: ENV.EMAIL_USER,
-        to: ENV.EMAIL_USER,
+        from: fromEmail,
+        to: adminEmail,
         subject: `🔔 New Order Pending Review - ${user.name || "Student"} | Learn & Grow`,
         html: getAdminOrderApprovalEmail(orderDetails, approveUrl, rejectUrl),
       });

@@ -10,13 +10,8 @@ export const config = {
     refreshSecret: ENV.JWT_REFRESH_SECRET,
     refreshExpiresIn: ENV.JWT_REFRESH_EXPIRES_IN,
   },
-  email: {
-    host: ENV.EMAIL_HOST,
-    port: ENV.EMAIL_PORT,
-    user: ENV.EMAIL_USER,
-    password: ENV.EMAIL_PASSWORD,
-    secure: ENV.EMAIL_PORT === 465, // true for 465, false for other ports like 587
-  },
+  // Email configuration is now managed via database (SMTPConfig model)
+  // No longer stored in environment variables
   twilio: {
     accountSid: ENV.TWILIO_ACCOUNT_SID,
     authToken: ENV.TWILIO_AUTH_TOKEN,

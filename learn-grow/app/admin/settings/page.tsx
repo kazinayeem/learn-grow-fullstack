@@ -22,7 +22,9 @@ import {
   FaShieldAlt,
   FaWallet,
   FaGlobe,
-  FaBoxOpen
+  FaBoxOpen,
+  FaEye,
+  FaEyeSlash,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 
@@ -50,6 +52,7 @@ export default function AdminSettingsPage() {
   });
   const [testEmail, setTestEmail] = useState("");
   const [smtpSource, setSMTPSource] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (data?.data?.platformCommissionPercent != null) {
@@ -366,7 +369,7 @@ export default function AdminSettingsPage() {
                           classNames={{ inputWrapper: "border-gray-300" }}
                         />
                         <Input
-                          type="password"
+                          type={showPassword ? "text" : "password"}
                           label="SMTP Password"
                           placeholder="Leave blank to keep"
                           value={smtp.password}
@@ -374,6 +377,20 @@ export default function AdminSettingsPage() {
                           variant="bordered"
                           size="lg"
                           startContent={<FaLock className="text-gray-400" />}
+                          endContent={
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="focus:outline-none text-gray-500 hover:text-gray-700 transition-colors"
+                              aria-label={showPassword ? "Hide password" : "Show password"}
+                            >
+                              {showPassword ? (
+                                <FaEyeSlash className="text-lg" />
+                              ) : (
+                                <FaEye className="text-lg" />
+                              )}
+                            </button>
+                          }
                           classNames={{ inputWrapper: "border-gray-300" }}
                         />
                       </div>
