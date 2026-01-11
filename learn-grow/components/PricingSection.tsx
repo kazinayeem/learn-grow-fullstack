@@ -54,8 +54,8 @@ const PricingSection = () => {
   const singleCoursePlan = pricing.plans.find((p) => p.id === "single-course");
 
   // Build plan list: 
-  // - If combo exists: show only single-course + combo
-  // - If no combo: show single-course + robotics-kit + school
+  // - If combo exists: show single-course + combo only (exclude robotics-kit and school)
+  // - If no combo: show single-course + robotics-kit + school (exclude quarterly)
   const basePlans = pricing.plans.filter((p) => p.id !== "single-course");
 
   const transformedBasePlans = basePlans
@@ -95,11 +95,11 @@ const PricingSection = () => {
     })
     // Filter plans based on combo availability
     .filter((plan) => {
-      // If combo exists, only show combo (quarterly becomes combo), exclude robotics-kit and school
+      // If combo exists, only show combo (exclude quarterly, robotics-kit, and school)
       if (firstCombo) {
-        return plan.id === "combo" || plan.id === "quarterly";
+        return plan.id === "combo";
       }
-      // If no combo, exclude quarterly (2nd option), show robotics-kit and school (3rd and 4th)
+      // If no combo, exclude quarterly but show robotics-kit and school
       return plan.id !== "quarterly";
     });
 
