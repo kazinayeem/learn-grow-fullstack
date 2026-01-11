@@ -10,8 +10,6 @@ import {
   Button,
   Input,
   Textarea,
-  Select,
-  SelectItem,
   Switch,
 } from "@nextui-org/react";
 import { useCreateJobMutation, useUpdateJobMutation } from "@/redux/api/jobApi";
