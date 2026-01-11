@@ -55,6 +55,28 @@ router.delete(
   requireAuth,
   requireRoles("admin"),
   controller.disableCombo
+/**
+ * Toggle combo active status (Admin only)
+ * PATCH /api/combo/:comboId/toggle-status
+ */
+router.patch(
+  "/:comboId/toggle-status",
+  requireAuth,
+  requireRoles("admin"),
+  controller.toggleComboStatus
+);
+
+/**
+ * Delete combo permanently (Admin only)
+ * DELETE /api/combo/:comboId/permanent
+ */
+router.delete(
+  "/:comboId/permanent",
+  requireAuth,
+  requireRoles("admin"),
+  controller.deleteCombo
+);
+
 );
 
 /**

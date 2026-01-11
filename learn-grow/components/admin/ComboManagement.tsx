@@ -28,7 +28,7 @@ import {
   Tooltip,
   Pagination,
 } from "@nextui-org/react";
-import { useGetAllCombosQuery, useCreateComboMutation, useUpdateComboMutation, useDisableComboMutation } from "@/redux/api/comboApi";
+import { useGetAllCombosQuery, useCreateComboMutation, useUpdateComboMutation, useDisableComboMutation, useToggleComboStatusMutation, useDeleteComboMutation } from "@/redux/api/comboApi";
 import { useGetAllCoursesQuery } from "@/redux/api/courseApi";
 import { getDurationLabel } from "@/lib/access-control";
 import toast from "react-hot-toast";
@@ -52,6 +52,8 @@ export default function ComboManagement() {
   const [createCombo] = useCreateComboMutation();
   const [updateCombo] = useUpdateComboMutation();
   const [disableCombo] = useDisableComboMutation();
+  const [toggleComboStatus] = useToggleComboStatusMutation();
+  const [deleteCombo] = useDeleteComboMutation();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -145,7 +147,18 @@ export default function ComboManagement() {
     }
   };
 
-  // Handle Disable
+  // Handle status toggle
+  const handleToggleStatus = async (comboId: string, current: boolean) => {
+    try {
+      const result = await toggleComboStatus(comboId).unwrap();
+      toast.success(result?.message || `Combo ${current ? "deactivated" : "activated"}!`);
+      refetch();
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to update status");
+    }
+  };
+
+  // Handle Disable (soft)
   const handleDisable = async (comboId: string) => {
     try {
       await disableCombo(comboId).unwrap();
@@ -153,6 +166,20 @@ export default function ComboManagement() {
       refetch();
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to disable combo");
+    }
+  };
+
+  // Handle Delete (hard)
+  const handleDelete = async (comboId: string) => {
+    const confirmed = typeof window === "undefined" ? true : window.confirm("Delete this combo permanently? This cannot be undone.");
+    if (!confirmed) return;
+
+    try {
+      await deleteCombo(comboId).unwrap();
+      toast.success("Combo deleted permanently!");
+      refetch();
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to delete combo");
     }
   };
 
@@ -242,7 +269,7 @@ export default function ComboManagement() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Tooltip content="Edit combo">
                         <Button
                           isIconOnly
@@ -253,19 +280,42 @@ export default function ComboManagement() {
                           ✏️
                         </Button>
                       </Tooltip>
-                      {combo.isActive && (
-                        <Tooltip content="Disable combo">
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="light"
-                            color="danger"
-                            onClick={() => handleDisable(combo._id)}
-                          >
-                            🚫
-                          </Button>
-                        </Tooltip>
-                      )}
+
+                      <Tooltip content={combo.isActive ? "Deactivate" : "Activate"}>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color={combo.isActive ? "warning" : "success"}
+                          onClick={() => handleToggleStatus(combo._id, combo.isActive)}
+                        >
+                          {combo.isActive ? "⏸" : "▶"}
+                        </Button>
+                      </Tooltip>
+
+                      <Tooltip content="Soft disable">
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="danger"
+                          onClick={() => handleDisable(combo._id)}
+                        >
+                          🚫
+                        </Button>
+                      </Tooltip>
+
+                      <Tooltip content="Delete permanently">
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="danger"
+                          onClick={() => handleDelete(combo._id)}
+                        >
+                          🗑
+                        </Button>
+                      </Tooltip>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -317,11 +367,18 @@ export default function ComboManagement() {
             </CardBody>
             <Divider />
             <CardBody>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="flat" onClick={() => handleEditOpen(combo)}>Edit</Button>
-                {combo.isActive && (
-                  <Button size="sm" color="danger" variant="flat" onClick={() => handleDisable(combo._id)}>Disable</Button>
-                )}
+                <Button
+                  size="sm"
+                  color={combo.isActive ? "warning" : "success"}
+                  variant="flat"
+                  onClick={() => handleToggleStatus(combo._id, combo.isActive)}
+                >
+                  {combo.isActive ? "Deactivate" : "Activate"}
+                </Button>
+                <Button size="sm" color="danger" variant="flat" onClick={() => handleDisable(combo._id)}>Disable</Button>
+                <Button size="sm" color="danger" variant="bordered" onClick={() => handleDelete(combo._id)}>Delete</Button>
               </div>
             </CardBody>
           </Card>

@@ -161,6 +161,54 @@ export const disableCombo = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: "Failed to disable combo",
+      /**
+       * Toggle combo active status (Admin only)
+       */
+      export const toggleComboStatus = async (req: Request, res: Response) => {
+        try {
+          const { comboId } = req.params;
+
+          const result = await comboService.toggleComboStatusService(comboId);
+
+          if (!result.success) {
+            return res.status(400).json(result);
+          }
+
+          return res.json(result);
+        } catch (error: any) {
+          console.error("Toggle combo status error:", error);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to toggle combo status",
+            error: error.message,
+          });
+        }
+      };
+
+      /**
+       * Delete combo permanently (Admin only)
+       */
+      export const deleteCombo = async (req: Request, res: Response) => {
+        try {
+          const { comboId} = req.params;
+
+          const result = await comboService.deleteComboService(comboId);
+
+          if (!result.success) {
+            return res.status(400).json(result);
+          }
+
+          return res.json(result);
+        } catch (error: any) {
+          console.error("Delete combo error:", error);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to delete combo",
+            error: error.message,
+          });
+        }
+      };
+
       error: error.message,
     });
   }

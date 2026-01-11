@@ -78,6 +78,30 @@ export const comboApi = createApi({
       query: (comboId) => ({
         url: `/combo/${comboId}`,
         method: "DELETE",
+          // Toggle combo active status (Admin)
+          toggleComboStatus: builder.mutation<
+            { success: boolean; data: ICombo; message: string },
+            string
+          >({
+            query: (comboId) => ({
+              url: `/combo/${comboId}/toggle-status`,
+              method: "PATCH",
+            }),
+            invalidatesTags: ["Combo"],
+          }),
+
+          // Delete combo permanently (Admin)
+          deleteCombo: builder.mutation<
+            { success: boolean; message: string },
+            string
+          >({
+            query: (comboId) => ({
+              url: `/combo/${comboId}/permanent`,
+              method: "DELETE",
+            }),
+            invalidatesTags: ["Combo"],
+          }),
+
       }),
       invalidatesTags: ["Combo"],
     }),
@@ -130,6 +154,8 @@ export const {
   useCreateComboMutation,
   useUpdateComboMutation,
   useDisableComboMutation,
+    useToggleComboStatusMutation,
+    useDeleteComboMutation,
   useGetUserComboPurchasesQuery,
   useExtendComboAccessMutation,
   useEnrollInComboMutation,

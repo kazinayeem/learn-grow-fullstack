@@ -281,6 +281,64 @@ export const disableComboService = async (comboId: string) => {
     return {
       success: false,
       message: "Failed to disable combo",
+      /**
+       * Toggle combo active status
+       */
+      export const toggleComboStatusService = async (comboId: string) => {
+        try {
+          const combo = await Combo.findById(comboId);
+
+          if (!combo) {
+            return {
+              success: false,
+              message: "Combo not found",
+            };
+          }
+
+          combo.isActive = !combo.isActive;
+          await combo.save();
+
+          return {
+            success: true,
+            message: `Combo ${combo.isActive ? "activated" : "deactivated"} successfully`,
+            data: combo,
+          };
+        } catch (error: any) {
+          return {
+            success: false,
+            message: "Failed to toggle combo status",
+            error: error.message,
+          };
+        }
+      };
+
+      /**
+       * Delete combo permanently
+       */
+      export const deleteComboService = async (comboId: string) => {
+        try {
+          const combo = await Combo.findByIdAndDelete(comboId);
+
+          if (!combo) {
+            return {
+              success: false,
+              message: "Combo not found",
+            };
+          }
+
+          return {
+            success: true,
+            message: "Combo deleted permanently",
+          };
+        } catch (error: any) {
+          return {
+            success: false,
+            message: "Failed to delete combo",
+            error: error.message,
+          };
+        }
+      };
+
       error: error.message,
     };
   }
