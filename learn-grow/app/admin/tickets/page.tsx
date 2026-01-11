@@ -64,16 +64,6 @@ export default function TicketsPage() {
             Manage and track support tickets
           </p>
         </div>
-        <Button
-          color="primary"
-          startContent={<FaPlus className="text-base sm:text-lg" />}
-          onPress={onOpen}
-          size="md"
-          className="w-full sm:w-auto min-h-[44px] font-semibold shadow-md hover:shadow-lg transition-shadow"
-        >
-          <span className="hidden sm:inline">Create Ticket</span>
-          <span className="sm:hidden">New Ticket</span>
-        </Button>
       </div>
 
       {/* Statistics Cards */}

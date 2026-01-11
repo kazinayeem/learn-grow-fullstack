@@ -325,60 +325,117 @@ export default function ComboManagement() {
         </CardBody>
       </Card>
 
-      {/* Combos Cards (mobile) */}
-      <div className="grid gap-4 md:hidden">
+      {/* Combos Cards (responsive) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 md:gap-5">
         {(combos || []).map((combo: any) => (
-          <Card key={combo._id}>
-            <CardHeader className="flex justify-between items-start">
-              <div>
-                <p className="font-semibold text-foreground">{combo.name}</p>
-                {combo.description && (
-                  <p className="text-sm text-default-500">{combo.description}</p>
-                )}
-              </div>
-              <div className="text-right">
-                <p className="font-semibold">৳{combo.price.toLocaleString()}</p>
-                {combo.discountPrice && (
-                  <p className="text-sm text-default-500">৳{combo.discountPrice.toLocaleString()} sale</p>
-                )}
-              </div>
-            </CardHeader>
-            <Divider />
-            <CardBody className="gap-2">
-              <div>
-                <p className="text-sm font-medium text-default-600">Courses</p>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {(combo.courses || []).map((course: any) => (
-                    <Badge key={course?._id || course} variant="flat" color="primary">
-                      {course?.title || "Course"}
-                    </Badge>
-                  ))}
+          <Card 
+            key={combo._id}
+            className="h-full flex flex-col transition-all duration-300 hover:shadow-lg hover:scale-105 border-1 border-gray-200"
+          >
+            {/* Header with price */}
+            <CardHeader className="flex flex-col items-start pb-2 pt-4 px-4 gap-3">
+              <div className="w-full flex justify-between items-start gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-foreground text-sm sm:text-base line-clamp-2">{combo.name}</p>
+                  {combo.description && (
+                    <p className="text-xs sm:text-sm text-default-500 line-clamp-2 mt-1">{combo.description}</p>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge color="primary" variant="flat">{getDurationLabel(combo.duration)}</Badge>
-                <Badge color={combo.featured ? "warning" : "default"} variant="flat">
-                  {combo.featured ? "⭐ Featured" : "Not Featured"}
+              <div className="w-full">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg sm:text-xl font-bold text-primary">৳{combo.price.toLocaleString()}</span>
+                  {combo.discountPrice && (
+                    <span className="text-xs text-default-500 line-through">৳{combo.discountPrice.toLocaleString()}</span>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+
+            <Divider className="my-0" />
+
+            {/* Content */}
+            <CardBody className="gap-3 py-3 px-4 flex-1">
+              <div>
+                <p className="text-xs font-semibold text-default-600 uppercase mb-2">Courses ({combo.courses?.length || 0})</p>
+                <div className="flex flex-wrap gap-1">
+                  {(combo.courses || []).slice(0, 3).map((course: any) => (
+                    <Badge key={course?._id || course} variant="flat" color="primary" size="sm">
+                      <span className="text-xs">{course?.title?.substring(0, 12) || "Course"}{course?.title?.length > 12 ? "..." : ""}</span>
+                    </Badge>
+                  ))}
+                  {(combo.courses || []).length > 3 && (
+                    <Badge variant="flat" color="default" size="sm">
+                      <span className="text-xs">+{(combo.courses || []).length - 3} more</span>
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5">
+                <Badge color="primary" variant="flat" size="sm">
+                  <span className="text-xs">{getDurationLabel(combo.duration)}</span>
                 </Badge>
-                <Badge color={combo.isActive ? "success" : "danger"}>
-                  {combo.isActive ? "Active" : "Inactive"}
+                {combo.featured && (
+                  <Badge color="warning" variant="flat" size="sm">
+                    <span className="text-xs">⭐ Featured</span>
+                  </Badge>
+                )}
+                <Badge color={combo.isActive ? "success" : "danger"} variant="flat" size="sm">
+                  <span className="text-xs">{combo.isActive ? "Active" : "Inactive"}</span>
                 </Badge>
               </div>
             </CardBody>
-            <Divider />
-            <CardBody>
-              <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="flat" onClick={() => handleEditOpen(combo)}>Edit</Button>
-                <Button
-                  size="sm"
-                  color={combo.isActive ? "warning" : "success"}
-                  variant="flat"
-                  onClick={() => handleToggleStatus(combo._id, combo.isActive)}
-                >
-                  {combo.isActive ? "Deactivate" : "Activate"}
-                </Button>
-                <Button size="sm" color="danger" variant="flat" onClick={() => handleDisable(combo._id)}>Disable</Button>
-                <Button size="sm" color="danger" variant="bordered" onClick={() => handleDelete(combo._id)}>Delete</Button>
+
+            <Divider className="my-0" />
+
+            {/* Actions - Grid for better spacing */}
+            <CardBody className="p-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
+                <Tooltip content="Edit combo">
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    color="primary"
+                    onClick={() => handleEditOpen(combo)}
+                    className="text-xs sm:text-sm font-medium"
+                  >
+                    Edit
+                  </Button>
+                </Tooltip>
+                <Tooltip content={combo.isActive ? "Deactivate" : "Activate"}>
+                  <Button
+                    size="sm"
+                    color={combo.isActive ? "warning" : "success"}
+                    variant="flat"
+                    onClick={() => handleToggleStatus(combo._id, combo.isActive)}
+                    className="text-xs sm:text-sm font-medium"
+                  >
+                    {combo.isActive ? "Pause" : "Resume"}
+                  </Button>
+                </Tooltip>
+                <Tooltip content="Soft disable">
+                  <Button
+                    size="sm"
+                    color="danger"
+                    variant="flat"
+                    onClick={() => handleDisable(combo._id)}
+                    className="text-xs sm:text-sm font-medium"
+                  >
+                    Disable
+                  </Button>
+                </Tooltip>
+                <Tooltip content="Delete permanently">
+                  <Button
+                    size="sm"
+                    color="danger"
+                    variant="bordered"
+                    onClick={() => handleDelete(combo._id)}
+                    className="text-xs sm:text-sm font-medium"
+                  >
+                    Delete
+                  </Button>
+                </Tooltip>
               </div>
             </CardBody>
           </Card>
