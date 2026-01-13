@@ -162,9 +162,9 @@ export default function ContentManagerPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl">
+    <div className="w-full min-h-screen px-2 sm:px-4 lg:px-6 py-4 sm:py-6">
       {/* Header with Gradient */}
-      <div className="mb-6 sm:mb-8 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 rounded-2xl p-6 sm:p-8 text-white shadow-xl">
+      <div className="mb-4 sm:mb-6 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-white shadow-xl">
         <Button
           variant="light"
           startContent={<FaArrowLeft />}
@@ -176,7 +176,7 @@ export default function ContentManagerPage() {
         </Button>
         <div className="flex items-center gap-3 sm:gap-4">
           <div className="bg-white/20 p-3 sm:p-4 rounded-xl backdrop-blur-sm">
-            <FaFileAlt className="text-3xl sm:text-4xl" />
+            <FaFileAlt className="text-2xl sm:text-3xl lg:text-4xl" />
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
@@ -189,33 +189,34 @@ export default function ContentManagerPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-xl border border-gray-100 overflow-hidden w-full">
         <Tabs
           aria-label="Content Manager Options"
           color="primary"
           variant="underlined"
           classNames={{
             tabList:
-              "gap-6 w-full relative rounded-none p-0 border-b border-divider",
+              "gap-2 sm:gap-4 lg:gap-6 w-full relative rounded-none p-0 border-b border-divider overflow-x-auto",
             cursor: "w-full bg-blue-600",
-            tab: "max-w-fit px-6 h-14",
+            tab: "max-w-fit px-3 sm:px-4 lg:px-6 h-12 sm:h-14 text-sm sm:text-base",
             tabContent:
-              "group-data-[selected=true]:text-blue-600 font-semibold text-lg",
+              "group-data-[selected=true]:text-blue-600 font-semibold text-sm sm:text-base lg:text-lg",
           }}
         >
           <Tab
             key="content"
             title={
-              <div className="flex items-center space-x-2">
-                <FaFileAlt />
-                <span>Pages & Content</span>
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <FaFileAlt className="text-sm sm:text-base" />
+                <span className="hidden sm:inline">Pages & Content</span>
+                <span className="sm:hidden">Pages</span>
               </div>
             }
           >
-            <div className="p-4 sm:p-6 lg:p-8">
-              <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+            <div className="p-3 sm:p-4 lg:p-6 xl:p-8 w-full">
+              <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 w-full">
                 {/* Sidebar - Desktop */}
-                <div className="hidden lg:block w-1/4 min-w-[250px] shrink-0">
+                <div className="hidden lg:block w-full lg:w-1/4 lg:min-w-[250px] shrink-0">
                   <div className="bg-white rounded-2xl border-2 border-gray-100 shadow-sm overflow-hidden sticky top-6">
                     <div className="p-4 bg-gray-50 border-b border-gray-100 font-bold text-gray-700">
                       Select Page
@@ -369,13 +370,14 @@ export default function ContentManagerPage() {
           <Tab
             key="about"
             title={
-              <div className="flex items-center space-x-2">
-                <FaFileAlt />
-                <span>About Page</span>
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <FaFileAlt className="text-sm sm:text-base" />
+                <span className="hidden sm:inline">About Page</span>
+                <span className="sm:hidden">About</span>
               </div>
             }
           >
-            <div className="p-4 sm:p-6 lg:p-8">
+            <div className="p-3 sm:p-4 lg:p-6 xl:p-8 w-full">
               <AboutPageTab />
             </div>
           </Tab>
@@ -383,13 +385,14 @@ export default function ContentManagerPage() {
           <Tab
             key="contact"
             title={
-              <div className="flex items-center space-x-2">
-                <FaEnvelope />
-                <span>Contact Page</span>
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <FaEnvelope className="text-sm sm:text-base" />
+                <span className="hidden sm:inline">Contact Page</span>
+                <span className="sm:hidden">Contact</span>
               </div>
             }
           >
-            <div className="p-4 sm:p-6 lg:p-8">
+            <div className="p-3 sm:p-4 lg:p-6 xl:p-8 w-full">
               <ContactPageTab />
             </div>
           </Tab>

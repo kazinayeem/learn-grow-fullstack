@@ -1,43 +1,26 @@
+"use client";
+
 import React from "react";
-import { Metadata } from "next";
+import { Spinner } from "@nextui-org/react";
 import { defaultContactData } from "@/lib/contactData";
 import ContactClient from "@/components/ContactClient";
+import { useGetSiteContentQuery } from "@/redux/api/siteContentApi";
 
-export const metadata: Metadata = {
-  title: "Contact Us - Learn & Grow Academy",
-  description: "Get in touch with Learn & Grow Academy. We're here to answer your questions about our robotics and STEM courses. Contact us via email, phone, or fill out our contact form.",
-  keywords: [
-    "contact Learn and Grow",
-    "get in touch",
-    "customer support",
-    "robotics education",
-    "STEM education support"
-  ],
-  openGraph: {
-    title: "Contact Learn & Grow - Get in Touch",
-    description: "Reach out to our team with any questions about our courses and services.",
-    url: "https://learnandgrow.io/contact",
-    type: "website",
-  },
-  alternates: {
-    canonical: "https://learnandgrow.io/contact",
-  },
-};
+export default function ContactPage() {
+    const { data: apiData, isLoading } = useGetSiteContentQuery("contact");
 
-async function getContactContent() {
-    try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://learnandgrow.io/api";
-        const res = await fetch(`${apiBase}/site-content/contact`, {
-            next: { revalidate: 3600 },
-        });
-        if (!res.ok) return defaultContactData;
-        const data = await res.json();
-        return data?.data?.content || defaultContactData;
-    } catch (error) {
-        return defaultContactData;
+    // Use API data if available, otherwise default
+    const content = (apiData?.data?.content && typeof apiData.data.content === "object" && Object.keys(apiData.data.content).length > 0)
+        ? apiData.data.content
+        : defaultContactData;
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <Spinner size="lg" label="Loading Contact info..." />
+            </div>
+        );
     }
-}
 
-export default async function ContactPage() {
-    const content = await getContactContent();
-    return <ContactClient content={content} />;}
+    return <ContactClient content={content} />;
+}
