@@ -1,18 +1,58 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Spinner } from "@nextui-org/react";
-import { defaultTeamData } from "@/lib/teamData";
 import TeamClient from "@/components/TeamClient";
-import { useGetSiteContentQuery } from "@/redux/api/siteContentApi";
+import { useGetAllTeamMembersQuery } from "@/redux/api/teamApi";
 
 export default function TeamPage() {
-    const { data: apiData, isLoading } = useGetSiteContentQuery("team");
+    const { data: teamData, isLoading } = useGetAllTeamMembersQuery({});
 
-    // Use API data if available, otherwise default
-    const content = (apiData?.data?.content && typeof apiData.data.content === "object" && Object.keys(apiData.data.content).length > 0)
-        ? apiData.data.content
-        : defaultTeamData;
+    // Organize team members by role/category
+    const organizedTeam = useMemo(() => {
+        if (!teamData?.data || !Array.isArray(teamData.data)) {
+            return { hero: {}, leadership: { cLevel: [], teamLeads: [] }, instructors: [], executives: [] };
+        }
+
+        const leadership = { cLevel: [], teamLeads: [] };
+        const instructors = [];
+        const executives = [];
+
+        teamData.data.forEach((member: any) => {
+            const teamMember = {
+                _id: member._id,
+                image: member.image,
+                name: member.name,
+                role: member.role,
+                bio: member.bio,
+                linkedIn: member.linkedIn,
+                twitter: member.twitter,
+                showOnHome: member.showOnHome,
+            };
+
+            // Categorize by role
+            if (member.role === "CEO" || member.role === "CTO" || member.role === "COO") {
+                leadership.cLevel.push(teamMember);
+            } else if (member.role === "Team Lead") {
+                leadership.teamLeads.push(teamMember);
+            } else if (member.role === "Instructor") {
+                instructors.push(teamMember);
+            } else if (member.role === "Executive") {
+                executives.push(teamMember);
+            }
+        });
+
+        return {
+            hero: {
+                tag: "Our Team",
+                title: "Meet Our Experts",
+                subtitle: "A talented team dedicated to transforming education",
+            },
+            leadership,
+            instructors,
+            executives,
+        };
+    }, [teamData]);
 
     if (isLoading) {
         return (
@@ -22,5 +62,5 @@ export default function TeamPage() {
         );
     }
 
-    return <TeamClient content={content} />;
+    return <TeamClient content={organizedTeam} />;
 }
