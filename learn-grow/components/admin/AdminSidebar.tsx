@@ -62,7 +62,7 @@ export default function AdminSidebar() {
   const navItems: NavItem[] = [
     { label: "Dashboard", icon: FaHome, href: "/admin" },
     { label: "Tickets", icon: FaTicketAlt, href: "/admin/tickets" },
-    { label: "Contacts", icon: FaEnvelope, href: "/admin/contacts" },
+    { label: "Contacts Form", icon: FaEnvelope, href: "/admin/contacts" },
     { label: "Students", icon: FaUsers, href: "/admin/students" },
     { label: "Instructors", icon: FaChalkboardTeacher, href: "/admin/instructors" },
     { label: "Managers", icon: FaUserTie, href: "/admin/managers" },
@@ -77,7 +77,8 @@ export default function AdminSidebar() {
     { label: "Jobs", icon: FaBriefcase, href: "/admin/jobs" },
     { label: "Blogs", icon: FaBlog, href: "/admin/blog" },
     { label: "Site Content", icon: FaFileAlt, href: "/admin/content" },
-
+    { label: "About Page", icon: FaFileAlt, href: "/admin/content?tab=about" },
+    { label: "Contact Page", icon: FaEnvelope, href: "/admin/content?tab=contact" },
     { label: "Team Management", icon: FaUsers, href: "/admin/team-management" },
     { label: "Analytics", icon: FaChartBar, href: "/admin/analytics" },
     { label: "Settings", icon: FaCog, href: "/admin/settings" },

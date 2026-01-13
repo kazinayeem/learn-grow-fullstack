@@ -21,6 +21,7 @@ import {
   FaUndo,
   FaCheckCircle,
   FaExclamationTriangle,
+  FaEnvelope,
 } from "react-icons/fa";
 import { defaultTeamData } from "@/lib/teamData";
 import { defaultBlogData } from "@/lib/blogData";
@@ -37,6 +38,7 @@ import {
 import "react-quill-new/dist/quill.snow.css";
 import TeamManagementTab from "@/components/admin/TeamManagementTab";
 import AboutPageTab from "@/components/admin/AboutPageTab";
+import ContactPageTab from "@/components/admin/ContactPageTab";
 import toast from "react-hot-toast";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), {
@@ -361,6 +363,34 @@ export default function ContentManagerPage() {
                   </Card>
                 </div>
               </div>
+            </div>
+          </Tab>
+
+          <Tab
+            key="about"
+            title={
+              <div className="flex items-center space-x-2">
+                <FaFileAlt />
+                <span>About Page</span>
+              </div>
+            }
+          >
+            <div className="p-4 sm:p-6 lg:p-8">
+              <AboutPageTab />
+            </div>
+          </Tab>
+
+          <Tab
+            key="contact"
+            title={
+              <div className="flex items-center space-x-2">
+                <FaEnvelope />
+                <span>Contact Page</span>
+              </div>
+            }
+          >
+            <div className="p-4 sm:p-6 lg:p-8">
+              <ContactPageTab />
             </div>
           </Tab>
         
