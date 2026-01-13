@@ -59,6 +59,27 @@ export default function TeamPage() {
             }
         });
 
+        // Sort C-Level: CEO roles first, then CTO, then COO
+        leadership.cLevel.sort((a: any, b: any) => {
+            const aRole = (a.role || "").toLowerCase();
+            const bRole = (b.role || "").toLowerCase();
+            
+            // CEO priority (1)
+            if (aRole.includes("ceo") && !bRole.includes("ceo")) return -1;
+            if (!aRole.includes("ceo") && bRole.includes("ceo")) return 1;
+            
+            // CTO priority (2)
+            if (aRole.includes("cto") && !bRole.includes("cto")) return -1;
+            if (!aRole.includes("cto") && bRole.includes("cto")) return 1;
+            
+            // COO priority (3)
+            if (aRole.includes("coo") && !bRole.includes("coo")) return -1;
+            if (!aRole.includes("coo") && bRole.includes("coo")) return 1;
+            
+            // Others (CFO, Founder, etc.)
+            return 0;
+        });
+
         return {
             hero: {
                 tag: "Our Team",

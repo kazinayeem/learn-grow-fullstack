@@ -1,14 +1,28 @@
 "use client";
 
-import React from "react";
-import { Card, CardBody, Image, Chip } from "@nextui-org/react";
-import { FaLinkedin, FaTwitter } from "react-icons/fa";
+import React, { useState } from "react";
+import { Card, CardBody, Image, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@nextui-org/react";
+import { FaLinkedin, FaTwitter, FaTimes } from "react-icons/fa";
 
 interface TeamClientProps {
     content: any;
 }
 
+interface TeamMember {
+    _id: string;
+    image?: string;
+    name: string;
+    role: string;
+    bio?: string;
+    linkedIn?: string;
+    linkedin?: string;
+    twitter?: string;
+}
+
 export default function TeamClient({ content }: TeamClientProps) {
+    const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
     // Handle loading state
     if (!content) {
         return (
@@ -20,6 +34,51 @@ export default function TeamClient({ content }: TeamClientProps) {
 
     const { hero = {}, leadership = {}, instructors = [], executives = [] } = content;
     const { cLevel = [], teamLeads = [] } = leadership;
+
+    const handleMemberClick = (member: TeamMember) => {
+        setSelectedMember(member);
+        setIsModalOpen(true);
+    };
+
+    const MemberCard = ({ member, color }: { member: TeamMember; color: string }) => (
+        <Card
+            isPressable
+            onClick={() => handleMemberClick(member)}
+            className={`hover:shadow-xl transition-all cursor-pointer h-full w-full sm:w-[280px] flex-shrink-0 hover:scale-105`}
+        >
+            <CardBody className="p-4 sm:p-6 text-center">
+                {member.image && (
+                    <div className="mb-4 flex justify-center">
+                        <div className="w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0">
+                            <Image
+                                src={member.image}
+                                alt={member.name}
+                                className="w-full h-full rounded-full object-cover border-4"
+                                style={{ borderColor: color }}
+                                isBlurred
+                            />
+                        </div>
+                    </div>
+                )}
+                {member.name && (
+                    <h4 className="text-base sm:text-lg font-bold text-gray-800 mb-2">
+                        {member.name}
+                    </h4>
+                )}
+                {member.role && (
+                    <p className="font-semibold mb-3 text-sm sm:text-base" style={{ color }}>
+                        {member.role}
+                    </p>
+                )}
+                {member.bio && (
+                    <p className="text-gray-600 text-xs sm:text-sm mb-4 line-clamp-2">
+                        {member.bio}
+                    </p>
+                )}
+                <p className="text-gray-500 text-xs mt-2">Click to view details</p>
+            </CardBody>
+        </Card>
+    );
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -54,57 +113,16 @@ export default function TeamClient({ content }: TeamClientProps) {
 
                             {/* C-Level - Line 1 */}
                             {cLevel.length > 0 && (
-                                <div className="mb-12">
-                                    <h3 className="text-lg sm:text-xl font-semibold text-gray-700 mb-8 text-center px-2">
-                                        Line 1: CEO, CTO, COO
-                                    </h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                                <div className="mb-16">
+                                    <div className="mb-8 text-center">
+                                        <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
+                                            Line 1: CEO, CTO, COO
+                                        </h3>
+                                        <p className="text-gray-600 text-sm">Executive Leadership</p>
+                                    </div>
+                                    <div className="flex flex-wrap justify-center gap-6 sm:gap-8 max-w-6xl mx-auto">
                                         {cLevel.map((member: any, index: number) => (
-                                            <Card key={index} className="hover:shadow-lg transition-shadow h-full">
-                                                <CardBody className="p-4 sm:p-6 text-center">
-                                                    {(member.image || member.img) && (
-                                                        <div className="mb-4 flex justify-center">
-                                                            <div className="w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0">
-                                                                <Image
-                                                                    src={member.image || member.img}
-                                                                    alt={member.name}
-                                                                    className="w-full h-full rounded-full object-cover border-4 border-blue-200"
-                                                                    isBlurred
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                    {member.name && (
-                                                        <h4 className="text-base sm:text-lg font-bold text-gray-800 mb-2">
-                                                            {member.name}
-                                                        </h4>
-                                                    )}
-                                                    {member.role && (
-                                                        <p className="text-blue-600 font-semibold mb-3 text-sm sm:text-base">
-                                                            {member.role}
-                                                        </p>
-                                                    )}
-                                                    {member.bio && (
-                                                        <p className="text-gray-600 text-xs sm:text-sm mb-4 line-clamp-2">
-                                                            {member.bio}
-                                                        </p>
-                                                    )}
-                                                    {(member.linkedIn || member.linkedin || member.twitter) && (
-                                                        <div className="flex justify-center gap-3 mt-4">
-                                                            {(member.linkedIn || member.linkedin) && (member.linkedIn || member.linkedin) !== "#" && (
-                                                                <a href={member.linkedIn || member.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 text-lg">
-                                                                    <FaLinkedin />
-                                                                </a>
-                                                            )}
-                                                            {member.twitter && member.twitter !== "#" && (
-                                                                <a href={member.twitter} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-600 text-lg">
-                                                                    <FaTwitter />
-                                                                </a>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </CardBody>
-                                            </Card>
+                                            <MemberCard key={index} member={member} color="#0066cc" />
                                         ))}
                                     </div>
                                 </div>
@@ -113,56 +131,15 @@ export default function TeamClient({ content }: TeamClientProps) {
                             {/* Team Leads - Line 2 */}
                             {teamLeads.length > 0 && (
                                 <div>
-                                    <h3 className="text-lg sm:text-xl font-semibold text-gray-700 mb-8 text-center px-2">
-                                        Line 2: Team Leads (Technical Lead, Operation Manager, Marketing Head, etc)
-                                    </h3>
+                                    <div className="mb-8 text-center">
+                                        <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
+                                            Line 2: Team Leads
+                                        </h3>
+                                        <p className="text-gray-600 text-sm">Technical Lead, Operation Manager, Marketing Head, etc</p>
+                                    </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                                         {teamLeads.map((member: any, index: number) => (
-                                            <Card key={index} className="hover:shadow-lg transition-shadow border border-blue-100 h-full">
-                                                <CardBody className="p-4 sm:p-5 text-center">
-                                                    {(member.image || member.img) && (
-                                                        <div className="mb-3 flex justify-center">
-                                                            <div className="w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0">
-                                                                <Image
-                                                                    src={member.image || member.img}
-                                                                    alt={member.name}
-                                                                    className="w-full h-full rounded-full object-cover border-4 border-indigo-200"
-                                                                    isBlurred
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                    {member.name && (
-                                                        <h4 className="text-sm sm:text-base font-bold text-gray-800 mb-1">
-                                                            {member.name}
-                                                        </h4>
-                                                    )}
-                                                    {member.role && (
-                                                        <p className="text-indigo-600 font-semibold mb-2 text-xs sm:text-sm">
-                                                            {member.role}
-                                                        </p>
-                                                    )}
-                                                    {member.bio && (
-                                                        <p className="text-gray-600 text-xs mb-2 line-clamp-2">
-                                                            {member.bio}
-                                                        </p>
-                                                    )}
-                                                    {(member.linkedIn || member.linkedin || member.twitter) && (
-                                                        <div className="flex justify-center gap-2 mt-2">
-                                                            {(member.linkedIn || member.linkedin) && (member.linkedIn || member.linkedin) !== "#" && (
-                                                                <a href={member.linkedIn || member.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 text-sm">
-                                                                    <FaLinkedin />
-                                                                </a>
-                                                            )}
-                                                            {member.twitter && member.twitter !== "#" && (
-                                                                <a href={member.twitter} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-600 text-sm">
-                                                                    <FaTwitter />
-                                                                </a>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </CardBody>
-                                            </Card>
+                                            <MemberCard key={index} member={member} color="#6f46c1" />
                                         ))}
                                     </div>
                                 </div>
@@ -181,51 +158,7 @@ export default function TeamClient({ content }: TeamClientProps) {
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                                 {instructors.map((instructor: any, index: number) => (
-                                    <Card key={index} className="hover:shadow-lg transition-shadow h-full">
-                                        <CardBody className="p-4 sm:p-6 text-center">
-                                            {(instructor.image || instructor.img) && (
-                                                <div className="mb-4 flex justify-center">
-                                                    <div className="w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0">
-                                                        <Image
-                                                            src={instructor.image || instructor.img}
-                                                            alt={instructor.name}
-                                                            className="w-full h-full rounded-full object-cover border-4 border-green-200"
-                                                            isBlurred
-                                                        />
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {instructor.name && (
-                                                <h4 className="text-base sm:text-lg font-bold text-gray-800 mb-2">
-                                                    {instructor.name}
-                                                </h4>
-                                            )}
-                                            {instructor.role && (
-                                                <p className="text-green-600 font-semibold mb-3 text-sm sm:text-base">
-                                                    {instructor.role}
-                                                </p>
-                                            )}
-                                            {instructor.bio && (
-                                                <p className="text-gray-600 text-xs sm:text-sm mb-4 line-clamp-2">
-                                                    {instructor.bio}
-                                                </p>
-                                            )}
-                                            {(instructor.linkedIn || instructor.linkedin || instructor.twitter) && (
-                                                <div className="flex justify-center gap-3 mt-4">
-                                                    {(instructor.linkedIn || instructor.linkedin) && (instructor.linkedIn || instructor.linkedin) !== "#" && (
-                                                        <a href={instructor.linkedIn || instructor.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 text-lg">
-                                                            <FaLinkedin />
-                                                        </a>
-                                                    )}
-                                                    {instructor.twitter && instructor.twitter !== "#" && (
-                                                        <a href={instructor.twitter} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-600 text-lg">
-                                                            <FaTwitter />
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </CardBody>
-                                    </Card>
+                                    <MemberCard key={index} member={instructor} color="#16a34a" />
                                 ))}
                             </div>
                         </section>
@@ -242,48 +175,99 @@ export default function TeamClient({ content }: TeamClientProps) {
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                                 {executives.map((executive: any, index: number) => (
-                                    <Card key={index} className="hover:shadow-lg transition-shadow h-full">
-                                        <CardBody className="p-3 sm:p-4 text-center">
-                                            {(executive.image || executive.img) && (
-                                                <div className="mb-3 flex justify-center">
-                                                    <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0">
-                                                        <Image
-                                                            src={executive.image || executive.img}
-                                                            alt={executive.name}
-                                                            className="w-full h-full rounded-full object-cover border-4 border-purple-200"
-                                                            isBlurred
-                                                        />
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {executive.name && (
-                                                <h4 className="text-xs sm:text-sm font-bold text-gray-800 mb-1 line-clamp-2">
-                                                    {executive.name}
-                                                </h4>
-                                            )}
-                                            {executive.role && (
-                                                <p className="text-purple-600 font-semibold mb-2 text-xs">
-                                                    {executive.role}
-                                                </p>
-                                            )}
-                                            {executive.bio && (
-                                                <p className="text-gray-600 text-xs mb-2 line-clamp-1">
-                                                    {executive.bio}
-                                                </p>
-                                            )}
-                                            {(executive.linkedIn || executive.linkedin) && (executive.linkedIn || executive.linkedin) !== "#" && (
-                                                <a href={executive.linkedIn || executive.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 text-sm inline-block mt-2">
-                                                    <FaLinkedin />
-                                                </a>
-                                            )}
-                                        </CardBody>
-                                    </Card>
+                                    <MemberCard key={index} member={executive} color="#a855f7" />
                                 ))}
                             </div>
                         </section>
                     )}
                 </div>
             </div>
+
+            {/* Member Details Modal */}
+            <Modal isOpen={isModalOpen} onOpenChange={setIsModalOpen} size="lg" backdrop="blur">
+                <ModalContent className="max-w-2xl">
+                    {(onClose) => (
+                        <>
+                            <ModalHeader className="flex items-center justify-between bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-lg">
+                                <h2 className="text-xl font-bold">Team Member Details</h2>
+                                <button onClick={onClose} className="hover:opacity-80">
+                                    <FaTimes size={20} />
+                                </button>
+                            </ModalHeader>
+                            <ModalBody className="py-8">
+                                {selectedMember && (
+                                    <div className="flex flex-col items-center gap-6">
+                                        {/* Profile Image */}
+                                        {selectedMember.image && (
+                                            <div className="flex justify-center">
+                                                <div className="w-40 h-40">
+                                                    <Image
+                                                        src={selectedMember.image}
+                                                        alt={selectedMember.name}
+                                                        className="w-full h-full rounded-full object-cover border-4 border-blue-200 shadow-lg"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Name and Role */}
+                                        <div className="text-center">
+                                            <h3 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
+                                                {selectedMember.name}
+                                            </h3>
+                                            <p className="text-lg font-semibold text-blue-600 mb-4">
+                                                {selectedMember.role}
+                                            </p>
+                                        </div>
+
+                                        {/* Bio */}
+                                        {selectedMember.bio && (
+                                            <div className="w-full bg-gray-50 p-4 rounded-lg">
+                                                <p className="text-gray-700 text-center leading-relaxed">
+                                                    {selectedMember.bio}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {/* Social Links */}
+                                        {(selectedMember.linkedIn || selectedMember.linkedin || selectedMember.twitter) && (
+                                            <div className="flex gap-4 mt-4">
+                                                {(selectedMember.linkedIn || selectedMember.linkedin) && 
+                                                 (selectedMember.linkedIn || selectedMember.linkedin) !== "#" && (
+                                                    <a
+                                                        href={selectedMember.linkedIn || selectedMember.linkedin}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg transition-colors font-semibold"
+                                                    >
+                                                        <FaLinkedin size={20} />
+                                                        <span className="hidden sm:inline">LinkedIn</span>
+                                                    </a>
+                                                )}
+                                                {selectedMember.twitter && selectedMember.twitter !== "#" && (
+                                                    <a
+                                                        href={selectedMember.twitter}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-sky-100 hover:bg-sky-200 text-sky-600 rounded-lg transition-colors font-semibold"
+                                                    >
+                                                        <FaTwitter size={20} />
+                                                        <span className="hidden sm:inline">Twitter</span>
+                                                    </a>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </ModalBody>
+                            <ModalFooter className="bg-gray-50 rounded-b-lg">
+                                <Button color="primary" onClick={onClose} className="w-full sm:w-auto">
+                                    Close
+                                </Button>
+                            </ModalFooter>
+                        </>
+                    )}
+                </ModalContent>
+            </Modal>
         </div>
     );
-}
