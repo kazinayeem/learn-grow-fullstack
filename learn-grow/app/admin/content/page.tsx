@@ -15,29 +15,17 @@ import {
 import { useRouter } from "next/navigation";
 import {
   FaArrowLeft,
-  FaUsers,
   FaFileAlt,
   FaSave,
   FaUndo,
-  FaCheckCircle,
-  FaExclamationTriangle,
   FaEnvelope,
 } from "react-icons/fa";
-import { defaultTeamData } from "@/lib/teamData";
-import { defaultBlogData } from "@/lib/blogData";
-import { defaultEventsData } from "@/lib/eventsData";
-import { defaultPressData } from "@/lib/pressData";
-import { defaultContactData } from "@/lib/contactData";
-import { defaultEducatorsData } from "@/lib/educatorsData";
-import { defaultCareersData } from "@/lib/careersData";
-import { defaultAboutData } from "@/lib/aboutData";
+
 import {
   useGetSiteContentQuery,
   useUpdateSiteContentMutation,
 } from "@/redux/api/siteContentApi";
 import "react-quill-new/dist/quill.snow.css";
-import TeamManagementTab from "@/components/admin/TeamManagementTab";
-import TeamPageTab from "@/components/admin/TeamPageTab";
 import AboutPageTab from "@/components/admin/AboutPageTab";
 import ContactPageTab from "@/components/admin/ContactPageTab";
 import toast from "react-hot-toast";
@@ -53,15 +41,34 @@ const ReactQuill = dynamic(() => import("react-quill-new"), {
 
 // Color configuration for different content sections
 const SECTION_COLORS: Record<string, any> = {
-  "Privacy Policy": { bg: "from-blue-50 to-indigo-50", border: "border-blue-200", text: "text-blue-700", icon: "🛡️" },
-  "Terms & Conditions": { bg: "from-purple-50 to-pink-50", border: "border-purple-200", text: "text-purple-700", icon: "📜" },
-  "Refund Policy": { bg: "from-green-50 to-emerald-50", border: "border-green-200", text: "text-green-700", icon: "💸" },
-  "Cookie Policy": { bg: "from-amber-50 to-yellow-50", border: "border-amber-200", text: "text-amber-700", icon: "🍪" },
+  "Privacy Policy": {
+    bg: "from-blue-50 to-indigo-50",
+    border: "border-blue-200",
+    text: "text-blue-700",
+    icon: "🛡️",
+  },
+  "Terms & Conditions": {
+    bg: "from-purple-50 to-pink-50",
+    border: "border-purple-200",
+    text: "text-purple-700",
+    icon: "📜",
+  },
+  "Refund Policy": {
+    bg: "from-green-50 to-emerald-50",
+    border: "border-green-200",
+    text: "text-green-700",
+    icon: "💸",
+  },
+  "Cookie Policy": {
+    bg: "from-amber-50 to-yellow-50",
+    border: "border-amber-200",
+    text: "text-amber-700",
+    icon: "🍪",
+  },
 };
 
 // Map UI names to API page keys and default data
 const SECTIONS = {
- 
   "Privacy Policy": { key: "privacy-policy", default: "" },
   "Terms & Conditions": { key: "terms-of-use", default: "" },
   "Refund Policy": { key: "refund-policy", default: "" },
@@ -70,11 +77,11 @@ const SECTIONS = {
 
 export default function ContentManagerPage() {
   const router = useRouter();
-  const [selectedSection, setSelectedSection] = useState("Team");
+  const [selectedSection, setSelectedSection] = useState("Privacy Policy");
   const [richValue, setRichValue] = useState<string>("");
 
   const sectionConfig = SECTIONS[selectedSection as keyof typeof SECTIONS];
-  const sectionKey = sectionConfig?.key || "team";
+  const sectionKey = sectionConfig?.key || "privacy-policy";
   const defaultData = sectionConfig?.default || "";
   const colors = SECTION_COLORS[
     selectedSection as keyof typeof SECTION_COLORS
@@ -103,33 +110,38 @@ export default function ContentManagerPage() {
 
     const contentFromApi = apiData?.data?.content;
 
-        // ALWAYS show default data if database is empty or returns null/undefined
-        const hasValidContent = contentFromApi && (
-            (typeof contentFromApi === "string" && contentFromApi.trim() !== "") ||
-            (typeof contentFromApi === "object" && Object.keys(contentFromApi).length > 0)
-        );
+    // ALWAYS show default data if database is empty or returns null/undefined
+    const hasValidContent =
+      contentFromApi &&
+      ((typeof contentFromApi === "string" && contentFromApi.trim() !== "") ||
+        (typeof contentFromApi === "object" &&
+          Object.keys(contentFromApi).length > 0));
 
-        if (hasValidContent) {
-            // Database has content - use it
-            if (typeof contentFromApi === "string") {
-                setRichValue(contentFromApi);
-            } else if (typeof contentFromApi === "object") {
-                // Convert JSON to formatted HTML for editing
-                setRichValue(`<pre>${JSON.stringify(contentFromApi, null, 2)}</pre>`);
-            }
-        } else {
-            // Database is empty - use default data (NEVER show blank page)
-            if (typeof defaultData === "string") {
-                setRichValue(defaultData || "<p>No default content available for this section.</p>");
-            } else if (typeof defaultData === "object" && defaultData !== null) {
-                // Convert default JSON to formatted HTML
-                setRichValue(`<pre>${JSON.stringify(defaultData, null, 2)}</pre>`);
-            } else {
-                // Fallback if no default data exists
-                setRichValue("<p>No content available. Please add content and save.</p>");
-            }
-        }
-    }, [apiData, selectedSection, isLoading, defaultData]);
+    if (hasValidContent) {
+      // Database has content - use it
+      if (typeof contentFromApi === "string") {
+        setRichValue(contentFromApi);
+      } else if (typeof contentFromApi === "object") {
+        // Convert JSON to formatted HTML for editing
+        setRichValue(`<pre>${JSON.stringify(contentFromApi, null, 2)}</pre>`);
+      }
+    } else {
+      // Database is empty - use default data (NEVER show blank page)
+      if (typeof defaultData === "string") {
+        setRichValue(
+          defaultData || "<p>No default content available for this section.</p>"
+        );
+      } else if (typeof defaultData === "object" && defaultData !== null) {
+        // Convert default JSON to formatted HTML
+        setRichValue(`<pre>${JSON.stringify(defaultData, null, 2)}</pre>`);
+      } else {
+        // Fallback if no default data exists
+        setRichValue(
+          "<p>No content available. Please add content and save.</p>"
+        );
+      }
+    }
+  }, [apiData, selectedSection, isLoading, defaultData]);
 
   const handleSave = async () => {
     try {
@@ -148,7 +160,9 @@ export default function ContentManagerPage() {
 
   const handleReset = () => {
     if (
-      !confirm("Are you sure? This will revert to the original default content.")
+      !confirm(
+        "Are you sure? This will revert to the original default content."
+      )
     )
       return;
 
@@ -350,7 +364,10 @@ export default function ContentManagerPage() {
                           <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700 flex items-start gap-2">
                             <span className="text-lg">ℹ️</span>
                             <div>
-                              <strong>Default Content Loaded:</strong> The database has no saved content for this page, so default content is displayed. Click "Save Changes" to store this content in the database.
+                              <strong>Default Content Loaded:</strong> The
+                              database has no saved content for this page, so
+                              default content is displayed. Click "Save Changes"
+                              to store this content in the database.
                             </div>
                           </div>
                         )}
