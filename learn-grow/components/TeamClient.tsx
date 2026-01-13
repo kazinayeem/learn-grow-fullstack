@@ -188,11 +188,8 @@ export default function TeamClient({ content }: TeamClientProps) {
                 <ModalContent className="max-w-2xl">
                     {(onClose) => (
                         <>
-                            <ModalHeader className="flex items-center justify-between bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-lg">
+                            <ModalHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-lg">
                                 <h2 className="text-xl font-bold">Team Member Details</h2>
-                                <button onClick={onClose} className="hover:opacity-80">
-                                    <FaTimes size={20} />
-                                </button>
                             </ModalHeader>
                             <ModalBody className="py-8">
                                 {selectedMember && (
