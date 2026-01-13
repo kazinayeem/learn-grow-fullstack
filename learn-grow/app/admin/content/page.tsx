@@ -37,6 +37,7 @@ import {
 } from "@/redux/api/siteContentApi";
 import "react-quill-new/dist/quill.snow.css";
 import TeamManagementTab from "@/components/admin/TeamManagementTab";
+import TeamPageTab from "@/components/admin/TeamPageTab";
 import AboutPageTab from "@/components/admin/AboutPageTab";
 import ContactPageTab from "@/components/admin/ContactPageTab";
 import toast from "react-hot-toast";
@@ -396,7 +397,6 @@ export default function ContentManagerPage() {
               <ContactPageTab />
             </div>
           </Tab>
-        
         </Tabs>
       </div>
     </div>

@@ -45,7 +45,16 @@ export default function AboutPageTab() {
   // Load content from API
   useEffect(() => {
     if (apiData?.data?.content && typeof apiData.data.content === "object") {
-      setAboutData(apiData.data.content);
+      const content = apiData.data.content;
+      // Ensure features array has proper structure
+      if (content.features && Array.isArray(content.features)) {
+        content.features = content.features.map((f: any) => ({
+          icon: f.icon || "",
+          title: f.title || "",
+          desc: f.desc || f.description || "",
+        }));
+      }
+      setAboutData(content);
       setHasChanges(false);
     }
   }, [apiData]);
@@ -217,66 +226,76 @@ export default function AboutPageTab() {
           <div className="space-y-4">
             {aboutData.features.map((feature, index) => (
               <div key={index}>
-                <Card className="bg-white border border-gray-200">
+                <Card className="bg-white border border-gray-200 hover:border-green-300 transition-colors">
                   <CardBody className="p-4">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-1 space-y-3">
-                        <Input
-                          label="Icon/Emoji"
-                          placeholder="👨‍🏫"
-                          value={feature.icon}
-                          onChange={(e) => {
-                            const newFeatures = [...aboutData.features];
-                            newFeatures[index].icon = e.target.value;
+                    <div className="flex flex-col lg:flex-row gap-4">
+                      <div className="flex-1 space-y-3 min-w-0">
+                        <div>
+                          <label className="text-sm font-semibold text-gray-700 mb-2 block">Icon/Emoji</label>
+                          <Input
+                            placeholder="👨‍🏫 (paste emoji or text)"
+                            value={feature.icon}
+                            onChange={(e) => {
+                              const newFeatures = [...aboutData.features];
+                              newFeatures[index].icon = e.target.value;
+                              setAboutData({ ...aboutData, features: newFeatures });
+                              setHasChanges(true);
+                            }}
+                            size="sm"
+                            variant="bordered"
+                            className="w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-semibold text-gray-700 mb-2 block">Feature Title</label>
+                          <Input
+                            placeholder="Enter feature title"
+                            value={feature.title}
+                            onChange={(e) => {
+                              const newFeatures = [...aboutData.features];
+                              newFeatures[index].title = e.target.value;
+                              setAboutData({ ...aboutData, features: newFeatures });
+                              setHasChanges(true);
+                            }}
+                            size="sm"
+                            variant="bordered"
+                            className="w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-semibold text-gray-700 mb-2 block">Feature Description</label>
+                          <Textarea
+                            placeholder="Enter feature description"
+                            value={feature.desc}
+                            onChange={(e) => {
+                              const newFeatures = [...aboutData.features];
+                              newFeatures[index].desc = e.target.value;
+                              setAboutData({ ...aboutData, features: newFeatures });
+                              setHasChanges(true);
+                            }}
+                            minRows={3}
+                            variant="bordered"
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex lg:flex-col justify-end">
+                        <Button
+                          isIconOnly
+                          color="danger"
+                          variant="flat"
+                          startContent={<FaTrash />}
+                          onPress={() => {
+                            const newFeatures = aboutData.features.filter(
+                              (_, i) => i !== index
+                            );
                             setAboutData({ ...aboutData, features: newFeatures });
                             setHasChanges(true);
                           }}
-                          size="sm"
-                          variant="bordered"
-                          className="max-w-xs"
-                        />
-                        <Input
-                          label="Feature Title"
-                          placeholder="Enter feature title"
-                          value={feature.title}
-                          onChange={(e) => {
-                            const newFeatures = [...aboutData.features];
-                            newFeatures[index].title = e.target.value;
-                            setAboutData({ ...aboutData, features: newFeatures });
-                            setHasChanges(true);
-                          }}
-                          size="sm"
-                          variant="bordered"
-                        />
-                        <Textarea
-                          label="Feature Description"
-                          placeholder="Enter feature description"
-                          value={feature.desc}
-                          onChange={(e) => {
-                            const newFeatures = [...aboutData.features];
-                            newFeatures[index].desc = e.target.value;
-                            setAboutData({ ...aboutData, features: newFeatures });
-                            setHasChanges(true);
-                          }}
-                          minRows={2}
-                          variant="bordered"
+                          title="Delete feature"
+                          className="min-h-[44px]"
                         />
                       </div>
-                      <Button
-                        isIconOnly
-                        color="danger"
-                        variant="flat"
-                        startContent={<FaTrash />}
-                        onPress={() => {
-                          const newFeatures = aboutData.features.filter(
-                            (_, i) => i !== index
-                          );
-                          setAboutData({ ...aboutData, features: newFeatures });
-                          setHasChanges(true);
-                        }}
-                        title="Delete feature"
-                        className="mt-8"
-                      />
                     </div>
                   </CardBody>
                 </Card>

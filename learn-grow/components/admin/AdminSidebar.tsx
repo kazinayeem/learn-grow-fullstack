@@ -79,6 +79,7 @@ export default function AdminSidebar() {
     { label: "Site Content", icon: FaFileAlt, href: "/admin/content" },
     { label: "About Page", icon: FaFileAlt, href: "/admin/content?tab=about" },
     { label: "Contact Page", icon: FaEnvelope, href: "/admin/content?tab=contact" },
+    { label: "Team Page", icon: FaUsers, href: "/admin/content?tab=team" },
     { label: "Team Management", icon: FaUsers, href: "/admin/team-management" },
     { label: "Analytics", icon: FaChartBar, href: "/admin/analytics" },
     { label: "Settings", icon: FaCog, href: "/admin/settings" },
