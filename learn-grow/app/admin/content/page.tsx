@@ -363,9 +363,7 @@ export default function ContentManagerPage() {
               </div>
             </div>
           </Tab>
-          <Tab key="team" title="Team Management" className="mt-6">
-            <TeamManagementTab />
-          </Tab>
+        
         </Tabs>
       </div>
     </div>
