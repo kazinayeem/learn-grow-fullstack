@@ -112,6 +112,14 @@ const Footer: React.FC = () => {
               Legal & Policies
             </h3>
             <ul className="space-y-3 text-sm">
+               <li>
+                <Link
+                  className="hover:text-blue-400 transition-colors"
+                  href="/contact"
+                >
+                  Contact Us
+                </Link>
+              </li>
               <li>
                 <Link
                   className="hover:text-blue-400 transition-colors"

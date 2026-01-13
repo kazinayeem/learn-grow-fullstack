@@ -89,7 +89,7 @@ export default function AboutClient({ content }: AboutClientProps) {
                                 <CardBody className="text-center p-8">
                                     {feature.icon && <div className="text-5xl mb-4">{feature.icon}</div>}
                                     {feature.title && <h3 className="text-xl font-bold mb-3 text-gray-800">{feature.title}</h3>}
-                                    {feature.description && <p className="text-gray-600">{feature.description}</p>}
+                                    {(feature.desc || feature.description) && <p className="text-gray-600">{feature.desc || feature.description}</p>}
                                 </CardBody>
                             </Card>
                         ))}

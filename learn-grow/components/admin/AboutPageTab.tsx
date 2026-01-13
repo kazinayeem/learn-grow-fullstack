@@ -233,7 +233,6 @@ export default function AboutPageTab() {
                           }}
                           size="sm"
                           variant="bordered"
-                          maxLength={2}
                           className="max-w-xs"
                         />
                         <Input
