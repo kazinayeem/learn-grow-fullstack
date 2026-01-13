@@ -3,10 +3,11 @@
 import React, { useMemo } from "react";
 import { Spinner } from "@nextui-org/react";
 import TeamClient from "@/components/TeamClient";
-import { useGetAllTeamMembersQuery } from "@/redux/api/teamApi";
+import { useGetAllTeamMembersQuery, useGetAllRolesQuery } from "@/redux/api/teamApi";
 
 export default function TeamPage() {
-    const { data: teamData, isLoading } = useGetAllTeamMembersQuery({});
+    const { data: teamData, isLoading: teamLoading } = useGetAllTeamMembersQuery({});
+    const { data: rolesData, isLoading: rolesLoading } = useGetAllRolesQuery({});
 
     // Organize team members by role/category
     const organizedTeam = useMemo(() => {
@@ -18,7 +19,10 @@ export default function TeamPage() {
         const instructors = [];
         const executives = [];
 
-        teamData.data.forEach((member: any) => {
+        // Sort members by position
+        const sortedMembers = [...teamData.data].sort((a: any, b: any) => (a.position || 0) - (b.position || 0));
+
+        sortedMembers.forEach((member: any) => {
             const teamMember = {
                 _id: member._id,
                 image: member.image,
@@ -28,16 +32,29 @@ export default function TeamPage() {
                 linkedIn: member.linkedIn,
                 twitter: member.twitter,
                 showOnHome: member.showOnHome,
+                position: member.position,
             };
 
-            // Categorize by role
-            if (member.role === "CEO" || member.role === "CTO" || member.role === "COO") {
+            const roleLower = (member.role || "").toLowerCase();
+
+            // Categorize by role keywords
+            // Line 1: C-Level Executives (CEO, CTO, COO, CFO, etc.)
+            if (roleLower.includes("ceo") || roleLower.includes("cto") || roleLower.includes("coo") || 
+                roleLower.includes("cfo") || roleLower.includes("founder")) {
                 leadership.cLevel.push(teamMember);
-            } else if (member.role === "Team Lead") {
+            }
+            // Line 2: Team Leads & Managers (Operations Manager, Technical Lead, Marketing Head, etc.)
+            else if (roleLower.includes("manager") || roleLower.includes("lead") || 
+                     roleLower.includes("head") || roleLower.includes("director")) {
                 leadership.teamLeads.push(teamMember);
-            } else if (member.role === "Instructor") {
+            }
+            // Section 2: Instructors
+            else if (roleLower.includes("instructor") || roleLower.includes("teacher") || 
+                     roleLower.includes("educator") || roleLower.includes("trainer")) {
                 instructors.push(teamMember);
-            } else if (member.role === "Executive") {
+            }
+            // Section 3: Executives & Other Roles
+            else {
                 executives.push(teamMember);
             }
         });
@@ -54,7 +71,7 @@ export default function TeamPage() {
         };
     }, [teamData]);
 
-    if (isLoading) {
+    if (teamLoading || rolesLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <Spinner size="lg" label="Loading team members..." />
