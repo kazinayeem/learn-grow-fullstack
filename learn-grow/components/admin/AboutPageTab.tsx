@@ -45,7 +45,8 @@ export default function AboutPageTab() {
   // Load content from API
   useEffect(() => {
     if (apiData?.data?.content && typeof apiData.data.content === "object") {
-      const content = apiData.data.content;
+      // Create a deep copy to avoid read-only issues
+      const content = JSON.parse(JSON.stringify(apiData.data.content));
       // Ensure features array has proper structure
       if (content.features && Array.isArray(content.features)) {
         content.features = content.features.map((f: any) => ({
