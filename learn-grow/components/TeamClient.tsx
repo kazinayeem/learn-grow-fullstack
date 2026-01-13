@@ -271,3 +271,4 @@ export default function TeamClient({ content }: TeamClientProps) {
             </Modal>
         </div>
     );
+}
