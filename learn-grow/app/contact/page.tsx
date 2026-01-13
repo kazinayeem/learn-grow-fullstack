@@ -40,4 +40,4 @@ async function getContactContent() {
 
 export default async function ContactPage() {
     const content = await getContactContent();
-    return <ContactClient content={content} />;
+    return <ContactClient content={content} />;}
