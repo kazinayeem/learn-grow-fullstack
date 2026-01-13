@@ -85,7 +85,7 @@ export default function Home() {
         <PricingSection />
 
         {/* Our Educators - Last section before footer */}
-        <Educators />
+        {/* <Educators /> */}
       </div>
     </>
   );
