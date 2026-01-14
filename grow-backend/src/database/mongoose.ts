@@ -9,7 +9,7 @@ mongoose.set("toJSON", {
 });
 
 const DatabaseProd =
-  "mongodb://admin:admin123@mongodb:27017/learn_grow?authSource=admin";
+  "mongodb://admin:admin123@72.62.194.176:27017/learn_grow?authSource=admin";
 const testDev =
   "mongodb+srv://awsnayeem7_db_user:IbbqcElMtKJWCH6r@learn-grow.1vvwxhs.mongodb.net/?appName=learn-grow";
 export const connectDB = async (MONGODB_URI: string) => {
