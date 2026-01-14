@@ -7,10 +7,10 @@ import { toast } from "react-toastify";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
-// Import custom fonts
+// Import custom fonts including signature fonts
 if (typeof document !== "undefined") {
   const link = document.createElement("link");
-  link.href = "https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Fugaz+One&display=swap";
+  link.href = "https://fonts.googleapis.com/css2?family=Great+Vibes&family=Allura&family=Dancing+Script:wght@400;700&display=swap";
   link.rel = "stylesheet";
   document.head.appendChild(link);
 }
@@ -278,16 +278,17 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
             }}
           >
             <p 
-              className="text-center font-bold"
+              className="text-center"
               style={{ 
-                fontSize: '56px',
+                fontSize: '64px',
                 color: '#000000',
-                fontFamily: "'Arial', sans-serif",
-                letterSpacing: '2px',
-                fontWeight: 900,
+                fontFamily: "'Great Vibes', 'Allura', 'Dancing Script', cursive",
+                letterSpacing: '1px',
+                fontWeight: 400,
+                fontStyle: 'italic',
               }}
             >
-              {certificate.studentName.toUpperCase()}
+              {certificate.studentName}
             </p>
           </div>
 
