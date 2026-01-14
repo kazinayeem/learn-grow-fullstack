@@ -37,6 +37,18 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
   const [downloading, setDownloading] = React.useState(false);
   const [displayScale, setDisplayScale] = React.useState(1);
 
+  // Log certificate data on mount
+  useEffect(() => {
+    console.log("Certificate Component Mounted");
+    console.log("Certificate Data:", {
+      hasQRCode: !!certificate.qrCode,
+      qrCodeLength: certificate.qrCode?.length,
+      qrCodeStart: certificate.qrCode?.substring(0, 50),
+      studentName: certificate.studentName,
+      courseName: certificate.courseName,
+    });
+  }, [certificate]);
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -66,121 +78,96 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
     const node = certificateRef.current;
     
     try {
-      console.log("Starting certificate download process...");
+      console.log("Starting certificate download...");
+      console.log("QR Code present:", !!certificate.qrCode);
+      if (certificate.qrCode) {
+        console.log("QR Code type:", certificate.qrCode.substring(0, 30));
+      }
       
-      // Pre-load all images before cloning
-      const allImages = Array.from(node.querySelectorAll("img")) as HTMLImageElement[];
-      console.log(`Found ${allImages.length} images to process`);
-      
-      // Convert all images to data URLs first to ensure they're embedded
-      const imagePromises = allImages.map(async (img, index) => {
-        try {
-          // If already a data URL, skip conversion
-          if (img.src.startsWith('data:')) {
-            console.log(`Image ${index + 1} is already a data URL`);
-            return;
-          }
-          
-          console.log(`Converting image ${index + 1}: ${img.src.substring(0, 50)}...`);
-          
-          const response = await fetch(img.src, { mode: 'cors' });
-          const blob = await response.blob();
-          const dataUrl = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-          
-          // Store the data URL
-          img.setAttribute('data-original-src', img.src);
-          img.src = dataUrl;
-          console.log(`Image ${index + 1} converted successfully`);
-        } catch (e) {
-          console.warn(`Failed to convert image ${index + 1}:`, e);
-          // Don't fail the whole process for one image
-        }
-      });
-
-      await Promise.allSettled(imagePromises);
-      console.log("All images processed");
-      
-      // Wait a bit for images to fully load
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Create clone after all images are converted
-      console.log("Creating DOM clone...");
+      // Create a visible clone for better rendering
       const clone = node.cloneNode(true) as HTMLDivElement;
       
-      // Style the clone for off-screen rendering at full size
+      // Position clone off-screen but make it fully rendered
       clone.style.position = "fixed";
-      clone.style.left = "-99999px";
+      clone.style.left = "0";
       clone.style.top = "0";
       clone.style.width = BASE_WIDTH + "px";
       clone.style.height = BASE_HEIGHT + "px";
       clone.style.transform = "scale(1)";
       clone.style.transformOrigin = "top left";
-      clone.style.zIndex = "-9999";
-      clone.style.visibility = "visible";
-      clone.style.opacity = "1";
+      clone.style.zIndex = "9999";
+      clone.style.opacity = "0";
+      clone.style.pointerEvents = "none";
       
       // Append clone to body
       document.body.appendChild(clone);
-      console.log("Clone appended to DOM");
+      console.log("Clone created and appended");
 
-      // Wait for clone to render
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Wait for rendering
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Ensure all images in clone are loaded
+      // Check all images in the clone
       const cloneImages = Array.from(clone.querySelectorAll("img")) as HTMLImageElement[];
-      console.log(`Verifying ${cloneImages.length} images in clone...`);
+      console.log(`Found ${cloneImages.length} images in clone`);
       
+      for (let i = 0; i < cloneImages.length; i++) {
+        const img = cloneImages[i];
+        console.log(`Image ${i + 1}:`, {
+          src: img.src.substring(0, 50),
+          complete: img.complete,
+          naturalWidth: img.naturalWidth,
+          naturalHeight: img.naturalHeight,
+          width: img.width,
+          height: img.height
+        });
+      }
+
+      // Wait for all images to load
       await Promise.all(
-        cloneImages.map(
-          (img, idx) =>
-            new Promise((resolve) => {
-              if (img.complete && img.naturalHeight !== 0) {
-                console.log(`Clone image ${idx + 1} already loaded`);
+        cloneImages.map((img, idx) =>
+          new Promise((resolve) => {
+            if (img.complete && img.naturalHeight > 0) {
+              resolve(true);
+            } else {
+              const timeout = setTimeout(() => {
+                console.warn(`Image ${idx + 1} timed out`);
+                resolve(false);
+              }, 5000);
+              
+              img.onload = () => {
+                clearTimeout(timeout);
+                console.log(`Image ${idx + 1} loaded`);
                 resolve(true);
-              } else {
-                img.onload = () => {
-                  console.log(`Clone image ${idx + 1} loaded successfully`);
-                  resolve(true);
-                };
-                img.onerror = () => {
-                  console.error(`Clone image ${idx + 1} failed to load:`, img.src.substring(0, 50));
-                  resolve(false);
-                };
-                setTimeout(() => {
-                  console.warn(`Clone image ${idx + 1} timed out`);
-                  resolve(false);
-                }, 5000);
-              }
-            })
+              };
+              img.onerror = () => {
+                clearTimeout(timeout);
+                console.error(`Image ${idx + 1} failed`);
+                resolve(false);
+              };
+            }
+          })
         )
       );
 
-      console.log("All clone images verified");
-
-      // Final wait before capture
+      console.log("All images processed, starting capture...");
+      
+      // Wait a bit more
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      console.log("Capturing with html2canvas...");
-      // Capture with html2canvas with optimal settings
+      // Capture with html2canvas
       const canvas = await html2canvas(clone, {
-        scale: 3, // Higher quality
+        scale: 2,
         width: BASE_WIDTH,
         height: BASE_HEIGHT,
         backgroundColor: "#ffffff",
         useCORS: true,
         allowTaint: true,
-        logging: false, // Set to true for debugging
-        imageTimeout: 30000,
-        removeContainer: false,
-        foreignObjectRendering: false, // Better for images
-        ignoreElements: (element) => {
-          // Don't ignore any elements
-          return false;
+        logging: true,
+        imageTimeout: 15000,
+        onclone: (clonedDoc) => {
+          console.log("html2canvas cloning document...");
+          const clonedImages = clonedDoc.querySelectorAll("img");
+          console.log(`Cloned document has ${clonedImages.length} images`);
         }
       });
 
@@ -188,41 +175,28 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
 
       // Remove the clone
       document.body.removeChild(clone);
-      console.log("Clone removed from DOM");
+      console.log("Clone removed");
 
-      // Restore original image sources
-      allImages.forEach((img, index) => {
-        const originalSrc = img.getAttribute('data-original-src');
-        if (originalSrc) {
-          img.src = originalSrc;
-          img.removeAttribute('data-original-src');
-          console.log(`Restored original source for image ${index + 1}`);
-        }
-      });
-
-      console.log("Creating PDF...");
-      // Create PDF with canvas image
-      const imgData = canvas.toDataURL("image/png", 1.0); // Max quality
+      // Create PDF
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
       const pdf = new jsPDF({
         orientation: "landscape",
         unit: "px",
         format: [BASE_WIDTH, BASE_HEIGHT],
-        compress: false, // No compression for better quality
       });
 
-      pdf.addImage(imgData, "PNG", 0, 0, BASE_WIDTH, BASE_HEIGHT, undefined, 'FAST');
+      pdf.addImage(imgData, "JPEG", 0, 0, BASE_WIDTH, BASE_HEIGHT);
 
       const fileName = `certificate-${certificate.studentName
         .replace(/\s+/g, "-")
-        .toLowerCase()}-${Date.now()}.pdf`;
+        .toLowerCase()}.pdf`;
       
-      console.log(`Saving PDF as: ${fileName}`);
       pdf.save(fileName);
-      console.log("Certificate downloaded successfully!");
+      console.log("PDF saved successfully!");
       toast.success("✅ Certificate downloaded successfully!");
     } catch (error) {
-      console.error("Error downloading certificate:", error);
-      toast.error("❌ Failed to download certificate. Please try again.");
+      console.error("Download error:", error);
+      toast.error("❌ Failed to download. Check console for details.");
     } finally {
       setDownloading(false);
     }
@@ -383,33 +357,37 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
                 <img
                   src={certificate.qrCode}
                   alt="Certificate QR Code"
-                  width="96"
-                  height="96"
+                  width={96}
+                  height={96}
                   style={{ 
                     display: 'block',
                     width: '96px',
                     height: '96px',
+                    minWidth: '96px',
+                    minHeight: '96px',
+                    maxWidth: '96px',
+                    maxHeight: '96px',
                     objectFit: 'contain',
-                    imageRendering: '-webkit-optimize-contrast',
-                    WebkitUserSelect: 'none',
-                    userSelect: 'none',
+                    imageRendering: 'pixelated',
                   }}
+                  loading="eager"
+                  decoding="sync"
                   onLoad={(e) => {
                     const img = e.target as HTMLImageElement;
-                    console.log("QR Code loaded:", {
-                      src: certificate.qrCode.substring(0, 50) + "...",
+                    console.log("✅ QR Code loaded successfully:", {
                       width: img.naturalWidth,
                       height: img.naturalHeight,
                       complete: img.complete
                     });
                   }}
                   onError={(e) => {
-                    console.error("QR Code load error:", certificate.qrCode.substring(0, 100));
                     const target = e.target as HTMLImageElement;
+                    console.error("❌ QR Code failed to load");
+                    console.error("QR Code src:", certificate.qrCode?.substring(0, 100));
                     target.style.display = 'none';
                     const parent = target.parentElement;
                     if (parent) {
-                      parent.innerHTML = '<div style="width: 96px; height: 96px; background: #f3f4f6; border: 2px solid #d1d5db; border-radius: 4px; display: flex; align-items: center; justify-content: center;"><span style="font-size: 11px; color: #6b7280; text-align: center; padding: 8px;">QR Code<br/>Unavailable</span></div>';
+                      parent.innerHTML = '<div style="width: 96px; height: 96px; background: #fee; border: 2px solid #fcc; border-radius: 4px; display: flex; align-items: center; justify-content: center;"><span style="font-size: 10px; color: #c00; text-align: center; padding: 8px;">QR Failed<br/>to Load</span></div>';
                     }
                   }}
                 />
@@ -426,8 +404,8 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}>
-                  <span style={{ fontSize: '11px', color: '#6b7280', textAlign: 'center', padding: '8px' }}>
-                    QR Code<br/>Not Generated
+                  <span style={{ fontSize: '10px', color: '#6b7280', textAlign: 'center', padding: '8px' }}>
+                    No QR Code<br/>Generated
                   </span>
                 </div>
               </div>
