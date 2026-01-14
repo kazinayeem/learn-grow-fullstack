@@ -66,72 +66,94 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
     try {
       const node = certificateRef.current;
       
-      // Clone the node to avoid modifying original
-      const clonedNode = node.cloneNode(true) as HTMLElement;
-      clonedNode.style.position = "fixed";
-      clonedNode.style.left = "0";
-      clonedNode.style.top = "0";
-      clonedNode.style.transform = "scale(1)";
-      clonedNode.style.visibility = "hidden";
-      clonedNode.style.zIndex = "-9999";
-      document.body.appendChild(clonedNode);
+      // Store original styles
+      const originalWidth = node.style.width;
+      const originalHeight = node.style.height;
+      const originalPosition = node.style.position;
+      const originalTransform = node.style.transform;
+      const originalLeft = node.style.left;
+      const originalTop = node.style.top;
 
-      // Wait for all images to load
-      const images = clonedNode.querySelectorAll('img');
-      const imagePromises = Array.from(images).map(img => {
-        return new Promise((resolve) => {
-          if (img.complete) {
-            resolve(null);
-          } else {
-            img.onload = () => resolve(null);
-            img.onerror = () => resolve(null);
-          }
-        });
-      });
+      // Set element to full size
+      node.style.width = BASE_WIDTH + "px";
+      node.style.height = BASE_HEIGHT + "px";
+      node.style.position = "fixed";
+      node.style.left = "0";
+      node.style.top = "0";
+      node.style.transform = "scale(1)";
+      node.style.zIndex = "99999";
 
-      await Promise.all(imagePromises);
+      // Wait for everything to render
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      const canvas = await html2canvas(clonedNode, {
-        scale: 3,
-        backgroundColor: "transparent",
-        logging: false,
+      // Load background image
+      const bgImg = new Image();
+      bgImg.crossOrigin = "anonymous";
+      await new Promise((resolve) => {
+        bgImg.onload = resolve;
+        bgImg.onerror = resolve;
+        bgImg.src = "/Templete_Certificate_page-0001.jpg";
+        setTimeout(resolve, 3000);
+      });
+
+      // Load all content images
+      const images = Array.from(node.querySelectorAll("img")) as HTMLImageElement[];
+      await Promise.all(
+        images.map(
+          (img) =>
+            new Promise((resolve) => {
+              if (img.complete) {
+                resolve(true);
+              } else {
+                img.onload = () => resolve(true);
+                img.onerror = () => resolve(false);
+                setTimeout(resolve, 2000);
+              }
+            })
+        )
+      );
+
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Capture with html2canvas
+      const canvas = await html2canvas(node, {
+        scale: 2,
+        width: BASE_WIDTH,
+        height: BASE_HEIGHT,
+        backgroundColor: "#ffffff",
         useCORS: true,
         allowTaint: true,
-        foreignObjectRendering: false,
-        imageTimeout: 10000,
-        windowHeight: clonedNode.scrollHeight,
-        windowWidth: clonedNode.scrollWidth,
+        logging: false,
+        imageTimeout: 20000,
       });
 
-      // Remove cloned node
-      document.body.removeChild(clonedNode);
+      // Restore original styles
+      node.style.width = originalWidth;
+      node.style.height = originalHeight;
+      node.style.position = originalPosition;
+      node.style.transform = originalTransform;
+      node.style.left = originalLeft;
+      node.style.top = originalTop;
 
+      // Create PDF with canvas image
       const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ 
-        orientation: "landscape", 
-        unit: "mm", 
-        format: "a4",
-        compress: true,
+      const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "px",
+        format: [BASE_WIDTH, BASE_HEIGHT],
       });
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = (pdfHeight - imgHeight * ratio) / 2;
 
-      pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      pdf.addImage(imgData, "PNG", 0, 0, BASE_WIDTH, BASE_HEIGHT);
+
+      const fileName = `certificate-${certificate.studentName
+        .replace(/\s+/g, "-")
+        .toLowerCase()}-${Date.now()}.pdf`;
       
-      const fileName = `certificate-${certificate.studentName.replace(/\s+/g, '-')}-${certificate.certificateId}.pdf`;
       pdf.save(fileName);
-      
       toast.success("✅ Certificate downloaded successfully!");
     } catch (error) {
       console.error("Error downloading certificate:", error);
-      toast.error("❌ Failed to download certificate. Please try again.");
+      toast.error("❌ Failed to download. Check browser console for details.");
     } finally {
       setDownloading(false);
     }
@@ -181,6 +203,22 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
             backgroundRepeat: 'no-repeat',
           }}
         >
+          {/* Background image layer for PDF capture */}
+          <img
+            src="/Templete_Certificate_page-0001.jpg"
+            alt="Certificate Background"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              zIndex: 0,
+              pointerEvents: "none",
+            }}
+          />
+
           {/* Dynamic Content Overlays */}
           
           {/* Student Name - positioned on the template line */}
@@ -189,6 +227,7 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
             style={{ 
               top: '48%',
               width: '70%',
+              zIndex: 10,
             }}
           >
             <p 
