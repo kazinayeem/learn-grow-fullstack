@@ -22,6 +22,8 @@ jobs:
           -o StrictHostKeyChecking=no \
           root@${{ secrets.VPS_HOST }} << 'EOF'
 
+            pm2 delete all || true
+
             echo "🚀 Starting deployment..."
 
             cd /root/learn-grow-fullstack || { echo "❌ Project path not found"; exit 1; }
@@ -39,5 +41,8 @@ jobs:
             pm2 restart frontend
 
             echo "✅ Deployment finished successfully"
+
+            pm2 save
+            
 
           EOF
