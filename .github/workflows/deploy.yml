@@ -1,9 +1,8 @@
-name: Check VPS SSH Connection
+name: Check VPS SSH Connection (root)
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   ssh-check:
@@ -17,8 +16,10 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Check SSH Connection
+      - name: SSH Connection Test
         run: |
-          ssh -o BatchMode=yes -o ConnectTimeout=10 \
-          ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
-          "echo '✅ SSH connection successful'"
+          ssh -i ~/.ssh/id_ed25519 \
+          -o StrictHostKeyChecking=no \
+          -o BatchMode=yes \
+          root@${{ secrets.VPS_HOST }} \
+          "whoami"
