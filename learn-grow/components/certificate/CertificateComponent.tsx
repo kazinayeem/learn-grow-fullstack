@@ -32,6 +32,9 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
   const BASE_WIDTH = 1200;
   const BASE_HEIGHT = Math.round(BASE_WIDTH / 1.414);
 
+  const QR_SIZE = 110;
+  const QR_BOTTOM_PCT = 0.165; // 16.5% from bottom
+
   const containerRef = useRef<HTMLDivElement>(null);
   const certificateRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = React.useState(false);
@@ -130,16 +133,15 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
           });
 
           if (qrLoaded) {
-            const qrSize = 96;
-            const qrX = (BASE_WIDTH - qrSize) / 2;
-            const qrBottom = 0.16 * BASE_HEIGHT;
-            const qrY = BASE_HEIGHT - qrBottom - qrSize;
+            const qrX = (BASE_WIDTH - QR_SIZE) / 2;
+            const qrBottom = QR_BOTTOM_PCT * BASE_HEIGHT;
+            const qrY = BASE_HEIGHT - qrBottom - QR_SIZE;
 
             ctx.save();
             // Draw a white backing so it stays readable
             ctx.fillStyle = "#ffffff";
-            ctx.fillRect(qrX * scale - 8 * scale, qrY * scale - 8 * scale, (qrSize + 16) * scale, (qrSize + 16) * scale);
-            ctx.drawImage(qrImg, qrX * scale, qrY * scale, qrSize * scale, qrSize * scale);
+            ctx.fillRect(qrX * scale - 10 * scale, qrY * scale - 10 * scale, (QR_SIZE + 20) * scale, (QR_SIZE + 20) * scale);
+            ctx.drawImage(qrImg, qrX * scale, qrY * scale, QR_SIZE * scale, QR_SIZE * scale);
             ctx.restore();
           }
         }
@@ -308,75 +310,65 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
 
        
 
-          {/* QR Code - Bottom Center */}
-          <div 
-            className="absolute left-1/2 transform -translate-x-1/2"
+          {/* QR Code - Verification Block (Bottom Center) */}
+          <div
+            className="absolute left-1/2 transform -translate-x-1/2 text-center"
             style={{
-              bottom: '16%',
+              bottom: `${QR_BOTTOM_PCT * 100}%`,
               zIndex: 30,
+              width: '220px',
             }}
           >
+            <p
+              style={{
+                fontFamily: "'Arial', sans-serif",
+                fontSize: '10px',
+                color: '#6b7280',
+                marginBottom: '6px',
+                letterSpacing: '0.3px',
+              }}
+            >
+              Scan to verify
+            </p>
             {certificate.qrCode && certificate.qrCode.trim() ? (
-              <div 
-                className="bg-white p-2 rounded-lg" 
-                style={{ 
-                  display: 'inline-block', 
+              <div
+                className="bg-white rounded-md"
+                style={{
+                  display: 'inline-block',
+                  padding: '8px',
                   border: '2px solid #e5e7eb',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
                 }}
               >
                 <img
                   src={certificate.qrCode}
                   alt="Certificate QR Code"
-                  width={96}
-                  height={96}
-                  style={{ 
+                  width={QR_SIZE}
+                  height={QR_SIZE}
+                  style={{
                     display: 'block',
-                    width: '96px',
-                    height: '96px',
-                    minWidth: '96px',
-                    minHeight: '96px',
-                    maxWidth: '96px',
-                    maxHeight: '96px',
+                    width: `${QR_SIZE}px`,
+                    height: `${QR_SIZE}px`,
                     objectFit: 'contain',
                     imageRendering: 'pixelated',
                   }}
                   loading="eager"
                   decoding="sync"
-                  onLoad={(e) => {
-                    const img = e.target as HTMLImageElement;
-                    console.log("✅ QR Code loaded successfully:", {
-                      width: img.naturalWidth,
-                      height: img.naturalHeight,
-                      complete: img.complete
-                    });
-                  }}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    console.error("❌ QR Code failed to load");
-                    console.error("QR Code src:", certificate.qrCode?.substring(0, 100));
                     target.style.display = 'none';
                     const parent = target.parentElement;
                     if (parent) {
-                      parent.innerHTML = '<div style="width: 96px; height: 96px; background: #fee; border: 2px solid #fcc; border-radius: 4px; display: flex; align-items: center; justify-content: center;"><span style="font-size: 10px; color: #c00; text-align: center; padding: 8px;">QR Failed<br/>to Load</span></div>';
+                      parent.innerHTML = `<div style="width:${QR_SIZE}px;height:${QR_SIZE}px;background:#fef2f2;border:2px solid #fecaca;border-radius:6px;display:flex;align-items:center;justify-content:center;"><span style="font-size:10px;color:#b91c1c;text-align:center;padding:8px;">QR Failed<br/>to Load</span></div>`;
                     }
                   }}
                 />
               </div>
             ) : (
-              <div className="bg-white p-2 rounded-lg border-2 border-gray-300">
-                <div style={{
-                  width: '96px',
-                  height: '96px',
-                  background: '#f3f4f6',
-                  border: '2px dashed #9ca3af',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
+              <div className="bg-white rounded-md" style={{ display: 'inline-block', padding: '8px', border: '2px dashed #9ca3af' }}>
+                <div style={{ width: `${QR_SIZE}px`, height: `${QR_SIZE}px`, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span style={{ fontSize: '10px', color: '#6b7280', textAlign: 'center', padding: '8px' }}>
-                    No QR Code<br/>Generated
+                    No QR Code
                   </span>
                 </div>
               </div>
