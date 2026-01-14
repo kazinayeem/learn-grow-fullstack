@@ -24,7 +24,7 @@ jobs:
 
             echo "🚀 Starting deployment..."
 
-            cd /learn-grow-fullstack || exit 1
+            cd /root/learn-grow-fullstack || { echo "❌ Project path not found"; exit 1; }
 
             echo "📦 Backend deploy"
             cd grow-backend
