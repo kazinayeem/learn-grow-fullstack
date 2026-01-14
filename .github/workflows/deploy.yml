@@ -1,11 +1,11 @@
-name: Check VPS SSH Connection (root)
+name: Deploy Learn & Grow Fullstack (root)
 
 on:
   push:
     branches: [ main ]
 
 jobs:
-  ssh-check:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,10 +16,28 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-      - name: SSH Connection Test
+      - name: Deploy to VPS
         run: |
           ssh -i ~/.ssh/id_ed25519 \
           -o StrictHostKeyChecking=no \
-          -o BatchMode=yes \
-          root@${{ secrets.VPS_HOST }} \
-          "whoami"
+          root@${{ secrets.VPS_HOST }} << 'EOF'
+
+            echo "🚀 Starting deployment..."
+
+            cd /learn-grow-fullstack || exit 1
+
+            echo "📦 Backend deploy"
+            cd grow-backend
+            npm install
+            npm run build
+            pm2 restart grow-backend
+
+            echo "📦 Frontend deploy"
+            cd ../learn-grow
+            npm install
+            npm run build
+            pm2 restart frontend
+
+            echo "✅ Deployment finished successfully"
+
+          EOF
