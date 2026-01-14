@@ -4,13 +4,13 @@ import React, { useEffect, useRef } from "react";
 import { Button, Spinner } from "@nextui-org/react";
 import { FaDownload } from "react-icons/fa";
 import { toast } from "react-toastify";
-import html2canvas from "html2canvas";
+import { toPng, toJpeg } from "html-to-image";
 import jsPDF from "jspdf";
 
-// Import custom fonts including signature fonts
+// Import custom fonts including signature fonts and modern sans-serif
 if (typeof document !== "undefined") {
   const link = document.createElement("link");
-  link.href = "https://fonts.googleapis.com/css2?family=Great+Vibes&family=Allura&family=Dancing+Script:wght@400;700&display=swap";
+  link.href = "https://fonts.googleapis.com/css2?family=Great+Vibes&family=Allura&family=Dancing+Script:wght@400;700&family=Poppins:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap";
   link.rel = "stylesheet";
   document.head.appendChild(link);
 }
@@ -33,7 +33,8 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
   const BASE_HEIGHT = Math.round(BASE_WIDTH / 1.414);
 
   const QR_SIZE = 110;
-  const QR_BOTTOM_PCT = 0.165; // 16.5% from bottom
+  const QR_BOTTOM_PCT = 0.09;
+  const QR_LEFT_PCT = 0.27; // Moved right to 35% to avoid logo coverage
 
   const containerRef = useRef<HTMLDivElement>(null);
   const certificateRef = useRef<HTMLDivElement>(null);
@@ -66,109 +67,51 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
     if (!certificateRef.current) return;
 
     setDownloading(true);
-    const node = certificateRef.current;
 
-    let clone: HTMLDivElement | null = null;
-    
     try {
-      // Create a clone for PDF capture (never touches the visible UI)
-      clone = node.cloneNode(true) as HTMLDivElement;
+      // Wait for fonts to be ready
+      await document.fonts.ready;
 
-      // Keep it off-screen, but still renderable
-      clone.style.position = "fixed";
-      clone.style.left = "-99999px";
-      clone.style.top = "0";
-      clone.style.width = `${BASE_WIDTH}px`;
-      clone.style.height = `${BASE_HEIGHT}px`;
-      clone.style.transform = "scale(1)";
-      clone.style.transformOrigin = "top left";
-      clone.style.zIndex = "-1";
-      clone.style.visibility = "visible";
-      clone.style.pointerEvents = "none";
+      // Small delay to ensure everything is rendered
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-      document.body.appendChild(clone);
-
-      // Wait for fonts + layout
-      if (document.fonts?.ready) {
-        await document.fonts.ready;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      // Ensure images are loaded
-      const cloneImages = Array.from(clone.querySelectorAll("img")) as HTMLImageElement[];
-      await Promise.all(
-        cloneImages.map(
-          (img) =>
-            new Promise((resolve) => {
-              if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) return resolve(true);
-              img.onload = () => resolve(true);
-              img.onerror = () => resolve(false);
-              setTimeout(() => resolve(false), 6000);
-            })
-        )
-      );
-
-      const scale = 2;
-      const canvas = await html2canvas(clone, {
-        scale,
-        width: BASE_WIDTH,
-        height: BASE_HEIGHT,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        imageTimeout: 20000,
+      // Use html-to-image library which handles data URLs better
+      const dataUrl = await toPng(certificateRef.current, {
+        quality: 1.0,
+        pixelRatio: 2, // High quality
+        backgroundColor: 'white',
+        cacheBust: true, // Prevent caching issues
+        style: {
+          margin: '0',
+          transform: 'scale(1)', // Reset any transforms
+          transformOrigin: 'top left',
+        },
+        filter: (node) => {
+          // Include all nodes
+          return true;
+        },
       });
 
-      // Some browsers miss <img src="data:..."> inside off-screen nodes.
-      // Force-draw the QR code onto the final canvas so the PDF always includes it.
-      if (certificate.qrCode && certificate.qrCode.startsWith("data:image")) {
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          const qrImg = new Image();
-          const qrLoaded = await new Promise<boolean>((resolve) => {
-            qrImg.onload = () => resolve(true);
-            qrImg.onerror = () => resolve(false);
-            qrImg.src = certificate.qrCode;
-          });
-
-          if (qrLoaded) {
-            const qrX = (BASE_WIDTH - QR_SIZE) / 2;
-            const qrBottom = QR_BOTTOM_PCT * BASE_HEIGHT;
-            const qrY = BASE_HEIGHT - qrBottom - QR_SIZE;
-
-            ctx.save();
-            // Draw a white backing so it stays readable
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(qrX * scale - 10 * scale, qrY * scale - 10 * scale, (QR_SIZE + 20) * scale, (QR_SIZE + 20) * scale);
-            ctx.drawImage(qrImg, qrX * scale, qrY * scale, QR_SIZE * scale, QR_SIZE * scale);
-            ctx.restore();
-          }
-        }
-      }
-
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      // Create PDF from the image
       const pdf = new jsPDF({
         orientation: "landscape",
         unit: "px",
         format: [BASE_WIDTH, BASE_HEIGHT],
       });
 
-      pdf.addImage(imgData, "JPEG", 0, 0, BASE_WIDTH, BASE_HEIGHT);
+      pdf.addImage(dataUrl, "PNG", 0, 0, BASE_WIDTH, BASE_HEIGHT, undefined, 'FAST');
 
       const fileName = `certificate-${certificate.studentName
         .replace(/\s+/g, "-")
         .toLowerCase()}.pdf`;
-      
+
       pdf.save(fileName);
       toast.success("✅ Certificate downloaded successfully!");
+
     } catch (error) {
       console.error("Download error:", error);
-      toast.error("❌ Failed to download. Check console for details.");
+      toast.error("❌ Failed to download. Please try again.");
     } finally {
-      if (clone && document.body.contains(clone)) {
-        document.body.removeChild(clone);
-      }
       setDownloading(false);
     }
   };
@@ -196,31 +139,37 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
       <div
         ref={containerRef}
         className="relative w-full flex justify-center overflow-hidden"
-        style={{ 
-          height: BASE_HEIGHT * displayScale, 
+        style={{
+          height: BASE_HEIGHT * displayScale,
           maxHeight: '90vh',
           overflowY: 'hidden',
           overflowX: 'auto',
         }}
       >
         <div
-          ref={certificateRef}
-          className="shadow-2xl overflow-hidden flex-shrink-0"
           style={{
             width: BASE_WIDTH,
             height: BASE_HEIGHT,
-            fontFamily: "'Segoe UI', 'Helvetica Neue', 'Arial', sans-serif",
-            boxSizing: "border-box",
-            position: "relative",
-            margin: "0 auto",
             transform: `scale(${displayScale})`,
             transformOrigin: "top center",
-            backgroundImage: 'url(/Templete_Certificate_page-0001.jpg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
           }}
         >
+          <div
+            ref={certificateRef}
+            className="shadow-2xl overflow-hidden flex-shrink-0"
+            style={{
+              width: BASE_WIDTH,
+              height: BASE_HEIGHT,
+              fontFamily: "'Segoe UI', 'Helvetica Neue', 'Arial', sans-serif",
+              boxSizing: "border-box",
+              position: "relative",
+              margin: "0 auto",
+              backgroundImage: 'url(/Templete_Certificate_page-0001.jpg)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+            }}
+          >
           {/* Background image layer for PDF capture */}
           <img
             src="/Templete_Certificate_page-0001.jpg"
@@ -238,82 +187,87 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
           />
 
           {/* Dynamic Content Overlays */}
-          
-          {/* Student Name - positioned on the template line */}
-          <div 
-            className="absolute left-1/2 transform -translate-x-1/2"
-            style={{ 
-              top: '45.5%',
-              width: '70%',
+
+          {/* Course Name - In the Purple Ribbon/Banner Area */}
+          <div
+            className="absolute left-1/2 transform -translate-x-1/2 flex items-center justify-center"
+            style={{
+              top: '29.5%',
+              width: '60%',
+              transform: 'translateX(-35%) rotate(-2deg)', // Moved right to align with banner
               zIndex: 10,
             }}
           >
-            <p 
+            <p
+              className="text-center font-bold text-white uppercase tracking-wider"
+              style={{
+                fontSize: '20px', // Adjusted size to fit comfortably
+                fontFamily: "'Montserrat', sans-serif",
+                textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+                lineHeight: 1.1,
+              }}
+            >
+              {certificate.courseName || "Young Inventors & Robotics"}
+            </p>
+          </div>
+
+          {/* Student Name - Centered and Modern (Underline removed as it's in template) */}
+          <div
+            className="absolute left-1/2 transform -translate-x-1/2 flex flex-col items-center justify-center"
+            style={{
+              top: '49%', // Moved UP slightly (was 52.5%) to prevent PDF line overlap
+              width: '80%',
+              zIndex: 10,
+            }}
+          >
+            <p
               className="text-center"
-              style={{ 
-                fontSize: '58px',
+              style={{
+                fontSize: '48px',
                 color: '#000000',
-                fontFamily: "'Great Vibes', 'Allura', 'Dancing Script', cursive",
-                letterSpacing: '0.5px',
-                fontWeight: 400,
-                fontStyle: 'italic',
-                lineHeight: 1,
+                fontFamily: "'Montserrat', sans-serif",
+                fontWeight: 700,
+                lineHeight: 1.1, // Tighter line height for PDF consistency
+                marginBottom: '8px',
+                letterSpacing: '-0.5px', // Slight tracking adjustment
               }}
             >
               {certificate.studentName}
             </p>
+            {/* Manual underline removed */}
           </div>
 
-          {/* Course Name - below the student name */}
-          <div 
-            className="absolute left-1/2 transform -translate-x-1/2"
-            style={{ 
-              top: '58.5%',
-              width: '75%',
-            }}
-          >
-            <p 
-              className="text-center font-semibold"
-              style={{ 
-                fontSize: '22px',
-                color: '#000000',
-                fontFamily: "'Arial', sans-serif",
-                fontWeight: 700,
-              }}
-            >
-              {certificate.courseName}
-            </p>
-          </div>
-
-          {/* Instructor Name */}
-          <div 
-            className="absolute left-1/2 transform -translate-x-1/2"
-            style={{ 
-              top: '63%',
-              width: '75%',
-            }}
-          >
-            <p 
-              className="text-center"
-              style={{ 
-                fontSize: '16px',
-                color: '#666666',
-                fontFamily: "'Arial', sans-serif",
-                fontWeight: 500,
-              }}
-            >
-              Instructor: <span className="font-bold" style={{ color: '#000000' }}>{certificate.courseInstructor}</span>
-            </p>
-          </div>
-
-      
-
-       
-
-          {/* QR Code - Verification Block (Bottom Center) */}
+          {/* Congratulatory Text - Below the Name/Line */}
           <div
             className="absolute left-1/2 transform -translate-x-1/2 text-center"
             style={{
+              top: '65%', // Moved down to clear the line
+              width: '85%',
+              zIndex: 10,
+            }}
+          >
+            <p
+              style={{
+                fontSize: '14px',
+                color: '#0ea5e9', // Light blue
+                fontFamily: "'Poppins', sans-serif",
+                fontWeight: 500,
+                lineHeight: 1.4,
+              }}
+            >
+              Congratulations on completing your first robotics adventure!
+              <br />
+              You are a certified junior inventor and builder!
+            </p>
+          </div>
+
+          {/* Instructor/Signatory block removed as requested (present in template) */}
+
+          {/* QR Code - Verification Block (Bottom Left) */}
+          <div
+            className="absolute transform -translate-x-1/2 text-center"
+            style={{
+              left: `${QR_LEFT_PCT * 100}%`,
               bottom: `${QR_BOTTOM_PCT * 100}%`,
               zIndex: 30,
               width: '220px',
@@ -376,18 +330,17 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
           </div>
 
           {/* Certificate ID - Below QR Code */}
-          <div 
-            className="absolute left-1/2 transform -translate-x-1/2 text-center z-30"
+          <div
+            className="absolute transform -translate-x-1/2 text-center z-30"
             style={{
-              bottom: '10%',
+              left: `${QR_LEFT_PCT * 100}%`,
+              bottom: '8%',
             }}
           >
-            <p style={{ color: '#999999', marginBottom: '2px', fontFamily: "'Arial', sans-serif", fontSize: '9px' }}>
-              Certificate ID:
-            </p>
             <p style={{ fontFamily: 'monospace', color: '#555555', fontWeight: 600, fontSize: '10px' }}>
               {certificate.certificateId}
             </p>
+          </div>
           </div>
         </div>
       </div>
