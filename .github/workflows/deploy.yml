@@ -22,27 +22,33 @@ jobs:
           -o StrictHostKeyChecking=no \
           root@${{ secrets.VPS_HOST }} << 'EOF'
 
-            pm2 delete all || true
-
             echo "🚀 Starting deployment..."
 
             cd /root/learn-grow-fullstack || { echo "❌ Project path not found"; exit 1; }
 
-            echo "📦 Backend deploy"
+            echo "📦 Backend build"
             cd grow-backend
-            npm install
+            npm install --prefer-offline
             npm run build
-            pm2 restart grow-backend
 
-            echo "📦 Frontend deploy"
+            echo "♻️ Backend PM2 (restart or start)"
+            pm2 describe grow-backend > /dev/null \
+              && pm2 reload grow-backend \
+              || pm2 start npm --name "grow-backend" -- start
+
+            echo "📦 Frontend build"
             cd ../learn-grow
-            npm install
+            npm install --prefer-offline
             npm run build
-            pm2 restart frontend
+
+            echo "♻️ Frontend PM2 (restart or start)"
+            pm2 describe frontend > /dev/null \
+              && pm2 reload frontend \
+              || pm2 start npm --name "frontend" -- start
+
+            echo "💾 Saving PM2 state"
+            pm2 save
 
             echo "✅ Deployment finished successfully"
-
-            pm2 save
-            
 
           EOF
