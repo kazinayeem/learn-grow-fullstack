@@ -25,10 +25,12 @@ jobs:
             echo "🚀 Starting deployment..."
 
             cd /root/learn-grow-fullstack || { echo "❌ Project path not found"; exit 1; }
-            echo "🔄 Pulling latest changes from GitHub
+
+            echo "🔄 Pulling latest changes from GitHub"
             git reset --hard
             git pull origin main
             echo "✅ Pulled latest changes"
+
             echo "📦 Backend build"
             cd grow-backend
             npm install --prefer-offline
