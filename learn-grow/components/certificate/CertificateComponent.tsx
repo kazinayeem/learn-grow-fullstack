@@ -87,16 +87,16 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
       // Create a visible clone for better rendering
       const clone = node.cloneNode(true) as HTMLDivElement;
       
-      // Position clone off-screen but make it fully rendered
+      // Position clone completely off-screen to avoid blocking UI
       clone.style.position = "fixed";
-      clone.style.left = "0";
+      clone.style.left = "-99999px";
       clone.style.top = "0";
       clone.style.width = BASE_WIDTH + "px";
       clone.style.height = BASE_HEIGHT + "px";
       clone.style.transform = "scale(1)";
       clone.style.transformOrigin = "top left";
-      clone.style.zIndex = "9999";
-      clone.style.opacity = "0";
+      clone.style.zIndex = "-1";
+      clone.style.visibility = "visible";
       clone.style.pointerEvents = "none";
       
       // Append clone to body
