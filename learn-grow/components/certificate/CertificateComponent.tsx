@@ -63,25 +63,23 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
     if (!certificateRef.current) return;
 
     setDownloading(true);
+    
+    // Create a temporary clone for rendering off-screen
+    const node = certificateRef.current;
+    const clone = node.cloneNode(true) as HTMLDivElement;
+    
+    // Style the clone for off-screen rendering
+    clone.style.position = "absolute";
+    clone.style.left = "-9999px";
+    clone.style.top = "0";
+    clone.style.width = BASE_WIDTH + "px";
+    clone.style.height = BASE_HEIGHT + "px";
+    clone.style.transform = "scale(1)";
+    clone.style.zIndex = "-1";
+    
     try {
-      const node = certificateRef.current;
-      
-      // Store original styles
-      const originalWidth = node.style.width;
-      const originalHeight = node.style.height;
-      const originalPosition = node.style.position;
-      const originalTransform = node.style.transform;
-      const originalLeft = node.style.left;
-      const originalTop = node.style.top;
-
-      // Set element to full size
-      node.style.width = BASE_WIDTH + "px";
-      node.style.height = BASE_HEIGHT + "px";
-      node.style.position = "fixed";
-      node.style.left = "0";
-      node.style.top = "0";
-      node.style.transform = "scale(1)";
-      node.style.zIndex = "99999";
+      // Append clone to body
+      document.body.appendChild(clone);
 
       // Wait for everything to render
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -96,8 +94,8 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
         setTimeout(resolve, 3000);
       });
 
-      // Load all content images
-      const images = Array.from(node.querySelectorAll("img")) as HTMLImageElement[];
+      // Load all content images in the clone
+      const images = Array.from(clone.querySelectorAll("img")) as HTMLImageElement[];
       await Promise.all(
         images.map(
           (img) =>
@@ -113,10 +111,10 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
         )
       );
 
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       // Capture with html2canvas
-      const canvas = await html2canvas(node, {
+      const canvas = await html2canvas(clone, {
         scale: 2,
         width: BASE_WIDTH,
         height: BASE_HEIGHT,
@@ -127,13 +125,8 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
         imageTimeout: 20000,
       });
 
-      // Restore original styles
-      node.style.width = originalWidth;
-      node.style.height = originalHeight;
-      node.style.position = originalPosition;
-      node.style.transform = originalTransform;
-      node.style.left = originalLeft;
-      node.style.top = originalTop;
+      // Remove the clone
+      document.body.removeChild(clone);
 
       // Create PDF with canvas image
       const imgData = canvas.toDataURL("image/png");
@@ -154,6 +147,11 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
     } catch (error) {
       console.error("Error downloading certificate:", error);
       toast.error("❌ Failed to download. Check browser console for details.");
+      
+      // Ensure clone is removed even on error
+      if (document.body.contains(clone)) {
+        document.body.removeChild(clone);
+      }
     } finally {
       setDownloading(false);
     }
@@ -181,21 +179,25 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
 
       <div
         ref={containerRef}
-        className="relative w-full flex justify-center overflow-x-auto"
-        style={{ height: BASE_HEIGHT * displayScale, overflowY: "hidden" }}
+        className="relative w-full flex justify-center overflow-hidden"
+        style={{ 
+          height: BASE_HEIGHT * displayScale, 
+          maxHeight: '90vh',
+          overflowY: 'hidden',
+          overflowX: 'auto',
+        }}
       >
         <div
           ref={certificateRef}
-          className="shadow-2xl overflow-hidden flex-shrink-0 relative"
+          className="shadow-2xl overflow-hidden flex-shrink-0"
           style={{
             width: BASE_WIDTH,
             height: BASE_HEIGHT,
             fontFamily: "'Segoe UI', 'Helvetica Neue', 'Arial', sans-serif",
             boxSizing: "border-box",
-            position: "absolute",
-            left: "50%",
-            top: 0,
-            transform: `translateX(-50%) scale(${displayScale})`,
+            position: "relative",
+            margin: "0 auto",
+            transform: `scale(${displayScale})`,
             transformOrigin: "top center",
             backgroundImage: 'url(/Templete_Certificate_page-0001.jpg)',
             backgroundSize: 'cover',
@@ -292,32 +294,47 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
 
           {/* QR Code - Bottom Center */}
           <div 
-            className="absolute left-1/2 transform -translate-x-1/2 z-30"
+            className="absolute left-1/2 transform -translate-x-1/2"
             style={{
               bottom: '16%',
+              zIndex: 30,
             }}
           >
-            <div className="bg-white p-1 rounded" style={{ display: 'inline-block', border: '1px solid #ddd' }}>
-              {certificate.qrCode && certificate.qrCode.trim() ? (
+            {certificate.qrCode && certificate.qrCode.trim() ? (
+              <div className="bg-white p-2 rounded-lg shadow-md" style={{ display: 'inline-block', border: '2px solid #e5e7eb' }}>
                 <img
                   src={certificate.qrCode}
-                  alt="QR Code"
-                  className="w-20 h-20"
+                  alt="QR Code for Certificate Verification"
+                  className="w-24 h-24"
                   style={{ 
                     display: 'block',
                     objectFit: 'contain',
+                    imageRendering: 'crisp-edges',
+                  }}
+                  crossOrigin="anonymous"
+                  onLoad={(e) => {
+                    console.log("QR Code loaded successfully:", certificate.qrCode);
                   }}
                   onError={(e) => {
                     console.error("QR Code failed to load:", certificate.qrCode);
-                    (e.target as HTMLImageElement).style.display = 'none';
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent) {
+                      parent.innerHTML = '<div class="w-24 h-24 bg-gray-100 border-2 border-gray-300 rounded flex items-center justify-center"><span style="font-size: 11px; color: #999; text-align: center; padding: 8px;">QR Code<br/>Unavailable</span></div>';
+                    }
                   }}
                 />
-              ) : (
-                <div className="w-20 h-20 bg-gray-100 border border-gray-300 flex items-center justify-center">
-                  <span style={{ fontSize: '10px', color: '#999' }}>No QR</span>
+              </div>
+            ) : (
+              <div className="bg-white p-2 rounded-lg shadow-md border-2 border-gray-300">
+                <div className="w-24 h-24 bg-gray-100 border-2 border-dashed border-gray-400 rounded flex items-center justify-center">
+                  <span style={{ fontSize: '11px', color: '#999', textAlign: 'center', padding: '8px' }}>
+                    QR Code<br/>Unavailable
+                  </span>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Certificate ID - Below QR Code */}
