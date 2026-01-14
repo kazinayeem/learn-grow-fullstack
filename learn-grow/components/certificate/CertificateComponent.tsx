@@ -65,23 +65,56 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
     setDownloading(true);
     try {
       const node = certificateRef.current;
-      const originalTransform = node.style.transform;
+      
+      // Clone the node to avoid modifying original
+      const clonedNode = node.cloneNode(true) as HTMLElement;
+      clonedNode.style.position = "fixed";
+      clonedNode.style.left = "0";
+      clonedNode.style.top = "0";
+      clonedNode.style.transform = "scale(1)";
+      clonedNode.style.visibility = "hidden";
+      clonedNode.style.zIndex = "-9999";
+      document.body.appendChild(clonedNode);
 
-      // Export at full (unscaled) size for crisp PDF.
-      node.style.transform = "translateX(-50%) scale(1)";
+      // Wait for all images to load
+      const images = clonedNode.querySelectorAll('img');
+      const imagePromises = Array.from(images).map(img => {
+        return new Promise((resolve) => {
+          if (img.complete) {
+            resolve(null);
+          } else {
+            img.onload = () => resolve(null);
+            img.onerror = () => resolve(null);
+          }
+        });
+      });
 
-      const canvas = await html2canvas(certificateRef.current, {
+      await Promise.all(imagePromises);
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const canvas = await html2canvas(clonedNode, {
         scale: 3,
-        backgroundColor: null,
+        backgroundColor: "transparent",
         logging: false,
         useCORS: true,
         allowTaint: true,
+        foreignObjectRendering: false,
+        imageTimeout: 10000,
+        windowHeight: clonedNode.scrollHeight,
+        windowWidth: clonedNode.scrollWidth,
       });
 
-      node.style.transform = originalTransform;
+      // Remove cloned node
+      document.body.removeChild(clonedNode);
 
       const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const pdf = new jsPDF({ 
+        orientation: "landscape", 
+        unit: "mm", 
+        format: "a4",
+        compress: true,
+      });
+      
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const imgWidth = canvas.width;
@@ -91,11 +124,14 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
       const imgY = (pdfHeight - imgHeight * ratio) / 2;
 
       pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-      pdf.save(`certificate-${certificate.certificateId}.pdf`);
-      toast.success("Certificate downloaded successfully!");
+      
+      const fileName = `certificate-${certificate.studentName.replace(/\s+/g, '-')}-${certificate.certificateId}.pdf`;
+      pdf.save(fileName);
+      
+      toast.success("✅ Certificate downloaded successfully!");
     } catch (error) {
       console.error("Error downloading certificate:", error);
-      toast.error("Failed to download certificate");
+      toast.error("❌ Failed to download certificate. Please try again.");
     } finally {
       setDownloading(false);
     }
@@ -151,20 +187,21 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
           <div 
             className="absolute left-1/2 transform -translate-x-1/2"
             style={{ 
-              top: '52%',
-              width: '60%',
+              top: '48%',
+              width: '70%',
             }}
           >
             <p 
               className="text-center font-bold"
               style={{ 
-                fontSize: '48px',
+                fontSize: '56px',
                 color: '#000000',
                 fontFamily: "'Arial', sans-serif",
-                letterSpacing: '1px',
+                letterSpacing: '2px',
+                fontWeight: 900,
               }}
             >
-              {certificate.studentName}
+              {certificate.studentName.toUpperCase()}
             </p>
           </div>
 
@@ -172,16 +209,17 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
           <div 
             className="absolute left-1/2 transform -translate-x-1/2"
             style={{ 
-              top: '62%',
-              width: '70%',
+              top: '57%',
+              width: '75%',
             }}
           >
             <p 
               className="text-center font-semibold"
               style={{ 
-                fontSize: '20px',
-                color: '#333333',
+                fontSize: '22px',
+                color: '#000000',
                 fontFamily: "'Arial', sans-serif",
+                fontWeight: 700,
               }}
             >
               {certificate.courseName}
@@ -192,8 +230,8 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
           <div 
             className="absolute left-1/2 transform -translate-x-1/2"
             style={{ 
-              top: '67%',
-              width: '70%',
+              top: '63%',
+              width: '75%',
             }}
           >
             <p 
@@ -202,109 +240,58 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
                 fontSize: '16px',
                 color: '#666666',
                 fontFamily: "'Arial', sans-serif",
+                fontWeight: 500,
               }}
             >
-              Instructor: <span className="font-semibold">{certificate.courseInstructor}</span>
+              Instructor: <span className="font-bold" style={{ color: '#000000' }}>{certificate.courseInstructor}</span>
             </p>
           </div>
 
-          {/* Date - bottom left area */}
-          <div 
-            className="absolute"
-            style={{ 
-              bottom: '18%',
-              left: '25%',
-            }}
-          >
-            <p 
-              className="text-center"
-              style={{ 
-                fontSize: '16px',
-                color: '#333333',
-                fontFamily: "'Arial', sans-serif",
-              }}
-            >
-              {formatDate(certificate.issuedAt)}
-            </p>
-          </div>
+      
 
-          {/* Signature - bottom right area */}
-          <div 
-            className="absolute"
-            style={{ 
-              bottom: '15%',
-              right: '20%',
-            }}
-          >
-            <p 
-              className="text-center"
-              style={{ 
-                fontSize: '36px',
-                fontFamily: "'Dancing Script', cursive",
-                fontWeight: 700,
-                color: '#000000',
-                marginBottom: '4px',
-              }}
-            >
-              Jabed
-            </p>
-            <p 
-              className="text-center"
-              style={{ 
-                fontSize: '14px',
-                color: '#333333',
-                fontFamily: "'Arial', sans-serif",
-                fontWeight: 600,
-              }}
-            >
-              Md Jabed Hosen
-            </p>
-            <p 
-              className="text-center"
-              style={{ 
-                fontSize: '12px',
-                color: '#666666',
-                fontFamily: "'Arial', sans-serif",
-              }}
-            >
-              CEO, Learn & Grow
-            </p>
-          </div>
+       
 
-          {/* QR Code - Bottom Left */}
+          {/* QR Code - Bottom Center */}
           <div 
-            className="absolute z-30"
+            className="absolute left-1/2 transform -translate-x-1/2 z-30"
             style={{
-              bottom: '8%',
-              left: '8%',
+              bottom: '16%',
             }}
           >
-            <div className="bg-white p-2 rounded shadow-md">
-              {certificate.qrCode ? (
+            <div className="bg-white p-1 rounded" style={{ display: 'inline-block', border: '1px solid #ddd' }}>
+              {certificate.qrCode && certificate.qrCode.trim() ? (
                 <img
                   src={certificate.qrCode}
                   alt="QR Code"
-                  className="w-24 h-24"
-                  style={{ display: 'block' }}
+                  className="w-20 h-20"
+                  style={{ 
+                    display: 'block',
+                    objectFit: 'contain',
+                  }}
+                  onError={(e) => {
+                    console.error("QR Code failed to load:", certificate.qrCode);
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
                 />
               ) : (
-                <div className="w-24 h-24 bg-gray-100 border border-gray-300" />
+                <div className="w-20 h-20 bg-gray-100 border border-gray-300 flex items-center justify-center">
+                  <span style={{ fontSize: '10px', color: '#999' }}>No QR</span>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Certificate ID - Bottom Right */}
+          {/* Certificate ID - Below QR Code */}
           <div 
-            className="absolute text-right"
+            className="absolute left-1/2 transform -translate-x-1/2 text-center z-30"
             style={{
-              bottom: '8%',
-              right: '8%',
+              bottom: '10%',
             }}
           >
-            <p style={{ fontSize: '10px', color: '#666666', marginBottom: '2px' }}>
+            <p style={{ color: '#999999', marginBottom: '2px', fontFamily: "'Arial', sans-serif", fontSize: '9px' }}>
               Certificate ID:
             </p>
-            <p style={{ fontSize: '12px', fontFamily: 'monospace', color: '#333333', fontWeight: 600 }}>
+            <p style={{ fontFamily: 'monospace', color: '#555555', fontWeight: 600, fontSize: '10px' }}>
               {certificate.certificateId}
             </p>
           </div>
