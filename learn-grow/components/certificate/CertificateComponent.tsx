@@ -37,18 +37,6 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
   const [downloading, setDownloading] = React.useState(false);
   const [displayScale, setDisplayScale] = React.useState(1);
 
-  // Log certificate data on mount
-  useEffect(() => {
-    console.log("Certificate Component Mounted");
-    console.log("Certificate Data:", {
-      hasQRCode: !!certificate.qrCode,
-      qrCodeLength: certificate.qrCode?.length,
-      qrCodeStart: certificate.qrCode?.substring(0, 50),
-      studentName: certificate.studentName,
-      courseName: certificate.courseName,
-    });
-  }, [certificate]);
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -76,108 +64,87 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
 
     setDownloading(true);
     const node = certificateRef.current;
+
+    let clone: HTMLDivElement | null = null;
     
     try {
-      console.log("Starting certificate download...");
-      console.log("QR Code present:", !!certificate.qrCode);
-      if (certificate.qrCode) {
-        console.log("QR Code type:", certificate.qrCode.substring(0, 30));
-      }
-      
-      // Create a visible clone for better rendering
-      const clone = node.cloneNode(true) as HTMLDivElement;
-      
-      // Position clone completely off-screen to avoid blocking UI
+      // Create a clone for PDF capture (never touches the visible UI)
+      clone = node.cloneNode(true) as HTMLDivElement;
+
+      // Keep it off-screen, but still renderable
       clone.style.position = "fixed";
       clone.style.left = "-99999px";
       clone.style.top = "0";
-      clone.style.width = BASE_WIDTH + "px";
-      clone.style.height = BASE_HEIGHT + "px";
+      clone.style.width = `${BASE_WIDTH}px`;
+      clone.style.height = `${BASE_HEIGHT}px`;
       clone.style.transform = "scale(1)";
       clone.style.transformOrigin = "top left";
       clone.style.zIndex = "-1";
       clone.style.visibility = "visible";
       clone.style.pointerEvents = "none";
-      
-      // Append clone to body
+
       document.body.appendChild(clone);
-      console.log("Clone created and appended");
 
-      // Wait for rendering
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Check all images in the clone
-      const cloneImages = Array.from(clone.querySelectorAll("img")) as HTMLImageElement[];
-      console.log(`Found ${cloneImages.length} images in clone`);
-      
-      for (let i = 0; i < cloneImages.length; i++) {
-        const img = cloneImages[i];
-        console.log(`Image ${i + 1}:`, {
-          src: img.src.substring(0, 50),
-          complete: img.complete,
-          naturalWidth: img.naturalWidth,
-          naturalHeight: img.naturalHeight,
-          width: img.width,
-          height: img.height
-        });
+      // Wait for fonts + layout
+      if (document.fonts?.ready) {
+        await document.fonts.ready;
       }
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
-      // Wait for all images to load
+      // Ensure images are loaded
+      const cloneImages = Array.from(clone.querySelectorAll("img")) as HTMLImageElement[];
       await Promise.all(
-        cloneImages.map((img, idx) =>
-          new Promise((resolve) => {
-            if (img.complete && img.naturalHeight > 0) {
-              resolve(true);
-            } else {
-              const timeout = setTimeout(() => {
-                console.warn(`Image ${idx + 1} timed out`);
-                resolve(false);
-              }, 5000);
-              
-              img.onload = () => {
-                clearTimeout(timeout);
-                console.log(`Image ${idx + 1} loaded`);
-                resolve(true);
-              };
-              img.onerror = () => {
-                clearTimeout(timeout);
-                console.error(`Image ${idx + 1} failed`);
-                resolve(false);
-              };
-            }
-          })
+        cloneImages.map(
+          (img) =>
+            new Promise((resolve) => {
+              if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) return resolve(true);
+              img.onload = () => resolve(true);
+              img.onerror = () => resolve(false);
+              setTimeout(() => resolve(false), 6000);
+            })
         )
       );
 
-      console.log("All images processed, starting capture...");
-      
-      // Wait a bit more
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Capture with html2canvas
+      const scale = 2;
       const canvas = await html2canvas(clone, {
-        scale: 2,
+        scale,
         width: BASE_WIDTH,
         height: BASE_HEIGHT,
         backgroundColor: "#ffffff",
         useCORS: true,
         allowTaint: true,
-        logging: true,
-        imageTimeout: 15000,
-        onclone: (clonedDoc) => {
-          console.log("html2canvas cloning document...");
-          const clonedImages = clonedDoc.querySelectorAll("img");
-          console.log(`Cloned document has ${clonedImages.length} images`);
-        }
+        logging: false,
+        imageTimeout: 20000,
       });
 
-      console.log(`Canvas created: ${canvas.width}x${canvas.height}`);
+      // Some browsers miss <img src="data:..."> inside off-screen nodes.
+      // Force-draw the QR code onto the final canvas so the PDF always includes it.
+      if (certificate.qrCode && certificate.qrCode.startsWith("data:image")) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          const qrImg = new Image();
+          const qrLoaded = await new Promise<boolean>((resolve) => {
+            qrImg.onload = () => resolve(true);
+            qrImg.onerror = () => resolve(false);
+            qrImg.src = certificate.qrCode;
+          });
 
-      // Remove the clone
-      document.body.removeChild(clone);
-      console.log("Clone removed");
+          if (qrLoaded) {
+            const qrSize = 96;
+            const qrX = (BASE_WIDTH - qrSize) / 2;
+            const qrBottom = 0.16 * BASE_HEIGHT;
+            const qrY = BASE_HEIGHT - qrBottom - qrSize;
 
-      // Create PDF
+            ctx.save();
+            // Draw a white backing so it stays readable
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(qrX * scale - 8 * scale, qrY * scale - 8 * scale, (qrSize + 16) * scale, (qrSize + 16) * scale);
+            ctx.drawImage(qrImg, qrX * scale, qrY * scale, qrSize * scale, qrSize * scale);
+            ctx.restore();
+          }
+        }
+      }
+
       const imgData = canvas.toDataURL("image/jpeg", 0.95);
       const pdf = new jsPDF({
         orientation: "landscape",
@@ -192,12 +159,14 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
         .toLowerCase()}.pdf`;
       
       pdf.save(fileName);
-      console.log("PDF saved successfully!");
       toast.success("✅ Certificate downloaded successfully!");
     } catch (error) {
       console.error("Download error:", error);
       toast.error("❌ Failed to download. Check console for details.");
     } finally {
+      if (clone && document.body.contains(clone)) {
+        document.body.removeChild(clone);
+      }
       setDownloading(false);
     }
   };
@@ -272,7 +241,7 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
           <div 
             className="absolute left-1/2 transform -translate-x-1/2"
             style={{ 
-              top: '48%',
+              top: '45.5%',
               width: '70%',
               zIndex: 10,
             }}
@@ -280,12 +249,13 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
             <p 
               className="text-center"
               style={{ 
-                fontSize: '64px',
+                fontSize: '58px',
                 color: '#000000',
                 fontFamily: "'Great Vibes', 'Allura', 'Dancing Script', cursive",
-                letterSpacing: '1px',
+                letterSpacing: '0.5px',
                 fontWeight: 400,
                 fontStyle: 'italic',
+                lineHeight: 1,
               }}
             >
               {certificate.studentName}
@@ -296,7 +266,7 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
           <div 
             className="absolute left-1/2 transform -translate-x-1/2"
             style={{ 
-              top: '57%',
+              top: '58.5%',
               width: '75%',
             }}
           >
