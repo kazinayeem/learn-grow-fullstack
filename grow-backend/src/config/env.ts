@@ -18,7 +18,7 @@ export const ENV = {
   GOOGLE_CALLBACK_URL: "https://learnandgrow.io/api/auth/google/callback",
   
   // Frontend URL
-  FRONTEND_URL: process.env.FRONTEND_URL || "https://learnandgrow.io",
+  FRONTEND_URL: "https://learnandgrow.io",
   
   // Backend URL
   BACKEND_URL: process.env.BACKEND_URL || "https://learnandgrow.io/api",
