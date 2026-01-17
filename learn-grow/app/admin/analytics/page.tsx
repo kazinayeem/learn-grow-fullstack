@@ -481,7 +481,7 @@ export default function AnalyticsPage() {
         </Card>
 
         {/* Category Distribution - Pie Chart */}
-        <Card className="shadow-lg border border-gray-100">
+        {/* <Card className="shadow-lg border border-gray-100">
           <CardHeader className="px-6 pt-6 pb-0">
             <h3 className="text-lg font-bold text-gray-800">Course Categories</h3>
           </CardHeader>
@@ -513,7 +513,7 @@ export default function AnalyticsPage() {
               )}
             </div>
           </CardBody>
-        </Card>
+        </Card> */}
 
         {/* Plan Type Distribution - Progress Bars */}
         <Card className="shadow-lg border border-gray-100">
