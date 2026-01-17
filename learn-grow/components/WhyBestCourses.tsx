@@ -77,11 +77,6 @@ export default function WhyBestCourses() {
                   </div>
                 ))}
               </div>
-              <div className="mt-8 p-4 bg-white rounded-xl border-2 border-blue-300">
-                <p className="text-center text-blue-900 font-bold text-lg">
-                  🏆 ৫০০০+ সন্তুষ্ট শিক্ষার্থী
-                </p>
-              </div>
             </CardBody>
           </Card>
 
