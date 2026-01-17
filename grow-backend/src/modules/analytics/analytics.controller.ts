@@ -54,11 +54,10 @@ export const getAnalytics = async (req: Request, res: Response) => {
       recentOrders,
       recentEnrollments
     ] = await Promise.all([
-      // User counts (4 queries)
+      // User counts (3 queries)
       User.countDocuments(),
       User.countDocuments({ role: 'student' }),
       User.countDocuments({ role: 'instructor' }),
-      User.countDocuments({ lastLoginAt: { $gte: last7Days } }),
       
       // Course counts (2 queries)
       Course.countDocuments(),
@@ -125,12 +124,10 @@ export const getAnalytics = async (req: Request, res: Response) => {
         { $project: { _id: 1, count: 1, categoryName: { $ifNull: [{ $arrayElemAt: ['$categoryInfo.name', 0] }, 'Uncategorized'] } } },
         { $sort: { count: -1 } }
       ]),
-      Order.aggregate([
-        { $match: { paymentStatus: 'approved' } },
-        { $group: { _id: '$courseId', count: { $sum: 1 } } },
-        { $lookup: { from: 'courses', localField: '_id', foreignField: '_id', as: 'courseInfo' } },
-        { $addFields: { category: { $arrayElemAt: ['$courseInfo.category', 0] } } },
-        { $lookup: { from: 'categories', localField: 'category', foreignField: '_id', as: 'categoryInfo' } },
+      Course.aggregate([
+        { $match: { isPublished: true, isAdminApproved: true } },
+        { $group: { _id: '$category', count: { $sum: 1 } } },
+        { $lookup: { from: 'categories', localField: '_id', foreignField: '_id', as: 'categoryInfo' } },
         { $project: { 
           _id: 1, 
           count: 1, 

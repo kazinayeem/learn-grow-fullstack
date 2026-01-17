@@ -90,15 +90,6 @@ export default function AnalyticsPage() {
 
   const analytics = analyticsData.data;
 
-  // Debug: Log the analytics data structure
-  React.useEffect(() => {
-    if (analytics) {
-      console.log("Analytics data:", analytics);
-      console.log("Top courses:", analytics.topCourses);
-      console.log("Categories:", analytics.distributions?.categories);
-    }
-  }, [analytics]);
-
   // Destructure existing data with safe defaults
   const {
     overview = {},
