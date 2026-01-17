@@ -92,16 +92,16 @@ export default function AnalyticsPage() {
 
   const analytics = analyticsData.data;
 
-  // Destructure existing data
+  // Destructure existing data with safe defaults
   const {
-    overview,
-    revenue: backendRevenue,
-    growth,
-    trends,
-    topCourses,
-    distributions,
-    recentActivity,
-  } = analytics;
+    overview = {},
+    revenue: backendRevenue = {},
+    growth = {},
+    trends = { revenue: [], enrollments: [] },
+    topCourses = [],
+    distributions = { categories: [], planTypes: [] },
+    recentActivity = { orders: [], enrollments: [] },
+  } = analytics || {};
 
   // --- EXISTING LOGIC PRESERVED ---
 
@@ -166,12 +166,13 @@ export default function AnalyticsPage() {
         'single': 'Single Course',
         'quarterly': 'Quarterly Plan',
         'kit': 'Kit Only',
-        'school': 'School Plan'
+        'school': 'School Plan',
+        'combo': 'Course Bundle'
       };
-      return names[planId] || planId;
+      return names[planId] || planId.charAt(0).toUpperCase() + planId.slice(1);
     };
 
-    return distributions.planTypes.map((plan: any) => {
+    return (distributions?.planTypes || []).map((plan: any) => {
       const planRevenue = approvedOrders
         .filter((o: any) => o.planType === plan._id)
         .reduce((sum: number, order: any) => sum + (order.price || 0), 0);
@@ -187,7 +188,7 @@ export default function AnalyticsPage() {
   const planTypeData = calculatePlanTypeRevenue();
 
   // Format revenue trend data
-  const revenueTrendData = trends.revenue.map((item: any) => {
+  const revenueTrendData = (trends?.revenue || []).map((item: any) => {
     const trendOrders = recentActivity?.orders?.filter((o: any) => {
       try {
         if (!o?.createdAt) return false;
@@ -222,7 +223,7 @@ export default function AnalyticsPage() {
   });
 
   // Format enrollment trend data
-  const enrollmentTrendData = trends.enrollments.map((item: any) => {
+  const enrollmentTrendData = (trends?.enrollments || []).map((item: any) => {
     try {
       const date = new Date(item._id);
       return {
@@ -241,9 +242,9 @@ export default function AnalyticsPage() {
   });
 
   // Format category distribution
-  const categoryData = distributions.categories.map((item: any) => ({
-    name: item.categoryName || item._id?.slice(0, 8) || "Other",
-    value: item.count,
+  const categoryData = (distributions?.categories || []).map((item: any) => ({
+    name: item.categoryName || item.name || (typeof item._id === 'string' ? item._id : "Other"),
+    value: item.count || 0,
   }));
 
   // --- END EXISTING LOGIC ---
@@ -296,14 +297,14 @@ export default function AnalyticsPage() {
 
       {/* 2. Overview Stats Grid - All 8 Metrics Preserved */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatsCard title="Total Users" value={overview.totalUsers} icon={<FaUsers />} color="primary" trend={parseFloat(growth.userGrowth)} />
-        <StatsCard title="Students" value={overview.totalStudents} icon={<FaGraduationCap />} color="success" />
-        <StatsCard title="Instructors" value={overview.totalInstructors} icon={<FaChalkboardTeacher />} color="secondary" />
-        <StatsCard title="Total Courses" value={overview.totalCourses} icon={<FaBook />} color="warning" />
-        <StatsCard title="Published" value={overview.publishedCourses} icon={<FaCheckCircle />} color="info" />
-        <StatsCard title="Total Orders" value={overview.totalOrders} icon={<FaShoppingCart />} color="danger" />
-        <StatsCard title="Enrollments" value={overview.totalEnrollments} icon={<FaTrophy />} color="success" />
-        <StatsCard title="Completion Rate" value={`${overview.completionRate}%`} icon={<FaChartLine />} color="primary" />
+        <StatsCard title="Total Users" value={overview.totalUsers || 0} icon={<FaUsers />} color="primary" trend={parseFloat(growth.userGrowth || "0")} />
+        <StatsCard title="Students" value={overview.totalStudents || 0} icon={<FaGraduationCap />} color="success" />
+        <StatsCard title="Instructors" value={overview.totalInstructors || 0} icon={<FaChalkboardTeacher />} color="secondary" />
+        <StatsCard title="Total Courses" value={overview.totalCourses || 0} icon={<FaBook />} color="warning" />
+        <StatsCard title="Published" value={overview.publishedCourses || 0} icon={<FaCheckCircle />} color="info" />
+        <StatsCard title="Total Orders" value={overview.totalOrders || 0} icon={<FaShoppingCart />} color="danger" />
+        <StatsCard title="Enrollments" value={overview.totalEnrollments || 0} icon={<FaTrophy />} color="success" />
+        <StatsCard title="Completion Rate" value={`${overview.completionRate || 0}%`} icon={<FaChartLine />} color="primary" />
       </div>
 
       {/* 3. Revenue & User Growth Large Cards */}
@@ -368,25 +369,25 @@ export default function AnalyticsPage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center p-4 bg-blue-50/50 rounded-xl border border-blue-100">
                 <span className="text-gray-600 font-medium">New This Month</span>
-                <span className="text-3xl font-extrabold text-blue-600">{growth.newUsersThisMonth}</span>
+                <span className="text-3xl font-extrabold text-blue-600">{growth.newUsersThisMonth || 0}</span>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 border border-gray-100 rounded-lg">
                   <p className="text-xs text-gray-500 mb-1">Last Month</p>
-                  <p className="text-lg font-bold text-gray-600">{growth.newUsersLastMonth}</p>
+                  <p className="text-lg font-bold text-gray-600">{growth.newUsersLastMonth || 0}</p>
                 </div>
                 <div className="p-3 border border-gray-100 rounded-lg">
                   <p className="text-xs text-gray-500 mb-1">Active (7d)</p>
-                  <p className="text-lg font-bold text-gray-800">{overview.activeUsers}</p>
+                  <p className="text-lg font-bold text-gray-800">{overview.activeUsers || 0}</p>
                 </div>
               </div>
               <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                 <span className="text-gray-600 text-sm">Growth Rate</span>
                 <div className="flex items-center gap-2">
-                  {parseFloat(growth.userGrowth) >= 0 ? (
-                    <Chip size="sm" color="success" variant="flat" startContent={<FaArrowUp size={10} />}>{growth.userGrowth}%</Chip>
+                  {parseFloat(growth.userGrowth || "0") >= 0 ? (
+                    <Chip size="sm" color="success" variant="flat" startContent={<FaArrowUp size={10} />}>{growth.userGrowth || "0"}%</Chip>
                   ) : (
-                    <Chip size="sm" color="danger" variant="flat" startContent={<FaArrowDown size={10} />}>{growth.userGrowth}%</Chip>
+                    <Chip size="sm" color="danger" variant="flat" startContent={<FaArrowDown size={10} />}>{growth.userGrowth || "0"}%</Chip>
                   )}
                 </div>
               </div>
@@ -539,10 +540,10 @@ export default function AnalyticsPage() {
                     <TableCell>
                       <Chip size="sm" variant="flat" color={index < 3 ? "warning" : "default"}>#{index + 1}</Chip>
                     </TableCell>
-                    <TableCell className="font-semibold text-gray-800">{course.title}</TableCell>
+                    <TableCell className="font-semibold text-gray-800">{course.title || course.name || "Untitled Course"}</TableCell>
                     <TableCell>{course.categoryId?.name || course.category || "General"}</TableCell>
                     <TableCell className="font-bold">{course.enrollmentCount || 0}</TableCell>
-                    <TableCell className="text-success font-bold">৳{(course.price * (course.enrollmentCount || 0)).toLocaleString()}</TableCell>
+                    <TableCell className="text-success font-bold">৳{((course.price || 0) * (course.enrollmentCount || 0)).toLocaleString()}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -570,9 +571,9 @@ export default function AnalyticsPage() {
                       <p className="text-xs text-gray-500 line-clamp-1 max-w-[200px]">{order.courseId?.title || order.planType || "Course Access"}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-sm">৳{order.price}</p>
+                      <p className="font-bold text-sm">৳{(order.price || 0).toLocaleString()}</p>
                       <Chip size="sm" variant="dot" color={order.paymentStatus === 'approved' ? "success" : "warning"}>
-                        {order.paymentStatus}
+                        {order.paymentStatus || 'pending'}
                       </Chip>
                     </div>
                   </div>
