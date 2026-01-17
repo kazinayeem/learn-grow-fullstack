@@ -32,9 +32,9 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
   const BASE_WIDTH = 1200;
   const BASE_HEIGHT = Math.round(BASE_WIDTH / 1.414);
 
-  const QR_SIZE = 110;
+  const QR_SIZE = 80; // Reduced from 110 to 80
   const QR_BOTTOM_PCT = 0.09;
-  const QR_LEFT_PCT = 0.27; // Moved right to 35% to avoid logo coverage
+  const QR_LEFT_PCT = 0.5; // Changed to 50% to center horizontally
 
   const containerRef = useRef<HTMLDivElement>(null);
   const certificateRef = useRef<HTMLDivElement>(null);
@@ -215,11 +215,23 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
           <div
             className="absolute left-1/2 transform -translate-x-1/2 flex flex-col items-center justify-center"
             style={{
-              top: '49%', // Moved UP slightly (was 52.5%) to prevent PDF line overlap
+              top: '57%', // Moved from 49% to 57% (lower on page)
               width: '80%',
               zIndex: 10,
             }}
           >
+            <p
+              style={{
+                fontSize: '13px',
+                color: '#6b7280',
+                fontFamily: "'Poppins', sans-serif",
+                fontWeight: 500,
+                marginBottom: '12px',
+                letterSpacing: '0.5px',
+              }}
+            >
+              Awarded to
+            </p>
             <p
               className="text-center"
               style={{

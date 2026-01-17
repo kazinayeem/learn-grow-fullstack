@@ -228,6 +228,27 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
         setIsFullscreen(!isFullscreen);
     };
 
+    const goToNextLesson = () => {
+        if (!currentLesson) return;
+        const flatLessons = modules.flatMap((m) => m.lessons);
+        const currentIndex = flatLessons.findIndex((l) => l.id === currentLesson.id);
+        if (currentIndex === -1) return;
+        const nextLesson = flatLessons.slice(currentIndex + 1).find((l) => !l.isLocked);
+        if (!nextLesson) {
+            toast.success("All lessons are completed!");
+            return;
+        }
+
+        if (nextLesson.type === "quiz") {
+            router.push(`/quiz/${nextLesson.id}`);
+        } else if (nextLesson.type === "assignment") {
+            router.push(`/student/assignment/${nextLesson.id}`);
+        } else {
+            setCurrentLesson(nextLesson);
+            setActiveTab("lessons");
+        }
+    };
+
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
     };
@@ -468,12 +489,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                         <FaGraduationCap className="text-blue-600 flex-shrink-0 text-sm" />
                                         <span className="truncate font-medium">{courseData.instructorId?.name || "Unknown"}</span>
                                     </p>
-                                    {courseData.description && (
-                                        <div 
-                                            className="text-xs sm:text-sm text-gray-500 line-clamp-2 prose prose-sm max-w-none hidden md:block"
-                                            dangerouslySetInnerHTML={{ __html: courseData.description }}
-                                        />
-                                    )}
+
                                 </div>
                             </div>
 
@@ -1150,6 +1166,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                                                 
                                                                 if (response.ok) {
                                                                     toast.success("Lesson marked as complete!");
+                                                                    goToNextLesson();
                                                                     refetch();
                                                                 } else {
                                                                     const error = await response.json();
@@ -1164,15 +1181,6 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                                         <FaCheckCircle />
                                                     </Button>
                                                 )}
-                                                <Button
-                                                    size="sm"
-                                                    color="default"
-                                                    variant="flat"
-                                                    isIconOnly
-                                                    onPress={toggleFullscreen}
-                                                >
-                                                    <FaExpand />
-                                                </Button>
                                             </div>
                                         </div>
                                         {/* Mobile Mark Complete Button */}
@@ -1197,6 +1205,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                                         
                                                         if (response.ok) {
                                                             toast.success("Lesson marked as complete!");
+                                                            goToNextLesson();
                                                             refetch();
                                                         } else {
                                                             const error = await response.json();
