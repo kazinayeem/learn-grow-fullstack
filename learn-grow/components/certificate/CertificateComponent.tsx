@@ -215,7 +215,7 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
           <div
             className="absolute left-1/2 transform -translate-x-1/2 flex flex-col items-center justify-center"
             style={{
-              top: '51%', // Moved from 49% to 57% (lower on page)
+              top: '53%', 
               width: '80%',
               zIndex: 10,
             }}
