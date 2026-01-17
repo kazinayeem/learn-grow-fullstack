@@ -49,7 +49,6 @@ export const getAnalytics = async (req: Request, res: Response) => {
       revenueTrend,
       topCourses,
       categoryDistribution,
-      orderStatusDistribution,
       planTypeDistribution,
       recentOrders,
       recentEnrollments
@@ -119,20 +118,9 @@ export const getAnalytics = async (req: Request, res: Response) => {
       Course.aggregate([
         { $match: { isPublished: true, isAdminApproved: true } },
         { $group: { _id: '$category', count: { $sum: 1 } } },
-        { $match: { _id: { $ne: null } } }, // Filter out null categories
+        { $match: { _id: { $ne: null } } },
         { $lookup: { from: 'categories', localField: '_id', foreignField: '_id', as: 'categoryInfo' } },
         { $project: { _id: 1, count: 1, categoryName: { $ifNull: [{ $arrayElemAt: ['$categoryInfo.name', 0] }, 'Uncategorized'] } } },
-        { $sort: { count: -1 } }
-      ]),
-      Course.aggregate([
-        { $match: { isPublished: true, isAdminApproved: true } },
-        { $group: { _id: '$category', count: { $sum: 1 } } },
-        { $lookup: { from: 'categories', localField: '_id', foreignField: '_id', as: 'categoryInfo' } },
-        { $project: { 
-          _id: 1, 
-          count: 1, 
-          categoryName: { $ifNull: [{ $arrayElemAt: ['$categoryInfo.name', 0] }, 'Uncategorized'] } 
-        } },
         { $sort: { count: -1 } }
       ]),
       Order.aggregate([
@@ -190,8 +178,8 @@ export const getAnalytics = async (req: Request, res: Response) => {
       },
       topCourses,
       distributions: {
-        categories: categoryDistribution,
-        orderStatus: orderStatusDistribution,
+        categories: topCourses,
+        orderStatus: categoryDistribution,
         planTypes: planTypeDistribution
       },
       recentActivity: {
