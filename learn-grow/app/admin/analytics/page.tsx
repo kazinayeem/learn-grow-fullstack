@@ -258,10 +258,23 @@ export default function AnalyticsPage() {
   });
 
   // Format category distribution - API returns category data with names properly
-  const categoryData = (distributions?.categories || []).map((item: any) => ({
-    name: item.categoryName || item.name || "Uncategorized",
-    value: item.count || 0,
-  }));
+  const categoryData = (distributions?.categories || [])
+    .filter((item: any) => item.count > 0) // Filter out empty categories
+    .map((item: any) => {
+      // Extract category name from various possible fields
+      let categoryName = "Uncategorized";
+      if (item.categoryName && item.categoryName.trim()) {
+        categoryName = item.categoryName;
+      } else if (item.name && item.name.trim()) {
+        categoryName = item.name;
+      } else if (item._id && typeof item._id === 'string') {
+        categoryName = item._id;
+      }
+      return {
+        name: categoryName,
+        value: item.count || 0,
+      };
+    });
 
   // Use actualCourses for top courses (from distributions.categories)
   const topCourses = actualCourses || [];

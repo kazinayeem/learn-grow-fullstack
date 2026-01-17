@@ -120,7 +120,16 @@ export const getAnalytics = async (req: Request, res: Response) => {
       Course.aggregate([
         { $match: { isPublished: true, isAdminApproved: true } },
         { $lookup: { from: 'categories', localField: 'category', foreignField: '_id', as: 'categoryInfo' } },
-        { $group: { _id: '$category', count: { $sum: 1 }, categoryName: { $first: { $arrayElemAt: ['$categoryInfo.name', 0] } } } },
+        { $group: { 
+          _id: '$category', 
+          count: { $sum: 1 }, 
+          categoryName: { $first: { $arrayElemAt: ['$categoryInfo.name', 0] } }
+        } },
+        { $project: {
+          _id: 1,
+          count: 1,
+          categoryName: { $ifNull: ['$categoryName', 'Uncategorized'] }
+        }},
         { $sort: { count: -1 } }
       ]),
       Order.aggregate([{ $group: { _id: '$paymentStatus', count: { $sum: 1 } } }]),
