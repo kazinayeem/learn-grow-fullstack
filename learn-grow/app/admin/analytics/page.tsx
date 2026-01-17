@@ -564,7 +564,6 @@ export default function AnalyticsPage() {
               <TableHeader>
                 <TableColumn>RANK</TableColumn>
                 <TableColumn>COURSE</TableColumn>
-                <TableColumn>CATEGORY</TableColumn>
                 <TableColumn>STUDENTS</TableColumn>
                 <TableColumn>REVENUE</TableColumn>
               </TableHeader>
@@ -582,7 +581,6 @@ export default function AnalyticsPage() {
                         <Chip size="sm" variant="flat" color={index < 3 ? "warning" : "default"}>#{index + 1}</Chip>
                       </TableCell>
                       <TableCell className="font-semibold text-gray-800">{courseTitle}</TableCell>
-                      <TableCell>{categoryName}</TableCell>
                       <TableCell className="font-bold">{studentCount}</TableCell>
                       <TableCell className="text-success font-bold">৳{revenue.toLocaleString()}</TableCell>
                     </TableRow>
