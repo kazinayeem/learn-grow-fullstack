@@ -86,6 +86,7 @@ interface TeamMember {
     name: string;
     role: string;
     image: string;
+    profileImage?: string; // optional external image when imported
     imageSize: number;
     linkedIn?: string;
     twitter?: string;
@@ -155,6 +156,8 @@ function SortableMemberItem({
         id: member._id,
     });
 
+    const displayImage = member.image || member.profileImage || "";
+
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
@@ -170,12 +173,12 @@ function SortableMemberItem({
             <Card className="shadow-none">
                 <CardBody className="p-0">
                     <div className="relative h-48 bg-gray-100 overflow-hidden">
-                        {member.image && member.image !== "placeholder" ? (
+                        {displayImage && displayImage !== "placeholder" ? (
                             <Image
                                 src={
-                                    member.image.startsWith("http")
-                                        ? member.image
-                                        : `data:image/jpeg;base64,${member.image}`
+                                    displayImage.startsWith("http")
+                                        ? displayImage
+                                        : `data:image/jpeg;base64,${displayImage}`
                                 }
                                 alt={member.name}
                                 width="100%"
@@ -873,11 +876,13 @@ export default function TeamManagementPage() {
                                                         />
                                                         {instructor.profileImage ? (
                                                             <Image
-                                                                src={`data:image/jpeg;base64,${instructor.profileImage}`}
+                                                                src={instructor.profileImage.startsWith("http")
+                                                                    ? instructor.profileImage
+                                                                    : `data:image/jpeg;base64,${instructor.profileImage}`}
                                                                 alt={instructor.name}
                                                                 width={48}
                                                                 height={48}
-                                                                className="rounded-full border-2 border-white shadow-sm"
+                                                                className="rounded-full border-2 border-white shadow-sm object-cover"
                                                             />
                                                         ) : (
                                                             <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-gray-500">
@@ -1031,17 +1036,15 @@ export default function TeamManagementPage() {
                                 {editingMember && (
                                     <>
                                         <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-2">
-                                            {editingMember.image && editingMember.image !== "placeholder" && (
+                                            {(editingMember.image || editingMember.profileImage) && (
                                                 <Image
-                                                    src={
-                                                        editingMember.image.startsWith("http")
-                                                            ? editingMember.image
-                                                            : `data:image/jpeg;base64,${editingMember.image}`
-                                                    }
+                                                    src={(editingMember.image || editingMember.profileImage || "").startsWith("http")
+                                                        ? (editingMember.image || editingMember.profileImage || "")
+                                                        : `data:image/jpeg;base64,${editingMember.image || editingMember.profileImage}`}
                                                     alt={editingMember.name}
                                                     width={48}
                                                     height={48}
-                                                    className="rounded-full shadow-sm border-2 border-white sm:w-16 sm:h-16"
+                                                    className="rounded-full shadow-sm border-2 border-white sm:w-16 sm:h-16 object-cover"
                                                 />
                                             )}
                                             <div className="flex-1 min-w-0">

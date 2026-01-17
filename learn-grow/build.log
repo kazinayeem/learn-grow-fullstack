@@ -1,8 +1,0 @@
-
-> next-app-template@0.0.1 build
-> next build
-
-▲ Next.js 16.1.1 (Turbopack)
-- Environments: .env.local, .env
-
-  Creating an optimized production build ...

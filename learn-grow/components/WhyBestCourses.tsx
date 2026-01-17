@@ -69,11 +69,11 @@ export default function WhyBestCourses() {
               </h3>
               <div className="space-y-4">
                 {features.map((feature, index) => (
-                  <div key={index} className="flex items-start gap-3 group">
-                    <div className="mt-1 flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold group-hover:scale-110 transition-transform">
+                  <div key={index} className="flex items-center justify-center gap-3 text-center group">
+                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold group-hover:scale-105 transition-transform">
                       ✓
                     </div>
-                    <p className="text-lg text-gray-700 font-medium">{feature}</p>
+                    <p className="text-lg text-gray-700 font-medium leading-relaxed">{feature}</p>
                   </div>
                 ))}
               </div>
@@ -90,15 +90,15 @@ export default function WhyBestCourses() {
               {faqs.map((faq, index) => (
                 <Card 
                   key={index}
-                  className="border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300"
+                  className="border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-md hover:shadow-lg transition-all duration-200"
                 >
-                  <CardBody className="p-4 cursor-pointer group">
+                  <CardBody className="p-5 cursor-pointer group">
                     <details className="w-full">
-                      <summary className="flex items-start justify-between font-semibold text-gray-800 text-base group-hover:text-blue-600 transition-colors">
-                        <span className="text-left flex-1 pr-4">{faq.question}</span>
+                      <summary className="flex items-start justify-between font-semibold text-gray-800 text-base group-hover:text-blue-600 transition-colors py-1">
+                        <span className="text-left flex-1 pr-4 leading-relaxed">{faq.question}</span>
                         <span className="text-blue-500 text-lg flex-shrink-0 group-open:rotate-180 transition-transform">▼</span>
                       </summary>
-                      <div className="mt-4 pt-4 border-t border-blue-200 text-gray-700 leading-relaxed">
+                      <div className="mt-3 pt-3 border-t border-blue-200 text-gray-700 leading-relaxed">
                         {faq.answer}
                       </div>
                     </details>
