@@ -572,7 +572,7 @@ export default function AnalyticsPage() {
                 {(actualCourses || []).map((course: any, index: number) => {
                   // Ensure course has required fields with fallbacks
                   const courseTitle = course?.title || course?.name || `Course ${index + 1}`;
-                  const categoryName = course?.categoryId?.name || course?.categoryName || course?.category || "General";
+                  const categoryName = course?.categoryName || course?.categoryId?.name || "General";
                   const studentCount = course?.enrollmentCount || 0;
                   const revenue = (course?.price || 0) * studentCount;
                   
