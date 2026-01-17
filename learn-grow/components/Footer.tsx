@@ -123,6 +123,14 @@ const Footer: React.FC = () => {
               <li>
                 <Link
                   className="hover:text-blue-400 transition-colors"
+                  href="/certificate/verify"
+                >
+                  Verify Certificate
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className="hover:text-blue-400 transition-colors"
                   href="/privacy-policy"
                 >
                   Privacy Policy
