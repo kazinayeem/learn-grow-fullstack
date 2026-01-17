@@ -110,12 +110,14 @@ export default function AnalyticsPage() {
     recentActivity = { orders: [], enrollments: [] },
   } = analytics || {};
 
-  // Map the API response correctly
-  // distributions.categories = category distribution data (for pie chart)
-  const categoryDistributionData = distributions.categories || [];
+  // Map the API response correctly - THE ACTUAL STRUCTURE:
+  // topCourses = revenue trend data (dates with revenue/orders) - NOT actual courses
+  // distributions.categories = actual top courses list
+  // distributions.orderStatus = category distribution data for pie chart
+  const categoryDistributionData = distributions.orderStatus || []; // This is the category count data
   
-  // topCourses = actual top courses list (from the topCourses field)
-  const actualCourses = apiTopCourses || [];
+  // actualCourses = actual top courses (from distributions.categories, NOT topCourses)
+  const actualCourses = distributions.categories || [];
   
   // The API returns plan type data in recentActivity.orders, not actual order objects
   const actualOrders = recentActivity.enrollments || [];
@@ -269,22 +271,16 @@ export default function AnalyticsPage() {
     }
   });
 
-  // Format category distribution - API returns category data with names properly
+  // Format category distribution - API returns category count data from orderStatus
   const categoryData = (categoryDistributionData || [])
     .filter((item: any) => {
       // Only include items with count > 0
       return item.count && item.count > 0;
     })
     .map((item: any) => {
-      // Extract category name from various possible fields
-      let categoryName = "Uncategorized";
-      if (item.categoryName && String(item.categoryName).trim()) {
-        categoryName = item.categoryName;
-      } else if (item.name && String(item.name).trim()) {
-        categoryName = item.name;
-      } else if (item._id && String(item._id).trim() !== "") {
-        categoryName = String(item._id).substring(0, 30); // Use ID as fallback
-      }
+      // Extract category name from categoryName field (already provided by backend)
+      let categoryName = item.categoryName || item.name || "Uncategorized";
+      
       return {
         name: categoryName,
         value: item.count || 0,

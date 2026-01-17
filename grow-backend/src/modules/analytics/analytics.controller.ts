@@ -125,7 +125,19 @@ export const getAnalytics = async (req: Request, res: Response) => {
         { $project: { _id: 1, count: 1, categoryName: { $ifNull: [{ $arrayElemAt: ['$categoryInfo.name', 0] }, 'Uncategorized'] } } },
         { $sort: { count: -1 } }
       ]),
-      Order.aggregate([{ $group: { _id: '$paymentStatus', count: { $sum: 1 } } }]),
+      Order.aggregate([
+        { $match: { paymentStatus: 'approved' } },
+        { $group: { _id: '$courseId', count: { $sum: 1 } } },
+        { $lookup: { from: 'courses', localField: '_id', foreignField: '_id', as: 'courseInfo' } },
+        { $addFields: { category: { $arrayElemAt: ['$courseInfo.category', 0] } } },
+        { $lookup: { from: 'categories', localField: 'category', foreignField: '_id', as: 'categoryInfo' } },
+        { $project: { 
+          _id: 1, 
+          count: 1, 
+          categoryName: { $ifNull: [{ $arrayElemAt: ['$categoryInfo.name', 0] }, 'Uncategorized'] } 
+        } },
+        { $sort: { count: -1 } }
+      ]),
       Order.aggregate([
         { $match: { paymentStatus: 'approved' } },
         { $group: { _id: '$planType', count: { $sum: 1 }, revenue: { $sum: '$price' } } }
