@@ -210,19 +210,23 @@ function InstructorAssessmentsContent() {
         <CardBody className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Course Selection */}
-            <Autocomplete
+            <Select
               label="Select Course"
-              placeholder="Type to search..."
-              selectedKey={selectedCourse || null}
-              onInputChange={setCourseSearch}
-              onSelectionChange={(key) => setSelectedCourse((key as string) || "")}
+              placeholder="Choose a course..."
+              selectedKeys={selectedCourse ? [selectedCourse] : []}
+              onChange={(e) => setSelectedCourse(e.target.value)}
+              classNames={{
+                trigger: "bg-white dark:bg-slate-800",
+                value: "text-gray-900 dark:text-white",
+                listbox: "bg-white dark:bg-slate-800",
+              }}
             >
               {courses.map((course: any) => (
-                <AutocompleteItem key={course._id} value={course._id}>
+                <SelectItem key={course._id} value={course._id}>
                   {course.title}
-                </AutocompleteItem>
+                </SelectItem>
               ))}
-            </Autocomplete>
+            </Select>
 
             {/* Search */}
             <Input
