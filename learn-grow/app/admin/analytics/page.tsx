@@ -106,7 +106,7 @@ export default function AnalyticsPage() {
   const categoryDistributionData = distributions.categories || [];
   
   // topCourses = actual top courses list (from the topCourses field)
-  const actualCourses = topCourses || [];
+  const actualCourses = apiTopCourses || [];
   
   // The API returns plan type data in recentActivity.orders, not actual order objects
   const actualOrders = recentActivity.enrollments || [];
