@@ -41,6 +41,8 @@ export default function TeamClient({ content }: TeamClientProps) {
     };
 
     const MemberCard = ({ member, color }: { member: TeamMember; color: string }) => {
+        const [imageError, setImageError] = React.useState(false);
+
         const getInitials = (name: string) => {
             return name
                 .split(' ')
@@ -59,13 +61,14 @@ export default function TeamClient({ content }: TeamClientProps) {
                 <CardBody className="p-4 sm:p-6 text-center">
                     <div className="mb-4 flex justify-center">
                         <div className="w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0">
-                            {member.image ? (
+                            {member.image && !imageError ? (
                                 <Image
                                     src={member.image}
                                     alt={member.name}
                                     className="w-full h-full rounded-full object-cover border-4"
                                     style={{ borderColor: color }}
                                     isBlurred
+                                    onError={() => setImageError(true)}
                                 />
                             ) : (
                                 <div

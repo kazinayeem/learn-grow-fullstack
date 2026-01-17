@@ -214,7 +214,7 @@ export default function ContactClient({ content }: ContactClientProps) {
                                     color="primary" 
                                     size="lg" 
                                     className="w-full font-semibold"
-                                    onPress={handleSubmit}
+                                    type="submit"
                                     isLoading={isSubmitting}
                                     isDisabled={isSubmitting}
                                 >
