@@ -56,12 +56,12 @@ export default function NextTarget() {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
             <FaRocket className="text-yellow-400" />
-            <span className="text-sm font-semibold">আমাদের ভবিষ্যৎ পরিকল্পনা</span>
+            <span className="text-sm font-semibold text-white">আমাদের ভবিষ্যৎ পরিকল্পনা</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-white">
             আমাদের পরবর্তী লক্ষ্য
           </h2>
-          <p className="text-lg text-blue-100 max-w-3xl mx-auto">
+          <p className="text-lg text-white max-w-3xl mx-auto">
             আমরা স্বপ্ন দেখি বাংলাদেশকে প্রযুক্তি শিক্ষায় দক্ষিণ এশিয়ার নেতৃত্বে নিয়ে যেতে
           </p>
         </div>

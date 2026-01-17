@@ -87,29 +87,30 @@ export default function WhyBestCourses() {
 
           {/* FAQ Accordion */}
           <div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <span className="text-3xl">❓</span>
               সাধারণ প্রশ্নাবলী
             </h3>
-            <Accordion 
-              variant="bordered"
-              className="gap-3"
-              itemClasses={{
-                base: "shadow-md hover:shadow-lg transition-shadow",
-                title: "font-semibold text-gray-800",
-                content: "text-gray-600 pt-2"
-              }}
-            >
+            <div className="space-y-3">
               {faqs.map((faq, index) => (
-                <AccordionItem
+                <Card 
                   key={index}
-                  aria-label={faq.question}
-                  title={faq.question}
-                  indicator={<FaChevronDown />}
+                  className="border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300"
                 >
-                  {faq.answer}
-                </AccordionItem>
+                  <CardBody className="p-4 cursor-pointer group">
+                    <details className="w-full">
+                      <summary className="flex items-start justify-between font-semibold text-gray-800 text-base group-hover:text-blue-600 transition-colors">
+                        <span className="text-left flex-1 pr-4">{faq.question}</span>
+                        <span className="text-blue-500 text-lg flex-shrink-0 group-open:rotate-180 transition-transform">▼</span>
+                      </summary>
+                      <div className="mt-4 pt-4 border-t border-blue-200 text-gray-700 leading-relaxed">
+                        {faq.answer}
+                      </div>
+                    </details>
+                  </CardBody>
+                </Card>
               ))}
-            </Accordion>
+            </div>
           </div>
         </div>
 
