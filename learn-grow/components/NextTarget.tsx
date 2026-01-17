@@ -130,7 +130,7 @@ export default function NextTarget() {
 
         {/* Vision Statement */}
         <div className="text-center">
-          <Card className="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 border-0 shadow-2xl">
+          <Card className="bg-gradient-to-r from-blue-500 via-blue-400 to-purple-600 border-0 shadow-2xl">
             <CardBody className="p-8">
               <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4">
                 🌟 আমাদের ভিশন 2030 🌟

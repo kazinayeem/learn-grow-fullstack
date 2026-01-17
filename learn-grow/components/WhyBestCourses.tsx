@@ -121,7 +121,7 @@ export default function WhyBestCourses() {
               </p>
               <div className="flex flex-wrap justify-center gap-4">
                 <div className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-xl text-white font-semibold">
-                  ৩০ দিনের মানি-ব্যাক গ্যারান্টি 💯
+                  ৭ দিনের মানি-ব্যাক গ্যারান্টি 💯
                 </div>
                 <div className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-xl text-white font-semibold">
                   ২৪/৭ সাপোর্ট 🚀
