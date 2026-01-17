@@ -37,21 +37,21 @@ export default function TeamPage() {
 
             const roleLower = (member.role || "").toLowerCase();
 
-            // Categorize by role keywords
+            // Categorize by role keywords - Check instructor FIRST to avoid catching in other categories
+            // Section 2: Instructors (highest priority)
+            if (roleLower.includes("instructor") || roleLower.includes("teacher") || 
+                roleLower.includes("educator") || roleLower.includes("trainer")) {
+                instructors.push(teamMember);
+            }
             // Line 1: C-Level Executives (CEO, CTO, COO, CFO, etc.)
-            if (roleLower.includes("ceo") || roleLower.includes("cto") || roleLower.includes("coo") || 
-                roleLower.includes("cfo") || roleLower.includes("founder")) {
+            else if (roleLower.includes("ceo") || roleLower.includes("cto") || roleLower.includes("coo") || 
+                     roleLower.includes("cfo") || roleLower.includes("founder")) {
                 leadership.cLevel.push(teamMember);
             }
             // Line 2: Team Leads & Managers (Operations Manager, Technical Lead, Marketing Head, etc.)
             else if (roleLower.includes("manager") || roleLower.includes("lead") || 
                      roleLower.includes("head") || roleLower.includes("director")) {
                 leadership.teamLeads.push(teamMember);
-            }
-            // Section 2: Instructors
-            else if (roleLower.includes("instructor") || roleLower.includes("teacher") || 
-                     roleLower.includes("educator") || roleLower.includes("trainer")) {
-                instructors.push(teamMember);
             }
             // Section 3: Executives & Other Roles
             else {
