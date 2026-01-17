@@ -8,13 +8,24 @@ import { LiveClass } from '../liveClass/model/liveClass.model.js';
 
 export const getAnalytics = async (req: Request, res: Response) => {
   try {
+    // Get dateRange from query params (default to 30days)
+    const dateRange = (req.query.dateRange as string) || '30days';
+
     // Get current date ranges
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
     const startOfYear = new Date(now.getFullYear(), 0, 1);
-    const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    // Calculate date range based on parameter
+    let trendStartDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // default 30 days
+    if (dateRange === '7days') {
+      trendStartDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else if (dateRange === '90days') {
+      trendStartDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    }
+    
     const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     // 🚀 OPTIMIZATION: Run all database queries in parallel using Promise.all()
@@ -50,7 +61,7 @@ export const getAnalytics = async (req: Request, res: Response) => {
       User.countDocuments({ lastLoginAt: { $gte: last7Days } }),
       
       // Course counts (2 queries)
-      Course.countDocuments(),
+      Course.countDocuments({ isPublished: true, isAdminApproved: true }),
       Course.countDocuments({ isPublished: true, isAdminApproved: true }),
       
       // Order counts (2 queries)
@@ -88,12 +99,12 @@ export const getAnalytics = async (req: Request, res: Response) => {
       
       // Trends and distributions (5 queries)
       Enrollment.aggregate([
-        { $match: { createdAt: { $gte: last30Days } } },
+        { $match: { createdAt: { $gte: trendStartDate } } },
         { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
         { $sort: { _id: 1 } }
       ]),
       Order.aggregate([
-        { $match: { paymentStatus: 'approved', createdAt: { $gte: last30Days } } },
+        { $match: { paymentStatus: 'approved', createdAt: { $gte: trendStartDate } } },
         { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, revenue: { $sum: '$price' }, orders: { $sum: 1 } } },
         { $sort: { _id: 1 } }
       ]),

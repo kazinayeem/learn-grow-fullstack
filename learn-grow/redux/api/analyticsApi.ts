@@ -4,7 +4,7 @@ import { baseApi } from "./baseApi";
 export const analyticsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getAnalytics: builder.query({
-      query: () => "/analytics",
+      query: (dateRange = "30days") => `/analytics?dateRange=${dateRange}`,
       providesTags: ["Analytics"],
     }),
   }),

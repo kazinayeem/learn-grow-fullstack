@@ -59,9 +59,7 @@ const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82ca9d"
 export default function AnalyticsPage() {
   const router = useRouter();
   const [dateRange, setDateRange] = useState<"7days" | "30days" | "90days">("30days");
-  const { data: analyticsData, isLoading, error, refetch } = useGetAnalyticsQuery({
-    dateRange: dateRange,
-  });
+  const { data: analyticsData, isLoading, error, refetch } = useGetAnalyticsQuery(dateRange);
 
   if (isLoading) {
     return (
@@ -259,9 +257,9 @@ export default function AnalyticsPage() {
     }
   });
 
-  // Format category distribution - API returns courses, we need to extract categories
-  const categoryData = (distributions?.orderStatus || []).map((item: any) => ({
-    name: item.categoryName || item.name || (typeof item._id === 'string' ? item._id.slice(0, 8) : "Other"),
+  // Format category distribution - API returns category data with names properly
+  const categoryData = (distributions?.categories || []).map((item: any) => ({
+    name: item.categoryName || item.name || "Uncategorized",
     value: item.count || 0,
   }));
 
