@@ -90,6 +90,15 @@ export default function AnalyticsPage() {
 
   const analytics = analyticsData.data;
 
+  // Debug: Log the analytics data structure
+  React.useEffect(() => {
+    if (analytics) {
+      console.log("Analytics data:", analytics);
+      console.log("Top courses:", analytics.topCourses);
+      console.log("Categories:", analytics.distributions?.categories);
+    }
+  }, [analytics]);
+
   // Destructure existing data with safe defaults
   const {
     overview = {},
@@ -263,20 +272,18 @@ export default function AnalyticsPage() {
   // Format category distribution - API returns category data with names properly
   const categoryData = (categoryDistributionData || [])
     .filter((item: any) => {
-      // Only include items with count > 0 AND valid name
-      const hasCount = item.count && item.count > 0;
-      const hasName = item.categoryName || item.name || item._id;
-      return hasCount && hasName;
+      // Only include items with count > 0
+      return item.count && item.count > 0;
     })
     .map((item: any) => {
       // Extract category name from various possible fields
       let categoryName = "Uncategorized";
-      if (item.categoryName && item.categoryName.trim()) {
+      if (item.categoryName && String(item.categoryName).trim()) {
         categoryName = item.categoryName;
-      } else if (item.name && item.name.trim()) {
+      } else if (item.name && String(item.name).trim()) {
         categoryName = item.name;
-      } else if (item._id && typeof item._id === 'string') {
-        categoryName = item._id;
+      } else if (item._id && String(item._id).trim() !== "") {
+        categoryName = String(item._id).substring(0, 30); // Use ID as fallback
       }
       return {
         name: categoryName,
@@ -575,17 +582,25 @@ export default function AnalyticsPage() {
                 <TableColumn>REVENUE</TableColumn>
               </TableHeader>
               <TableBody emptyContent="No course data available">
-                {actualCourses.map((course: any, index: number) => (
-                  <TableRow key={course._id} className="hover:bg-gray-50 transition-colors">
-                    <TableCell>
-                      <Chip size="sm" variant="flat" color={index < 3 ? "warning" : "default"}>#{index + 1}</Chip>
-                    </TableCell>
-                    <TableCell className="font-semibold text-gray-800">{course.title || course.name || "Untitled Course"}</TableCell>
-                    <TableCell>{course.categoryId?.name || course.categoryName || course.category || "General"}</TableCell>
-                    <TableCell className="font-bold">{course.enrollmentCount || 0}</TableCell>
-                    <TableCell className="text-success font-bold">৳{((course.price || 0) * (course.enrollmentCount || 0)).toLocaleString()}</TableCell>
-                  </TableRow>
-                ))}
+                {(actualCourses || []).map((course: any, index: number) => {
+                  // Ensure course has required fields with fallbacks
+                  const courseTitle = course?.title || course?.name || `Course ${index + 1}`;
+                  const categoryName = course?.categoryId?.name || course?.categoryName || course?.category || "General";
+                  const studentCount = course?.enrollmentCount || 0;
+                  const revenue = (course?.price || 0) * studentCount;
+                  
+                  return (
+                    <TableRow key={course?._id || index} className="hover:bg-gray-50 transition-colors">
+                      <TableCell>
+                        <Chip size="sm" variant="flat" color={index < 3 ? "warning" : "default"}>#{index + 1}</Chip>
+                      </TableCell>
+                      <TableCell className="font-semibold text-gray-800">{courseTitle}</TableCell>
+                      <TableCell>{categoryName}</TableCell>
+                      <TableCell className="font-bold">{studentCount}</TableCell>
+                      <TableCell className="text-success font-bold">৳{revenue.toLocaleString()}</TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardBody>

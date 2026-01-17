@@ -120,6 +120,7 @@ export const getAnalytics = async (req: Request, res: Response) => {
       Course.aggregate([
         { $match: { isPublished: true, isAdminApproved: true } },
         { $group: { _id: '$category', count: { $sum: 1 } } },
+        { $match: { _id: { $ne: null } } }, // Filter out null categories
         { $lookup: { from: 'categories', localField: '_id', foreignField: '_id', as: 'categoryInfo' } },
         { $project: { _id: 1, count: 1, categoryName: { $ifNull: [{ $arrayElemAt: ['$categoryInfo.name', 0] }, 'Uncategorized'] } } },
         { $sort: { count: -1 } }
