@@ -63,16 +63,16 @@ export default function NextTarget() {
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Section Header */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
-            <FaRocket className="text-yellow-400" />
-            <span className="text-sm font-semibold text-white">
+          <div className="inline-flex items-center gap-2 bg-blue-100 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
+            <FaRocket className="text-blue-600" />
+            <span className="text-sm font-semibold text-blue-900">
               আমাদের ভবিষ্যৎ পরিকল্পনা
             </span>
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-white">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-gray-900">
             আমাদের পরবর্তী লক্ষ্য
           </h2>
-          <p className="text-lg text-white max-w-3xl mx-auto">
+          <p className="text-lg text-gray-700 max-w-3xl mx-auto">
             আমরা স্বপ্ন দেখি বাংলাদেশকে প্রযুক্তি শিক্ষায় দক্ষিণ এশিয়ার
             নেতৃত্বে নিয়ে যেতে
           </p>
@@ -83,7 +83,7 @@ export default function NextTarget() {
           {targets.map((target, index) => (
             <Card
               key={index}
-              className="bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105"
+              className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 hover:border-blue-300 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105"
             >
               <CardBody className="p-6 text-center">
                 <div
@@ -91,11 +91,11 @@ export default function NextTarget() {
                 >
                   {target.icon}
                 </div>
-                <div className="text-xs font-bold text-yellow-400 mb-2">
+                <div className="text-xs font-bold text-blue-600 mb-2">
                   TARGET {target.year}
                 </div>
-                <h3 className="text-lg font-bold mb-3">{target.title}</h3>
-                <p className="text-sm text-blue-100 leading-relaxed">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">{target.title}</h3>
+                <p className="text-sm text-gray-700 leading-relaxed">
                   {target.description}
                 </p>
               </CardBody>
@@ -104,24 +104,24 @@ export default function NextTarget() {
         </div>
 
         {/* Upcoming Features */}
-        <Card className="bg-white/10 backdrop-blur-md border border-white/20 mb-12">
+        <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200 mb-12">
           <CardBody className="p-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                 <FaUsers className="text-2xl text-white" />
               </div>
-              <h3 className="text-2xl font-bold">আসছে শীঘ্রই...</h3>
+              <h3 className="text-2xl font-bold text-gray-900">আসছে শীঘ্রই...</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {upcomingFeatures.map((feature, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-3 bg-white/5 p-4 rounded-lg hover:bg-white/10 transition-colors"
+                  className="flex items-center gap-3 bg-white p-4 rounded-lg hover:bg-blue-50 transition-colors border border-blue-100"
                 >
                   <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                     <span className="text-white font-bold text-sm">✓</span>
                   </div>
-                  <p className="font-medium">{feature}</p>
+                  <p className="font-medium text-gray-900">{feature}</p>
                 </div>
               ))}
             </div>
@@ -158,10 +158,10 @@ export default function NextTarget() {
 
         {/* Call to Action */}
         <div className="mt-12 text-center">
-          <p className="text-xl font-semibold mb-4">
+          <p className="text-xl font-semibold text-gray-900 mb-4">
             এই যাত্রায় আমাদের সাথে থাকুন!
           </p>
-          <p className="text-blue-200 mb-6">
+          <p className="text-gray-700 mb-6">
             আপনার সাপোর্ট এবং অংশগ্রহণই আমাদের শক্তি
           </p>
         </div>
