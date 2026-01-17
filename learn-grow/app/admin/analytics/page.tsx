@@ -102,8 +102,11 @@ export default function AnalyticsPage() {
   } = analytics || {};
 
   // Map the API response correctly
-  // The API returns courses in distributions.categories, not category counts
-  const actualCourses = distributions.categories || [];
+  // distributions.categories = category distribution data (for pie chart)
+  const categoryDistributionData = distributions.categories || [];
+  
+  // topCourses = actual top courses list (from the topCourses field)
+  const actualCourses = topCourses || [];
   
   // The API returns plan type data in recentActivity.orders, not actual order objects
   const actualOrders = recentActivity.enrollments || [];
@@ -258,8 +261,13 @@ export default function AnalyticsPage() {
   });
 
   // Format category distribution - API returns category data with names properly
-  const categoryData = (distributions?.categories || [])
-    .filter((item: any) => item.count > 0) // Filter out empty categories
+  const categoryData = (categoryDistributionData || [])
+    .filter((item: any) => {
+      // Only include items with count > 0 AND valid name
+      const hasCount = item.count && item.count > 0;
+      const hasName = item.categoryName || item.name || item._id;
+      return hasCount && hasName;
+    })
     .map((item: any) => {
       // Extract category name from various possible fields
       let categoryName = "Uncategorized";
