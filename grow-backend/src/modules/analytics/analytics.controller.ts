@@ -61,7 +61,7 @@ export const getAnalytics = async (req: Request, res: Response) => {
       User.countDocuments({ lastLoginAt: { $gte: last7Days } }),
       
       // Course counts (2 queries)
-      Course.countDocuments({ isPublished: true, isAdminApproved: true }),
+      Course.countDocuments(),
       Course.countDocuments({ isPublished: true, isAdminApproved: true }),
       
       // Order counts (2 queries)
@@ -112,24 +112,16 @@ export const getAnalytics = async (req: Request, res: Response) => {
         { $match: { isPublished: true, isAdminApproved: true } },
         { $lookup: { from: 'enrollments', localField: '_id', foreignField: 'courseId', as: 'enrollments' } },
         { $lookup: { from: 'categories', localField: 'category', foreignField: '_id', as: 'categoryInfo' } },
-        { $addFields: { enrollmentCount: { $size: '$enrollments' }, categoryId: { $arrayElemAt: ['$categoryInfo', 0] } } },
+        { $addFields: { enrollmentCount: { $size: '$enrollments' }, categoryId: { $arrayElemAt: ['$categoryInfo', 0] }, categoryName: { $arrayElemAt: ['$categoryInfo.name', 0] } } },
         { $sort: { enrollmentCount: -1 } },
         { $limit: 10 },
-        { $project: { title: 1, enrollmentCount: 1, rating: 1, studentsEnrolled: 1, price: 1, category: 1, categoryId: { _id: 1, name: 1 } } }
+        { $project: { _id: 1, title: 1, name: 1, enrollmentCount: 1, rating: 1, studentsEnrolled: 1, price: 1, category: 1, categoryName: 1, categoryId: { _id: 1, name: 1 } } }
       ]),
       Course.aggregate([
         { $match: { isPublished: true, isAdminApproved: true } },
-        { $lookup: { from: 'categories', localField: 'category', foreignField: '_id', as: 'categoryInfo' } },
-        { $group: { 
-          _id: '$category', 
-          count: { $sum: 1 }, 
-          categoryName: { $first: { $arrayElemAt: ['$categoryInfo.name', 0] } }
-        } },
-        { $project: {
-          _id: 1,
-          count: 1,
-          categoryName: { $ifNull: ['$categoryName', 'Uncategorized'] }
-        }},
+        { $group: { _id: '$category', count: { $sum: 1 } } },
+        { $lookup: { from: 'categories', localField: '_id', foreignField: '_id', as: 'categoryInfo' } },
+        { $project: { _id: 1, count: 1, categoryName: { $ifNull: [{ $arrayElemAt: ['$categoryInfo.name', 0] }, 'Uncategorized'] } } },
         { $sort: { count: -1 } }
       ]),
       Order.aggregate([{ $group: { _id: '$paymentStatus', count: { $sum: 1 } } }]),

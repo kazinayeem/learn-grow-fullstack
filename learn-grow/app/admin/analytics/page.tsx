@@ -575,13 +575,13 @@ export default function AnalyticsPage() {
                 <TableColumn>REVENUE</TableColumn>
               </TableHeader>
               <TableBody emptyContent="No course data available">
-                {topCourses.map((course: any, index: number) => (
+                {actualCourses.map((course: any, index: number) => (
                   <TableRow key={course._id} className="hover:bg-gray-50 transition-colors">
                     <TableCell>
                       <Chip size="sm" variant="flat" color={index < 3 ? "warning" : "default"}>#{index + 1}</Chip>
                     </TableCell>
                     <TableCell className="font-semibold text-gray-800">{course.title || course.name || "Untitled Course"}</TableCell>
-                    <TableCell>{course.categoryId?.name || course.category || "General"}</TableCell>
+                    <TableCell>{course.categoryId?.name || course.categoryName || course.category || "General"}</TableCell>
                     <TableCell className="font-bold">{course.enrollmentCount || 0}</TableCell>
                     <TableCell className="text-success font-bold">৳{((course.price || 0) * (course.enrollmentCount || 0)).toLocaleString()}</TableCell>
                   </TableRow>
