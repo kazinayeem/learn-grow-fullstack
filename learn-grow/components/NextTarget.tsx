@@ -107,7 +107,7 @@ export default function NextTarget() {
         <Card className="bg-white/10 backdrop-blur-md border border-white/20 mb-12">
           <CardBody className="p-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                 <FaUsers className="text-2xl text-white" />
               </div>
               <h3 className="text-2xl font-bold">আসছে শীঘ্রই...</h3>
@@ -118,7 +118,7 @@ export default function NextTarget() {
                   key={index}
                   className="flex items-center gap-3 bg-white/5 p-4 rounded-lg hover:bg-white/10 transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                     <span className="text-white font-bold text-sm">✓</span>
                   </div>
                   <p className="font-medium">{feature}</p>

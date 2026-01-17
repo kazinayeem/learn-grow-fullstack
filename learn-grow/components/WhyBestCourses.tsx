@@ -111,7 +111,7 @@ export default function WhyBestCourses() {
 
         {/* Bottom CTA */}
         <div className="text-center">
-          <Card className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 border-0 shadow-2xl">
+          <Card className="bg-gradient-to-r from-blue-600 via-blue-500 to-purple-600 border-0 shadow-2xl">
             <CardBody className="p-8">
               <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3">
                 আজই শুরু করুন আপনার শেখার যাত্রা!
