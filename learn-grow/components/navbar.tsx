@@ -433,7 +433,7 @@ export const Navbar = () => {
           {siteConfig.navItems.map((item, index) => (
             <NavbarMenuItem key={`${item.label}-${index}`}>
               <NextLink
-                className="w-full text-white text-lg font-semibold py-4 px-5 block rounded-lg active:bg-white/30 touch-manipulation transition-all duration-200 mb-2 min-h-[48px] flex items-center"
+                className="w-full text-white text-lg font-semibold py-4 px-5 rounded-lg active:bg-white/30 touch-manipulation transition-all duration-200 mb-2 min-h-[48px] flex items-center"
                 href={item.href}
                 onClick={() => setIsMenuOpen(false)}
               >
