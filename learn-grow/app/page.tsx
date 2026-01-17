@@ -7,6 +7,9 @@ import CoursesSection from "@/components/CoursesSection";
 import PlatformFeaturesSection from "@/components/PlatformFeaturesSection";
 import PricingSection from "@/components/PricingSection";
 import EnrollmentSection from "@/components/EnrollmentSection";
+import OurGoals from "@/components/OurGoals";
+import WhyBestCourses from "@/components/WhyBestCourses";
+import NextTarget from "@/components/NextTarget";
 
 export const metadata: Metadata = {
   title: "Learn & Grow - Robotics Courses & STEM Education Kits",
@@ -83,6 +86,15 @@ export default function Home() {
 
         {/* Pricing Plans */}
         <PricingSection />
+
+        {/* Our Goals in Bangla */}
+        <OurGoals />
+
+        {/* Why Our Courses Are Best - FAQ */}
+        <WhyBestCourses />
+
+        {/* Our Next Target */}
+        <NextTarget />
 
         {/* Our Educators - Last section before footer */}
         {/* <Educators /> */}
