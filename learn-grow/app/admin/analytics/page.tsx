@@ -98,16 +98,26 @@ export default function AnalyticsPage() {
     revenue: backendRevenue = {},
     growth = {},
     trends = { revenue: [], enrollments: [] },
-    topCourses = [],
-    distributions = { categories: [], planTypes: [] },
+    topCourses: apiTopCourses = [],
+    distributions = { categories: [], planTypes: [], orderStatus: [] },
     recentActivity = { orders: [], enrollments: [] },
   } = analytics || {};
+
+  // Map the API response correctly
+  // The API returns courses in distributions.categories, not category counts
+  const actualCourses = distributions.categories || [];
+  
+  // The API returns plan type data in recentActivity.orders, not actual order objects
+  const actualOrders = recentActivity.enrollments || [];
+  
+  // The API returns aggregated plan types in recentActivity.orders
+  const planTypeAggregated = recentActivity.orders || [];
 
   // --- EXISTING LOGIC PRESERVED ---
 
   // Calculate actual revenue from approved orders
   const calculateRevenue = () => {
-    const approvedOrders = recentActivity?.orders?.filter((o: any) => o.paymentStatus === "approved") || [];
+    const approvedOrders = actualOrders?.filter((o: any) => o.paymentStatus === "approved") || [];
     const total = approvedOrders.reduce((sum: number, order: any) => sum + (order.price || 0), 0);
 
     // Calculate monthly revenue
@@ -158,7 +168,7 @@ export default function AnalyticsPage() {
 
   // Calculate plan type revenue from actual orders
   const calculatePlanTypeRevenue = () => {
-    const approvedOrders = recentActivity?.orders?.filter((o: any) => o.paymentStatus === "approved") || [];
+    const approvedOrders = actualOrders?.filter((o: any) => o.paymentStatus === "approved") || [];
 
     // Plan type name mapping
     const getPlanName = (planId: string) => {
@@ -172,7 +182,8 @@ export default function AnalyticsPage() {
       return names[planId] || planId.charAt(0).toUpperCase() + planId.slice(1);
     };
 
-    return (distributions?.planTypes || []).map((plan: any) => {
+    // Use the aggregated plan type data from API
+    return (planTypeAggregated || []).map((plan: any) => {
       const planRevenue = approvedOrders
         .filter((o: any) => o.planType === plan._id)
         .reduce((sum: number, order: any) => sum + (order.price || 0), 0);
@@ -180,7 +191,7 @@ export default function AnalyticsPage() {
       return {
         name: getPlanName(plan._id),
         value: plan.count || 0,
-        revenue: planRevenue || plan.revenue || 0
+        revenue: plan.revenue || planRevenue || 0
       };
     });
   };
@@ -189,7 +200,7 @@ export default function AnalyticsPage() {
 
   // Format revenue trend data
   const revenueTrendData = (trends?.revenue || []).map((item: any) => {
-    const trendOrders = recentActivity?.orders?.filter((o: any) => {
+    const trendOrders = actualOrders?.filter((o: any) => {
       try {
         if (!o?.createdAt) return false;
         const orderDate = new Date(o.createdAt);
@@ -210,14 +221,14 @@ export default function AnalyticsPage() {
           month: "short",
           day: "numeric",
         }),
-        revenue: trendRevenue || item.revenue,
-        orders: item.orders,
+        revenue: trendRevenue || item.revenue || 0,
+        orders: item.orders || item.count || 0,
       };
     } catch (e) {
       return {
         date: item._id,
-        revenue: trendRevenue || item.revenue,
-        orders: item.orders,
+        revenue: trendRevenue || item.revenue || 0,
+        orders: item.orders || item.count || 0,
       };
     }
   });
@@ -225,27 +236,37 @@ export default function AnalyticsPage() {
   // Format enrollment trend data
   const enrollmentTrendData = (trends?.enrollments || []).map((item: any) => {
     try {
+      // Handle null _id or aggregate data
+      if (!item._id) {
+        return {
+          date: "Total",
+          enrollments: item.totalEnrollments || item.count || 0,
+        };
+      }
       const date = new Date(item._id);
       return {
         date: isNaN(date.getTime()) ? item._id : date.toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
         }),
-        enrollments: item.count,
+        enrollments: item.count || item.totalEnrollments || 0,
       };
     } catch (e) {
       return {
-        date: item._id,
-        enrollments: item.count,
+        date: item._id || "Unknown",
+        enrollments: item.count || item.totalEnrollments || 0,
       };
     }
   });
 
-  // Format category distribution
-  const categoryData = (distributions?.categories || []).map((item: any) => ({
-    name: item.categoryName || item.name || (typeof item._id === 'string' ? item._id : "Other"),
+  // Format category distribution - API returns courses, we need to extract categories
+  const categoryData = (distributions?.orderStatus || []).map((item: any) => ({
+    name: item.categoryName || item.name || (typeof item._id === 'string' ? item._id.slice(0, 8) : "Other"),
     value: item.count || 0,
   }));
+
+  // Use actualCourses for top courses (from distributions.categories)
+  const topCourses = actualCourses || [];
 
   // --- END EXISTING LOGIC ---
 
@@ -562,9 +583,9 @@ export default function AnalyticsPage() {
             </div>
           </CardHeader>
           <CardBody className="px-6 py-4">
-            {recentActivity?.orders && recentActivity.orders.length > 0 ? (
+            {actualOrders && actualOrders.length > 0 ? (
               <div className="space-y-4">
-                {recentActivity.orders.slice(0, 5).map((order: any) => (
+                {actualOrders.slice(0, 5).map((order: any) => (
                   <div key={order._id} className="flex justify-between items-center p-3 rounded-xl hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
                     <div>
                       <p className="font-bold text-gray-800 text-sm">{order.userId?.name || "Customer"}</p>
