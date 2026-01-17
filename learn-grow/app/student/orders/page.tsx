@@ -182,7 +182,7 @@ export default function StudentOrdersPage() {
                           if (order.planType === "quarterly") {
                             router.push("/student");
                           } else if (order.planType === "single" && order.courseId) {
-                            router.push(`/courses/${order.courseId._id}`);
+                            router.push(`/student/course/${order.courseId._id}/dashboard`);
                           } else if (order.planType === "combo") {
                             router.push("/student/my-courses");
                           }

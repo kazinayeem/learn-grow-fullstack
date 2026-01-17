@@ -59,6 +59,7 @@ export default function CreatePaymentMethodPage() {
   };
 
   const getPaymentIcon = (name: string) => {
+    if (!name) return "💵";
     const lowerName = name.toLowerCase();
     if (lowerName.includes("bkash")) return "💳";
     if (lowerName.includes("nagad")) return "💰";

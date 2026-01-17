@@ -722,13 +722,13 @@ export default function CheckoutPage() {
               {selectedPaymentMethod && paymentMethods.find(m => m._id === selectedPaymentMethod) && (
                 <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
                   <div className="flex items-center gap-3 mb-3">
-                    {paymentMethods.find(m => m._id === selectedPaymentMethod)?.name.toLowerCase().includes("rocket") && (
+                    {paymentMethods.find(m => m._id === selectedPaymentMethod)?.name?.toLowerCase().includes("rocket") && (
                       <CreditCard size={20} className="text-blue-600" />
                     )}
-                    {paymentMethods.find(m => m._id === selectedPaymentMethod)?.name.toLowerCase().includes("bkash") && (
+                    {paymentMethods.find(m => m._id === selectedPaymentMethod)?.name?.toLowerCase().includes("bkash") && (
                       <Smartphone size={20} className="text-pink-600" />
                     )}
-                    {paymentMethods.find(m => m._id === selectedPaymentMethod)?.name.toLowerCase().includes("bank") && (
+                    {paymentMethods.find(m => m._id === selectedPaymentMethod)?.name?.toLowerCase().includes("bank") && (
                       <Banknote size={20} className="text-green-600" />
                     )}
                     <div>
