@@ -183,8 +183,8 @@ export const getAnalytics = async (req: Request, res: Response) => {
         planTypes: planTypeDistribution
       },
       recentActivity: {
-        orders: recentOrders,
-        enrollments: recentEnrollments
+        orders: planTypeDistribution,
+        enrollments: recentOrders
       }
     };
 
