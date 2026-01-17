@@ -215,23 +215,11 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
           <div
             className="absolute left-1/2 transform -translate-x-1/2 flex flex-col items-center justify-center"
             style={{
-              top: '57%', // Moved from 49% to 57% (lower on page)
+              top: '51%', // Moved from 49% to 57% (lower on page)
               width: '80%',
               zIndex: 10,
             }}
           >
-            <p
-              style={{
-                fontSize: '13px',
-                color: '#6b7280',
-                fontFamily: "'Poppins', sans-serif",
-                fontWeight: 500,
-                marginBottom: '12px',
-                letterSpacing: '0.5px',
-              }}
-            >
-              Awarded to
-            </p>
             <p
               className="text-center"
               style={{
