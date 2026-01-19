@@ -31,6 +31,9 @@ jobs:
             git pull origin main
             echo "✅ Pulled latest changes"
 
+            # remove all ceached
+            pm2 remove all || true
+
             echo "📦 Backend build"
             cd grow-backend
             npm install --prefer-offline
