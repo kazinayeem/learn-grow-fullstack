@@ -1066,10 +1066,11 @@ export default function TeamManagementPage() {
                                             />
                                             <Select
                                                 label="Role"
-                                                selectedKeys={[editingMember.role]}
-                                                onChange={(e) =>
-                                                    setEditingMember({ ...editingMember, role: e.target.value })
-                                                }
+                                                selectedKeys={editingMember.role ? new Set([editingMember.role]) : new Set()}
+                                                onSelectionChange={(keys) => {
+                                                    const val = Array.from(keys)[0] as string;
+                                                    setEditingMember({ ...editingMember, role: val });
+                                                }}
                                                 variant="bordered"
                                             >
                                                 {roles.map((role) => (
