@@ -369,9 +369,9 @@ export const Navbar = () => {
       </NavbarContent>
 
       <NavbarContent className="hidden md:flex basis-full" justify="center">
-        <ul className="flex gap-1 lg:gap-2">
+        <ul className="flex gap-1 lg:gap-2 overflow-x-auto">
           {siteConfig.navItems.map((item) => (
-            <NavbarItem key={item.href}>
+            <NavbarItem key={item.href} className="flex-shrink-0">
               <NextLink
                 className={clsx(
                   "relative text-sm lg:text-base font-semibold transition-all duration-300 px-3 lg:px-4 py-2 rounded-lg group whitespace-nowrap",
@@ -421,7 +421,7 @@ export const Navbar = () => {
       </NavbarContent>
 
       <NavbarMenu
-        className="pt-6 pb-safe"
+        className="pt-6 pb-safe max-h-[calc(100vh-120px)] overflow-y-auto"
         style={{
           background:
             "linear-gradient(135deg, rgba(30, 58, 138, 0.95) 0%, rgba(20, 83, 136, 0.95) 50%, rgba(180, 83, 9, 0.95) 100%)",
