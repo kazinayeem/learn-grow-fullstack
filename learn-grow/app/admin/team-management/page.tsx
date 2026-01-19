@@ -1107,6 +1107,51 @@ export default function TeamManagementPage() {
                                                 startContent={<FaTwitter className="text-sky-500" />}
                                             />
                                         </div>
+                                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
+                                            <p className="text-sm font-semibold text-gray-600">Profile Image URL</p>
+                                            <Input
+                                                placeholder="https://example.com/image.jpg or base64"
+                                                value={editingMember.image || ""}
+                                                onChange={(e) =>
+                                                    setEditingMember({
+                                                        ...editingMember,
+                                                        image: e.target.value,
+                                                    })
+                                                }
+                                                variant="bordered"
+                                            />
+                                            {editingMember.image && (
+                                                <div className="flex items-center gap-3">
+                                                    <Image
+                                                        src={editingMember.image.startsWith("http")
+                                                            ? editingMember.image
+                                                            : `data:image/jpeg;base64,${editingMember.image}`}
+                                                        alt={editingMember.name}
+                                                        width={120}
+                                                        height={120}
+                                                        className="rounded-xl border"
+                                                    />
+                                                    <div className="flex-1">
+                                                        <p className="text-sm text-gray-500">Preview of provided image URL</p>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-full sm:w-auto">
+                                                    <Checkbox
+                                                        isSelected={!!editingMember.showOnHome}
+                                                        onValueChange={() =>
+                                                            setEditingMember({ ...editingMember, showOnHome: !editingMember.showOnHome })
+                                                        }
+                                                        size="md"
+                                                        radius="sm"
+                                                    >
+                                                        Show on Home
+                                                    </Checkbox>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </>
                                 )}
                             </ModalBody>
