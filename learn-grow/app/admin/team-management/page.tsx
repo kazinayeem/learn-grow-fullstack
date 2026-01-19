@@ -1072,6 +1072,8 @@ export default function TeamManagementPage() {
                                                     setEditingMember({ ...editingMember, role: val });
                                                 }}
                                                 variant="bordered"
+                                                selectionMode="single"
+                                                disallowEmptySelection
                                             >
                                                 {roles.map((role) => (
                                                     <SelectItem key={role.name} value={role.name}>
