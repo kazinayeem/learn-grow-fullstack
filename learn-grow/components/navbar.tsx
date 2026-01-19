@@ -413,7 +413,7 @@ export const Navbar = () => {
       <NavbarContent className="sm:hidden basis-1/5" justify="end">
         <NavbarMenuToggle
           className={clsx(
-            "ml-2 touch-manipulation active:scale-95 transition-transform w-8 h-8 [&>span]:w-6 [&>span]:h-0.5 [&>span:nth-child(2)]:my-1",
+            "ml-2 touch-manipulation active:scale-95 transition-all duration-500 ease-out w-8 h-8 [&>span]:w-6 [&>span]:h-0.5 [&>span:nth-child(2)]:my-1 [&>span]:transition-all [&>span]:duration-500",
             isScrolled ? "text-gray-700" : "text-white"
           )}
           aria-label="Toggle navigation menu"
@@ -421,7 +421,7 @@ export const Navbar = () => {
       </NavbarContent>
 
       <NavbarMenu
-        className="pt-6 pb-safe max-h-[calc(100vh-120px)] overflow-y-auto"
+        className="pt-6 pb-safe max-h-[calc(100vh-120px)] overflow-y-auto transition-all duration-500 ease-out"
         style={{
           background:
             "linear-gradient(135deg, rgba(30, 58, 138, 0.95) 0%, rgba(20, 83, 136, 0.95) 50%, rgba(180, 83, 9, 0.95) 100%)",
@@ -429,11 +429,11 @@ export const Navbar = () => {
           WebkitBackdropFilter: "blur(20px)",
         }}
       >
-        <div className="px-4 select-none">
+        <div className="px-4 select-none space-y-2">
           {siteConfig.navItems.map((item, index) => (
             <NavbarMenuItem key={`${item.label}-${index}`}>
               <NextLink
-                className="w-full text-white text-lg font-semibold py-4 px-5 rounded-lg active:bg-white/30 touch-manipulation transition-all duration-200 mb-2 min-h-[48px] flex items-center"
+                className="w-full text-white text-lg font-semibold py-4 px-5 rounded-lg active:bg-white/30 touch-manipulation transition-all duration-300 hover:bg-white/20 min-h-[48px] flex items-center transform hover:translate-x-1"
                 href={item.href}
                 onClick={() => setIsMenuOpen(false)}
               >
@@ -448,7 +448,7 @@ export const Navbar = () => {
               <>
                 <Button
                   as={NextLink}
-                  className="text-sm font-bold border-2 bg-white/10 backdrop-blur-md text-white border-white/60 active:bg-white/30 touch-manipulation min-h-[52px]"
+                  className="text-sm font-bold border-2 bg-white/10 backdrop-blur-md text-white border-white/60 active:bg-white/30 touch-manipulation min-h-[52px] transition-all duration-300 hover:bg-white/20 hover:border-white transform hover:scale-[1.02]"
                   href={getDashboardUrl(mobileAuth.user?.role)}
                   size="lg"
                   variant="bordered"
@@ -461,7 +461,7 @@ export const Navbar = () => {
                 </Button>
                 <Button
                   as={NextLink}
-                  className="text-sm font-bold bg-white text-blue-900 active:bg-gray-200 shadow-lg touch-manipulation min-h-[52px]"
+                  className="text-sm font-bold bg-white text-blue-900 active:bg-gray-200 shadow-lg touch-manipulation min-h-[52px] transition-all duration-300 hover:shadow-xl hover:bg-blue-50 transform hover:scale-[1.02]"
                   href="/profile"
                   size="lg"
                   variant="solid"
@@ -473,7 +473,7 @@ export const Navbar = () => {
                   Profile
                 </Button>
                 <Button
-                  className="text-sm font-bold bg-red-500 text-white active:bg-red-700 shadow-lg touch-manipulation min-h-[52px]"
+                  className="text-sm font-bold bg-red-500 text-white active:bg-red-700 shadow-lg touch-manipulation min-h-[52px] transition-all duration-300 hover:bg-red-600 hover:shadow-xl transform hover:scale-[1.02]"
                   size="lg"
                   variant="solid"
                   radius="lg"
@@ -508,7 +508,7 @@ export const Navbar = () => {
               <>
                 <Button
                   as={NextLink}
-                  className="text-sm font-bold border-2 bg-white/10 backdrop-blur-md text-white border-white/60 active:bg-white/30 touch-manipulation min-h-[52px]"
+                  className="text-sm font-bold border-2 bg-white/10 backdrop-blur-md text-white border-white/60 active:bg-white/30 touch-manipulation min-h-[52px] transition-all duration-300 hover:bg-white/20 hover:border-white transform hover:scale-[1.02]"
                   href="/login"
                   size="lg"
                   variant="bordered"
@@ -521,7 +521,7 @@ export const Navbar = () => {
                 </Button>
                 <Button
                   as={Link}
-                  className="text-sm font-bold bg-white text-blue-900 active:bg-gray-200 shadow-lg touch-manipulation min-h-[52px]"
+                  className="text-sm font-bold bg-white text-blue-900 active:bg-gray-200 shadow-lg touch-manipulation min-h-[52px] transition-all duration-300 hover:shadow-xl hover:bg-blue-50 transform hover:scale-[1.02]"
                   href="/register"
                   size="lg"
                   variant="solid"
