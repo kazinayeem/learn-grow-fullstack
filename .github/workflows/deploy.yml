@@ -18,45 +18,44 @@ jobs:
 
       - name: Deploy to VPS
         run: |
-          ssh -i ~/.ssh/id_ed25519 \
-          -o StrictHostKeyChecking=no \
-          root@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no root@${{ secrets.VPS_HOST }} << 'EOF'
+
+            set -e
 
             echo "🚀 Starting deployment..."
 
-            cd /root/learn-grow-fullstack || { echo "❌ Project path not found"; exit 1; }
+            cd /root/learn-grow-fullstack || exit 1
 
-            echo "🔄 Pulling latest changes from GitHub"
+            echo "🧹 Cleaning repo"
             git reset --hard
-            git pull origin main
-            echo "✅ Pulled latest changes"
+            git clean -fd
 
-            # remove all ceached
-            pm2 remove all || true
+            echo "🔄 Pulling latest code"
+            git pull origin main
 
             echo "📦 Backend build"
             cd grow-backend
             npm install --prefer-offline
             npm run build
 
-            echo "♻️ Backend PM2 (restart or start)"
+            echo "♻️ Backend PM2"
             pm2 describe grow-backend > /dev/null \
               && pm2 reload grow-backend \
-              || pm2 start npm --name "grow-backend" -- start
+              || pm2 start npm --name grow-backend -- start
 
             echo "📦 Frontend build"
             cd ../learn-grow
             npm install --prefer-offline
             npm run build
 
-            echo "♻️ Frontend PM2 (restart or start)"
+            echo "♻️ Frontend PM2"
             pm2 describe frontend > /dev/null \
               && pm2 reload frontend \
-              || pm2 start npm --name "frontend" -- start
+              || pm2 start npm --name frontend -- start
 
-            echo "💾 Saving PM2 state"
+            echo "💾 Saving PM2"
             pm2 save
 
-            echo "✅ Deployment finished successfully"
+            echo "✅ Deployment completed"
 
           EOF
