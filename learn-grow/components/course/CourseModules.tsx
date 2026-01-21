@@ -325,16 +325,7 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                                     <Button
                                                         isIconOnly={false}
                                                         className="flex-shrink-0 bg-primary text-white font-semibold text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-primary-600 active:scale-95 transition-all min-h-fit touch-manipulation"
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            handleLessonClick(lesson as any);
-                                                        }}
-                                                        onTouchEnd={(e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            handleLessonClick(lesson as any);
-                                                        }}
+                                                        onPress={() => handleLessonClick(lesson as any)}
                                                     >
                                                         <FaPlay className="text-xs mr-1" />
                                                         <span>{isCompleted ? "Review" : "Start"}</span>
@@ -362,6 +353,8 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                 size="5xl"
                 scrollBehavior="inside"
                 backdrop="blur"
+                placement="center"
+                portalContainer={typeof window !== 'undefined' ? document.body : undefined}
                 classNames={{
                     wrapper: "pointer-events-auto z-[9999]",
                     backdrop: "pointer-events-auto z-[9998]",
