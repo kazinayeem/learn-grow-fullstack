@@ -116,7 +116,10 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
         if (lesson.isLocked) return;
 
         setSelectedLesson(lesson);
-        onOpen();
+        // Use setTimeout to ensure state is updated before opening modal
+        setTimeout(() => {
+            onOpen();
+        }, 0);
     };
 
     const handleMarkComplete = async () => {
@@ -214,7 +217,7 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                             placement="top"
                                         >
                                             <div
-                                                className={`flex items-start sm:items-center gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 rounded-lg border transition-all text-xs sm:text-sm md:text-base touch-manipulation ${isRealLocked
+                                                className={`flex items-start sm:items-center gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 rounded-lg border transition-all text-xs sm:text-sm md:text-base touch-manipulation active:scale-95 ${isRealLocked
                                                     ? "bg-gray-50 border-gray-200 opacity-70 cursor-not-allowed"
                                                     : "bg-white border-gray-200 hover:border-primary hover:shadow-md cursor-pointer active:scale-[0.98]"
                                                     } ${isCompleted ? "bg-green-50 border-green-200" : ""}`}
@@ -222,7 +225,18 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                                 onTouchEnd={(e) => {
                                                     if (!isRealLocked) {
                                                         e.preventDefault();
+                                                        e.stopPropagation();
                                                         handleLessonClick(lesson as any);
+                                                    }
+                                                }}
+                                                onPointerDown={(e) => {
+                                                    if (!isRealLocked && e.pointerType === "touch") {
+                                                        (e.currentTarget as HTMLElement).style.transform = "scale(0.95)";
+                                                    }
+                                                }}
+                                                onPointerUp={(e) => {
+                                                    if (!isRealLocked && e.pointerType === "touch") {
+                                                        (e.currentTarget as HTMLElement).style.transform = "";
                                                     }
                                                 }}
                                                 role="button"
@@ -310,6 +324,12 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                 size="5xl"
                 scrollBehavior="inside"
                 backdrop="blur"
+                classNames={{
+                    wrapper: "pointer-events-auto",
+                    backdrop: "pointer-events-auto",
+                    base: "pointer-events-auto",
+                    closeButton: "pointer-events-auto",
+                }}
             >
                 <ModalContent>
                     <ModalHeader>
