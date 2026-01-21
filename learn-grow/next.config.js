@@ -12,33 +12,9 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   
-  webpack: (config, { isServer }) => {
-    config.optimization = {
-      ...config.optimization,
-      splitChunks: {
-        chunks: 'all',
-        cacheGroups: {
-          default: false,
-          vendors: false,
-          // Vendor chunk
-          vendor: {
-            filename: 'static/chunks/vendor.js',
-            test: /node_modules/,
-            name: 'vendors',
-            priority: 10,
-            reuseExistingChunk: true,
-          },
-          // Common chunk
-          common: {
-            minChunks: 2,
-            priority: 5,
-            reuseExistingChunk: true,
-            name: 'common',
-          },
-        },
-      },
-    };
-    return config;
+  // Turbopack is enabled by default in Next.js 16
+  turbopack: {
+    root: __dirname,
   },
 
   images: {
@@ -101,7 +77,7 @@ const nextConfig = {
         port: "",
         pathname: "**",
       },
-      
+
     ],
   },
 };
