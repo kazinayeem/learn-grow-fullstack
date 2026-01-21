@@ -250,19 +250,28 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
 
                                     const lessonRow = (
                                             <div
-                                                className={`flex items-start sm:items-center gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 rounded-lg border transition-all text-xs sm:text-sm md:text-base touch-manipulation pointer-events-auto ${isRealLocked
+                                                className={`flex items-start sm:items-center gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 rounded-lg border transition-all text-xs sm:text-sm md:text-base pointer-events-auto ${isRealLocked
                                                     ? "bg-gray-50 border-gray-200 opacity-70 cursor-not-allowed"
                                                     : "bg-white border-gray-200 hover:border-primary hover:shadow-md cursor-pointer active:scale-[0.98]"
                                                     } ${isCompleted ? "bg-green-50 border-green-200" : ""}`}
+                                                 style={{ touchAction: 'auto' }}
                                                  onClick={(e) => {
                                                      if ((e.target as HTMLElement).closest('button')) return;
                                                      if (!isRealLocked) {
                                                          handleLessonClick(lesson as any);
                                                      }
                                                  }}
-                                                 onTouchEnd={(e) => {
+                                                 onTouchStart={(e) => {
                                                      if ((e.target as HTMLElement).closest('button')) return;
                                                      if (!isRealLocked) {
+                                                         e.currentTarget.style.opacity = '0.8';
+                                                     }
+                                                 }}
+                                                 onTouchEnd={(e) => {
+                                                     e.currentTarget.style.opacity = '1';
+                                                     if ((e.target as HTMLElement).closest('button')) return;
+                                                     if (!isRealLocked) {
+                                                         e.preventDefault();
                                                          handleLessonClick(lesson as any);
                                                      }
                                                  }}
@@ -333,13 +342,18 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                                 {!isRealLocked && (
                                                     <button
                                                         type="button"
-                                                        className="flex-shrink-0 flex items-center gap-1 bg-blue-600 text-white font-semibold text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-blue-700 active:scale-95 transition-all touch-manipulation"
+                                                        className="flex-shrink-0 flex items-center gap-1 bg-blue-600 text-white font-semibold text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-blue-700 active:scale-95 transition-all"
+                                                        style={{ touchAction: 'manipulation' }}
                                                         onClick={(e) => {
                                                             e.preventDefault();
                                                             e.stopPropagation();
                                                             handleLessonClick(lesson as any);
                                                         }}
+                                                        onTouchStart={(e) => {
+                                                            e.currentTarget.style.transform = 'scale(0.95)';
+                                                        }}
                                                         onTouchEnd={(e) => {
+                                                            e.currentTarget.style.transform = 'scale(1)';
                                                             e.preventDefault();
                                                             e.stopPropagation();
                                                             handleLessonClick(lesson as any);
@@ -384,7 +398,15 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
 
             {isModalOpen && selectedLesson && typeof document !== "undefined" && createPortal(
                 <div className="fixed inset-0 z-[10000] flex items-center justify-center">
-                    <div className="absolute inset-0 bg-black/60" onClick={() => handleCloseModal()} />
+                    <div 
+                        className="absolute inset-0 bg-black/60" 
+                        onClick={() => handleCloseModal()}
+                        onTouchEnd={(e) => {
+                            e.preventDefault();
+                            handleCloseModal();
+                        }}
+                        style={{ touchAction: 'auto' }}
+                    />
                     <div className="relative z-[10001] w-full max-w-5xl mx-4 sm:mx-6 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
                         <div className="flex items-start justify-between gap-4 px-4 sm:px-6 py-4 border-b border-gray-200">
                             <div className="flex flex-col gap-1">
@@ -401,7 +423,12 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                             <button
                                 type="button"
                                 onClick={handleCloseModal}
+                                onTouchEnd={(e) => {
+                                    e.preventDefault();
+                                    handleCloseModal();
+                                }}
                                 className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition"
+                                style={{ touchAction: 'manipulation' }}
                                 aria-label="Close"
                             >
                                 ✕
@@ -499,7 +526,12 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                             <button
                                 type="button"
                                 onClick={handleCloseModal}
+                                onTouchEnd={(e) => {
+                                    e.preventDefault();
+                                    handleCloseModal();
+                                }}
                                 className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 transition"
+                                style={{ touchAction: 'manipulation' }}
                             >
                                 Close
                             </button>
@@ -507,8 +539,15 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                 <button
                                     type="button"
                                     onClick={handleMarkComplete}
+                                    onTouchEnd={(e) => {
+                                        e.preventDefault();
+                                        if (!isCompleting) {
+                                            handleMarkComplete();
+                                        }
+                                    }}
                                     disabled={isCompleting}
                                     className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2"
+                                    style={{ touchAction: 'manipulation' }}
                                 >
                                     {isCompleting ? (
                                         <>

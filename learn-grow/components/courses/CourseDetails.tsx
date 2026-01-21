@@ -161,43 +161,8 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
         router.push(`/checkout?plan=single&courseId=${courseId}`);
     };
 
-    // sample courses for offline backup
-    const sampleCourses: any[] = [
-        {
-            _id: "1",
-            title: "Robotics for Beginners",
-            description: "Learn to build and program your first robot.\n\nThis course introduces you to the exciting world of robotics. You will learn about basic electronics, motors, sensors, and programming microcontrollers to make your robot move and interact with the world.",
-            price: 1500,
-            level: "Beginner",
-            img: "https://images.unsplash.com/photo-1535378433864-ed1c29cee23d?q=80&w=1000&auto=format&fit=crop"
-        },
-        {
-            _id: "2",
-            title: "Web Development Bootcamp",
-            description: "Master HTML, CSS, and JavaScript from scratch.\n\nBecome a full-stack web developer with this comprehensive bootcamp. We cover everything from the basics of the web to advanced frontend frameworks and backend technologies.",
-            price: 2000,
-            level: "Intermediate",
-            img: "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=1000&auto=format&fit=crop"
-        },
-        {
-            _id: "3",
-            title: "Python for Kids",
-            price: 1200,
-            level: "Beginner",
-            description: "Fun and interactive Python programming course.\n\nPython is a great language for beginners. In this course, kids will learn programming concepts through fun games and visual projects.",
-            img: "https://images.unsplash.com/photo-1526379879527-8559ecfcaec0?q=80&w=1000&auto=format&fit=crop"
-        },
-        {
-            _id: "4",
-            title: "Game Development with scratch",
-            price: 1000,
-            level: "Beginner",
-            description: "Create your own games using Scratch visual programming.",
-            img: "https://images.unsplash.com/photo-1596496356938-a2a11b63d888?q=80&w=1000&auto=format&fit=crop"
-        }
-    ];
-
-    const course = data?.data || data || sampleCourses.find(c => c._id === courseId) || sampleCourses[0];
+  
+    const course = data?.data || data;
 
     // For free courses: anyone can see outline/preview
     const isFree = course?.isFree || course?.price === 0;
