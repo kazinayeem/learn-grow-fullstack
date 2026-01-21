@@ -310,7 +310,7 @@ export const Navbar = () => {
       isBlurred={false}
       classNames={{
         base: clsx(
-          "py-3 transition-all duration-500 !h-auto !min-h-[96px] top-0 z-50 overflow-visible",
+          "py-3 transition-all duration-500 !h-auto !min-h-[96px] !fixed top-0 left-0 right-0 z-50 overflow-visible",
           isScrolled
             ? "bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-lg"
             : "bg-gradient-to-r from-blue-900/40 via-teal-800/40 to-amber-900/40 backdrop-blur-md"
