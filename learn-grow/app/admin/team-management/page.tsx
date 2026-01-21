@@ -913,7 +913,7 @@ export default function TeamManagementPage() {
                         </div>
                     </Tab>
 
-                    {/* Team Members List Tab - Organized by Role */}
+                    {/* Team Members List Tab - All Members */}
                     <Tab
                         key="list"
                         title={
@@ -937,43 +937,25 @@ export default function TeamManagementPage() {
                                 </div>
                             ) : (
                                 <div className="space-y-8">
-                                    {/* Select role to manage */}
-                                    <Card className="shadow-lg border border-gray-100">
-                                        <CardBody className="p-4">
-                                            <Select
-                                                label="Select Role to Manage"
-                                                placeholder="Choose a role"
-                                                selectedKeys={selectedRole ? [selectedRole] : []}
-                                                onChange={(e) => setSelectedRole(e.target.value)}
-                                                variant="bordered"
-                                            >
-                                                {roles.map((role) => (
-                                                    <SelectItem key={role.name} value={role.name}>
-                                                        {role.name} ({membersByRole[role.name]?.length || 0} members)
-                                                    </SelectItem>
-                                                ))}
-                                            </Select>
-                                        </CardBody>
-                                    </Card>
-
-                                    {selectedRole && filteredMembers.length > 0 && (
-                                        <Card className="shadow-lg border border-gray-100">
+                                    {/* Display all members organized by role */}
+                                    {Object.keys(membersByRole).map((role) => (
+                                        <Card key={role} className="shadow-lg border border-gray-100">
                                             <CardHeader className="px-4 pt-4 pb-2">
-                                                <h3 className="text-xl font-bold text-gray-800">{selectedRole}</h3>
+                                                <h3 className="text-xl font-bold text-gray-800">{role}</h3>
                                                 <p className="text-sm text-gray-500 ml-2">Drag to reorder members</p>
                                             </CardHeader>
                                             <CardBody className="p-4">
                                                 <DndContext
                                                     sensors={memberSensors}
                                                     collisionDetection={closestCenter}
-                                                    onDragEnd={(event) => handleMemberDragEnd(event, filteredMembers)}
+                                                    onDragEnd={(event) => handleMemberDragEnd(event, membersByRole[role])}
                                                 >
                                                     <SortableContext
-                                                        items={filteredMembers.map((m) => m._id)}
+                                                        items={membersByRole[role].map((m) => m._id)}
                                                         strategy={verticalListSortingStrategy}
                                                     >
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                                            {filteredMembers.map((member) => (
+                                                            {membersByRole[role].map((member) => (
                                                                 <SortableMemberItem
                                                                     key={member._id}
                                                                     member={member}
@@ -987,23 +969,7 @@ export default function TeamManagementPage() {
                                                 </DndContext>
                                             </CardBody>
                                         </Card>
-                                    )}
-
-                                    {selectedRole && filteredMembers.length === 0 && (
-                                        <Card className="shadow-lg border border-gray-100">
-                                            <CardBody className="text-center p-10">
-                                                <p className="text-gray-500">No members found for this role.</p>
-                                            </CardBody>
-                                        </Card>
-                                    )}
-
-                                    {!selectedRole && (
-                                        <Card className="shadow-lg border border-gray-100">
-                                            <CardBody className="text-center p-10">
-                                                <p className="text-gray-500">Select a role to view and manage members.</p>
-                                            </CardBody>
-                                        </Card>
-                                    )}
+                                    ))}
                                 </div>
                             )}
                         </div>

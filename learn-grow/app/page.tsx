@@ -97,7 +97,7 @@ export default function Home() {
         <NextTarget />
 
         {/* Our Educators - Last section before footer */}
-        {/* <Educators /> */}
+        
       </div>
     </>
   );
