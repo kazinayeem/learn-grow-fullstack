@@ -71,6 +71,7 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
     const { isOpen, onOpen, onClose, onOpenChange } = useDisclosure();
     const [selectedLesson, setSelectedLesson] = useState<LessonFromApi | null>(null);
     const [isTouchDevice, setIsTouchDevice] = useState(false);
+    const [openingLessonId, setOpeningLessonId] = useState<string | null>(null);
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -117,19 +118,19 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
     };
 
     const handleLessonClick = (lesson: LessonFromApi) => {
-        console.log("handleLessonClick triggered for:", lesson.title);
-        
+        const id = lesson._id || lesson.id;
+        setOpeningLessonId(id || null);
+
         if (!hasAccess && !lesson.isFreePreview) {
-            console.log("User doesn't have access and lesson is not free preview");
+            setOpeningLessonId(null);
             return;
         }
 
         if (lesson.isLocked) {
-            console.log("Lesson is locked");
+            setOpeningLessonId(null);
             return;
         }
 
-        console.log("Setting selected lesson and opening modal");
         setSelectedLesson(lesson);
     };
 
@@ -137,6 +138,10 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
     useEffect(() => {
         if (selectedLesson && !isOpen) {
             onOpen();
+        }
+        if (selectedLesson) {
+            const id = selectedLesson._id || selectedLesson.id;
+            setOpeningLessonId((prev) => (prev === id ? null : prev));
         }
     }, [selectedLesson, isOpen, onOpen]);
 
@@ -233,13 +238,18 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                                     ? "bg-gray-50 border-gray-200 opacity-70 cursor-not-allowed"
                                                     : "bg-white border-gray-200 hover:border-primary hover:shadow-md cursor-pointer active:scale-[0.98]"
                                                     } ${isCompleted ? "bg-green-50 border-green-200" : ""}`}
-                                                onClick={(e) => {
-                                                    // Don't trigger if clicking the Start button
-                                                    if ((e.target as HTMLElement).closest('button')) return;
-                                                    if (!isRealLocked) {
-                                                        handleLessonClick(lesson as any);
-                                                    }
-                                                }}
+                                                 onClick={(e) => {
+                                                     if ((e.target as HTMLElement).closest('button')) return;
+                                                     if (!isRealLocked) {
+                                                         handleLessonClick(lesson as any);
+                                                     }
+                                                 }}
+                                                 onTouchEnd={(e) => {
+                                                     if ((e.target as HTMLElement).closest('button')) return;
+                                                     if (!isRealLocked) {
+                                                         handleLessonClick(lesson as any);
+                                                     }
+                                                 }}
                                                 role="button"
                                                 tabIndex={isRealLocked ? -1 : 0}
                                                 aria-label={`${lesson.title} - ${isRealLocked ? 'Locked' : 'Click to view'}`}
@@ -315,7 +325,13 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                                         onPress={() => handleLessonClick(lesson as any)}
                                                     >
                                                         <FaPlay className="text-xs mr-1" />
-                                                        <span>{isCompleted ? "Review" : "Start"}</span>
+                                                        <span>
+                                                            {openingLessonId === (lesson._id || lesson.id)
+                                                                ? "Opening..."
+                                                                : isCompleted
+                                                                    ? "Review"
+                                                                    : "Start"}
+                                                        </span>
                                                     </Button>
                                                 )}
                                             </div>
@@ -350,6 +366,7 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                 onOpenChange={(open) => {
                     if (!open) {
                         setSelectedLesson(null);
+                        setOpeningLessonId(null);
                         onClose();
                     }
                 }}
