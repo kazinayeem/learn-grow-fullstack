@@ -257,7 +257,7 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                                  style={{ touchAction: 'auto' }}
                                                  onClick={(e) => {
                                                      if ((e.target as HTMLElement).closest('button')) return;
-                                                     if (!isRealLocked) {
+                                                     if (!isRealLocked && !isTouchDevice) {
                                                          handleLessonClick(lesson as any);
                                                      }
                                                  }}
@@ -270,7 +270,7 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                                  onTouchEnd={(e) => {
                                                      e.currentTarget.style.opacity = '1';
                                                      if ((e.target as HTMLElement).closest('button')) return;
-                                                     if (!isRealLocked) {
+                                                     if (!isRealLocked && isTouchDevice) {
                                                          e.preventDefault();
                                                          handleLessonClick(lesson as any);
                                                      }
@@ -347,16 +347,20 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                                         onClick={(e) => {
                                                             e.preventDefault();
                                                             e.stopPropagation();
-                                                            handleLessonClick(lesson as any);
+                                                            if (!isTouchDevice) {
+                                                                handleLessonClick(lesson as any);
+                                                            }
                                                         }}
                                                         onTouchStart={(e) => {
                                                             e.currentTarget.style.transform = 'scale(0.95)';
                                                         }}
                                                         onTouchEnd={(e) => {
                                                             e.currentTarget.style.transform = 'scale(1)';
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            handleLessonClick(lesson as any);
+                                                            if (isTouchDevice) {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                handleLessonClick(lesson as any);
+                                                            }
                                                         }}
                                                     >
                                                         <FaPlay className="text-xs" />
@@ -400,10 +404,12 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                 <div className="fixed inset-0 z-[10000] flex items-center justify-center">
                     <div 
                         className="absolute inset-0 bg-black/60" 
-                        onClick={() => handleCloseModal()}
+                        onClick={() => !isTouchDevice && handleCloseModal()}
                         onTouchEnd={(e) => {
-                            e.preventDefault();
-                            handleCloseModal();
+                            if (isTouchDevice) {
+                                e.preventDefault();
+                                handleCloseModal();
+                            }
                         }}
                         style={{ touchAction: 'auto' }}
                     />
@@ -422,10 +428,12 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                             </div>
                             <button
                                 type="button"
-                                onClick={handleCloseModal}
+                                onClick={() => !isTouchDevice && handleCloseModal()}
                                 onTouchEnd={(e) => {
-                                    e.preventDefault();
-                                    handleCloseModal();
+                                    if (isTouchDevice) {
+                                        e.preventDefault();
+                                        handleCloseModal();
+                                    }
                                 }}
                                 className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition"
                                 style={{ touchAction: 'manipulation' }}
@@ -450,7 +458,9 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                             src={selectedLesson.contentUrl.replace("watch?v=", "embed/")}
                                             className="w-full h-full"
                                             allowFullScreen
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                                            style={{ border: 'none' }}
+                                            title={selectedLesson.title}
                                         />
                                     ) : selectedLesson.contentUrl.includes("vimeo.com") ? (
                                         <iframe
@@ -458,13 +468,20 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                             className="w-full h-full"
                                             allowFullScreen
                                             allow="autoplay; fullscreen; picture-in-picture"
+                                            style={{ border: 'none' }}
+                                            title={selectedLesson.title}
                                         />
                                     ) : (
                                         <video
                                             src={selectedLesson.contentUrl}
                                             controls
                                             className="w-full h-full"
-                                        />
+                                            playsInline
+                                            controlsList="nodownload"
+                                            preload="metadata"
+                                        >
+                                            Your browser does not support the video tag.
+                                        </video>
                                     )}
                                 </div>
                             )}
@@ -525,10 +542,12 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                         <div className="flex items-center justify-end gap-2 px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50">
                             <button
                                 type="button"
-                                onClick={handleCloseModal}
+                                onClick={() => !isTouchDevice && handleCloseModal()}
                                 onTouchEnd={(e) => {
-                                    e.preventDefault();
-                                    handleCloseModal();
+                                    if (isTouchDevice) {
+                                        e.preventDefault();
+                                        handleCloseModal();
+                                    }
                                 }}
                                 className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 transition"
                                 style={{ touchAction: 'manipulation' }}
@@ -538,11 +557,13 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                             {selectedLesson && !selectedLesson.isCompleted && hasAccess && (
                                 <button
                                     type="button"
-                                    onClick={handleMarkComplete}
+                                    onClick={() => !isTouchDevice && handleMarkComplete()}
                                     onTouchEnd={(e) => {
-                                        e.preventDefault();
-                                        if (!isCompleting) {
-                                            handleMarkComplete();
+                                        if (isTouchDevice) {
+                                            e.preventDefault();
+                                            if (!isCompleting) {
+                                                handleMarkComplete();
+                                            }
                                         }
                                     }}
                                     disabled={isCompleting}
