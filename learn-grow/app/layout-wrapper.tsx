@@ -20,7 +20,7 @@ export default function LayoutWrapper({
     <div className="relative flex flex-col min-h-screen">
       {!isDashboardRoute && <Navbar />}
 
-      <main className={`flex-grow ${!isDashboardRoute ? 'pt-24 sm:pt-28 md:pt-22' : ''}`}>{children}</main>
+      <main className={`flex-grow ${!isDashboardRoute ? 'pt-24 sm:pt-28 md:pt-24' : ''}`}>{children}</main>
 
       {!isDashboardRoute && <Footer />}
     </div>
