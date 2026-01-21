@@ -3,16 +3,6 @@
 
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import {
-    Card,
-    CardBody,
-    Accordion,
-    AccordionItem,
-    Chip,
-    Progress,
-    Tooltip,
-    Button,
-} from "@nextui-org/react";
 import { useCompleteLessonMutation } from "@/redux/api/courseApi";
 import {
     FaLock,
@@ -23,7 +13,8 @@ import {
     FaFilePdf,
     FaBook,
     FaExpand,
-    FaDownload
+    FaDownload,
+    FaChevronDown
 } from "react-icons/fa";
 
 interface LessonFromApi {
@@ -67,6 +58,7 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
     const [isTouchDevice, setIsTouchDevice] = useState(false);
     const [openingLessonId, setOpeningLessonId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set([0]));
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -145,6 +137,18 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
         document.body.style.overflow = '';
     };
 
+    const toggleModule = (idx: number) => {
+        setExpandedModules(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(idx)) {
+                newSet.delete(idx);
+            } else {
+                newSet.add(idx);
+            }
+            return newSet;
+        });
+    };
+
     const handleMarkComplete = async () => {
         if (selectedLesson && !selectedLesson.isCompleted) {
             try {
@@ -161,11 +165,11 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
 
     if (modules.length === 0) {
         return (
-            <Card>
-                <CardBody className="text-center py-8">
-                    <p className="text-default-500">No course content available yet.</p>
-                </CardBody>
-            </Card>
+            <div className="bg-white rounded-xl shadow-md border border-gray-200">
+                <div className="text-center py-8">
+                    <p className="text-gray-500">No course content available yet.</p>
+                </div>
+            </div>
         );
     }
 
@@ -184,49 +188,61 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
             </div>
 
             {/* Accordion for modules - Responsive */}
-            <Accordion 
-                variant="splitted" 
-                defaultExpandedKeys={["0"]}
-                className="gap-2 sm:gap-3"
-            >
+            <div className="flex flex-col gap-2 sm:gap-3">
                 {modules.map((module, idx) => {
                     const totalDuration = module.lectures.reduce((acc, l) => acc + (l.duration || 0), 0);
                     const completedCount = module.lectures.filter(l => l.isCompleted).length;
                     const moduleProgress = module.lectures.length > 0
                         ? Math.round((completedCount / module.lectures.length) * 100)
                         : 0;
+                    const isExpanded = expandedModules.has(idx);
 
                     return (
-                        <AccordionItem
-                            key={idx.toString()}
-                            aria-label={module.title}
-                            className="text-xs sm:text-sm md:text-base"
-                            title={
+                        <div key={idx} className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                            <button
+                                type="button"
+                                onClick={() => toggleModule(idx)}
+                                className="w-full text-left px-4 py-4 hover:bg-gray-50 transition-colors"
+                            >
                                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full gap-2 sm:gap-3 sm:pr-4">
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="font-semibold text-sm sm:text-base md:text-lg line-clamp-2">{module.title}</h3>
-                                        <p className="text-xs sm:text-sm text-default-500 line-clamp-1 mt-0.5 sm:mt-1">{module.description}</p>
+                                    <div className="flex-1 min-w-0 flex items-center gap-3">
+                                        <FaChevronDown 
+                                            className={`text-gray-500 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-semibold text-sm sm:text-base md:text-lg line-clamp-2">{module.title}</h3>
+                                            <p className="text-xs sm:text-sm text-gray-500 line-clamp-1 mt-0.5 sm:mt-1">{module.description}</p>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap flex-shrink-0">
-                                        <Chip size="sm" variant="flat" className="text-xs sm:text-sm">
+                                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap flex-shrink-0 ml-8 sm:ml-0">
+                                        <span className="px-2 py-1 rounded-md bg-gray-100 text-gray-700 text-xs sm:text-sm font-medium">
                                             {module.lectures.length}L
-                                        </Chip>
-                                        <Chip size="sm" variant="flat" className="text-xs sm:text-sm">
+                                        </span>
+                                        <span className="px-2 py-1 rounded-md bg-gray-100 text-gray-700 text-xs sm:text-sm font-medium">
                                             {formatDuration(totalDuration)}
-                                        </Chip>
+                                        </span>
                                         {hasAccess && (
-                                            <Chip color="success" size="sm" variant="flat" className="text-xs sm:text-sm">
+                                            <span className="px-2 py-1 rounded-md bg-green-100 text-green-700 text-xs sm:text-sm font-medium">
                                                 {moduleProgress}%
-                                            </Chip>
+                                            </span>
                                         )}
                                     </div>
                                 </div>
-                            }
-                        >
-                            <div className="space-y-2 sm:space-y-3 pb-3 sm:pb-4 px-2 sm:px-0">
-                                {hasAccess && <Progress value={moduleProgress} color="success" size="sm" className="mb-2 sm:mb-3" />}
-
-                                {module.lectures.map((lesson) => {
+                            </button>
+                            {isExpanded && (
+                                <div className="border-t border-gray-200">
+                                    <div className="space-y-2 sm:space-y-3 pb-3 sm:pb-4 px-2 sm:px-0">
+                                        {hasAccess && (
+                                            <div className="px-4 pt-3">
+                                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                                    <div 
+                                                        className="bg-green-500 h-2 rounded-full transition-all duration-300" 
+                                                        style={{ width: `${moduleProgress}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                        {module.lectures.map((lesson) => {
                                     // Logic for display
                                     const isRealLocked = canViewPreview ? !!lesson.isLocked : (!lesson.isFreePreview);
                                     const lockReason = canViewPreview ? lesson.lockReason : "Enroll to access this lesson";
@@ -283,9 +299,9 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                                             {lesson.title}
                                                         </h4>
                                                         {lesson.isFreePreview && (
-                                                            <Chip size="sm" color="primary" variant="flat" className="text-xs">
+                                                            <span className="px-2 py-1 rounded-md bg-blue-100 text-blue-700 text-xs font-medium">
                                                                 Preview
-                                                            </Chip>
+                                                            </span>
                                                         )}
                                                     </div>
 
@@ -301,13 +317,9 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                                             <span className="whitespace-nowrap">{formatDuration(lesson.duration)}</span>
                                                         </span>
 
-                                                        <Chip
-                                                            size="sm"
-                                                            variant="flat"
-                                                            className={`text-xs capitalize ${isRealLocked ? "bg-gray-100 text-gray-500" : ""}`}
-                                                        >
+                                                        <span className={`px-2 py-1 rounded-md bg-gray-100 text-gray-700 text-xs font-medium capitalize ${isRealLocked ? "bg-gray-100 text-gray-500" : ""}`}>
                                                             {lesson.type || "video"}
-                                                        </Chip>
+                                                        </span>
 
                                                         {!hasAccess && isRealLocked && (
                                                             <span className="flex items-center gap-1 text-orange-600 font-medium">
@@ -349,25 +361,26 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                     return isTouchDevice ? (
                                         React.cloneElement(lessonRow, { key: lesson.id })
                                     ) : (
-                                        <Tooltip 
-                                            key={lesson.id} 
-                                            content={isRealLocked ? lockReason : "Click to view"} 
-                                            isDisabled={!isRealLocked} 
-                                            placement="top"
-                                            classNames={{
-                                                base: "pointer-events-auto",
-                                                content: "pointer-events-auto",
-                                            }}
-                                        >
+                                        <div key={lesson.id} className="relative group">
                                             {lessonRow}
-                                        </Tooltip>
+                                            {isRealLocked && (
+                                                <div className="absolute hidden group-hover:block bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap z-10">
+                                                    {lockReason}
+                                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
+                                                        <div className="border-4 border-transparent border-t-gray-900"></div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     );
                                 })}
-                            </div>
-                        </AccordionItem>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     );
                 })}
-            </Accordion>
+            </div>
 
             {isModalOpen && selectedLesson && typeof document !== "undefined" && createPortal(
                 <div className="fixed inset-0 z-[10000] flex items-center justify-center">
