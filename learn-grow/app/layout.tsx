@@ -29,6 +29,7 @@ export const metadata: Metadata = {
   authors: [{ name: siteConfig.author }],
   creator: siteConfig.creator,
   publisher: siteConfig.publisher,
+  referrer: 'strict-origin-when-cross-origin',
   formatDetection: {
     email: false,
     address: false,

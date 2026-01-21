@@ -500,7 +500,8 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                     }
                                     
                                     if (videoId) {
-                                        embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&playsinline=1`;
+                                        // Use youtube-nocookie.com to avoid bot detection
+                                        embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`;
                                     }
                                 }
                                 
@@ -515,6 +516,7 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                                 style={{ border: 'none' }}
                                                 title={selectedLesson.title}
                                                 loading="lazy"
+                                                referrerPolicy="strict-origin-when-cross-origin"
                                             />
                                         ) : url.includes("vimeo.com") ? (
                                             <iframe
