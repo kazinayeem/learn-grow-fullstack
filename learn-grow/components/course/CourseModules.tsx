@@ -70,6 +70,14 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
     const [completeLesson, { isLoading: isCompleting }] = useCompleteLessonMutation();
     const { isOpen, onOpen, onClose, onOpenChange } = useDisclosure();
     const [selectedLesson, setSelectedLesson] = useState<LessonFromApi | null>(null);
+    const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const touch = "ontouchstart" in window || navigator.maxTouchPoints > 0 || (navigator as any).msMaxTouchPoints > 0;
+            setIsTouchDevice(touch);
+        }
+    }, []);
 
     // Prefer API modules (with lessons) when provided
     const modules = modulesFromApi && modulesFromApi.length > 0
@@ -219,17 +227,7 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                     const lockReason = canViewPreview ? lesson.lockReason : "Enroll to access this lesson";
                                     const isCompleted = !!lesson.isCompleted;
 
-                                    return (
-                                        <Tooltip 
-                                            key={lesson.id} 
-                                            content={isRealLocked ? lockReason : "Click to view"} 
-                                            isDisabled={!isRealLocked} 
-                                            placement="top"
-                                            classNames={{
-                                                base: "pointer-events-auto",
-                                                content: "pointer-events-auto",
-                                            }}
-                                        >
+                                    const lessonRow = (
                                             <div
                                                 className={`flex items-start sm:items-center gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 rounded-lg border transition-all text-xs sm:text-sm md:text-base touch-manipulation pointer-events-auto ${isRealLocked
                                                     ? "bg-gray-50 border-gray-200 opacity-70 cursor-not-allowed"
@@ -332,6 +330,22 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                                     </Button>
                                                 )}
                                             </div>
+                                    );
+
+                                    return isTouchDevice ? (
+                                        React.cloneElement(lessonRow, { key: lesson.id })
+                                    ) : (
+                                        <Tooltip 
+                                            key={lesson.id} 
+                                            content={isRealLocked ? lockReason : "Click to view"} 
+                                            isDisabled={!isRealLocked} 
+                                            placement="top"
+                                            classNames={{
+                                                base: "pointer-events-auto",
+                                                content: "pointer-events-auto",
+                                            }}
+                                        >
+                                            {lessonRow}
                                         </Tooltip>
                                     );
                                 })}
