@@ -114,8 +114,8 @@ export default function CourseDetails({ courseId }: CourseDetailsProps) {
                 (order.endDate === null || (order.endDate && new Date(order.endDate) > now)) &&
                 order.comboId) {
                 const combo = typeof order.comboId === "object" ? order.comboId : null;
-                if (combo && combo.courses && Array.isArray(combo.courses)) {
-                    return combo.courses.some((course: any) => {
+                if (combo && (combo as any).courses && Array.isArray((combo as any).courses)) {
+                    return (combo as any).courses.some((course: any) => {
                         const cId = typeof course === "object" ? course._id : course;
                         return cId?.toString() === courseId;
                     });
