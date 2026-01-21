@@ -15,6 +15,7 @@ import { Button } from "@nextui-org/react";
 import { Link } from "@nextui-org/react";
 import NextLink from "next/link";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { siteConfig } from "@/config/site";
 import Logo from "@/public/logo.png";
@@ -328,23 +329,46 @@ export const Navbar = () => {
             className="flex justify-start items-center gap-2 sm:gap-3 group"
             href="/"
           >
-            <div className="relative flex-shrink-0">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl blur-lg opacity-60 group-hover:opacity-90 transition-opacity duration-300"></div>
-              <Image
-                priority
-                alt="Learn & Grow Logo"
-                className={clsx(
-                  "relative object-contain rounded-xl transform group-hover:scale-105 transition-all duration-300",
-                  isScrolled
-                    ? "w-10 h-10 sm:w-12 sm:h-12"
-                    : "w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16"
-                )}
-                src={Logo}
-                width={64}
-                height={64}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className="relative flex-shrink-0"
+            >
+              <motion.div
+                animate={{
+                  scale: [1, 1.1, 1],
+                  opacity: [0.6, 0.9, 0.6],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl blur-lg"
               />
-            </div>
-            <div className="flex flex-col shrink-0">
+              <motion.div whileHover={{ scale: 1.05, rotate: [0, -5, 5, 0] }} transition={{ duration: 0.3 }}>
+                <Image
+                  priority
+                  alt="Learn & Grow Logo"
+                  className={clsx(
+                    "relative object-contain rounded-xl transition-all duration-300",
+                    isScrolled
+                      ? "w-10 h-10 sm:w-12 sm:h-12"
+                      : "w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16"
+                  )}
+                  src={Logo}
+                  width={64}
+                  height={64}
+                />
+              </motion.div>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="flex flex-col shrink-0"
+            >
               <p
                 className={clsx(
                   "font-extrabold tracking-tight whitespace-nowrap leading-tight",
@@ -363,16 +387,27 @@ export const Navbar = () => {
               >
                 Empowering Education
               </p>
-            </div>
+            </motion.div>
           </NextLink>
         </NavbarBrand>
       </NavbarContent>
 
       <NavbarContent className="hidden md:flex basis-full" justify="center">
-        <ul className="flex gap-1 lg:gap-2 overflow-x-auto scrollbar-hide">
-          {siteConfig.navItems.map((item) => (
+        <motion.ul
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="flex gap-1 lg:gap-2 overflow-x-auto scrollbar-hide"
+        >
+          {siteConfig.navItems.map((item, index) => (
             <NavbarItem key={item.href} className="flex-shrink-0">
-              <NextLink
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.4 + index * 0.05 }}
+                whileHover={{ y: -2 }}
+              >
+                <NextLink
                 className={clsx(
                   "relative text-sm lg:text-base font-semibold transition-all duration-300 px-3 lg:px-4 py-2 rounded-lg group whitespace-nowrap",
                   isScrolled
@@ -399,25 +434,39 @@ export const Navbar = () => {
                   )}
                 ></span>
               </NextLink>
+              </motion.div>
             </NavbarItem>
           ))}
-        </ul>
+        </motion.ul>
       </NavbarContent>
 
       <NavbarContent className="hidden sm:flex basis-auto" justify="end">
         <NavbarItem>
-          <AuthButtons isScrolled={isScrolled} />
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+          >
+            <AuthButtons isScrolled={isScrolled} />
+          </motion.div>
         </NavbarItem>
       </NavbarContent>
 
       <NavbarContent className="sm:hidden basis-1/5" justify="end">
-        <NavbarMenuToggle
-          className={clsx(
-            "ml-2 touch-manipulation active:scale-95 transition-all duration-500 ease-out w-8 h-8 [&>span]:w-6 [&>span]:h-0.5 [&>span:nth-child(2)]:my-1 [&>span]:transition-all [&>span]:duration-500",
-            isScrolled ? "text-gray-700" : "text-white"
-          )}
-          aria-label="Toggle navigation menu"
-        />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <NavbarMenuToggle
+            className={clsx(
+              "ml-2 touch-manipulation active:scale-95 transition-all duration-500 ease-out w-8 h-8 [&>span]:w-6 [&>span]:h-0.5 [&>span:nth-child(2)]:my-1 [&>span]:transition-all [&>span]:duration-500",
+              isScrolled ? "text-gray-700" : "text-white"
+            )}
+            aria-label="Toggle navigation menu"
+          />
+        </motion.div>
       </NavbarContent>
 
       <NavbarMenu
@@ -429,50 +478,87 @@ export const Navbar = () => {
           WebkitBackdropFilter: "blur(20px)",
         }}
       >
-        <div className="px-4 select-none space-y-2">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="px-4 select-none space-y-2"
+        >
           {siteConfig.navItems.map((item, index) => (
             <NavbarMenuItem key={`${item.label}-${index}`}>
-              <NextLink
-                className="w-full text-white text-lg font-semibold py-4 px-5 rounded-lg active:bg-white/30 touch-manipulation transition-all duration-300 hover:bg-white/20 min-h-[48px] flex items-center transform hover:translate-x-1"
-                href={item.href}
-                onClick={() => setIsMenuOpen(false)}
+              <motion.div
+                initial={{ opacity: 0, x: -50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+                whileTap={{ scale: 0.98 }}
               >
-                {item.label}
-              </NextLink>
+                <NextLink
+                  className="w-full text-white text-lg font-semibold py-4 px-5 rounded-lg active:bg-white/30 touch-manipulation transition-all duration-300 hover:bg-white/20 min-h-[48px] flex items-center transform hover:translate-x-1"
+                  href={item.href}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {item.label}
+                </NextLink>
+              </motion.div>
             </NavbarMenuItem>
           ))}
-        </div>
+        </motion.div>
         <NavbarMenuItem>
-          <div className="flex flex-col gap-4 mt-8 w-full px-4 pb-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+            className="flex flex-col gap-4 mt-8 w-full px-4 pb-6"
+          >
             {mobileAuth.authed ? (
               <>
-                <Button
-                  as={NextLink}
-                  className="text-sm font-bold border-2 bg-white/10 backdrop-blur-md text-white border-white/60 active:bg-white/30 touch-manipulation min-h-[52px] transition-all duration-300 hover:bg-white/20 hover:border-white transform hover:scale-[1.02]"
-                  href={getDashboardUrl(mobileAuth.user?.role)}
-                  size="lg"
-                  variant="bordered"
-                  radius="lg"
-                  fullWidth
-                  onPress={() => setIsMenuOpen(false)}
-                  startContent={<span className="text-xl">📊</span>}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: 0.4 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  Dashboard
-                </Button>
-                <Button
-                  as={NextLink}
-                  className="text-sm font-bold bg-white text-blue-900 active:bg-gray-200 shadow-lg touch-manipulation min-h-[52px] transition-all duration-300 hover:shadow-xl hover:bg-blue-50 transform hover:scale-[1.02]"
-                  href="/profile"
-                  size="lg"
-                  variant="solid"
-                  radius="lg"
-                  fullWidth
-                  onPress={() => setIsMenuOpen(false)}
-                  startContent={<span className="text-xl">👤</span>}
+                  <Button
+                    as={NextLink}
+                    className="text-sm font-bold border-2 bg-white/10 backdrop-blur-md text-white border-white/60 active:bg-white/30 touch-manipulation min-h-[52px] transition-all duration-300 hover:bg-white/20 hover:border-white transform hover:scale-[1.02]"
+                    href={getDashboardUrl(mobileAuth.user?.role)}
+                    size="lg"
+                    variant="bordered"
+                    radius="lg"
+                    fullWidth
+                    onPress={() => setIsMenuOpen(false)}
+                    startContent={<span className="text-xl">📊</span>}
+                  >
+                    Dashboard
+                  </Button>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: 0.5 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  Profile
-                </Button>
-                <Button
+                  <Button
+                    as={NextLink}
+                    className="text-sm font-bold bg-white text-blue-900 active:bg-gray-200 shadow-lg touch-manipulation min-h-[52px] transition-all duration-300 hover:shadow-xl hover:bg-blue-50 transform hover:scale-[1.02]"
+                    href="/profile"
+                    size="lg"
+                    variant="solid"
+                    radius="lg"
+                    fullWidth
+                    onPress={() => setIsMenuOpen(false)}
+                    startContent={<span className="text-xl">👤</span>}
+                  >
+                    Profile
+                  </Button>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: 0.6 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Button
                   className="text-sm font-bold bg-red-500 text-white active:bg-red-700 shadow-lg touch-manipulation min-h-[52px] transition-all duration-300 hover:bg-red-600 hover:shadow-xl transform hover:scale-[1.02]"
                   size="lg"
                   variant="solid"
@@ -503,38 +589,53 @@ export const Navbar = () => {
                 >
                   লগআউট
                 </Button>
+                </motion.div>
               </>
             ) : (
               <>
-                <Button
-                  as={NextLink}
-                  className="text-sm font-bold border-2 bg-white/10 backdrop-blur-md text-white border-white/60 active:bg-white/30 touch-manipulation min-h-[52px] transition-all duration-300 hover:bg-white/20 hover:border-white transform hover:scale-[1.02]"
-                  href="/login"
-                  size="lg"
-                  variant="bordered"
-                  radius="lg"
-                  fullWidth
-                  onPress={() => setIsMenuOpen(false)}
-                  startContent={<span className="text-xl">👤</span>}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: 0.4 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  লগইন
-                </Button>
-                <Button
-                  as={Link}
-                  className="text-sm font-bold bg-white text-blue-900 active:bg-gray-200 shadow-lg touch-manipulation min-h-[52px] transition-all duration-300 hover:shadow-xl hover:bg-blue-50 transform hover:scale-[1.02]"
-                  href="/register"
-                  size="lg"
-                  variant="solid"
-                  radius="lg"
-                  fullWidth
-                  onPress={() => setIsMenuOpen(false)}
-                  startContent={<span className="text-xl">✨</span>}
+                  <Button
+                    as={NextLink}
+                    className="text-sm font-bold border-2 bg-white/10 backdrop-blur-md text-white border-white/60 active:bg-white/30 touch-manipulation min-h-[52px] transition-all duration-300 hover:bg-white/20 hover:border-white transform hover:scale-[1.02]"
+                    href="/login"
+                    size="lg"
+                    variant="bordered"
+                    radius="lg"
+                    fullWidth
+                    onPress={() => setIsMenuOpen(false)}
+                    startContent={<span className="text-xl">👤</span>}
+                  >
+                    লগইন
+                  </Button>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: 0.5 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  রেজিস্ট্রেশন
-                </Button>
+                  <Button
+                    as={Link}
+                    className="text-sm font-bold bg-white text-blue-900 active:bg-gray-200 shadow-lg touch-manipulation min-h-[52px] transition-all duration-300 hover:shadow-xl hover:bg-blue-50 transform hover:scale-[1.02]"
+                    href="/register"
+                    size="lg"
+                    variant="solid"
+                    radius="lg"
+                    fullWidth
+                    onPress={() => setIsMenuOpen(false)}
+                    startContent={<span className="text-xl">✨</span>}
+                  >
+                    রেজিস্ট্রেশন
+                  </Button>
+                </motion.div>
               </>
             )}
-          </div>
+          </motion.div>
         </NavbarMenuItem>
       </NavbarMenu>
     </NextUINavbar>
