@@ -851,26 +851,22 @@ export default function TeamManagementPage() {
                                         <>
                                             <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                                                 <p className="text-sm text-yellow-800">
-                                                    ⚠️ Only instructors with profile pictures can be imported. Instructors without images are disabled.
+                                                    ⚠️ Instructors without profile pictures will be marked with a warning icon.
                                                 </p>
                                             </div>
                                             <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar border border-gray-200 rounded-xl p-2 mb-4 bg-gray-50/50">
                                                 {instructors.map((instructor) => {
                                                     const hasProfileImage = instructor.profileImage && instructor.profileImage.trim() !== '';
-                                                    const isDisabled = !hasProfileImage;
                                                     
                                                     return (
                                                         <div
                                                             key={instructor._id}
-                                                            className={`flex items-center gap-3 p-3 border rounded-lg transition-all ${
-                                                                isDisabled
-                                                                    ? "bg-red-50 border-red-200 opacity-60 cursor-not-allowed"
-                                                                    : selectedInstructors.includes(instructor._id)
-                                                                        ? "bg-blue-50 border-blue-300 shadow-sm cursor-pointer"
-                                                                        : "bg-white hover:bg-gray-50 border-gray-100 cursor-pointer"
+                                                            className={`flex items-center gap-3 p-3 border rounded-lg transition-all cursor-pointer ${
+                                                                selectedInstructors.includes(instructor._id)
+                                                                    ? "bg-blue-50 border-blue-300 shadow-sm"
+                                                                    : "bg-white hover:bg-gray-50 border-gray-100"
                                                             }`}
                                                             onClick={() => {
-                                                                if (isDisabled) return;
                                                                 if (selectedInstructors.includes(instructor._id)) {
                                                                     setSelectedInstructors(
                                                                         selectedInstructors.filter((id) => id !== instructor._id)
@@ -885,7 +881,6 @@ export default function TeamManagementPage() {
                                                         >
                                                             <Checkbox
                                                                 isSelected={selectedInstructors.includes(instructor._id)}
-                                                                isDisabled={isDisabled}
                                                                 onValueChange={() => {}}
                                                                 size="lg"
                                                                 radius="full"
@@ -901,17 +896,17 @@ export default function TeamManagementPage() {
                                                                     className="rounded-full border-2 border-white shadow-sm object-cover"
                                                                 />
                                                             ) : (
-                                                                <div className="w-12 h-12 bg-red-200 rounded-full flex items-center justify-center text-red-600 border-2 border-red-300">
+                                                                <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 border-2 border-yellow-300">
                                                                     <FaUserTie />
                                                                 </div>
                                                             )}
                                                             <div className="flex-1">
-                                                                <span className={`font-semibold ${isDisabled ? 'text-red-700' : 'text-gray-800'}`}>
+                                                                <span className="font-semibold text-gray-800">
                                                                     {instructor.name}
                                                                 </span>
-                                                                {isDisabled && (
-                                                                    <p className="text-xs text-red-600 mt-1">
-                                                                        ❌ No profile picture
+                                                                {!hasProfileImage && (
+                                                                    <p className="text-xs text-yellow-600 mt-1">
+                                                                        ⚠️ No profile picture
                                                                     </p>
                                                                 )}
                                                             </div>
