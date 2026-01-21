@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Card,
     CardBody,
@@ -116,11 +116,18 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
         if (lesson.isLocked) return;
 
         setSelectedLesson(lesson);
-        // Use setTimeout to ensure state is updated before opening modal
+        // Use setTimeout with longer delay to ensure state is updated before opening modal
         setTimeout(() => {
             onOpen();
-        }, 0);
+        }, 50);
     };
+
+    // Effect to ensure modal opens when selectedLesson is set
+    useEffect(() => {
+        if (selectedLesson && !isOpen) {
+            onOpen();
+        }
+    }, [selectedLesson, isOpen, onOpen]);
 
     const handleMarkComplete = async () => {
         if (selectedLesson && !selectedLesson.isCompleted) {
@@ -215,13 +222,29 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                             content={isRealLocked ? lockReason : "Click to view"} 
                                             isDisabled={!isRealLocked} 
                                             placement="top"
+                                            classNames={{
+                                                base: "pointer-events-auto",
+                                                content: "pointer-events-auto",
+                                            }}
                                         >
                                             <div
-                                                className={`flex items-start sm:items-center gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 rounded-lg border transition-all text-xs sm:text-sm md:text-base touch-manipulation active:scale-95 ${isRealLocked
+                                                className={`flex items-start sm:items-center gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 rounded-lg border transition-all text-xs sm:text-sm md:text-base touch-manipulation pointer-events-auto ${isRealLocked
                                                     ? "bg-gray-50 border-gray-200 opacity-70 cursor-not-allowed"
                                                     : "bg-white border-gray-200 hover:border-primary hover:shadow-md cursor-pointer active:scale-[0.98]"
                                                     } ${isCompleted ? "bg-green-50 border-green-200" : ""}`}
-                                                onClick={() => !isRealLocked && handleLessonClick(lesson as any)}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    if (!isRealLocked) {
+                                                        handleLessonClick(lesson as any);
+                                                    }
+                                                }}
+                                                onTouchStart={(e) => {
+                                                    if (!isRealLocked) {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                    }
+                                                }}
                                                 onTouchEnd={(e) => {
                                                     if (!isRealLocked) {
                                                         e.preventDefault();
@@ -229,19 +252,15 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                                         handleLessonClick(lesson as any);
                                                     }
                                                 }}
-                                                onPointerDown={(e) => {
-                                                    if (!isRealLocked && e.pointerType === "touch") {
-                                                        (e.currentTarget as HTMLElement).style.transform = "scale(0.95)";
-                                                    }
-                                                }}
-                                                onPointerUp={(e) => {
-                                                    if (!isRealLocked && e.pointerType === "touch") {
-                                                        (e.currentTarget as HTMLElement).style.transform = "";
-                                                    }
-                                                }}
                                                 role="button"
                                                 tabIndex={isRealLocked ? -1 : 0}
                                                 aria-label={`${lesson.title} - ${isRealLocked ? 'Locked' : 'Click to view'}`}
+                                                onKeyDown={(e) => {
+                                                    if (!isRealLocked && (e.key === 'Enter' || e.key === ' ')) {
+                                                        e.preventDefault();
+                                                        handleLessonClick(lesson as any);
+                                                    }
+                                                }}
                                             >
                                                 {/* Status Icon - Smaller on mobile */}
                                                 <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg sm:text-xl ${isRealLocked
@@ -325,11 +344,13 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                 scrollBehavior="inside"
                 backdrop="blur"
                 classNames={{
-                    wrapper: "pointer-events-auto",
-                    backdrop: "pointer-events-auto",
+                    wrapper: "pointer-events-auto z-50",
+                    backdrop: "pointer-events-auto z-40",
                     base: "pointer-events-auto",
                     closeButton: "pointer-events-auto",
                 }}
+                isDismissable={true}
+                isKeyboardDismissDisabled={false}
             >
                 <ModalContent>
                     <ModalHeader>
@@ -440,7 +461,13 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                         )}
                     </ModalBody>
                     <ModalFooter>
-                        <Button variant="light" onPress={onClose}>
+                        <Button 
+                            variant="light" 
+                            onPress={() => {
+                                onClose();
+                                setSelectedLesson(null);
+                            }}
+                        >
                             Close
                         </Button>
                         {selectedLesson && !selectedLesson.isCompleted && hasAccess && (
