@@ -214,11 +214,20 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                             placement="top"
                                         >
                                             <div
-                                                className={`flex items-start sm:items-center gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 rounded-lg border transition-all text-xs sm:text-sm md:text-base ${isRealLocked
+                                                className={`flex items-start sm:items-center gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 rounded-lg border transition-all text-xs sm:text-sm md:text-base touch-manipulation ${isRealLocked
                                                     ? "bg-gray-50 border-gray-200 opacity-70 cursor-not-allowed"
-                                                    : "bg-white border-gray-200 hover:border-primary hover:shadow-md cursor-pointer"
+                                                    : "bg-white border-gray-200 hover:border-primary hover:shadow-md cursor-pointer active:scale-[0.98]"
                                                     } ${isCompleted ? "bg-green-50 border-green-200" : ""}`}
                                                 onClick={() => !isRealLocked && handleLessonClick(lesson as any)}
+                                                onTouchEnd={(e) => {
+                                                    if (!isRealLocked) {
+                                                        e.preventDefault();
+                                                        handleLessonClick(lesson as any);
+                                                    }
+                                                }}
+                                                role="button"
+                                                tabIndex={isRealLocked ? -1 : 0}
+                                                aria-label={`${lesson.title} - ${isRealLocked ? 'Locked' : 'Click to view'}`}
                                             >
                                                 {/* Status Icon - Smaller on mobile */}
                                                 <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg sm:text-xl ${isRealLocked
