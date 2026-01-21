@@ -68,10 +68,42 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
     }, []);
 
     useEffect(() => {
+        // Handle modal state changes
+        if (isModalOpen) {
+            // Prevent body scroll when modal is open
+            const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+            document.body.style.overflow = 'hidden';
+            document.body.style.paddingRight = `${scrollBarWidth}px`;
+            
+            // For iOS Safari - prevent background scrolling
+            if (isTouchDevice) {
+                document.body.style.position = 'fixed';
+                document.body.style.width = '100%';
+                document.body.style.top = `-${window.scrollY}px`;
+            }
+        } else {
+            // Restore body scroll when modal is closed
+            if (isTouchDevice) {
+                const scrollY = document.body.style.top;
+                document.body.style.position = '';
+                document.body.style.width = '';
+                document.body.style.top = '';
+                if (scrollY) {
+                    window.scrollTo(0, parseInt(scrollY || '0') * -1);
+                }
+            }
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }
+        
         return () => {
             document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+            document.body.style.top = '';
         };
-    }, []);
+    }, [isModalOpen, isTouchDevice]);
 
     // Prefer API modules (with lessons) when provided
     const modules = modulesFromApi && modulesFromApi.length > 0
@@ -124,17 +156,18 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
             return;
         }
 
-        setSelectedLesson(lesson);
-        setIsModalOpen(true);
-        document.body.style.overflow = 'hidden';
-        setTimeout(() => setOpeningLessonId(null), 200);
+        // Use requestAnimationFrame for smoother modal opening on mobile
+        requestAnimationFrame(() => {
+            setSelectedLesson(lesson);
+            setIsModalOpen(true);
+            setTimeout(() => setOpeningLessonId(null), 200);
+        });
     };
 
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setSelectedLesson(null);
         setOpeningLessonId(null);
-        document.body.style.overflow = '';
     };
 
     const toggleModule = (idx: number) => {
@@ -401,7 +434,7 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
             </div>
 
             {isModalOpen && selectedLesson && typeof document !== "undefined" && createPortal(
-                <div className="fixed inset-0 z-[10000] flex items-center justify-center">
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center" style={{ WebkitOverflowScrolling: 'touch' }}>
                     <div 
                         className="absolute inset-0 bg-black/60" 
                         onClick={() => !isTouchDevice && handleCloseModal()}
@@ -413,7 +446,7 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                         }}
                         style={{ touchAction: 'auto' }}
                     />
-                    <div className="relative z-[10001] w-full max-w-5xl mx-4 sm:mx-6 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+                    <div className="relative z-[10001] w-full max-w-5xl mx-4 sm:mx-6 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden" style={{ maxHeight: '90vh' }}>
                         <div className="flex items-start justify-between gap-4 px-4 sm:px-6 py-4 border-b border-gray-200">
                             <div className="flex flex-col gap-1">
                                 <h2 className="text-xl font-bold text-gray-900">{selectedLesson.title}</h2>
@@ -443,7 +476,7 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                             </button>
                         </div>
 
-                        <div className="px-4 sm:px-6 py-4 max-h-[80vh] overflow-y-auto space-y-4">
+                        <div className="px-4 sm:px-6 py-4 max-h-[80vh] overflow-y-auto space-y-4" style={{ WebkitOverflowScrolling: 'touch' }}>
                             {selectedLesson.description && (
                                 <div className="bg-blue-50 p-4 rounded-lg">
                                     <p className="text-sm text-gray-700">{selectedLesson.description}</p>
@@ -451,40 +484,64 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                             )}
 
                             {/* Content Display */}
-                            {selectedLesson.type === "video" && selectedLesson.contentUrl && (
-                                <div className="aspect-video bg-black rounded-lg overflow-hidden">
-                                    {selectedLesson.contentUrl.includes("youtube.com") || selectedLesson.contentUrl.includes("youtu.be") ? (
-                                        <iframe
-                                            src={selectedLesson.contentUrl.replace("watch?v=", "embed/")}
-                                            className="w-full h-full"
-                                            allowFullScreen
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                                            style={{ border: 'none' }}
-                                            title={selectedLesson.title}
-                                        />
-                                    ) : selectedLesson.contentUrl.includes("vimeo.com") ? (
-                                        <iframe
-                                            src={selectedLesson.contentUrl}
-                                            className="w-full h-full"
-                                            allowFullScreen
-                                            allow="autoplay; fullscreen; picture-in-picture"
-                                            style={{ border: 'none' }}
-                                            title={selectedLesson.title}
-                                        />
-                                    ) : (
-                                        <video
-                                            src={selectedLesson.contentUrl}
-                                            controls
-                                            className="w-full h-full"
-                                            playsInline
-                                            controlsList="nodownload"
-                                            preload="metadata"
-                                        >
-                                            Your browser does not support the video tag.
-                                        </video>
-                                    )}
-                                </div>
-                            )}
+                            {selectedLesson.type === "video" && selectedLesson.contentUrl && (() => {
+                                const url = selectedLesson.contentUrl;
+                                let embedUrl = url;
+                                
+                                // Extract YouTube video ID
+                                if (url.includes("youtube.com") || url.includes("youtu.be")) {
+                                    let videoId = "";
+                                    if (url.includes("youtube.com/watch?v=")) {
+                                        videoId = url.split("v=")[1]?.split("&")[0] || "";
+                                    } else if (url.includes("youtu.be/")) {
+                                        videoId = url.split("youtu.be/")[1]?.split("?")[0] || "";
+                                    } else if (url.includes("youtube.com/embed/")) {
+                                        videoId = url.split("embed/")[1]?.split("?")[0] || "";
+                                    }
+                                    
+                                    if (videoId) {
+                                        embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&playsinline=1`;
+                                    }
+                                }
+                                
+                                return (
+                                    <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                                        {(url.includes("youtube.com") || url.includes("youtu.be")) ? (
+                                            <iframe
+                                                src={embedUrl}
+                                                className="w-full h-full"
+                                                allowFullScreen
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                                                style={{ border: 'none' }}
+                                                title={selectedLesson.title}
+                                                loading="lazy"
+                                            />
+                                        ) : url.includes("vimeo.com") ? (
+                                            <iframe
+                                                src={url.includes("/video/") ? url : url.replace("vimeo.com/", "player.vimeo.com/video/")}
+                                                className="w-full h-full"
+                                                allowFullScreen
+                                                allow="autoplay; fullscreen; picture-in-picture"
+                                                style={{ border: 'none' }}
+                                                title={selectedLesson.title}
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <video
+                                                src={url}
+                                                controls
+                                                className="w-full h-full"
+                                                playsInline
+                                                controlsList="nodownload"
+                                                preload="metadata"
+                                                style={{ objectFit: 'contain' }}
+                                            >
+                                                Your browser does not support the video tag.
+                                            </video>
+                                        )}
+                                    </div>
+                                );
+                            })()}
 
                             {selectedLesson.type === "pdf" && selectedLesson.contentUrl && (
                                 <div className="space-y-4">
