@@ -14,6 +14,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    overflow-x: hidden;
   }
 
   /* Base body text - Inter (friendly, readable) */
@@ -21,6 +22,7 @@
     @apply font-sans;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     letter-spacing: -0.011em;
+    overflow-x: hidden;
   }
 
   /* Headline elements - Poppins (strong contrast) */
