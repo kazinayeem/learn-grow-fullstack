@@ -90,6 +90,8 @@ export default function Home() {
         {/* Our Goals in Bangla */}
         <OurGoals />
 
+         <Educators />
+
         {/* Why Our Courses Are Best - FAQ */}
         <WhyBestCourses />
 
@@ -97,7 +99,7 @@ export default function Home() {
         <NextTarget />
 
         {/* Our Educators - Last section before footer */}
-        
+       
       </div>
     </>
   );

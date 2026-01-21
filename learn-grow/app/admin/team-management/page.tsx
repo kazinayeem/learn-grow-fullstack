@@ -555,6 +555,9 @@ export default function TeamManagementPage() {
         membersByRole[role].sort((a, b) => a.position - b.position);
     });
 
+    // Sort roles by their position to display in correct order
+    const sortedRoles = [...roles].sort((a, b) => a.position - b.position);
+
     // Filter members by selected role
     const filteredMembers = selectedRole
         ? teamMembers.filter((m) => m.role === selectedRole).sort((a, b) => a.position - b.position)
@@ -937,38 +940,48 @@ export default function TeamManagementPage() {
                                 </div>
                             ) : (
                                 <div className="space-y-8">
-                                    {/* Display all members organized by role */}
-                                    {Object.keys(membersByRole).map((role) => (
-                                        <Card key={role} className="shadow-lg border border-gray-100">
-                                            <CardHeader className="px-4 pt-4 pb-2">
-                                                <h3 className="text-xl font-bold text-gray-800">{role}</h3>
-                                                <p className="text-sm text-gray-500 ml-2">Drag to reorder members</p>
-                                            </CardHeader>
-                                            <CardBody className="p-4">
-                                                <DndContext
-                                                    sensors={memberSensors}
-                                                    collisionDetection={closestCenter}
-                                                    onDragEnd={(event) => handleMemberDragEnd(event, membersByRole[role])}
-                                                >
-                                                    <SortableContext
-                                                        items={membersByRole[role].map((m) => m._id)}
-                                                        strategy={verticalListSortingStrategy}
-                                                    >
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                                            {membersByRole[role].map((member) => (
-                                                                <SortableMemberItem
-                                                                    key={member._id}
-                                                                    member={member}
-                                                                    onEdit={setEditingMember}
-                                                                    onDelete={handleDeleteMember}
-                                                                    onToggleShow={handleToggleShowHome}
-                                                                />
-                                                            ))}
+                                    {/* Display all members organized by role - sorted by role position */}
+                                    {sortedRoles.map((role) => (
+                                        membersByRole[role.name] && membersByRole[role.name].length > 0 && (
+                                            <Card key={role._id} className="shadow-lg border border-gray-100">
+                                                <CardHeader className="px-4 pt-4 pb-2">
+                                                    <div className="flex items-center justify-between w-full">
+                                                        <div className="flex items-center gap-3">
+                                                            <h3 className="text-xl font-bold text-gray-800">{role.name}</h3>
+                                                            <span className="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded-full font-semibold">
+                                                                Position: {role.position}
+                                                            </span>
                                                         </div>
-                                                    </SortableContext>
-                                                </DndContext>
-                                            </CardBody>
-                                        </Card>
+                                                        <p className="text-sm text-gray-500">({membersByRole[role.name]?.length || 0} members)</p>
+                                                    </div>
+                                                    <p className="text-sm text-gray-500 ml-2">Drag to reorder members</p>
+                                                </CardHeader>
+                                                <CardBody className="p-4">
+                                                    <DndContext
+                                                        sensors={memberSensors}
+                                                        collisionDetection={closestCenter}
+                                                        onDragEnd={(event) => handleMemberDragEnd(event, membersByRole[role.name])}
+                                                    >
+                                                        <SortableContext
+                                                            items={membersByRole[role.name].map((m) => m._id)}
+                                                            strategy={verticalListSortingStrategy}
+                                                        >
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                                                {membersByRole[role.name].map((member) => (
+                                                                    <SortableMemberItem
+                                                                        key={member._id}
+                                                                        member={member}
+                                                                        onEdit={setEditingMember}
+                                                                        onDelete={handleDeleteMember}
+                                                                        onToggleShow={handleToggleShowHome}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                        </SortableContext>
+                                                    </DndContext>
+                                                </CardBody>
+                                            </Card>
+                                        )
                                     ))}
                                 </div>
                             )}
