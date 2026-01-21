@@ -109,17 +109,20 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
     };
 
     const handleLessonClick = (lesson: LessonFromApi) => {
-        if (!hasAccess && !lesson.isFreePreview) return;
+        console.log("handleLessonClick triggered for:", lesson.title);
+        
+        if (!hasAccess && !lesson.isFreePreview) {
+            console.log("User doesn't have access and lesson is not free preview");
+            return;
+        }
 
-        // If locked but not preview (and we have access?? actually if locked we generally can't access, 
-        // unless logic says otherwise, but backend sets isLocked based on sequence)
-        if (lesson.isLocked) return;
+        if (lesson.isLocked) {
+            console.log("Lesson is locked");
+            return;
+        }
 
+        console.log("Setting selected lesson and opening modal");
         setSelectedLesson(lesson);
-        // Use setTimeout with longer delay to ensure state is updated before opening modal
-        setTimeout(() => {
-            onOpen();
-        }, 50);
     };
 
     // Effect to ensure modal opens when selectedLesson is set
@@ -233,19 +236,17 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                                     : "bg-white border-gray-200 hover:border-primary hover:shadow-md cursor-pointer active:scale-[0.98]"
                                                     } ${isCompleted ? "bg-green-50 border-green-200" : ""}`}
                                                 onClick={(e) => {
+                                                    // Don't trigger if clicking the Start button
+                                                    if ((e.target as HTMLElement).closest('button')) return;
                                                     e.preventDefault();
                                                     e.stopPropagation();
                                                     if (!isRealLocked) {
                                                         handleLessonClick(lesson as any);
                                                     }
                                                 }}
-                                                onTouchStart={(e) => {
-                                                    if (!isRealLocked) {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                    }
-                                                }}
                                                 onTouchEnd={(e) => {
+                                                    // Don't trigger if clicking the Start button
+                                                    if ((e.target as HTMLElement).closest('button')) return;
                                                     if (!isRealLocked) {
                                                         e.preventDefault();
                                                         e.stopPropagation();
@@ -321,10 +322,23 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                                 </div>
 
                                                 {!isRealLocked && (
-                                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-50 text-primary rounded-lg text-sm font-medium">
-                                                        <FaPlay className="text-xs" />
+                                                    <Button
+                                                        isIconOnly={false}
+                                                        className="flex-shrink-0 bg-primary text-white font-semibold text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-primary-600 active:scale-95 transition-all min-h-fit touch-manipulation"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleLessonClick(lesson as any);
+                                                        }}
+                                                        onTouchEnd={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleLessonClick(lesson as any);
+                                                        }}
+                                                    >
+                                                        <FaPlay className="text-xs mr-1" />
                                                         <span>{isCompleted ? "Review" : "Start"}</span>
-                                                    </div>
+                                                    </Button>
                                                 )}
                                             </div>
                                         </Tooltip>
