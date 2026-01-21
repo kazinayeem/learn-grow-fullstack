@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Card, CardBody, Button } from "@nextui-org/react";
+import { Card, CardBody } from "@nextui-org/react";
 import {
   FaRocket,
   FaGraduationCap,
@@ -9,7 +9,9 @@ import {
   FaGlobeAsia,
   FaLightbulb,
   FaUsers,
+  FaCheck,
 } from "react-icons/fa";
+import { motion } from "framer-motion";
 
 export default function NextTarget() {
   const targets = [
@@ -55,116 +57,243 @@ export default function NextTarget() {
   ];
 
   return (
-    <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white text-gray-900 relative overflow-hidden">
-      {/* Background Accents */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+    <section className="py-16 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8 bg-white text-gray-900 relative overflow-hidden">
+      {/* Animated Background Accents */}
+      <motion.div
+        animate={{
+          scale: [1, 1.2, 1],
+          opacity: [0.1, 0.15, 0.1],
+        }}
+        transition={{
+          duration: 8,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        className="absolute top-0 left-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"
+      />
+      <motion.div
+        animate={{
+          scale: [1, 1.3, 1],
+          opacity: [0.1, 0.15, 0.1],
+        }}
+        transition={{
+          duration: 10,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"
+      />
 
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Section Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-blue-100 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
-            <FaRocket className="text-blue-600" />
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+          className="text-center mb-12 sm:mb-16"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            viewport={{ once: true }}
+            className="inline-flex items-center gap-2 bg-blue-100 backdrop-blur-sm px-4 py-2 rounded-full mb-4"
+          >
+            <motion.div
+              animate={{ rotate: [0, 360] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            >
+              <FaRocket className="text-blue-600" />
+            </motion.div>
             <span className="text-sm font-semibold text-blue-900">
               আমাদের ভবিষ্যৎ পরিকল্পনা
             </span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-gray-900">
+          </motion.div>
+          <motion.h2
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-gray-900"
+          >
             আমাদের পরবর্তী লক্ষ্য
-          </h2>
-          <p className="text-lg text-gray-700 max-w-3xl mx-auto">
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="text-base sm:text-lg text-gray-700 max-w-3xl mx-auto"
+          >
             আমরা স্বপ্ন দেখি বাংলাদেশকে প্রযুক্তি শিক্ষায় দক্ষিণ এশিয়ার
             নেতৃত্বে নিয়ে যেতে
-          </p>
-        </div>
+          </motion.p>
+        </motion.div>
 
         {/* Targets Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {targets.map((target, index) => (
-            <Card
+            <motion.div
               key={index}
-              className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 hover:border-blue-300 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105"
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1, duration: 0.5 }}
+              viewport={{ once: true }}
+              whileHover={{ scale: 1.05, y: -10 }}
             >
-              <CardBody className="p-6 text-center">
-                <div
-                  className={`w-16 h-16 mx-auto rounded-xl bg-gradient-to-br ${target.color} flex items-center justify-center text-white mb-4 shadow-lg`}
-                >
-                  {target.icon}
-                </div>
-                <div className="text-xs font-bold text-blue-600 mb-2">
-                  TARGET {target.year}
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-3">{target.title}</h3>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  {target.description}
-                </p>
-              </CardBody>
-            </Card>
+              <Card className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 hover:border-blue-300 shadow-lg hover:shadow-2xl transition-all duration-300 h-full">
+                <CardBody className="p-6 text-center">
+                  <motion.div
+                    whileHover={{ rotate: 360 }}
+                    transition={{ duration: 0.5 }}
+                    className={`w-16 h-16 mx-auto rounded-xl bg-gradient-to-br ${target.color} flex items-center justify-center text-white mb-4 shadow-lg`}
+                  >
+                    {target.icon}
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-xs font-bold text-blue-600 mb-2 tracking-wider"
+                  >
+                    TARGET {target.year}
+                  </motion.div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">
+                    {target.title}
+                  </h3>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {target.description}
+                  </p>
+                </CardBody>
+              </Card>
+            </motion.div>
           ))}
         </div>
 
         {/* Upcoming Features */}
-        <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200 mb-12">
-          <CardBody className="p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                <FaUsers className="text-2xl text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900">আসছে শীঘ্রই...</h3>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {upcomingFeatures.map((feature, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 bg-white p-4 rounded-lg hover:bg-blue-50 transition-colors border border-blue-100"
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+        >
+          <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200 mb-12 shadow-xl hover:shadow-2xl transition-shadow duration-300">
+            <CardBody className="p-6 sm:p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-bold text-sm">✓</span>
-                  </div>
-                  <p className="font-medium text-gray-900">{feature}</p>
-                </div>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
+                  <FaUsers className="text-2xl text-white" />
+                </motion.div>
+                <h3 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                  আসছে শীঘ্রই...
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {upcomingFeatures.map((feature, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05, duration: 0.4 }}
+                    viewport={{ once: true }}
+                    whileHover={{ scale: 1.03, x: 5 }}
+                    className="flex items-center gap-3 bg-white p-4 rounded-xl hover:bg-blue-50 transition-all duration-300 border border-blue-100 hover:border-blue-300 shadow-sm hover:shadow-md cursor-pointer"
+                  >
+                    <motion.div
+                      whileHover={{ rotate: 360 }}
+                      transition={{ duration: 0.3 }}
+                      className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-md"
+                    >
+                      <FaCheck className="text-white text-sm" />
+                    </motion.div>
+                    <p className="font-medium text-gray-900 text-sm sm:text-base">
+                      {feature}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            </CardBody>
+          </Card>
+        </motion.div>
 
         {/* Vision Statement */}
-        <div className="text-center">
-          <Card className="bg-gradient-to-r from-blue-500 via-blue-400 to-purple-600 border-0 shadow-2xl">
-            <CardBody className="p-8">
-              <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+          className="text-center"
+        >
+          <Card className="bg-gradient-to-r from-blue-500 via-blue-400 to-purple-600 border-0 shadow-2xl hover:shadow-3xl transition-shadow duration-300">
+            <CardBody className="p-8 sm:p-10 lg:p-12">
+              <motion.h3
+                initial={{ opacity: 0, y: -20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-4"
+              >
                 🌟 আমাদের ভিশন 2030 🌟
-              </h3>
-              <p className="text-white text-lg font-medium mb-6 max-w-3xl mx-auto leading-relaxed">
+              </motion.h3>
+              <motion.p
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="text-white text-base sm:text-lg font-medium mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed"
+              >
                 বাংলাদেশের প্রতিটি শিক্ষার্থীকে বিশ্বমানের প্রযুক্তি শিক্ষা
                 প্রদান করা এবং দেশকে গ্লোবাল টেক হাব হিসেবে গড়ে তোলা। আমরা চাই
                 প্রতিটি বাচ্চা যেন রোবটিক্স, এআই এবং প্রোগ্রামিং শিখে নিজের
                 স্বপ্ন পূরণ করতে পারে।
-              </p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <div className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-xl font-bold text-lg">
-                  🎯 ১ লক্ষ+ শিক্ষার্থী
-                </div>
-                <div className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-xl font-bold text-lg">
-                  🏫 ৫০০+ পার্টনার স্কুল
-                </div>
-                <div className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-xl font-bold text-lg">
-                  🌍 ১০+ দেশ
-                </div>
-              </div>
+              </motion.p>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="flex flex-col sm:flex-row flex-wrap justify-center gap-4"
+              >
+                {["🎯 ১ লক্ষ+ শিক্ষার্থী", "🏫 ৫০০+ পার্টনার স্কুল", "🌍 ১০+ দেশ"].map(
+                  (stat, index) => (
+                    <motion.div
+                      key={index}
+                      whileHover={{ scale: 1.1, y: -5 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-white/20 backdrop-blur-sm px-4 sm:px-6 py-3 rounded-xl font-bold text-base sm:text-lg text-white shadow-lg hover:shadow-xl hover:bg-white/30 transition-all cursor-pointer"
+                    >
+                      {stat}
+                    </motion.div>
+                  )
+                )}
+              </motion.div>
             </CardBody>
           </Card>
-        </div>
+        </motion.div>
 
         {/* Call to Action */}
-        <div className="mt-12 text-center">
-          <p className="text-xl font-semibold text-gray-900 mb-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.6 }}
+          viewport={{ once: true }}
+          className="mt-12 text-center"
+        >
+          <motion.p
+            animate={{ scale: [1, 1.02, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4"
+          >
             এই যাত্রায় আমাদের সাথে থাকুন!
-          </p>
-          <p className="text-gray-700 mb-6">
+          </motion.p>
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="text-base sm:text-lg text-gray-700"
+          >
             আপনার সাপোর্ট এবং অংশগ্রহণই আমাদের শক্তি
-          </p>
-        </div>
+          </motion.p>
+        </motion.div>
       </div>
     </section>
   );

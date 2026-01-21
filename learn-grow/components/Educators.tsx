@@ -32,8 +32,8 @@ type TeamMember = {
 };
 
 const Educators: React.FC = () => {
-    // Query team members that are visible on home
-    const { data: teamData, isLoading } = useGetHomeTeamMembersQuery();
+    // Query team members that are visible on home[]
+    const { data: teamData, isLoading } = useGetHomeTeamMembersQuery({});
     const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
