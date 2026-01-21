@@ -369,7 +369,7 @@ export const Navbar = () => {
       </NavbarContent>
 
       <NavbarContent className="hidden md:flex basis-full" justify="center">
-        <ul className="flex gap-1 lg:gap-2 overflow-x-auto">
+        <ul className="flex gap-1 lg:gap-2 overflow-x-auto scrollbar-hide">
           {siteConfig.navItems.map((item) => (
             <NavbarItem key={item.href} className="flex-shrink-0">
               <NextLink

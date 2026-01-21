@@ -7,6 +7,7 @@ import "swiper/css";
 import "swiper/css/bundle";
 import { PiCertificateFill } from "react-icons/pi";
 import { FaLinkedin, FaTwitter } from "react-icons/fa";
+import { BiLogoReact } from "react-icons/bi";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -25,7 +26,10 @@ const Educators: React.FC = () => {
     // Query team members that are visible on home
     const { data: teamData, isLoading } = useGetHomeTeamMembersQuery();
 
-    const teamMembers = (teamData?.data || []) as TeamMember[];
+    // Filter only instructors
+    const teamMembers = ((teamData?.data || []) as TeamMember[]).filter(
+        (member) => member.role.toLowerCase() === "instructor"
+    );
 
     if (isLoading) return null; // Or skeleton
 
@@ -78,7 +82,7 @@ const Educators: React.FC = () => {
                             return (
                                 <SwiperSlide key={index} className="h-full">
                                     <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-8 border border-gray-100 h-96 flex flex-col items-center justify-between">
-                                        {/* Profile Image */}
+                                        {/* Profile Image or Name with Logo */}
                                         <div className="flex justify-center mb-6 h-32 flex-shrink-0">
                                             {hasImage ? (
                                                 <Image
@@ -89,8 +93,11 @@ const Educators: React.FC = () => {
                                                     width={128}
                                                 />
                                             ) : (
-                                                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 border-4 border-primary-100 flex items-center justify-center text-white font-bold text-4xl">
-                                                    {firstName.charAt(0).toUpperCase()}
+                                                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 border-4 border-primary-100 flex flex-col items-center justify-center text-white">
+                                                    <BiLogoReact className="text-4xl mb-2" />
+                                                    <span className="text-sm font-bold text-center px-2 line-clamp-2">
+                                                        {member.name}
+                                                    </span>
                                                 </div>
                                             )}
                                         </div>
