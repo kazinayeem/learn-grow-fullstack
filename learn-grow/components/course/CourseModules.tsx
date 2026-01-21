@@ -236,18 +236,7 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                                 onClick={(e) => {
                                                     // Don't trigger if clicking the Start button
                                                     if ((e.target as HTMLElement).closest('button')) return;
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
                                                     if (!isRealLocked) {
-                                                        handleLessonClick(lesson as any);
-                                                    }
-                                                }}
-                                                onTouchEnd={(e) => {
-                                                    // Don't trigger if clicking the Start button
-                                                    if ((e.target as HTMLElement).closest('button')) return;
-                                                    if (!isRealLocked) {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
                                                         handleLessonClick(lesson as any);
                                                     }
                                                 }}
