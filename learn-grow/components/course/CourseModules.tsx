@@ -68,7 +68,7 @@ interface CourseModulesProps {
 
 export default function CourseModules({ courseId, isEnrolled, modulesFromApi, hasAccess = false, canViewPreview = false }: CourseModulesProps) {
     const [completeLesson, { isLoading: isCompleting }] = useCompleteLessonMutation();
-    const { isOpen, onOpen, onClose } = useDisclosure();
+    const { isOpen, onOpen, onClose, onOpenChange } = useDisclosure();
     const [selectedLesson, setSelectedLesson] = useState<LessonFromApi | null>(null);
 
     // Prefer API modules (with lessons) when provided
@@ -353,14 +353,19 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
             {/* Lesson Viewer Modal */}
             <Modal
                 isOpen={isOpen}
-                onClose={onClose}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setSelectedLesson(null);
+                        onClose();
+                    }
+                }}
                 size="5xl"
                 scrollBehavior="inside"
                 backdrop="blur"
                 classNames={{
-                    wrapper: "pointer-events-auto z-50",
-                    backdrop: "pointer-events-auto z-40",
-                    base: "pointer-events-auto",
+                    wrapper: "pointer-events-auto z-[9999]",
+                    backdrop: "pointer-events-auto z-[9998]",
+                    base: "pointer-events-auto z-[10000]",
                     closeButton: "pointer-events-auto",
                 }}
                 isDismissable={true}
@@ -478,8 +483,8 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                         <Button 
                             variant="light" 
                             onPress={() => {
-                                onClose();
                                 setSelectedLesson(null);
+                                onOpenChange(false);
                             }}
                         >
                             Close
