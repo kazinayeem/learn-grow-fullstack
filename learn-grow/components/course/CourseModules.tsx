@@ -75,6 +75,12 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
         }
     }, []);
 
+    useEffect(() => {
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
+
     // Prefer API modules (with lessons) when provided
     const modules = modulesFromApi && modulesFromApi.length > 0
         ? modulesFromApi.map((m) => ({
@@ -128,6 +134,7 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
 
         setSelectedLesson(lesson);
         setIsModalOpen(true);
+        document.body.style.overflow = 'hidden';
         setTimeout(() => setOpeningLessonId(null), 200);
     };
 
@@ -135,6 +142,7 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
         setIsModalOpen(false);
         setSelectedLesson(null);
         setOpeningLessonId(null);
+        document.body.style.overflow = '';
     };
 
     const handleMarkComplete = async () => {
@@ -311,12 +319,21 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                                 </div>
 
                                                 {!isRealLocked && (
-                                                    <Button
-                                                        isIconOnly={false}
-                                                        className="flex-shrink-0 bg-primary text-white font-semibold text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-primary-600 active:scale-95 transition-all min-h-fit touch-manipulation"
-                                                        onPress={() => handleLessonClick(lesson as any)}
+                                                    <button
+                                                        type="button"
+                                                        className="flex-shrink-0 flex items-center gap-1 bg-blue-600 text-white font-semibold text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-blue-700 active:scale-95 transition-all touch-manipulation"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleLessonClick(lesson as any);
+                                                        }}
+                                                        onTouchEnd={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleLessonClick(lesson as any);
+                                                        }}
                                                     >
-                                                        <FaPlay className="text-xs mr-1" />
+                                                        <FaPlay className="text-xs" />
                                                         <span>
                                                             {openingLessonId === (lesson._id || lesson.id)
                                                                 ? "Opening..."
@@ -324,7 +341,7 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                                                     ? "Review"
                                                                     : "Start"}
                                                         </span>
-                                                    </Button>
+                                                    </button>
                                                 )}
                                             </div>
                                     );
@@ -423,24 +440,22 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
-                                            <Button
-                                                color="primary"
-                                                variant="flat"
-                                                startContent={<FaExpand />}
-                                                onPress={() => window.open(selectedLesson.contentUrl, "_blank")}
+                                            <button
+                                                type="button"
+                                                onClick={() => window.open(selectedLesson.contentUrl, "_blank")}
+                                                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 transition"
                                             >
+                                                <FaExpand />
                                                 Open
-                                            </Button>
-                                            <Button
-                                                color="secondary"
-                                                variant="flat"
-                                                startContent={<FaDownload />}
-                                                as="a"
+                                            </button>
+                                            <a
                                                 href={selectedLesson.contentUrl}
                                                 download
+                                                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 transition"
                                             >
+                                                <FaDownload />
                                                 Download
-                                            </Button>
+                                            </a>
                                         </div>
                                     </div>
                                     <iframe
@@ -476,18 +491,32 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                 Close
                             </button>
                             {selectedLesson && !selectedLesson.isCompleted && hasAccess && (
-                                <Button
-                                    color="primary"
-                                    onPress={handleMarkComplete}
-                                    isLoading={isCompleting}
+                                <button
+                                    type="button"
+                                    onClick={handleMarkComplete}
+                                    disabled={isCompleting}
+                                    className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition flex items-center gap-2"
                                 >
-                                    Complete & Continue
-                                </Button>
+                                    {isCompleting ? (
+                                        <>
+                                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                            </svg>
+                                            Loading...
+                                        </>
+                                    ) : "Complete & Continue"}
+                                </button>
                             )}
                             {selectedLesson?.isCompleted && (
-                                <Button color="success" variant="flat" disabled>
+                                <button
+                                    type="button"
+                                    disabled
+                                    className="px-4 py-2 rounded-lg text-sm font-medium text-green-700 bg-green-50 cursor-not-allowed flex items-center gap-2"
+                                >
+                                    <FaCheckCircle />
                                     Completed
-                                </Button>
+                                </button>
                             )}
                         </div>
                     </div>
