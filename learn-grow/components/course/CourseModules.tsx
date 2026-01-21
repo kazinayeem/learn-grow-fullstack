@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
     Card,
     CardBody,
@@ -10,13 +11,7 @@ import {
     Chip,
     Progress,
     Tooltip,
-    Modal,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalFooter,
     Button,
-    useDisclosure,
 } from "@nextui-org/react";
 import { useCompleteLessonMutation } from "@/redux/api/courseApi";
 import {
@@ -68,10 +63,10 @@ interface CourseModulesProps {
 
 export default function CourseModules({ courseId, isEnrolled, modulesFromApi, hasAccess = false, canViewPreview = false }: CourseModulesProps) {
     const [completeLesson, { isLoading: isCompleting }] = useCompleteLessonMutation();
-    const { isOpen, onOpen, onClose, onOpenChange } = useDisclosure();
     const [selectedLesson, setSelectedLesson] = useState<LessonFromApi | null>(null);
     const [isTouchDevice, setIsTouchDevice] = useState(false);
     const [openingLessonId, setOpeningLessonId] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -132,18 +127,15 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
         }
 
         setSelectedLesson(lesson);
+        setIsModalOpen(true);
+        setTimeout(() => setOpeningLessonId(null), 200);
     };
 
-    // Effect to ensure modal opens when selectedLesson is set
-    useEffect(() => {
-        if (selectedLesson && !isOpen) {
-            onOpen();
-        }
-        if (selectedLesson) {
-            const id = selectedLesson._id || selectedLesson.id;
-            setOpeningLessonId((prev) => (prev === id ? null : prev));
-        }
-    }, [selectedLesson, isOpen, onOpen]);
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedLesson(null);
+        setOpeningLessonId(null);
+    };
 
     const handleMarkComplete = async () => {
         if (selectedLesson && !selectedLesson.isCompleted) {
@@ -360,165 +352,148 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                 })}
             </Accordion>
 
-            {/* Lesson Viewer Modal */}
-            <Modal
-                isOpen={isOpen}
-                onOpenChange={(open) => {
-                    if (!open) {
-                        setSelectedLesson(null);
-                        setOpeningLessonId(null);
-                        onClose();
-                    }
-                }}
-                size="5xl"
-                scrollBehavior="inside"
-                backdrop="blur"
-                placement="center"
-                portalContainer={typeof window !== 'undefined' ? document.body : undefined}
-                classNames={{
-                    wrapper: "pointer-events-auto z-[9999]",
-                    backdrop: "pointer-events-auto z-[9998]",
-                    base: "pointer-events-auto z-[10000]",
-                    closeButton: "pointer-events-auto",
-                }}
-                isDismissable={true}
-                isKeyboardDismissDisabled={false}
-            >
-                <ModalContent>
-                    <ModalHeader>
-                        <div className="flex flex-col gap-1">
-                            <h2 className="text-xl font-bold">{selectedLesson?.title}</h2>
-                            <div className="flex items-center gap-2">
-                                <Chip size="sm" variant="flat" className="capitalize">
-                                    {selectedLesson?.type}
-                                </Chip>
-                                {selectedLesson?.isCompleted && (
-                                    <Chip size="sm" color="success" variant="flat" startContent={<FaCheckCircle />}>
-                                        Completed
-                                    </Chip>
-                                )}
+            {isModalOpen && selectedLesson && typeof document !== "undefined" && createPortal(
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/60" onClick={() => handleCloseModal()} />
+                    <div className="relative z-[10001] w-full max-w-5xl mx-4 sm:mx-6 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+                        <div className="flex items-start justify-between gap-4 px-4 sm:px-6 py-4 border-b border-gray-200">
+                            <div className="flex flex-col gap-1">
+                                <h2 className="text-xl font-bold text-gray-900">{selectedLesson.title}</h2>
+                                <div className="flex items-center gap-2">
+                                    <span className="px-2 py-1 rounded-md bg-gray-100 text-sm capitalize text-gray-700">{selectedLesson.type}</span>
+                                    {selectedLesson.isCompleted && (
+                                        <span className="px-2 py-1 rounded-md bg-green-100 text-green-700 text-sm flex items-center gap-1">
+                                            <FaCheckCircle /> Completed
+                                        </span>
+                                    )}
+                                </div>
                             </div>
+                            <button
+                                type="button"
+                                onClick={handleCloseModal}
+                                className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition"
+                                aria-label="Close"
+                            >
+                                ✕
+                            </button>
                         </div>
-                    </ModalHeader>
-                    <ModalBody>
-                        {selectedLesson && (
-                            <div className="space-y-4">
-                                {selectedLesson.description && (
-                                    <div className="bg-blue-50 p-4 rounded-lg">
-                                        <p className="text-sm text-gray-700">{selectedLesson.description}</p>
-                                    </div>
-                                )}
 
-                                {/* Content Display */}
-                                {selectedLesson.type === "video" && selectedLesson.contentUrl && (
-                                    <div className="aspect-video bg-black rounded-lg overflow-hidden">
-                                        {selectedLesson.contentUrl.includes("youtube.com") || selectedLesson.contentUrl.includes("youtu.be") ? (
-                                            <iframe
-                                                src={selectedLesson.contentUrl.replace("watch?v=", "embed/")}
-                                                className="w-full h-full"
-                                                allowFullScreen
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                            />
-                                        ) : selectedLesson.contentUrl.includes("vimeo.com") ? (
-                                            <iframe
-                                                src={selectedLesson.contentUrl}
-                                                className="w-full h-full"
-                                                allowFullScreen
-                                                allow="autoplay; fullscreen; picture-in-picture"
-                                            />
-                                        ) : (
-                                            <video
-                                                src={selectedLesson.contentUrl}
-                                                controls
-                                                className="w-full h-full"
-                                            />
-                                        )}
-                                    </div>
-                                )}
+                        <div className="px-4 sm:px-6 py-4 max-h-[80vh] overflow-y-auto space-y-4">
+                            {selectedLesson.description && (
+                                <div className="bg-blue-50 p-4 rounded-lg">
+                                    <p className="text-sm text-gray-700">{selectedLesson.description}</p>
+                                </div>
+                            )}
 
-                                {selectedLesson.type === "pdf" && selectedLesson.contentUrl && (
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
-                                            <div className="flex items-center gap-3">
-                                                <FaFilePdf className="text-3xl text-red-500" />
-                                                <div>
-                                                    <p className="font-semibold">PDF Document</p>
-                                                    <p className="text-sm text-gray-600">Click to view or download</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    color="primary"
-                                                    variant="flat"
-                                                    startContent={<FaExpand />}
-                                                    onPress={() => window.open(selectedLesson.contentUrl, "_blank")}
-                                                >
-                                                    Open
-                                                </Button>
-                                                <Button
-                                                    color="secondary"
-                                                    variant="flat"
-                                                    startContent={<FaDownload />}
-                                                    as="a"
-                                                    href={selectedLesson.contentUrl}
-                                                    download
-                                                >
-                                                    Download
-                                                </Button>
-                                            </div>
-                                        </div>
+                            {/* Content Display */}
+                            {selectedLesson.type === "video" && selectedLesson.contentUrl && (
+                                <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                                    {selectedLesson.contentUrl.includes("youtube.com") || selectedLesson.contentUrl.includes("youtu.be") ? (
                                         <iframe
-                                            src={`${selectedLesson.contentUrl}#toolbar=0`}
-                                            className="w-full h-[600px] border rounded-lg"
+                                            src={selectedLesson.contentUrl.replace("watch?v=", "embed/")}
+                                            className="w-full h-full"
+                                            allowFullScreen
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                         />
-                                    </div>
-                                )}
-
-                                {selectedLesson.type === "article" && selectedLesson.contentUrl && (
-                                    <div className="prose max-w-none">
+                                    ) : selectedLesson.contentUrl.includes("vimeo.com") ? (
                                         <iframe
                                             src={selectedLesson.contentUrl}
-                                            className="w-full h-[600px] border rounded-lg"
+                                            className="w-full h-full"
+                                            allowFullScreen
+                                            allow="autoplay; fullscreen; picture-in-picture"
                                         />
-                                    </div>
-                                )}
+                                    ) : (
+                                        <video
+                                            src={selectedLesson.contentUrl}
+                                            controls
+                                            className="w-full h-full"
+                                        />
+                                    )}
+                                </div>
+                            )}
 
-                                {!selectedLesson.contentUrl && (
-                                    <div className="text-center py-12 text-gray-500">
-                                        <FaBook className="text-6xl mx-auto mb-4 text-gray-300" />
-                                        <p>Content not available yet</p>
+                            {selectedLesson.type === "pdf" && selectedLesson.contentUrl && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
+                                        <div className="flex items-center gap-3">
+                                            <FaFilePdf className="text-3xl text-red-500" />
+                                            <div>
+                                                <p className="font-semibold">PDF Document</p>
+                                                <p className="text-sm text-gray-600">Click to view or download</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                color="primary"
+                                                variant="flat"
+                                                startContent={<FaExpand />}
+                                                onPress={() => window.open(selectedLesson.contentUrl, "_blank")}
+                                            >
+                                                Open
+                                            </Button>
+                                            <Button
+                                                color="secondary"
+                                                variant="flat"
+                                                startContent={<FaDownload />}
+                                                as="a"
+                                                href={selectedLesson.contentUrl}
+                                                download
+                                            >
+                                                Download
+                                            </Button>
+                                        </div>
                                     </div>
-                                )}
-                            </div>
-                        )}
-                    </ModalBody>
-                    <ModalFooter>
-                        <Button 
-                            variant="light" 
-                            onPress={() => {
-                                setSelectedLesson(null);
-                                onOpenChange(false);
-                            }}
-                        >
-                            Close
-                        </Button>
-                        {selectedLesson && !selectedLesson.isCompleted && hasAccess && (
-                            <Button
-                                color="primary"
-                                onPress={handleMarkComplete}
-                                isLoading={isCompleting}
+                                    <iframe
+                                        src={`${selectedLesson.contentUrl}#toolbar=0`}
+                                        className="w-full h-[600px] border rounded-lg"
+                                    />
+                                </div>
+                            )}
+
+                            {selectedLesson.type === "article" && selectedLesson.contentUrl && (
+                                <div className="prose max-w-none">
+                                    <iframe
+                                        src={selectedLesson.contentUrl}
+                                        className="w-full h-[600px] border rounded-lg"
+                                    />
+                                </div>
+                            )}
+
+                            {!selectedLesson.contentUrl && (
+                                <div className="text-center py-12 text-gray-500">
+                                    <FaBook className="text-6xl mx-auto mb-4 text-gray-300" />
+                                    <p>Content not available yet</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50">
+                            <button
+                                type="button"
+                                onClick={handleCloseModal}
+                                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 transition"
                             >
-                                Complete & Continue
-                            </Button>
-                        )}
-                        {selectedLesson?.isCompleted && (
-                            <Button color="success" variant="flat" disabled>
-                                Completed
-                            </Button>
-                        )}
-                    </ModalFooter>
-                </ModalContent>
-            </Modal>
+                                Close
+                            </button>
+                            {selectedLesson && !selectedLesson.isCompleted && hasAccess && (
+                                <Button
+                                    color="primary"
+                                    onPress={handleMarkComplete}
+                                    isLoading={isCompleting}
+                                >
+                                    Complete & Continue
+                                </Button>
+                            )}
+                            {selectedLesson?.isCompleted && (
+                                <Button color="success" variant="flat" disabled>
+                                    Completed
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </div>
     );
 }
