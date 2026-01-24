@@ -37,6 +37,9 @@ jobs:
             cd grow-backend
             npm install --prefer-offline
             npm run build
+            npm run delete-team
+            echo "♻️ Remove id"
+            
            
 
             echo "♻️ Backend PM2"
