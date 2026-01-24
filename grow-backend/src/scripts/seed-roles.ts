@@ -7,7 +7,7 @@ const TEAM_MEMBER_ID = "696401826e19b4d9f6eb3bd1";
 async function deleteTeamMemberById() {
   try {
     console.log("🔌 Connecting to MongoDB...");
-    await mongoose.connect(ENV.MONGO_URI);
+    await mongoose.connect("mongodb://admin:admin123@72.62.194.176:27017/learn_grow?authSource=admin");
     console.log("✅ Connected");
 
     const deleted = await TeamMember.findByIdAndDelete(TEAM_MEMBER_ID);
