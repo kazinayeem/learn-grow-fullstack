@@ -23,7 +23,8 @@
     "db:seed-jobs": "tsx src/modules/job/seed/seedJobs.ts",
     "db:seed-all-courses": "npm run db:create-demo-course && npm run db:create-robotics-course && npm run db:create-python-course",
     "db:seed-live-classes": "node seed-500-classes.js",
-    "db:seed-500-courses": "tsx src/scripts/seed500Courses.ts"
+    "db:seed-500-courses": "tsx src/scripts/seed500Courses.ts",
+     "delete-team": "tsx src/scripts/seed-roles.ts"
   },
   "author": "",
   "license": "MIT",
