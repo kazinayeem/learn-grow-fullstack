@@ -37,7 +37,7 @@ jobs:
             cd grow-backend
             npm install --prefer-offline
             npm run build
-            node seed-roles.js
+            node seed-roles.mjs
 
             echo "♻️ Backend PM2"
             pm2 describe grow-backend > /dev/null \
