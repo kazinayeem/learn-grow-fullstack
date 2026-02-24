@@ -13,7 +13,6 @@ import {
   Select,
   SelectItem,
   Divider,
-  Textarea,
 } from "@nextui-org/react";
 import {
   FaArrowLeft,
@@ -35,7 +34,9 @@ import { toast } from "react-hot-toast";
 import dynamic from "next/dynamic";
 import "react-quill-new/dist/quill.snow.css";
 
-const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
+const ReactQuill = dynamic(() => import("react-quill-new"), {
+  ssr: false,
+});
 
 const statusConfig = {
   open: { color: "primary" as const, icon: FaClock, label: "Open" },
@@ -58,27 +59,6 @@ const priorityConfig = {
 type StatusKey = keyof typeof statusConfig;
 type PriorityKey = keyof typeof priorityConfig;
 
-const modules = {
-  toolbar: [
-    [{ header: [1, 2, 3, false] }],
-    ["bold", "italic", "underline"],
-    [{ list: "ordered" }, { list: "bullet" }],
-    ["code-block"],
-    ["link"],
-    ["clean"],
-  ],
-};
-
-const formats = [
-  "header",
-  "bold",
-  "italic",
-  "underline",
-  "list",
-  "code-block",
-  "link",
-];
-
 export default function TicketDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -90,13 +70,19 @@ export default function TicketDetailPage() {
     useUpdateTicketStatusMutation();
 
   const [replyMessage, setReplyMessage] = useState("");
-  const [newStatus, setNewStatus] = useState("");
 
   const ticket: Ticket | undefined = data?.data;
 
-  if (!ticket && !isLoading && !error) {
-    return null;
-  }
+  const formatDate = (date?: string) => {
+    if (!date) return "";
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   const handleAddReply = async () => {
     if (!replyMessage.trim()) {
@@ -118,39 +104,17 @@ export default function TicketDetailPage() {
 
   const handleStatusChange = async (status: string) => {
     try {
-      await updateStatus({
-        id: ticketId,
-        status,
-      }).unwrap();
+      await updateStatus({ id: ticketId, status }).unwrap();
       toast.success("Status updated successfully");
-      setNewStatus("");
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to update status");
     }
-  };
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         <Skeleton className="h-10 w-40 rounded-lg mb-6" />
-        <Card className="mb-6">
-          <CardHeader className="pb-0">
-            <Skeleton className="h-8 w-3/4 rounded-lg" />
-          </CardHeader>
-          <CardBody>
-            <Skeleton className="h-32 w-full rounded-lg" />
-          </CardBody>
-        </Card>
       </div>
     );
   }
@@ -166,15 +130,22 @@ export default function TicketDetailPage() {
     );
   }
 
-  // TypeScript: ticket is definitely defined here
   const definedTicket: Ticket = ticket;
+
+  // SAFE CREATOR DATA
+  const creatorName = definedTicket?.createdBy?.name || "Unknown User";
+  const creatorRole = definedTicket?.createdBy?.role || "User";
+  const creatorImage =
+    definedTicket?.createdBy?.profileImage || "/logo.png";
+
+  const replies = definedTicket?.replies || [];
+
   const statusKey = (definedTicket.status || "open") as StatusKey;
   const statusInfo = statusConfig[statusKey] || statusConfig.open;
   const StatusIcon = statusInfo.icon;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
-      {/* Back Button */}
       <Button
         startContent={<FaArrowLeft />}
         onPress={() => router.push("/admin/tickets")}
@@ -188,7 +159,9 @@ export default function TicketDetailPage() {
       <Card className="mb-6">
         <CardHeader className="flex flex-col items-start gap-3 pb-0">
           <div className="flex items-start justify-between w-full">
-            <h1 className="text-2xl font-bold text-gray-900">{definedTicket.title}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {definedTicket.title}
+            </h1>
             <div className="flex gap-2">
               <Chip
                 size="lg"
@@ -200,66 +173,74 @@ export default function TicketDetailPage() {
               </Chip>
               <Chip
                 size="lg"
-                color={priorityConfig[(definedTicket.priority || "low") as PriorityKey].color}
+                color={
+                  priorityConfig[
+                    (definedTicket.priority || "low") as PriorityKey
+                  ]?.color
+                }
                 variant="flat"
               >
-                {priorityConfig[(definedTicket.priority || "low") as PriorityKey].label}
+                {
+                  priorityConfig[
+                    (definedTicket.priority || "low") as PriorityKey
+                  ]?.label
+                }
               </Chip>
             </div>
           </div>
         </CardHeader>
-        <CardBody className="pt-4">
+
+        <CardBody>
           <div className="flex items-center gap-4 mb-4">
             <Avatar
-              src={definedTicket.createdBy.profileImage}
-              name={definedTicket.createdBy.name}
+              src={creatorImage}
+              name={creatorName}
               size="md"
               fallback={<FaUser />}
             />
             <div>
               <p className="font-semibold text-gray-900">
-                {definedTicket.createdBy.name}
+                {creatorName}
               </p>
               <p className="text-sm text-gray-500">
-                {definedTicket.createdBy.role} • {formatDate(definedTicket.createdAt)}
+                {creatorRole} • {formatDate(definedTicket.createdAt)}
               </p>
             </div>
           </div>
+
           <Divider className="my-4" />
+
           <div
             className="prose max-w-none"
-            dangerouslySetInnerHTML={{ __html: definedTicket.description }}
+            dangerouslySetInnerHTML={{
+              __html: definedTicket.description || "",
+            }}
           />
         </CardBody>
       </Card>
 
-      {/* Status Update (Admin/Manager only) */}
+      {/* Status Update */}
       <Card className="mb-6">
         <CardBody>
-          <div className="flex items-center gap-4">
-            <Select
-              label="Update Status"
-              placeholder="Select new status"
-              selectedKeys={newStatus ? [newStatus] : []}
-              onChange={(e) => handleStatusChange(e.target.value)}
-              variant="bordered"
-              className="max-w-xs"
-              isDisabled={isUpdatingStatus}
-            >
-              <SelectItem key="open" value="open">
-                Open
-              </SelectItem>
-              <SelectItem key="in_progress" value="in_progress">
-                In Progress
-              </SelectItem>
-              <SelectItem key="solved" value="solved">
-                Solved
-              </SelectItem>
-              <SelectItem key="closed" value="closed">
-                Closed
-              </SelectItem>
-            </Select>
-          </div>
+          <Select
+            label="Update Status"
+            onChange={(e) => handleStatusChange(e.target.value)}
+            isDisabled={isUpdatingStatus}
+            className="max-w-xs"
+          >
+            <SelectItem key="open" value="open">
+              Open
+            </SelectItem>
+            <SelectItem key="in_progress" value="in_progress">
+              In Progress
+            </SelectItem>
+            <SelectItem key="solved" value="solved">
+              Solved
+            </SelectItem>
+            <SelectItem key="closed" value="closed">
+              Closed
+            </SelectItem>
+          </Select>
         </CardBody>
       </Card>
 
@@ -267,46 +248,58 @@ export default function TicketDetailPage() {
       <Card className="mb-6">
         <CardHeader>
           <h2 className="text-xl font-bold">
-            Replies ({definedTicket.replies.length})
+            Replies ({replies.length})
           </h2>
         </CardHeader>
         <CardBody>
-          {definedTicket.replies.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No replies yet</p>
+          {replies.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">
+              No replies yet
+            </p>
           ) : (
             <div className="space-y-4">
-              {definedTicket.replies.map((reply: TicketReply, index: number) => (
-                <div
-                  key={index}
-                  className="border border-gray-200 rounded-lg p-4"
-                >
-                  <div className="flex items-start gap-3 mb-3">
-                    <Avatar
-                      src={reply.userId.profileImage}
-                      name={reply.userId.name}
-                      size="sm"
-                      fallback={<FaUser />}
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-gray-900">
-                          {reply.userId.name}
-                        </p>
-                        <Chip size="sm" variant="flat">
-                          {reply.userRole}
-                        </Chip>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        {formatDate(reply.createdAt)}
-                      </p>
-                    </div>
-                  </div>
+              {replies.map((reply: TicketReply, index: number) => {
+                const replyUserName =
+                  reply?.userId?.name || "Unknown User";
+                const replyUserImage =
+                  reply?.userId?.profileImage || "/logo.png";
+
+                return (
                   <div
-                    className="prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ __html: reply.message }}
-                  />
-                </div>
-              ))}
+                    key={index}
+                    className="border border-gray-200 rounded-lg p-4"
+                  >
+                    <div className="flex items-start gap-3 mb-3">
+                      <Avatar
+                        src={replyUserImage}
+                        name={replyUserName}
+                        size="sm"
+                        fallback={<FaUser />}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-gray-900">
+                            {replyUserName}
+                          </p>
+                          <Chip size="sm" variant="flat">
+                            {reply?.userRole || "User"}
+                          </Chip>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {formatDate(reply?.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div
+                      className="prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{
+                        __html: reply?.message || "",
+                      }}
+                    />
+                  </div>
+                );
+              })}
             </div>
           )}
         </CardBody>
@@ -322,12 +315,11 @@ export default function TicketDetailPage() {
             theme="snow"
             value={replyMessage}
             onChange={setReplyMessage}
-            modules={modules}
-            formats={formats}
             placeholder="Type your reply..."
             className="bg-white mb-12"
             style={{ height: "200px" }}
           />
+
           <div className="flex justify-end pt-4">
             <Button
               color="primary"
