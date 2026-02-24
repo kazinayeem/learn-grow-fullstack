@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Card, CardBody, Chip, Avatar, Button } from "@nextui-org/react";
+import { Card, CardBody, Chip, Avatar } from "@nextui-org/react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   FaClock,
@@ -17,14 +17,14 @@ interface Ticket {
   status: "open" | "in_progress" | "solved" | "closed";
   priority: "low" | "medium" | "high" | "urgent";
   category: string;
-  createdBy: {
-    name: string;
-    email: string;
-    role: string;
+  createdBy?: {
+    name?: string;
+    email?: string;
+    role?: string;
     profileImage?: string;
-  };
+  } | null;
   createdAt: string;
-  replies: any[];
+  replies?: any[];
 }
 
 interface TicketCardProps {
@@ -33,7 +33,11 @@ interface TicketCardProps {
 
 const statusConfig = {
   open: { color: "primary" as const, icon: FaClock, label: "Open" },
-  in_progress: { color: "warning" as const, icon: FaExclamationCircle, label: "In Progress" },
+  in_progress: {
+    color: "warning" as const,
+    icon: FaExclamationCircle,
+    label: "In Progress",
+  },
   solved: { color: "success" as const, icon: FaCheckCircle, label: "Solved" },
   closed: { color: "default" as const, icon: FaTimesCircle, label: "Closed" },
 };
@@ -56,20 +60,25 @@ const categoryConfig: Record<string, string> = {
 export default function TicketCard({ ticket }: TicketCardProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const statusInfo = statusConfig[ticket.status];
+
+  const statusInfo =
+    statusConfig[ticket.status] || statusConfig.open;
+
   const StatusIcon = statusInfo.icon;
 
-  // Determine the base path (admin, instructor, or student)
-  const basePath = pathname.includes("/admin/") 
-    ? "/admin/tickets" 
+  const basePath = pathname.includes("/admin/")
+    ? "/admin/tickets"
     : pathname.includes("/instructor/")
     ? "/instructor/tickets"
     : "/student/tickets";
 
   const timeAgo = (date: string) => {
+    if (!date) return "";
+
     const seconds = Math.floor(
       (new Date().getTime() - new Date(date).getTime()) / 1000
     );
+
     const intervals = [
       { label: "year", seconds: 31536000 },
       { label: "month", seconds: 2592000 },
@@ -84,8 +93,16 @@ export default function TicketCard({ ticket }: TicketCardProps) {
         return `${count} ${interval.label}${count !== 1 ? "s" : ""} ago`;
       }
     }
+
     return "Just now";
   };
+
+  // ✅ SAFE DATA EXTRACTION
+  const userName = ticket?.createdBy?.name || "Unknown User";
+  const userRole = ticket?.createdBy?.role || "User";
+  const profileImage =
+    ticket?.createdBy?.profileImage || "/logo.png";
+  const replyCount = ticket?.replies?.length || 0;
 
   return (
     <Card
@@ -99,6 +116,7 @@ export default function TicketCard({ ticket }: TicketCardProps) {
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3 line-clamp-2">
               {ticket.title}
             </h3>
+
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <Chip
                 size="sm"
@@ -108,13 +126,15 @@ export default function TicketCard({ ticket }: TicketCardProps) {
               >
                 {statusInfo.label}
               </Chip>
+
               <Chip
                 size="sm"
-                color={priorityConfig[ticket.priority].color}
+                color={priorityConfig[ticket.priority]?.color || "default"}
                 variant="flat"
               >
-                {priorityConfig[ticket.priority].label}
+                {priorityConfig[ticket.priority]?.label || "Medium"}
               </Chip>
+
               <Chip size="sm" variant="flat">
                 {categoryConfig[ticket.category] || ticket.category}
               </Chip>
@@ -125,21 +145,30 @@ export default function TicketCard({ ticket }: TicketCardProps) {
         <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <Avatar
-              src={ticket.createdBy.profileImage}
-              name={ticket.createdBy.name}
+              src={profileImage}
+              name={userName}
               size="sm"
               fallback={<FaUser className="text-gray-400" />}
             />
+
             <div className="text-xs sm:text-sm min-w-0 flex-1">
-              <p className="font-medium text-gray-900 truncate">{ticket.createdBy.name}</p>
-              <p className="text-gray-500 truncate capitalize">{ticket.createdBy.role}</p>
+              <p className="font-medium text-gray-900 truncate">
+                {userName}
+              </p>
+              <p className="text-gray-500 truncate capitalize">
+                {userRole}
+              </p>
             </div>
           </div>
+
           <div className="text-left xs:text-right flex-shrink-0">
-            <p className="text-xs sm:text-sm text-gray-500">{timeAgo(ticket.createdAt)}</p>
-            {ticket.replies.length > 0 && (
+            <p className="text-xs sm:text-sm text-gray-500">
+              {timeAgo(ticket.createdAt)}
+            </p>
+
+            {replyCount > 0 && (
               <p className="text-xs sm:text-sm text-primary-600 font-medium mt-0.5">
-                {ticket.replies.length} {ticket.replies.length === 1 ? "reply" : "replies"}
+                {replyCount} {replyCount === 1 ? "reply" : "replies"}
               </p>
             )}
           </div>
