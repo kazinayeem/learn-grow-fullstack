@@ -1,0 +1,47 @@
+name: Deploy (Manual – No Build)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Copy files to VPS
+        run: |
+          scp -r grow-backend root@${{ secrets.VPS_HOST }}:/root/learn-grow-fullstack/
+          scp -r learn-grow root@${{ secrets.VPS_HOST }}:/root/learn-grow-fullstack/
+
+      - name: Restart services on VPS
+        run: |
+          ssh root@${{ secrets.VPS_HOST }} << 'EOF'
+
+          cd /root/learn-grow-fullstack
+
+          echo "==> Restarting backend"
+          pm2 delete grow-backend 2>/dev/null || true
+          cd grow-backend
+          npm install --production
+          pm2 start npm --name grow-backend -- start
+
+          echo "==> Restarting frontend"
+          cd ../learn-grow
+          pm2 delete frontend 2>/dev/null || true
+          pm2 start npm --name frontend -- start
+
+          pm2 save
+
+          echo "==> Deploy finished"
+
+          EOF
