@@ -1,12 +1,15 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import { User } from "../modules/user/model/user.model";
-import { ENV } from "../config/env";
+
+const SEED_MONGODB_URI =
+  process.env.SEED_MONGODB_URI ||
+  "mongodb://learnandgrow:learnandgrow@104.207.70.54:27017/learnandgrow?authSource=admin";
 
 async function createSuperAdmin() {
   try {
     console.log("Connecting to MongoDB...");
-    await mongoose.connect(ENV.MONGODB_URI);
+    await mongoose.connect(SEED_MONGODB_URI);
     console.log("✅ Connected to MongoDB");
 
     const email = "admin@admin.com";

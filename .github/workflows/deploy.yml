@@ -24,7 +24,12 @@ jobs:
 
             echo "🚀 Starting deployment..."
 
-            cd /root/learn-grow-fullstack || exit 1
+            if [ ! -d "/root/learn-grow-fullstack" ]; then
+              echo "📥 Cloning repository..."
+              git clone https://github.com/kazinayeem/learn-grow-fullstack.git /root/learn-grow-fullstack
+            fi
+
+            cd /root/learn-grow-fullstack
 
             echo "🧹 Cleaning repo"
             git reset --hard
@@ -37,9 +42,6 @@ jobs:
             cd grow-backend
             npm install --prefer-offline
             npm run build
-
-            
-           
 
             echo "♻️ Backend PM2"
             pm2 describe grow-backend > /dev/null \
