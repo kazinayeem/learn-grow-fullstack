@@ -1,14 +1,72 @@
-name: Deploy Learn & Grow Fullstack (root)
+name: Build & Deploy Learn Grow
 
 on:
   push:
     branches: [ main ]
 
 jobs:
-  deploy:
+
+  build:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      ############################
+      # Backend build
+      ############################
+
+      - name: Install backend deps
+        run: |
+          cd grow-backend
+          npm install
+
+      - name: Build backend
+        run: |
+          cd grow-backend
+          npm run build || echo "No backend build"
+
+      ############################
+      # Frontend build
+      ############################
+
+      - name: Install frontend deps
+        run: |
+          cd learn-grow
+          npm install
+
+      - name: Build frontend
+        run: |
+          cd learn-grow
+          npm run build
+
+      ############################
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-files
+          path: |
+            grow-backend
+            learn-grow
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-files
+
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -18,49 +76,26 @@ jobs:
 
       - name: Deploy to VPS
         run: |
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no root@${{ secrets.VPS_HOST }} << 'EOF'
+          scp -r grow-backend root@${{ secrets.VPS_HOST }}:/root/learn-grow-fullstack/
+          scp -r learn-grow root@${{ secrets.VPS_HOST }}:/root/learn-grow-fullstack/
 
-            set -e
+          ssh root@${{ secrets.VPS_HOST }} << 'EOF'
 
-            echo "🚀 Starting deployment..."
+          cd /root/learn-grow-fullstack
 
-            if [ ! -d "/root/learn-grow-fullstack" ]; then
-              echo "📥 Cloning repository..."
-              git clone https://github.com/kazinayeem/learn-grow-fullstack.git /root/learn-grow-fullstack
-            fi
+          echo "Restart backend"
+          pm2 delete grow-backend 2>/dev/null || true
+          cd grow-backend
+          npm install --production
+          pm2 start npm --name grow-backend -- start
 
-            cd /root/learn-grow-fullstack
+          echo "Restart frontend"
+          cd ../learn-grow
+          pm2 delete frontend 2>/dev/null || true
+          pm2 start npm --name frontend -- start
 
-            echo "🧹 Cleaning repo"
-            git reset --hard
-            git clean -fd
+          pm2 save
 
-            echo "🔄 Pulling latest code"
-            git pull origin main
-
-            echo "📦 Backend build"
-            cd grow-backend
-            npm install --prefer-offline
-            npm run build
-
-            echo "♻️ Backend PM2"
-            pm2 describe grow-backend > /dev/null \
-              && pm2 reload grow-backend \
-              || pm2 start npm --name grow-backend -- start
-
-            echo "📦 Frontend build"
-            cd ../learn-grow
-            npm install --prefer-offline
-            npm run build
-
-            echo "♻️ Frontend PM2"
-            pm2 describe frontend > /dev/null \
-              && pm2 reload frontend \
-              || pm2 start npm --name frontend -- start
-
-            echo "💾 Saving PM2"
-            pm2 save
-
-            echo "✅ Deployment completed"
+          echo "Deploy finished"
 
           EOF
