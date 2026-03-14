@@ -22,7 +22,7 @@ export const ENV = {
   // Google OAuth
   GOOGLE_CLIENT_ID: "129172238767-bgibd5k66trs176q7291egtaj59qebjb.apps.googleusercontent.com",
   GOOGLE_CLIENT_SECRET: "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",
-  GOOGLE_CALLBACK_URL: "https://learnandgrow.io/api/auth/google/callback",
+  GOOGLE_CALLBACK_URL: "http://104.207.70.54:5000/api/auth/google/callback",
   //GOOGLE_CALLBACK_URL: "http://localhost:5000/api/auth/google/callback",
 
   // Frontend URL
@@ -30,7 +30,7 @@ export const ENV = {
     //FRONTEND_URL: "http://localhost:3000",
   
   // Backend URL
-  BACKEND_URL: process.env.BACKEND_URL || "https://learnandgrow.io/api",
+  BACKEND_URL: process.env.BACKEND_URL || "http://104.207.70.54:5000",
 
   // Optional: external payment gateway health check URL
   PAYMENT_HEALTH_URL: process.env.PAYMENT_HEALTH_URL || "",

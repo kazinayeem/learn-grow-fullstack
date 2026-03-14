@@ -67,6 +67,7 @@ export const createApp = () => {
         "http://localhost:3001",
         "http://localhost:3002",
         "https://learnandgrow.io",
+        "http://104.207.70.54:5000"
        
       ];
 
@@ -132,6 +133,11 @@ export const createApp = () => {
   // SECURITY LAYER 6: Authentication (Passport)
   // ====================================
   app.use(passport.initialize());
+
+  // hpme page check
+    app.get("/", (_req, res) => {
+      res.status(200).json({ message: "Welcome to Learn & Grow API" });
+    });
   // Do not enable Passport sessions; app uses stateless JWT
 
   // ====================================
