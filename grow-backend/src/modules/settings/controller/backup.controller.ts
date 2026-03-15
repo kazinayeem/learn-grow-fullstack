@@ -3,13 +3,14 @@ import { exec } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import { promisify } from "util";
+import mongoose from "mongoose";
 
 const execAsync = promisify(exec);
 
 export const backupDatabase = async (req: Request, res: Response) => {
   const backupDir = path.join(process.cwd(), "backups");
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-").split("T")[0];
-  const dumpDir = path.join(backupDir, `mongodb-dump-${timestamp}`);
+  const dataDir = path.join(backupDir, `mongodb-backup-${timestamp}`);
   const tarGzPath = path.join(backupDir, `learn-grow-backup-${timestamp}.tar.gz`);
 
   try {
@@ -21,39 +22,58 @@ export const backupDatabase = async (req: Request, res: Response) => {
     // Clean up old backups (keep only last 7 days)
     cleanOldBackups(backupDir);
 
-    // Get MongoDB connection string from environment
-    const mongoUri = process.env.MONGODB_URI || "mongodb://localhost:27017/learn-grow";
-    const dbName = mongoUri.split("/").pop()?.split("?")[0] || "learn-grow";
+    console.log(`Starting programmatic MongoDB backup`);
+    console.log(`Backup directory: ${dataDir}`);
 
-    console.log(`Starting MongoDB backup for database: ${dbName}`);
-    console.log(`Dump directory: ${dumpDir}`);
-
-    // Run mongodump command
-    const dumpCommand = `mongodump --uri="${mongoUri}" --out="${dumpDir}"`;
-    
-    try {
-      await execAsync(dumpCommand, {
-        maxBuffer: 100 * 1024 * 1024, // 100MB buffer
-        timeout: 5 * 60 * 1000, // 5 minutes timeout
-      });
-    } catch (dumpError: any) {
-      console.error("Mongodump error:", dumpError.message);
-      if (dumpError.message.includes("not found") || dumpError.message.includes("command not found")) {
-        throw new Error(
-          "mongodump command not found. Please ensure MongoDB tools are installed on your server. Install via:\n" +
-          "- macOS: brew install mongodb-database-tools\n" +
-          "- Linux: apt-get install mongodb-database-tools\n" +
-          "- Others: Download from https://www.mongodb.com/try/download/database-tools"
-        );
-      }
-      throw dumpError;
+    // Create data directory
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
     }
 
-    console.log("Mongodump completed successfully");
+    // Get all collection names from mongoose
+    const collections = mongoose.connection.collections;
+    console.log(`Found ${Object.keys(collections).length} collections`);
+
+    let totalDocuments = 0;
+    const backupData: Record<string, any[]> = {};
+
+    // Export each collection as JSON using mongoose
+    for (const [collectionName, collection] of Object.entries(collections)) {
+      try {
+        const documents = await collection.find({}).toArray();
+        backupData[collectionName] = documents;
+        totalDocuments += documents.length;
+        console.log(`  ✓ ${collectionName}: ${documents.length} documents`);
+      } catch (err) {
+        console.error(`  ✗ Error exporting ${collectionName}:`, err);
+      }
+    }
+
+    // Write backup manifest
+    const manifest = {
+      timestamp: new Date().toISOString(),
+      database: mongoose.connection.name,
+      collections: Object.keys(backupData).length,
+      totalDocuments,
+      version: "1.0",
+    };
+
+    fs.writeFileSync(
+      path.join(dataDir, "manifest.json"),
+      JSON.stringify(manifest, null, 2)
+    );
+
+    // Write each collection to separate JSON file
+    for (const [collectionName, documents] of Object.entries(backupData)) {
+      const filePath = path.join(dataDir, `${collectionName}.json`);
+      fs.writeFileSync(filePath, JSON.stringify(documents, null, 2));
+    }
+
+    console.log(`✓ Exported ${totalDocuments} total documents from ${Object.keys(backupData).length} collections`);
 
     // Create tar.gz archive using system tar command
-    const tarCommand = `cd "${backupDir}" && tar -czf "${tarGzPath}" "${path.basename(dumpDir)}" && rm -rf "${dumpDir}"`;
-    
+    const tarCommand = `cd "${backupDir}" && tar -czf "${tarGzPath}" "${path.basename(dataDir)}" && rm -rf "${dataDir}"`;
+
     try {
       await execAsync(tarCommand, {
         maxBuffer: 100 * 1024 * 1024,
@@ -61,30 +81,30 @@ export const backupDatabase = async (req: Request, res: Response) => {
       });
     } catch (tarError: any) {
       console.error("Tar error:", tarError.message);
-      if (fs.existsSync(dumpDir)) {
-        removeDirectoryRecursively(dumpDir);
+      if (fs.existsSync(dataDir)) {
+        removeDirectoryRecursively(dataDir);
       }
       throw new Error("Failed to compress backup file: " + tarError.message);
     }
 
-    console.log(`Backup tar.gz created: ${tarGzPath}`);
+    console.log(`✓ Backup tar.gz created: ${tarGzPath}`);
 
     // Get file size
     const stats = fs.statSync(tarGzPath);
     const sizeInMB = (stats.size / (1024 * 1024)).toFixed(2);
-    console.log(`Backup file size: ${sizeInMB} MB`);
+    console.log(`✓ Backup file size: ${sizeInMB} MB`);
 
     // Send file to client
     res.download(tarGzPath, `learn-grow-backup-${timestamp}.tar.gz`, (err) => {
       if (err) {
         console.error("Error sending backup file:", err);
       }
-      
+
       // Delete tar.gz file after sending (after a small delay to ensure download starts)
       setTimeout(() => {
         fs.unlink(tarGzPath, (unlinkErr) => {
           if (unlinkErr) console.error("Error deleting tar.gz file:", unlinkErr);
-          else console.log(`Backup file deleted: ${tarGzPath}`);
+          else console.log(`✓ Backup file deleted: ${tarGzPath}`);
         });
       }, 1000);
     });
@@ -92,8 +112,8 @@ export const backupDatabase = async (req: Request, res: Response) => {
     console.error("Backup error:", error);
 
     // Clean up on error
-    if (fs.existsSync(dumpDir)) {
-      removeDirectoryRecursively(dumpDir);
+    if (fs.existsSync(dataDir)) {
+      removeDirectoryRecursively(dataDir);
     }
     if (fs.existsSync(tarGzPath)) {
       try {
@@ -135,25 +155,25 @@ function removeDirectoryRecursively(dirPath: string) {
 /**
  * Clean up old backup files (keep only backups from last 7 days)
  */
-function cleanOldBackups(backuperDir: string) {
+function cleanOldBackups(backupDir: string) {
   try {
     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    
-    if (!fs.existsSync(backuperDir)) return;
 
-    const files = fs.readdirSync(backuperDir);
+    if (!fs.existsSync(backupDir)) return;
+
+    const files = fs.readdirSync(backupDir);
     files.forEach((file) => {
-      const filePath = path.join(backuperDir, file);
+      const filePath = path.join(backupDir, file);
       try {
         const stat = fs.statSync(filePath);
-        
+
         if (stat.mtimeMs < sevenDaysAgo) {
           if (stat.isDirectory()) {
             removeDirectoryRecursively(filePath);
           } else {
             fs.unlinkSync(filePath);
           }
-          console.log(`Cleaned up old backup: ${file}`);
+          console.log(`🗑️  Cleaned up old backup: ${file}`);
         }
       } catch (err) {
         console.error("Error checking file:", filePath, err);

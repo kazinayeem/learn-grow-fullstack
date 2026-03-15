@@ -6,7 +6,8 @@ export const ENV = {
   NODE_ENV: process.env.NODE_ENV || "development",
   PORT: Number(process.env.PORT || 5000),
 
-  // MongoDB
+  // MongoDB - can be overridden by environment variable
+  // Falls back to hardcoded values in mongoose.ts if not set
   MONGODB_URI: process.env.MONGODB_URI || "",
 
   JWT_SECRET: process.env.JWT_SECRET || "your_jwt_secret_key_change_in_production",

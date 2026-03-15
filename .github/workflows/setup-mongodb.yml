@@ -1,0 +1,44 @@
+name: Setup MongoDB on Ubuntu Server
+
+on:
+  workflow_dispatch:
+    inputs:
+      server_host:
+        description: 'Server hostname or IP'
+        required: true
+        type: string
+      server_user:
+        description: 'SSH username for server'
+        required: true
+        type: string
+
+jobs:
+  setup-mongodb:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ inputs.server_host }} >> ~/.ssh/known_hosts
+
+      - name: Copy MongoDB setup script to server
+        run: |
+          scp -i ~/.ssh/id_rsa grow-backend/scripts/setup-mongodb-ubuntu.sh ${{ inputs.server_user }}@${{ inputs.server_host }}:/tmp/setup-mongodb-ubuntu.sh
+
+      - name: Run MongoDB setup on server
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ inputs.server_user }}@${{ inputs.server_host }} "bash /tmp/setup-mongodb-ubuntu.sh"
+
+      - name: Verify MongoDB installation
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ inputs.server_user }}@${{ inputs.server_host }} "sudo systemctl status mongod"
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/id_rsa
