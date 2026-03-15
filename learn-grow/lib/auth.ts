@@ -1,7 +1,8 @@
 import axios from "axios";
 import Cookies from "js-cookie";
+import { API_CONFIG } from "@/config/apiConfig";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_URL = API_CONFIG.BASE_URL;
 
 // Create axios instance with default config
 const authApi = axios.create({

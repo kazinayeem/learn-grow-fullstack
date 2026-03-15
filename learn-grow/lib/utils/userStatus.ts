@@ -12,8 +12,7 @@ export const refreshUserStatus = async (): Promise<any | null> => {
       return null;
     }
 
-    const baseUrl = API_CONFIG.BASE_URL.replace(/\/api$/, "");
-    const response = await fetch(`${baseUrl}/api/users/profile`, {
+    const response = await fetch(`${API_CONFIG.ORIGIN}/api/users/profile`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,

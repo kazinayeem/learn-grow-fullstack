@@ -5,8 +5,7 @@ import { API_CONFIG } from "@/config/apiConfig";
 export const userApi = createApi({
     reducerPath: "userApi",
     baseQuery: fetchBaseQuery({
-        // Avoid double "/api" when BASE_URL already includes it
-        baseUrl: `${API_CONFIG.BASE_URL.replace(/\/api$/, "")}/api/users`,
+        baseUrl: `${API_CONFIG.ORIGIN}/api/users`,
         prepareHeaders: (headers) => {
             const tokenFromCookie = Cookies.get("accessToken");
             const tokenFromStorage = typeof window !== "undefined" ? localStorage.getItem("token") : null;

@@ -1,7 +1,8 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { IUserAccessStatus } from "@/types/combo.types";
+import { API_CONFIG } from "@/config/apiConfig";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_URL = API_CONFIG.BASE_URL;
 
 export const accessManagementApi = createApi({
   reducerPath: "accessManagementApi",

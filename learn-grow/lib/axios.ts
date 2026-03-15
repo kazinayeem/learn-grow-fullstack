@@ -1,8 +1,9 @@
 import axios from 'axios';
+import { API_CONFIG } from '@/config/apiConfig';
 
 // Helper function to construct API URL with proper /api suffix
 const getApiBaseUrl = () => {
-    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    let apiUrl = API_CONFIG.BASE_URL;
     
     // If URL doesn't end with /api, add it
     if (!apiUrl.endsWith('/api')) {

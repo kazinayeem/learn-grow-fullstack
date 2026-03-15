@@ -1,7 +1,8 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import Cookies from "js-cookie";
+import { API_CONFIG } from "@/config/apiConfig";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = API_CONFIG.BASE_URL;
 
 const baseQuery = fetchBaseQuery({
     baseUrl: API_BASE_URL,

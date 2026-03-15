@@ -1,11 +1,33 @@
 // Environment configuration
 // Create a .env.local file in your project root with:
 // NEXT_PUBLIC_API_URL=http://localhost:5000/api (for local development)
-// NEXT_PUBLIC_API_URL=https://learnandgrow-five.vercel.app/api/v1 (for production)
+// NEXT_PUBLIC_API_URL=https://learnandgrow.io/api (for production)
+
+const DEFAULT_API_URL = "http://localhost:5000/api";
+
+export const normalizeApiBaseUrl = (rawUrl?: string): string => {
+    let apiUrl = (rawUrl || DEFAULT_API_URL).trim();
+
+    // Remove trailing slash(es) first.
+    apiUrl = apiUrl.replace(/\/+$/, "");
+
+    // Collapse accidental repeated trailing /api segments, e.g. /api/api -> /api.
+    apiUrl = apiUrl.replace(/(?:\/api)+$/i, "/api");
+
+    // Ensure exactly one trailing /api segment.
+    if (!/\/api$/i.test(apiUrl)) {
+        apiUrl = `${apiUrl}/api`;
+    }
+
+    return apiUrl;
+};
 
 export const API_CONFIG = {
-    // Base URL - defaults to localhost for development
-    BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
+    // Base API URL with guaranteed single /api suffix.
+    BASE_URL: normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_URL),
+
+    // Origin without /api suffix for services that build endpoint roots manually.
+    ORIGIN: normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_URL).replace(/\/api$/i, ""),
 
     // Request timeout (30 seconds)
     TIMEOUT: 30000,

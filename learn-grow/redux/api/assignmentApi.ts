@@ -5,7 +5,7 @@ import { API_CONFIG } from "@/config/apiConfig";
 export const assignmentApi = createApi({
     reducerPath: "assignmentApi",
     baseQuery: fetchBaseQuery({
-        baseUrl: `${API_CONFIG.BASE_URL.replace(/\/api$/, "")}/api/assignment`,
+        baseUrl: `${API_CONFIG.ORIGIN}/api/assignment`,
         prepareHeaders: (headers) => {
             const tokenFromCookie = Cookies.get("accessToken");
             const tokenFromStorage = typeof window !== "undefined" ? localStorage.getItem("token") : null;

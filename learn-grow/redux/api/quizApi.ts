@@ -5,7 +5,7 @@ import { API_CONFIG } from "@/config/apiConfig";
 export const quizApi = createApi({
     reducerPath: "quizApi",
     baseQuery: fetchBaseQuery({
-        baseUrl: `${API_CONFIG.BASE_URL.replace(/\/api$/, "")}/api/quiz`,
+        baseUrl: `${API_CONFIG.ORIGIN}/api/quiz`,
         prepareHeaders: (headers) => {
             const tokenFromCookie = Cookies.get("accessToken");
             const tokenFromStorage = typeof window !== "undefined" ? localStorage.getItem("token") : null;
