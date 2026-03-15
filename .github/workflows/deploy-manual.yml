@@ -24,38 +24,78 @@ jobs:
           scp -r learn-grow root@${{ secrets.VPS_HOST }}:/root/learn-grow-fullstack/
           scp -r deploy root@${{ secrets.VPS_HOST }}:/root/learn-grow-fullstack/
           scp -r scripts root@${{ secrets.VPS_HOST }}:/root/learn-grow-fullstack/
+          scp ecosystem.config.js root@${{ secrets.VPS_HOST }}:/root/learn-grow-fullstack/
+          scp QUICKSTART_DEPLOYMENT.md root@${{ secrets.VPS_HOST }}:/root/learn-grow-fullstack/
 
-      - name: Restart services on VPS
+      - name: Restart services on VPS (Optimized)
         run: |
           ssh root@${{ secrets.VPS_HOST }} << 'EOF'
 
+          set -e
           cd /root/learn-grow-fullstack
 
-          echo "==> Ensuring Nginx is installed"
+          echo "🚀 Starting optimized manual deployment..."
+
+          # ======== NGINX SETUP ========
+          echo "🌐 Setting up optimized Nginx..."
           if ! command -v nginx >/dev/null 2>&1; then
             apt-get update
             apt-get install -y nginx
           fi
 
-          echo "==> Applying Nginx config"
-          bash ./scripts/setup-nginx.sh /root/learn-grow-fullstack
+          # Create cache directories for Nginx proxy caching
+          mkdir -p /var/cache/nginx/production
+          mkdir -p /var/cache/nginx/static
+          mkdir -p /var/www/learn-grow-errors
+          chmod -R 755 /var/cache/nginx
+          chmod -R 755 /var/www/learn-grow-errors
 
-          echo "==> Restarting backend"
-          pm2 delete grow-backend 2>/dev/null || true
+          # Deploy optimized Nginx config
+          cp deploy/nginx/learnandgrow-optimized.conf /etc/nginx/sites-available/learn-grow
+          rm -f /etc/nginx/sites-enabled/learn-grow 2>/dev/null || true
+          ln -sf /etc/nginx/sites-available/learn-grow /etc/nginx/sites-enabled/learn-grow
+          nginx -t && systemctl reload nginx
+
+          # ======== MONGODB OPTIMIZATION ========
+          echo "⚙️ Optimizing MongoDB..."
+          if command -v mongod >/dev/null 2>&1; then
+            systemctl stop mongodb || true
+            [ -f deploy/mongodb-optimized.conf ] && cp deploy/mongodb-optimized.conf /etc/mongod.conf
+            chown mongodb:mongodb /etc/mongod.conf 2>/dev/null || true
+            systemctl start mongodb
+          fi
+
+          # ======== BACKEND BUILD ========
+          echo "📦 Building backend..."
           cd grow-backend
           npm install --prefer-offline
           npm run build
-          pm2 start npm --name grow-backend -- start
+          cd ..
 
-          echo "==> Restarting frontend"
-          cd ../learn-grow
+          # ======== FRONTEND BUILD ========
+          echo "📦 Building frontend..."
+          cd learn-grow
           npm install --prefer-offline
           npm run build
-          pm2 delete frontend 2>/dev/null || true
-          pm2 start npm --name frontend -- start
+          cd ..
 
+          # ======== PM2 CLUSTER DEPLOYMENT ========
+          echo "🔄 Deploying PM2 cluster mode..."
+          pm2 delete ecosystem.config.js 2>/dev/null || true
+          sleep 1
+          pm2 start ecosystem.config.js
           pm2 save
 
-          echo "==> Deploy finished"
+          # ======== VERIFICATION ========
+          echo "✅ Verifying services..."
+          sleep 2
+          pm2 status
+          nginx -t
+          systemctl is-active nginx && echo "✓ nginx: active" || echo "✗ nginx: inactive"
+          systemctl is-active mongodb && echo "✓ mongodb: active" || echo "✗ mongodb: inactive"
+
+          echo ""
+          echo "✅ Optimized deployment completed!"
+          echo "📊 Monitor with: ./deploy/monitor.sh"
 
           EOF

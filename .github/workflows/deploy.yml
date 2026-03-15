@@ -9,6 +9,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -22,7 +25,7 @@ jobs:
 
             set -e
 
-            echo "🚀 Starting deployment..."
+            echo "🚀 Starting optimized deployment..."
 
             if [ ! -d "/root/learn-grow-fullstack" ]; then
               echo "📥 Cloning repository..."
@@ -38,38 +41,63 @@ jobs:
             echo "🔄 Pulling latest code"
             git pull origin main
 
-            echo "🌐 Ensuring Nginx is installed"
+            # ======== NGINX SETUP ========
+            echo "🌐 Setting up optimized Nginx..."
             if ! command -v nginx >/dev/null 2>&1; then
               apt-get update
               apt-get install -y nginx
             fi
 
-            echo "⚙️ Applying Nginx config"
-            bash ./scripts/setup-nginx.sh /root/learn-grow-fullstack
+            # Create cache directories for Nginx proxy caching
+            mkdir -p /var/cache/nginx/production
+            mkdir -p /var/cache/nginx/static
+            mkdir -p /var/www/learn-grow-errors
+            chmod -R 755 /var/cache/nginx
+            chmod -R 755 /var/www/learn-grow-errors
 
-            echo "📦 Backend build"
+            # Deploy optimized Nginx config
+            cp deploy/nginx/learnandgrow-optimized.conf /etc/nginx/sites-available/learn-grow
+            rm -f /etc/nginx/sites-enabled/learn-grow
+            ln -sf /etc/nginx/sites-available/learn-grow /etc/nginx/sites-enabled/learn-grow
+            nginx -t && systemctl reload nginx
+
+            # ======== MONGODB OPTIMIZATION ========
+            echo "⚙️ Optimizing MongoDB..."
+            if command -v mongod >/dev/null 2>&1; then
+              systemctl stop mongodb || true
+              cp deploy/mongodb-optimized.conf /etc/mongod.conf
+              chown mongodb:mongodb /etc/mongod.conf
+              systemctl start mongodb
+            fi
+
+            # ======== BACKEND BUILD ========
+            echo "📦 Building backend..."
             cd grow-backend
             npm install --prefer-offline
             npm run build
+            cd ..
 
-            echo "♻️ Backend PM2"
-            pm2 describe grow-backend > /dev/null \
-              && pm2 reload grow-backend \
-              || pm2 start npm --name grow-backend -- start
-
-            echo "📦 Frontend build"
-            cd ../learn-grow
+            # ======== FRONTEND BUILD ========
+            echo "📦 Building frontend..."
+            cd learn-grow
             npm install --prefer-offline
             npm run build
+            cd ..
 
-            echo "♻️ Frontend PM2"
-            pm2 describe frontend > /dev/null \
-              && pm2 reload frontend \
-              || pm2 start npm --name frontend -- start
-
-            echo "💾 Saving PM2"
+            # ======== PM2 CLUSTER DEPLOYMENT ========
+            echo "🔄 Deploying PM2 cluster mode (4 instances)..."
+            pm2 delete ecosystem.config.js 2>/dev/null || true
+            pm2 start ecosystem.config.js
             pm2 save
 
-            echo "✅ Deployment completed"
+            # ======== VERIFICATION ========
+            echo "✅ Verifying services..."
+            pm2 status
+            nginx -t
+            echo "🌐 nginx: $(systemctl is-active nginx)"
+            echo "💾 mongodb: $(systemctl is-active mongodb)"
+
+            echo "✅ Optimized deployment completed!"
+            echo "📊 Monitor with: ./deploy/monitor.sh"
 
           EOF
