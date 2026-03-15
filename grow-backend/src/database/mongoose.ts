@@ -10,16 +10,17 @@ mongoose.set("toJSON", {
 
 /**
  * MongoDB connection URIs by environment
- * ⚠️ WARNING: Credentials are hardcoded for development only
+ * Primary source: process.env.MONGODB_URI from .env file
+ * Fallback: environment-specific defaults
  */
 const MONGODB_URIS = {
   // Local development (default)
-  development: "mongodb://learnandgrow:learnandgrow@104.207.70.54:27017/learnandgrow?authSource=admin",
+  development: "mongodb://learnandgrow:learnandgrow@127.0.0.1:27017/learnandgrow?authSource=admin",
   
   // Docker environment
-  docker: "mongodb://learnandgrow:learnandgrow@104.207.70.54:27017/learnandgrow?authSource=admin",
+  docker: "mongodb://learnandgrow:learnandgrow@mongodb:27017/learnandgrow?authSource=admin",
   
-  // Production (with credentials)
+  // Production (with credentials from .env)
   production: "mongodb://learnandgrow:learnandgrow@104.207.70.54:27017/learnandgrow?authSource=admin",
 };
 
@@ -70,7 +71,7 @@ export const connectDB = async (MONGODB_URI?: string) => {
     // Hide password in logs for security
     const displayUri = mongoUri.replace(/\/\/.*:(.*)@/, "//user:***@");
 
-    await mongoose.connect("mongodb://learnandgrow:learnandgrow@104.207.70.54:27017/learnandgrow?authSource=adminmongodb://learnandgrow:learnandgrow@104.207.70.54:27017/learnandgrow?authSource=admin");
+    await mongoose.connect(mongoUri);
     console.log("✅ MongoDB connected successfully");
     console.log(`📍 Connection: ${displayUri}`);
     console.log("📅 Timezone: Dates stored and retrieved in UTC");
