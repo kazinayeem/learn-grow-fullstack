@@ -23,20 +23,14 @@ export function AuthGuard({
   useEffect(() => {
     // Prevent multiple executions
     if (hasRedirected.current) {
-      console.log("🔐 AuthGuard: Already redirected, skipping");
       return;
     }
 
-    console.log("🔐 AuthGuard: useEffect triggered");
-    console.log("🔐 AuthGuard: redirectIfLoggedIn =", redirectIfLoggedIn);
-    console.log("🔐 AuthGuard: redirectTo =", redirectTo);
 
     // 🚨 FIRST: Clear logout flag when user reaches login page
     const isLoggingOut = sessionStorage.getItem("loggingOut") === "1";
-    console.log("🔐 AuthGuard: loggingOut flag =", isLoggingOut);
 
     if (isLoggingOut) {
-      console.log("🔐 AuthGuard: Clearing logout flag and showing login page");
       sessionStorage.removeItem("loggingOut");
       setIsChecking(false);
       setShouldRender(true);
@@ -46,11 +40,8 @@ export function AuthGuard({
     // Check if user is already logged in
     const token = Cookies.get("accessToken");
     const role = Cookies.get("userRole");
-    console.log("🔐 AuthGuard: token =", token ? "EXISTS" : "MISSING");
-    console.log("🔐 AuthGuard: role =", role);
 
     if (redirectIfLoggedIn && token) {
-      console.log("🔐 AuthGuard: User is logged in, redirecting away from login page");
 
       const roleRedirects: Record<string, string> = {
         student: "/student",
@@ -63,12 +54,10 @@ export function AuthGuard({
         ? (roleRedirects[role || "student"] || "/admin")
         : redirectTo;
 
-      console.log("🔐 AuthGuard: Redirecting to:", target);
       hasRedirected.current = true; // Mark as redirected
       router.replace(target);
       return; // Don't set shouldRender to true - redirecting
     } else {
-      console.log("🔐 AuthGuard: Showing login page");
       setIsChecking(false);
       setShouldRender(true);
     }

@@ -339,7 +339,6 @@ export default function CheckoutPage() {
         toast.error("Failed to create order");
       }
     } catch (error: any) {
-      console.error("Order creation error:", error);
       const msg = error?.data?.message || error?.message || "Failed to create order";
       toast.error(msg);
     } finally {

@@ -93,7 +93,6 @@ export default function TicketCard({ ticket, onDelete }: TicketCardProps) {
       onDelete?.();
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to delete ticket");
-      console.error("Delete error:", error);
     } finally {
       setIsDeleting(false);
     }

@@ -62,7 +62,6 @@ export default function AdminContactsPage() {
                 setContacts([]);
             }
         } catch (error) {
-            console.error("Error fetching contacts:", error);
             toast.error("Failed to fetch contacts");
         } finally {
             setIsLoading(false);
@@ -98,7 +97,6 @@ export default function AdminContactsPage() {
                 );
             }
         } catch (error) {
-            console.error("Error marking contact as read:", error);
         }
     };
 
@@ -129,7 +127,6 @@ export default function AdminContactsPage() {
                     toast.error("Failed to delete contact");
                 }
             } catch (error) {
-                console.error("Error deleting contact:", error);
                 toast.error("Failed to delete contact");
             }
         }

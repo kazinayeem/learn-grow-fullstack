@@ -146,7 +146,6 @@ function EditCourseContent() {
       toast.success("Course updated successfully!");
       router.push("/admin/courses");
     } catch (error: any) {
-      console.error("Update failed:", error);
       toast.error(`Failed to update course: ${error?.data?.message || error?.message}`);
     }
   };

@@ -16,7 +16,6 @@ async function fetchCookiePolicyHtml() {
       return json.data.content as string;
     }
   } catch (error) {
-    console.error("Error fetching cookie policy:", error);
   }
   // Return null if no valid content found in database
   return null;

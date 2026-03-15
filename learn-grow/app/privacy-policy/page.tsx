@@ -19,7 +19,6 @@ async function fetchPolicyHtml() {
             return json.data.content as string;
         }
     } catch (error) {
-        console.error("Error fetching privacy policy:", error);
     }
     // Return null if no valid content found in database
     return null;

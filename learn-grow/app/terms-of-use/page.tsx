@@ -18,7 +18,6 @@ async function fetchTermsHtml() {
             return json.data.content as string;
         }
     } catch (error) {
-        console.error("Error fetching terms of use:", error);
     }
     // Return null if no valid content found in database
     return null;

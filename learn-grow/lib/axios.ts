@@ -23,7 +23,6 @@ const api = axios.create({
 // Automatically attach JWT token to all requests
 api.interceptors.request.use((config) => {
     // Debug Log
-    console.log(`📡 Axios Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
 
     const token = localStorage.getItem('token');
     if (token) {

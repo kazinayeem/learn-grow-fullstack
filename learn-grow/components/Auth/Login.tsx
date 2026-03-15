@@ -25,14 +25,12 @@ export default function Login() {
             ? { email: loginInput, password }
             : { phone: loginInput, password };
 
-        console.log("🔐 Attempting login with:", loginData);
 
         try {
             // Use real API via lib/auth
             const { data, success, message } = await login(loginData);
 
             if (success && data) {
-                console.log("✅ API Login successful:", data);
                 toast.success(`Welcome back, ${data.user.name}!`);
 
                 // Redirect based on role from backend
@@ -47,7 +45,6 @@ export default function Login() {
             }
             setIsLoading(false);
         } catch (apiError: any) {
-            console.error("❌ Login error:", apiError);
             const errorMsg = apiError.response?.data?.message || apiError.message || "Login failed";
             setError(errorMsg);
             toast.error(errorMsg);

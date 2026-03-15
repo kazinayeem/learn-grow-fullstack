@@ -176,7 +176,6 @@ export default function AdminSettingsPage() {
       toast.success("✓ Database backed up successfully! File is downloading...");
     } catch (error: any) {
       toast.error(error?.message || "Failed to create database backup");
-      console.error("Backup error:", error);
     } finally {
       setBackupLoading(false);
     }

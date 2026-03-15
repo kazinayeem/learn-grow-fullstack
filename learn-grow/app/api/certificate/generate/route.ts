@@ -296,7 +296,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Certificate generation error:', error);
     return NextResponse.json(
       { error: 'Failed to generate certificate' },
       { status: 500 }

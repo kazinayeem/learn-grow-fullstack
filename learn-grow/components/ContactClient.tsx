@@ -70,7 +70,6 @@ export default function ContactClient({ content }: ContactClientProps) {
                 toast.error(json.message || "Failed to send message");
             }
         } catch (error) {
-            console.error("Error submitting contact form:", error);
             toast.error("Failed to send message. Please try again.");
         } finally {
             setIsSubmitting(false);

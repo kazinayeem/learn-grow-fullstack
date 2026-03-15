@@ -21,7 +21,6 @@ authApi.interceptors.request.use((config) => {
   
   // Debug: Log POST requests to /users/login
   if (config.method === 'post' && config.url?.includes('/users/login')) {
-    console.log("📤 Sending login request:", JSON.stringify(config.data, null, 2));
   }
   
   return config;

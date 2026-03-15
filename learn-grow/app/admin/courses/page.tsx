@@ -119,7 +119,6 @@ export default function ManageCoursesPage() {
       await approveCourse(id).unwrap();
       toast.success("Course approved successfully! Email sent to instructor.");
     } catch (error: any) {
-      console.error("Failed to approve course:", error);
       toast.error(error?.data?.message || "Failed to approve course");
     }
   };
@@ -129,7 +128,6 @@ export default function ManageCoursesPage() {
       await rejectCourse(id).unwrap();
       toast.success("Course approval rejectedd successfully");
     } catch (error: any) {
-      console.error("Failed to reject course:", error);
       toast.error(error?.data?.message || "Failed to reject course");
     }
   };

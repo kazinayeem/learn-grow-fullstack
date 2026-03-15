@@ -38,7 +38,6 @@ const CoursesSection = () => {
 
   if (error) {
     // If API fails, show sample courses instead of error message
-    console.warn("API Error: Using sample courses for display.");
     // We mutate the courses array below if it's empty, but since 'courses' is derived from data,
     // we'll just handle it in the render logic or re-assign here if we were using a let.
     // Better strategy: Return content using sampleCourses directly here.

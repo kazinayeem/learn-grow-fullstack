@@ -18,7 +18,6 @@ async function fetchRefundHtml() {
             return json.data.content as string;
         }
     } catch (error) {
-        console.error("Error fetching refund policy:", error);
     }
     // Return null if no valid content found in database
     return null;

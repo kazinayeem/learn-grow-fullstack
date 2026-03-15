@@ -749,7 +749,6 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                         toast.error(error.message || "Failed to mark lesson as complete");
                                     }
                                 } catch (error) {
-                                    console.error("Error marking lesson complete:", error);
                                     toast.error("Failed to mark lesson as complete");
                                 }
                             }}>
@@ -1173,7 +1172,6 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                                                     toast.error(error.message || "Failed to mark lesson as complete");
                                                                 }
                                                             } catch (error) {
-                                                                console.error("Error marking lesson complete:", error);
                                                                 toast.error("Failed to mark lesson as complete");
                                                             }
                                                         }}
@@ -1212,7 +1210,6 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                                             toast.error(error.message || "Failed to mark lesson as complete");
                                                         }
                                                     } catch (error) {
-                                                        console.error("Error marking lesson complete:", error);
                                                         toast.error("Failed to mark lesson as complete");
                                                     }
                                                 }}

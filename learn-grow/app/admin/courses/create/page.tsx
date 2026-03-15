@@ -66,13 +66,10 @@ export default function CreateCoursePage() {
         modules: [], // Start with empty modules
       };
 
-      console.log("Creating course:", payload);
       const res = await createCourse(payload).unwrap();
-      console.log("Response:", res);
       alert("Course created successfully!");
       router.push("/admin/courses");
     } catch (error: any) {
-      console.error("Create failed:", error);
       const apiErrors = error?.data?.errors;
       if (Array.isArray(apiErrors)) {
         const fieldErrors: Record<string, string> = {};

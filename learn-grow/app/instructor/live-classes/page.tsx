@@ -173,7 +173,6 @@ export default function InstructorLiveClassesPage() {
             refetch();
             setFormError(null);
         } catch (error: any) {
-            console.error("Error scheduling class:", error);
             const apiMessage = (error as any)?.data?.message || (error as any)?.error || "Failed to schedule class";
             const fieldErrors = (error as any)?.data?.errors;
             const fieldText = Array.isArray(fieldErrors)

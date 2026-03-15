@@ -109,7 +109,6 @@ export default function CertificateComponent({ certificate }: CertificateProps) 
       toast.success("✅ Certificate downloaded successfully!");
 
     } catch (error) {
-      console.error("Download error:", error);
       toast.error("❌ Failed to download. Please try again.");
     } finally {
       setDownloading(false);

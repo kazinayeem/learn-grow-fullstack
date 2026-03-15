@@ -114,7 +114,6 @@ export default function PaymentModal({
                 }
             }
         } catch (error: any) {
-            console.error("Payment Error:", error);
             alert(error.message || "Payment failed. Please try again.");
             setIsProcessing(false);
         }

@@ -51,7 +51,6 @@ export default function RequireAuth({ children, allowedRoles }: RequireAuthProps
             // 🚨 Check if logout is in progress - if so, don't redirect yet
             const loggingOut = sessionStorage.getItem("loggingOut") === "1";
             if (loggingOut) {
-                console.log("🔐 RequireAuth: Logout in progress, skipping redirect");
                 hasChecked.current = true;
                 return;
             }
@@ -79,7 +78,6 @@ export default function RequireAuth({ children, allowedRoles }: RequireAuthProps
 
             // Check if token is expired or expiring soon
             if (isTokenExpired(token) || isTokenExpiringSoon(token)) {
-                console.log("🔄 Token expired or expiring soon, attempting refresh...");
                 
                 // Try to refresh the token
                 const refreshToken = Cookies.get("refreshToken") || (typeof window !== "undefined" ? localStorage.getItem("refreshToken") : null);
@@ -115,7 +113,6 @@ export default function RequireAuth({ children, allowedRoles }: RequireAuthProps
                                 localStorage.setItem("token", accessToken);
                             }
                             
-                            console.log("✅ Token refreshed successfully");
                             token = accessToken; // Use the new token for role check
                             
                             // Get role from refreshed token
@@ -128,7 +125,6 @@ export default function RequireAuth({ children, allowedRoles }: RequireAuthProps
                             throw new Error("Failed to refresh token");
                         }
                     } catch (refreshError) {
-                        console.error("❌ Token refresh failed:", refreshError);
                         // Clear all auth data
                         Cookies.remove("accessToken", { path: "/" });
                         Cookies.remove("refreshToken", { path: "/" });

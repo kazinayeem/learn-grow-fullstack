@@ -159,7 +159,6 @@ function CheckoutContent() {
           setCourseData(course);
         }
       } catch (error: any) {
-        console.error("Failed to fetch course:", error);
         if (error.response?.status === 404) {
           toast.error("কোর্স পাওয়া যায়নি | Course not found");
         } else {
@@ -210,7 +209,6 @@ function CheckoutContent() {
     // Validate payment method ID is a valid MongoDB ObjectId (24 hex characters)
     if (!/^[0-9a-fA-F]{24}$/.test(formData.paymentMethodId)) {
       toast.error("Invalid payment method selected. Please select a valid payment method.");
-      console.error("Invalid paymentMethodId:", formData.paymentMethodId);
       return false;
     }
 
@@ -230,14 +228,8 @@ function CheckoutContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log("=== FORM SUBMISSION STARTED ===");
-    console.log("Form data:", formData);
-    console.log("Plan:", plan);
-    console.log("Course ID:", courseId);
-    console.log("Plan details:", planDetails);
 
     if (!validateForm()) {
-      console.log("Form validation failed");
       return;
     }
 
@@ -256,7 +248,6 @@ function CheckoutContent() {
 
       if (plan === "single" && courseId) {
         payload.courseId = courseId;
-        console.log("Added courseId to payload:", courseId);
       }
 
       if (planDetails.requiresDelivery) {
@@ -309,26 +300,19 @@ function CheckoutContent() {
         toast.error(response.data?.message || "Failed to create order");
       }
     } catch (error: any) {
-      console.error("=== ORDER SUBMISSION ERROR ===");
-      console.error("Error object:", error);
 
       if (error.response) {
-        console.error("Response status:", error.response.status);
-        console.error("Response data:", error.response.data);
         toast.error(error.response.data?.message || "Failed to place order");
         if (error.response.status === 401) {
           router.push("/login");
         }
       } else if (error.request) {
-        console.error("No response received:", error.request);
         toast.error("Cannot connect to server. Please check your internet connection.");
       } else {
-        console.error("Error message:", error.message);
         toast.error("An unexpected error occurred. Please try again.");
       }
     } finally {
       setSubmitting(false);
-      console.log("=== FORM SUBMISSION ENDED ===");
     }
   };
 
@@ -493,7 +477,6 @@ function CheckoutContent() {
                         selectedKeys={formData.paymentMethodId ? new Set([formData.paymentMethodId]) : new Set()}
                         onSelectionChange={(keys) => {
                           const id = Array.from(keys)[0] as string;
-                          console.log("Selected payment method ID:", id);
                           if (id) {
                             setFormData((prev) => ({
                               ...prev,

@@ -57,7 +57,6 @@ export default function CreateCourseModal({ isOpen, onOpenChange }: CreateCourse
                 category: "65685d0d8269781845686868",
             });
         } catch (error) {
-            console.error("Failed to create course", error);
             alert("Failed to create course");
         }
     };
