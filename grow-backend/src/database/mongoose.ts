@@ -1,80 +1,32 @@
 import mongoose from "mongoose";
 
-// Ensure Mongoose uses UTC for all dates (no timezone conversion)
+// Hardcoded URIs for quick access
+const MONGODB_URI = "mongodb://learnandgrow:learnandgrow@104.207.70.54:27017/learnandgrow?authSource=admin";
+
+/**
+ * Configure Mongoose Globals
+ */
 mongoose.set("toJSON", {
-  transform: function (doc, ret) {
-    // Keep dates as-is (UTC ISO strings)
+  transform: (_, ret) => {
+    delete ret.__v; // Clean up version keys from responses
     return ret;
   },
 });
 
 /**
- * MongoDB connection URIs by environment
- * Primary source: process.env.MONGODB_URI from .env file
- * Fallback: environment-specific defaults
+ * Mask credentials for secure logging
  */
-const MONGODB_URIS = {
-  // Local development (default)
-  development: "mongodb://learnandgrow:learnandgrow@127.0.0.1:27017/learnandgrow?authSource=admin",
-  
-  // Docker environment
-  docker: "mongodb://learnandgrow:learnandgrow@mongodb:27017/learnandgrow?authSource=admin",
-  
-  // Production (with credentials from .env)
-  production: "mongodb://learnandgrow:learnandgrow@104.207.70.54:27017/learnandgrow?authSource=admin",
-};
+const getMaskedUri = (uri: string) => uri.replace(/\/\/.*:(.*)@/, "//user:***@");
 
 /**
- * Validate MongoDB connection string has credentials
+ * Connect to MongoDB
  */
-function validateMongoDBURI(uri: string): { valid: boolean; error?: string } {
-  if (!uri) {
-    return { valid: false, error: "MONGODB_URI is not defined" };
-  }
-
-  // Check if connection string has credentials (username:password format) or is mongodb+srv
-  const hasCredentials = /@/.test(uri);
-  if (!hasCredentials && !uri.includes("mongodb+srv") && !uri.includes("localhost")) {
-    return {
-      valid: false,
-      error: "MongoDB connection string must include username and password",
-    };
-  }
-
-  return { valid: true };
-}
-
-export const connectDB = async (MONGODB_URI?: string) => {
+export const connectDB = async () => {
   try {
-    // Determine which URI to use
-    let mongoUri = MONGODB_URI;
+    await mongoose.connect(MONGODB_URI);
     
-    if (!mongoUri) {
-      // Try environment variable first
-      mongoUri = process.env.MONGODB_URI;
-    }
-    
-    if (!mongoUri) {
-      // Fall back to hardcoded URIs based on NODE_ENV
-      const env = process.env.NODE_ENV || "development";
-      mongoUri = MONGODB_URIS[env as keyof typeof MONGODB_URIS] || MONGODB_URIS.development;
-      console.log(`📍 Using hardcoded ${env} MongoDB URI`);
-    }
-
-    // Validate URI
-    const validation = validateMongoDBURI(mongoUri);
-    if (!validation.valid) {
-      console.error("❌ MongoDB Connection Error:", validation.error);
-      process.exit(1);
-    }
-
-    // Hide password in logs for security
-    const displayUri = mongoUri.replace(/\/\/.*:(.*)@/, "//user:***@");
-
-    await mongoose.connect(mongoUri);
     console.log("✅ MongoDB connected successfully");
-    console.log(`📍 Connection: ${displayUri}`);
-    console.log("📅 Timezone: Dates stored and retrieved in UTC");
+    console.log(`📍 Connection: ${getMaskedUri(MONGODB_URI)}`);
   } catch (error: any) {
     console.error("❌ MongoDB connection error:", error.message);
     process.exit(1);
