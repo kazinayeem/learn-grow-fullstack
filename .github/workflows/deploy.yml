@@ -38,6 +38,15 @@ jobs:
             echo "🔄 Pulling latest code"
             git pull origin main
 
+            echo "🌐 Ensuring Nginx is installed"
+            if ! command -v nginx >/dev/null 2>&1; then
+              apt-get update
+              apt-get install -y nginx
+            fi
+
+            echo "⚙️ Applying Nginx config"
+            bash ./scripts/setup-nginx.sh /root/learn-grow-fullstack
+
             echo "📦 Backend build"
             cd grow-backend
             npm install --prefer-offline

@@ -22,12 +22,23 @@ jobs:
         run: |
           scp -r grow-backend root@${{ secrets.VPS_HOST }}:/root/learn-grow-fullstack/
           scp -r learn-grow root@${{ secrets.VPS_HOST }}:/root/learn-grow-fullstack/
+          scp -r deploy root@${{ secrets.VPS_HOST }}:/root/learn-grow-fullstack/
+          scp -r scripts root@${{ secrets.VPS_HOST }}:/root/learn-grow-fullstack/
 
       - name: Restart services on VPS
         run: |
           ssh root@${{ secrets.VPS_HOST }} << 'EOF'
 
           cd /root/learn-grow-fullstack
+
+          echo "==> Ensuring Nginx is installed"
+          if ! command -v nginx >/dev/null 2>&1; then
+            apt-get update
+            apt-get install -y nginx
+          fi
+
+          echo "==> Applying Nginx config"
+          bash ./scripts/setup-nginx.sh /root/learn-grow-fullstack
 
           echo "==> Restarting backend"
           pm2 delete grow-backend 2>/dev/null || true
