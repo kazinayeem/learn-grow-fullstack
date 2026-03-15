@@ -16,6 +16,7 @@ import {
   extendAccess,
   reduceAccess,
   getUserCourseAccess,
+    deleteOrder,
 } from "../controller/order.controller";
 import { requireAuth, requireRoles } from "../../../middleware/auth";
 import { validateGuardianStudentAccess } from "../../../middleware/guardian-validation";
@@ -91,6 +92,7 @@ router.get("/", requireAuth, requireRoles("admin", "manager"), getAllOrders);
 router.get("/:id", requireAuth, requireRoles("admin", "manager"), getOrderById);
 router.patch("/:id/approve", requireAuth, requireRoles("admin", "manager"), approveOrder);
 router.patch("/:id/reject", requireAuth, requireRoles("admin", "manager"), rejectOrder);
+router.delete("/:id", requireAuth, requireRoles("admin"), deleteOrder);
 router.patch("/:id/extend", requireAuth, requireRoles("admin", "manager"), async (req, res) => {
   try {
     const { id } = req.params;

@@ -38,6 +38,14 @@ export const settingsApi = baseApi.injectEndpoints({
     testSMTPConnection: build.mutation<{ success: boolean; message: string }, { testEmail?: string }>({
       query: (body) => ({ url: "/settings/smtp/test", method: "POST", body }),
     }),
+
+    // Database backup - returns void, handles download directly
+    backupDatabase: build.mutation<{ success: boolean }, void>({
+      query: () => ({ 
+        url: "/settings/backup/database", 
+        method: "POST",
+      }),
+    }),
   }),
 });
 
@@ -47,4 +55,5 @@ export const {
   useGetSMTPConfigQuery,
   useUpdateSMTPConfigMutation,
   useTestSMTPConnectionMutation,
+  useBackupDatabaseMutation,
 } = settingsApi;

@@ -245,6 +245,45 @@ export const rejectOrder = async (req: Request, res: Response) => {
   }
 };
 
+// Delete order (Admin only)
+export const deleteOrder = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: "Invalid order ID" });
+    }
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    // Protect approved orders because they can affect enrollment/access history.
+    if (order.paymentStatus === "approved") {
+      return res.status(400).json({
+        success: false,
+        message: "Approved orders cannot be deleted. Please use status actions instead.",
+      });
+    }
+
+    await Order.findByIdAndDelete(id);
+
+    return res.json({
+      success: true,
+      message: "Order deleted successfully",
+      data: { id },
+    });
+  } catch (error: any) {
+    console.error("Delete order error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete order",
+      error: error.message,
+    });
+  }
+};
+
 // Approve/Reject via signed email token (no auth)
 export const emailOrderAction = async (req: Request, res: Response) => {
   try {

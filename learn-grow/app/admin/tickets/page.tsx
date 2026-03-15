@@ -33,7 +33,7 @@ export default function TicketsPage() {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const { data: statsData, isLoading: statsLoading } = useGetTicketStatsQuery(undefined);
-  const { data: ticketsData, isLoading: ticketsLoading } =
+  const { data: ticketsData, isLoading: ticketsLoading, refetch: refetchTickets } =
     useGetAllTicketsQuery({
       status: selectedStatus === "all" ? undefined : selectedStatus,
     });
@@ -206,7 +206,13 @@ export default function TicketsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 lg:gap-5">
           {tickets.map((ticket: any) => (
-            <TicketCard key={ticket._id} ticket={ticket} />
+            <TicketCard 
+              key={ticket._id} 
+              ticket={ticket}
+              onDelete={() => {
+                refetchTickets();
+              }}
+            />
           ))}
         </div>
       )}

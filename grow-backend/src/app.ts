@@ -170,6 +170,7 @@ export const createApp = () => {
   // Authentication routes
   mountApiRoute("/auth", googleRoutes);
   mountApiRoute("/users", userRoutes);
+  mountApiRoute("/user", userRoutes);
 
   // Other routes
   mountApiRoute("/category", categoryRoutes);

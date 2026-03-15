@@ -361,11 +361,11 @@ export default function ComboManagement() {
       {/* Sticky Top Action Bar */}
       <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 lg:gap-4 items-stretch">
             {/* Search */}
             <Input
               isClearable
-              className="sm:col-span-2"
+              className="md:col-span-6 lg:col-span-7 min-w-0"
               placeholder="Search combos by name..."
               startContent={<FaSearch className="text-default-400" />}
               value={searchQuery}
@@ -381,7 +381,7 @@ export default function ComboManagement() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-3 rounded-lg border-2 border-gray-200 hover:border-primary-400 
+              className="w-full md:col-span-3 lg:col-span-2 px-4 py-3 rounded-lg border-2 border-gray-200 hover:border-primary-400 
                         focus:border-primary-500 focus:outline-none transition-colors bg-white text-sm font-medium"
             >
               <option value="">All Status</option>
@@ -395,7 +395,7 @@ export default function ComboManagement() {
               startContent={<FaPlus />}
               onClick={handleCreateOpen}
               size="lg"
-              className="lg:col-span-1 sm:col-span-2 font-semibold"
+              className="w-full md:col-span-3 font-semibold"
             >
               + Create Combo
             </Button>
@@ -408,15 +408,15 @@ export default function ComboManagement() {
         
         {/* Page Header with Stats */}
         <div className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 flex items-center gap-3 mb-2">
-                <FaBoxOpen className="text-green-600" size={32} />
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 flex items-center gap-3 mb-2">
+                <FaBoxOpen className="text-green-600 shrink-0" size={28} />
                 Combo Management
               </h1>
               <p className="text-gray-600">Create and manage course bundles for your platform</p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:w-auto lg:min-w-[320px]">
               <Card className="bg-gradient-to-br from-green-50 to-green-100 shadow-none">
                 <CardBody className="p-4">
                   <p className="text-xs text-gray-600 font-medium">Active Combos</p>
@@ -623,7 +623,7 @@ export default function ComboManagement() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     label="Price (৳)"
                     type="number"

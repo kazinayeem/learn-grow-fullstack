@@ -25,6 +25,9 @@ import {
   FaBoxOpen,
   FaEye,
   FaEyeSlash,
+  FaDatabase,
+  FaDownload,
+  FaCheckCircle,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 
@@ -34,6 +37,8 @@ export default function AdminSettingsPage() {
   const [updateCommission, { isLoading: saving }] = useUpdateCommissionMutation();
   const [commission, setCommission] = useState<number>(20);
   const [kitPrice, setKitPrice] = useState<number>(4500);
+  const [lastBackupTime, setLastBackupTime] = useState<string | null>(null);
+  const [backupLoading, setBackupLoading] = useState(false);
   const payout = Math.max(0, 100 - (Number.isFinite(commission) ? commission : 0));
 
   // SMTP state
@@ -122,6 +127,58 @@ export default function AdminSettingsPage() {
       setTestEmail("");
     } catch (error: any) {
       toast.error(error?.data?.message || "SMTP test failed");
+    }
+  };
+
+  const handleBackupDatabase = async () => {
+    const confirmed = window.confirm(
+      "This will create a full MongoDB backup and download it as a compressed file. This may take a few minutes depending on database size. Continue?"
+    );
+    if (!confirmed) return;
+
+    setBackupLoading(true);
+    try {
+      // Make the backup request directly via fetch to handle file download
+      const response = await fetch("/api/settings/backup/database", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create backup");
+      }
+
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      
+      // Extract filename from response headers or use default
+      const contentDisposition = response.headers.get("content-disposition");
+      let filename = `learn-grow-backup-${new Date().toISOString().split("T")[0]}.tar.gz`;
+      
+      if (contentDisposition) {
+        const matches = contentDisposition.match(/filename="?([^";\n]+)"?/i);
+        if (matches) filename = matches[1];
+      }
+      
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      setLastBackupTime(new Date().toLocaleString());
+      toast.success("✓ Database backed up successfully! File is downloading...");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to create database backup");
+      console.error("Backup error:", error);
+    } finally {
+      setBackupLoading(false);
     }
   };
 
@@ -494,6 +551,139 @@ export default function AdminSettingsPage() {
                   </div>
                 </div>
               )}
+            </div>
+          </Tab>
+
+          <Tab
+            key="backup"
+            title={
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <FaDatabase className="text-orange-600 text-xs sm:text-sm" />
+                <span className="hidden sm:inline">Database Backup</span>
+                <span className="sm:hidden">Backup</span>
+              </div>
+            }
+          >
+            <div className="p-3 sm:p-4 md:p-6 lg:p-8 max-w-3xl mx-auto">
+              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-gray-100">
+                <div className="p-2 sm:p-3 bg-orange-100 text-orange-600 rounded-lg sm:rounded-xl">
+                  <FaDatabase size={20} className="sm:w-6 sm:h-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 truncate">Database Backup</h2>
+                  <p className="text-xs sm:text-sm text-gray-500 line-clamp-2">Export your complete MongoDB database as a downloadable ZIP file</p>
+                </div>
+              </div>
+
+              <div className="space-y-4 sm:space-y-6 md:space-y-8">
+                {/* Backup Info Card */}
+                <Card className="bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-100 shadow-none">
+                  <CardBody className="p-4 sm:p-5 md:p-6">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="p-2 sm:p-3 bg-orange-200 rounded-lg flex-shrink-0">
+                        <FaDatabase className="text-orange-700 text-lg sm:text-xl" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-gray-900 text-sm sm:text-base mb-1">Full Database Export</h3>
+                        <p className="text-xs sm:text-sm text-gray-700">
+                          Creates a complete backup of your MongoDB database including all collections (users, courses, orders, enrollments, etc.). The backup is compressed as a ZIP file for easy storage and recovery.
+                        </p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+
+                {/* Features */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
+                  <Card className="border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+                    <CardBody className="p-4 sm:p-5">
+                      <div className="flex items-start gap-3">
+                        <FaCheckCircle className="text-green-600 text-lg sm:text-xl flex-shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm sm:text-base">Complete Data</p>
+                          <p className="text-xs sm:text-sm text-gray-600 mt-1">Includes all collections and documents</p>
+                        </div>
+                      </div>
+                    </CardBody>
+                  </Card>
+
+                  <Card className="border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+                    <CardBody className="p-4 sm:p-5">
+                      <div className="flex items-start gap-3">
+                        <FaCheckCircle className="text-green-600 text-lg sm:text-xl flex-shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm sm:text-base">Compressed Format</p>
+                          <p className="text-xs sm:text-sm text-gray-600 mt-1">ZIP file for easy download & storage</p>
+                        </div>
+                      </div>
+                    </CardBody>
+                  </Card>
+
+                  <Card className="border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+                    <CardBody className="p-4 sm:p-5">
+                      <div className="flex items-start gap-3">
+                        <FaCheckCircle className="text-green-600 text-lg sm:text-xl flex-shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm sm:text-base">Admin Only</p>
+                          <p className="text-xs sm:text-sm text-gray-600 mt-1">Restricted to platform administrators</p>
+                        </div>
+                      </div>
+                    </CardBody>
+                  </Card>
+
+                  <Card className="border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+                    <CardBody className="p-4 sm:p-5">
+                      <div className="flex items-start gap-3">
+                        <FaCheckCircle className="text-green-600 text-lg sm:text-xl flex-shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm sm:text-base">Auto-Cleanup</p>
+                          <p className="text-xs sm:text-sm text-gray-600 mt-1">Old backups auto-deleted (7 days)</p>
+                        </div>
+                      </div>
+                    </CardBody>
+                  </Card>
+                </div>
+
+                {/* Last Backup Info */}
+                {lastBackupTime && (
+                  <Card className="bg-green-50 border-2 border-green-100 shadow-none">
+                    <CardBody className="p-3 sm:p-4 md:p-5">
+                      <p className="text-xs sm:text-sm text-green-800">
+                        <strong>Last backup:</strong> {lastBackupTime}
+                      </p>
+                    </CardBody>
+                  </Card>
+                )}
+
+                {/* Warning */}
+                <Card className="bg-yellow-50 border-2 border-yellow-100 shadow-none">
+                  <CardBody className="p-3 sm:p-4 md:p-5">
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <div className="text-yellow-600 text-lg sm:text-xl flex-shrink-0 mt-0.5">⚠️</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs sm:text-sm text-yellow-800">
+                          <strong>Note:</strong> The backup process may take several minutes depending on your database size. The file will be automatically downloaded once ready. Keep backups secure and store them safely.
+                        </p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+
+                {/* Backup Button */}
+                <div className="pt-2 sm:pt-4">
+                  <Button
+                    color="warning"
+                    size="lg"
+                    onPress={handleBackupDatabase}
+                    isLoading={backupLoading}
+                    disabled={backupLoading}
+                    className="font-bold shadow-lg bg-gradient-to-r from-orange-600 to-amber-600 w-full sm:w-auto sm:min-w-[250px] min-h-[44px] text-sm sm:text-base text-white"
+                    startContent={backupLoading ? <Spinner size="sm" color="current" /> : <FaDownload />}
+                  >
+                    {backupLoading ? "Creating Backup..." : "Start Database Backup"}
+                  </Button>
+                </div>
+              </div>
             </div>
           </Tab>
         </Tabs>

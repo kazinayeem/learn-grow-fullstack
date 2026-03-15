@@ -29,8 +29,8 @@ import {
 } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { useGetAllOrdersQuery, useApproveOrderMutation, useRejectOrderMutation } from "@/redux/api/orderApi";
-import { FaArrowLeft, FaEye, FaShoppingCart, FaClock, FaCheckCircle, FaTimesCircle, FaSearch, FaSync } from "react-icons/fa";
+import { useGetAllOrdersQuery, useApproveOrderMutation, useRejectOrderMutation, useDeleteOrderMutation } from "@/redux/api/orderApi";
+import { FaArrowLeft, FaEye, FaShoppingCart, FaClock, FaCheckCircle, FaTimesCircle, FaSearch, FaSync, FaTrash } from "react-icons/fa";
 
 interface DeliveryAddress {
   name: string;
@@ -109,6 +109,7 @@ export default function OrdersAdminPage() {
   });
   const [approveOrderMutation, { isLoading: approving }] = useApproveOrderMutation();
   const [rejectOrderMutation, { isLoading: rejecting }] = useRejectOrderMutation();
+  const [deleteOrderMutation, { isLoading: deleting }] = useDeleteOrderMutation();
 
   React.useEffect(() => {
     if (autoRefreshInterval <= 0) return;
@@ -146,6 +147,30 @@ export default function OrdersAdminPage() {
       onOpenChange();
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to reject order");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedOrder) return;
+
+    if (selectedOrder.paymentStatus === "approved") {
+      toast.error("Approved orders cannot be deleted");
+      return;
+    }
+
+    const ok = window.confirm("Are you sure you want to delete this order? This action cannot be undone.");
+    if (!ok) return;
+
+    setIsProcessing(true);
+    try {
+      await deleteOrderMutation(selectedOrder._id).unwrap();
+      toast.success("🗑️ Order deleted successfully");
+      refetch();
+      onOpenChange();
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to delete order");
     } finally {
       setIsProcessing(false);
     }
@@ -800,6 +825,20 @@ export default function OrdersAdminPage() {
                       Reject Order
                     </Button>
                   </>
+                )}
+                {selectedOrder && selectedOrder.paymentStatus !== "approved" && (
+                  <Button
+                    color="danger"
+                    variant="flat"
+                    onPress={handleDelete}
+                    isLoading={deleting || isProcessing}
+                    isDisabled={approving || rejecting || isProcessing}
+                    startContent={<FaTrash />}
+                    size="lg"
+                    className="min-h-[44px] font-semibold"
+                  >
+                    Delete Order
+                  </Button>
                 )}
                 <Button
                   variant="light"

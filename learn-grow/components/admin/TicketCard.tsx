@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Card, CardBody, Chip, Avatar } from "@nextui-org/react";
+import React, { useState } from "react";
+import { Card, CardBody, Chip, Avatar, Button } from "@nextui-org/react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   FaClock,
@@ -9,7 +9,10 @@ import {
   FaCheckCircle,
   FaTimesCircle,
   FaUser,
+  FaTrash,
 } from "react-icons/fa";
+import { useDeleteTicketMutation } from "@/redux/features/ticketApi";
+import { toast } from "react-hot-toast";
 
 interface Ticket {
   _id: string;
@@ -29,6 +32,7 @@ interface Ticket {
 
 interface TicketCardProps {
   ticket: Ticket;
+  onDelete?: () => void;
 }
 
 const statusConfig = {
@@ -57,9 +61,11 @@ const categoryConfig: Record<string, string> = {
   other: "Other",
 };
 
-export default function TicketCard({ ticket }: TicketCardProps) {
+export default function TicketCard({ ticket, onDelete }: TicketCardProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteTicket] = useDeleteTicketMutation();
 
   const statusInfo =
     statusConfig[ticket.status] || statusConfig.open;
@@ -71,6 +77,27 @@ export default function TicketCard({ ticket }: TicketCardProps) {
     : pathname.includes("/instructor/")
     ? "/instructor/tickets"
     : "/student/tickets";
+
+  const handleDelete = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation(); // Prevent card click navigation
+    
+    const ok = window.confirm(
+      `Are you sure you want to delete this ticket? This action cannot be undone.`
+    );
+    if (!ok) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteTicket(ticket._id).unwrap();
+      toast.success("✓ Ticket deleted successfully");
+      onDelete?.();
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to delete ticket");
+      console.error("Delete error:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const timeAgo = (date: string) => {
     if (!date) return "";
@@ -111,7 +138,7 @@ export default function TicketCard({ ticket }: TicketCardProps) {
       className="hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-primary-200 cursor-pointer"
     >
       <CardBody className="p-4 sm:p-5 lg:p-6">
-        <div className="flex items-start justify-between mb-3 sm:mb-4 gap-3">
+        <div className="flex items-start justify-between mb-3 sm:mb-4 gap-2 sm:gap-3">
           <div className="flex-1 min-w-0">
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3 line-clamp-2">
               {ticket.title}
@@ -140,6 +167,20 @@ export default function TicketCard({ ticket }: TicketCardProps) {
               </Chip>
             </div>
           </div>
+
+          <Button
+            isIconOnly
+            color="danger"
+            variant="light"
+            size="sm"
+            className="flex-shrink-0 hover:bg-danger-50"
+            onPress={handleDelete}
+            isLoading={isDeleting}
+            disabled={isDeleting}
+            title="Delete ticket"
+          >
+            <FaTrash className="text-sm" />
+          </Button>
         </div>
 
         <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200">

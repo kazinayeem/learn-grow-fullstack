@@ -131,6 +131,14 @@ export const orderApi = baseApi.injectEndpoints({
       invalidatesTags: (_result, _error, { id }) => [{ type: "Order", id }, "Order"],
     }),
 
+    deleteOrder: builder.mutation<{ message: string; data: { id: string } }, string>({
+      query: (id) => ({
+        url: `/orders/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, id) => [{ type: "Order", id }, "Order"],
+    }),
+
     checkActiveSubscription: builder.query<
       {
         hasActiveSubscription: boolean;
@@ -237,6 +245,7 @@ export const {
   useGetOrderByIdQuery,
   useApproveOrderMutation,
   useRejectOrderMutation,
+  useDeleteOrderMutation,
   useCheckActiveSubscriptionQuery,
   useGetUserPurchasedCoursesQuery,
   useGetEnrolledStudentsQuery,
