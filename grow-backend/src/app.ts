@@ -67,7 +67,7 @@ export const createApp = () => {
         "http://localhost:3001",
         "http://localhost:3002",
         "https://learnandgrow.io",
-        "http://104.207.70.54:5000"
+        "https://www.learnandgrow.io"
        
       ];
 

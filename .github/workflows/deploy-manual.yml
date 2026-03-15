@@ -1,4 +1,4 @@
-name: Deploy (Manual – No Build)
+name: Deploy (Manual)
 
 on:
   workflow_dispatch:
@@ -43,11 +43,14 @@ jobs:
           echo "==> Restarting backend"
           pm2 delete grow-backend 2>/dev/null || true
           cd grow-backend
-          npm install --production
+          npm install --prefer-offline
+          npm run build
           pm2 start npm --name grow-backend -- start
 
           echo "==> Restarting frontend"
           cd ../learn-grow
+          npm install --prefer-offline
+          npm run build
           pm2 delete frontend 2>/dev/null || true
           pm2 start npm --name frontend -- start
 
