@@ -70,7 +70,7 @@ export const connectDB = async (MONGODB_URI?: string) => {
     // Hide password in logs for security
     const displayUri = mongoUri.replace(/\/\/.*:(.*)@/, "//user:***@");
 
-    await mongoose.connect(mongoUri);
+    await mongoose.connect("mongodb://learnandgrow:learnandgrow@104.207.70.54:27017/learnandgrow?authSource=adminmongodb://learnandgrow:learnandgrow@104.207.70.54:27017/learnandgrow?authSource=admin");
     console.log("✅ MongoDB connected successfully");
     console.log(`📍 Connection: ${displayUri}`);
     console.log("📅 Timezone: Dates stored and retrieved in UTC");
