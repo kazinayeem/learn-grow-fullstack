@@ -163,6 +163,13 @@ export const createApp = () => {
   // Authentication routes
   app.use("/api/auth", googleRoutes);
   app.use("/api/users", userRoutes);
+  // Backward-compatible aliases for older clients.
+  app.use("/api/user", userRoutes);
+  app.use("/api/v1/users", userRoutes);
+  app.use("/api/v1/user", userRoutes);
+  // Compatibility for proxy configs that may strip /api.
+  app.use("/users", userRoutes);
+  app.use("/user", userRoutes);
 
   // Other routes
   app.use("/api/category", categoryRoutes);
