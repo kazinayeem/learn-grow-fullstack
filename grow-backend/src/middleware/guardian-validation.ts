@@ -86,7 +86,6 @@ export const validateGuardianStudentAccess = async (
 
     next();
   } catch (error: any) {
-    console.error("Guardian-student validation error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to validate guardian-student relationship",
@@ -153,7 +152,6 @@ export const validateStudentGuardianAccess = async (
 
     next();
   } catch (error: any) {
-    console.error("Student-guardian validation error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to validate student-guardian relationship",
@@ -218,7 +216,6 @@ export const validateEnrollmentAccess = async (
 
     next();
   } catch (error: any) {
-    console.error("Enrollment access validation error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to validate enrollment access",

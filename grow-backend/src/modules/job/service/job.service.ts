@@ -54,7 +54,6 @@ export const getAllJobPosts = async (query: GetJobPostsQuery = {}) => {
       },
     };
   } catch (error) {
-    console.error("Error in getAllJobPosts:", error);
     throw error;
   }
 };

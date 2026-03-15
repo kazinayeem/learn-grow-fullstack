@@ -22,7 +22,6 @@ export const encryptData = (data: string, encryptionKey: string): string => {
     // Return IV + encrypted data (both needed for decryption)
     return iv.toString('hex') + ':' + encrypted;
   } catch (error) {
-    console.error('Encryption error:', error);
     throw new Error('Failed to encrypt data');
   }
 };
@@ -43,7 +42,6 @@ export const decryptData = (encryptedData: string, encryptionKey: string): strin
 
     return decrypted;
   } catch (error) {
-    console.error('Decryption error:', error);
     throw new Error('Failed to decrypt data');
   }
 };
@@ -54,7 +52,6 @@ export const hashPassword = async (password: string): Promise<string> => {
     const salt = await bcrypt.genSalt(10);
     return await bcrypt.hash(password, salt);
   } catch (error) {
-    console.error('Password hashing error:', error);
     throw new Error('Failed to hash password');
   }
 };
@@ -64,7 +61,6 @@ export const comparePassword = async (password: string, hash: string): Promise<b
   try {
     return await bcrypt.compare(password, hash);
   } catch (error) {
-    console.error('Password comparison error:', error);
     return false;
   }
 };

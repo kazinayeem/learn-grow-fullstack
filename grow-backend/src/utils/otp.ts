@@ -74,10 +74,8 @@ export const sendCourseApprovalEmail = async (
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`Course approval email sent to ${email}`);
     return true;
   } catch (error) {
-    console.error("Error sending course approval email:", error);
     return false;
   }
 };
@@ -128,7 +126,6 @@ export const sendOTPEmail = async (
     await transporter.sendMail(mailOptions);
     return true;
   } catch (error) {
-    console.error("Email sending failed:", error);
     return false;
   }
 };
@@ -142,7 +139,6 @@ export const sendOTPSMS = async (
 ): Promise<boolean> => {
   try {
     if (!ENV.TWILIO_ACCOUNT_SID || !ENV.TWILIO_AUTH_TOKEN) {
-      console.warn("Twilio credentials not configured");
       return false;
     }
 
@@ -154,11 +150,8 @@ export const sendOTPSMS = async (
     //   from: ENV.TWILIO_PHONE_NUMBER,
     //   to: phoneNumber,
     // });
-
-    console.log(`SMS OTP for ${phoneNumber}: ${otp}`);
     return true;
   } catch (error) {
-    console.error("SMS sending failed:", error);
     return false;
   }
 };
@@ -215,10 +208,8 @@ export const sendWelcomeEmail = async (
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`✅ Welcome email sent to ${email}`);
     return true;
   } catch (error) {
-    console.error("❌ Failed to send welcome email:", error);
     return false;
   }
 };
@@ -264,7 +255,6 @@ export const sendGuardianCredentialsEmail = async (
     await transporter.sendMail(mailOptions);
     return true;
   } catch (error) {
-    console.error("Failed to send guardian credentials email:", error);
     return false;
   }
 };
@@ -330,10 +320,8 @@ export const sendInstructorApprovalEmail = async (
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`✅ Instructor approval email sent to ${email}`);
     return true;
   } catch (error) {
-    console.error("❌ Failed to send instructor approval email:", error);
     return false;
   }
 };

@@ -20,9 +20,6 @@ export const validate =
       
       // Debug log for login validation failures
       if (req.path.includes('login')) {
-        console.error(`[Login Validation Error] Path: ${req.path}`);
-        console.error(`[Login Validation Error] Body received:`, req.body);
-        console.error(`[Login Validation Error] Validation errors:`, errorDetails);
       }
       
       return res.status(400).json({

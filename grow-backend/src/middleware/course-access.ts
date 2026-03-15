@@ -96,7 +96,6 @@ export const checkCourseAccess = async (
       needsSubscription: true,
     });
   } catch (error: any) {
-    console.error("Check course access error:", error);
     return res.status(500).json({ message: "Failed to verify course access" });
   }
 };
@@ -138,7 +137,6 @@ export const requireActiveSubscription = async (
     req.subscription = subscription;
     next();
   } catch (error: any) {
-    console.error("Require active subscription error:", error);
     return res.status(500).json({ message: "Failed to verify subscription" });
   }
 };
@@ -173,14 +171,11 @@ export const expireOldSubscriptions = async () => {
         $set: { accessEndDate: now },
       }
     );
-
-    console.log(`[Access Control] Expired ${orderResult.modifiedCount} orders and ${enrollmentResult.modifiedCount} enrollments`);
     return {
       ordersExpired: orderResult.modifiedCount,
       enrollmentsExpired: enrollmentResult.modifiedCount,
     };
   } catch (error) {
-    console.error("[Access Control] Expire subscriptions error:", error);
     return { ordersExpired: 0, enrollmentsExpired: 0 };
   }
 };

@@ -14,7 +14,6 @@ export const generateCertificate = async (req: Request, res: Response) => {
 
     return res.status(200).json(result);
   } catch (error: any) {
-    console.error("Error in generateCertificate controller:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -35,7 +34,6 @@ export const getCertificate = async (req: Request, res: Response) => {
 
     return res.status(200).json(result);
   } catch (error: any) {
-    console.error("Error in getCertificate controller:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -55,7 +53,6 @@ export const verifyCertificate = async (req: Request, res: Response) => {
 
     return res.status(200).json(result);
   } catch (error: any) {
-    console.error("Error in verifyCertificate controller:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -75,7 +72,6 @@ export const getStudentCertificates = async (req: Request, res: Response) => {
 
     return res.status(200).json(result);
   } catch (error: any) {
-    console.error("Error in getStudentCertificates controller:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",

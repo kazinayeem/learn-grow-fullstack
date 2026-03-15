@@ -101,7 +101,6 @@ export const getQuizzes = async (
       data: quizzes,
     };
   } catch (error: any) {
-    console.error("Get quizzes error:", error);
     return {
       success: false,
       message: error.message || "Failed to fetch quizzes",

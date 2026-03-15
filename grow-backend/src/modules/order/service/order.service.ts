@@ -110,7 +110,6 @@ const sendOrderEmail = async (order: any) => {
       });
     }
   } catch (error) {
-    console.error("Order email send failed:", error);
   }
 };
 
@@ -138,18 +137,15 @@ export const createOrderService = async (
   }
 ) => {
   try {
-    console.log("Creating order service for user:", userId);
 
     // Validate user exists
     const user = await User.findById(userId);
     if (!user) {
-      console.error("User not found:", userId);
       return { success: false, message: "User not found" };
     }
 
     // Only students can purchase
     if (user.role !== "student") {
-      console.error("Non-student trying to purchase:", user.role);
       return { success: false, message: "Only students can make purchases" };
     }
 
@@ -169,11 +165,9 @@ export const createOrderService = async (
     // Validate payment method exists and is active
     const paymentMethod = await PaymentMethod.findById(paymentMethodId);
     if (!paymentMethod) {
-      console.error("Payment method not found:", paymentMethodId);
       return { success: false, message: "Payment method not found" };
     }
     if (!paymentMethod.isActive) {
-      console.error("Payment method inactive:", paymentMethodId);
       return {
         success: false,
         message: "This payment method is currently inactive",
@@ -190,10 +184,8 @@ export const createOrderService = async (
       }
       const course = await Course.findById(courseId);
       if (!course) {
-        console.error("Course not found:", courseId);
         return { success: false, message: "Course not found" };
       }
-      console.log("Course validated:", course.title);
     }
 
     if (planType === "combo") {
@@ -245,8 +237,6 @@ export const createOrderService = async (
       return { success: false, message: "Price is required for this plan" };
     }
 
-    console.log("Order price:", price);
-
     // Create order with pending status
     const orderData: any = {
       userId: new mongoose.Types.ObjectId(userId),
@@ -272,12 +262,8 @@ export const createOrderService = async (
       orderData.deliveryAddress = deliveryAddress;
     }
 
-    console.log("Creating order with data:", orderData);
-
     const order = await Order.create(orderData);
     const createdOrder = Array.isArray(order) ? order[0] : order;
-
-    console.log("Order created successfully:", createdOrder._id);
 
     // Populate the order before returning
     const populatedOrder = await Order.findById(createdOrder._id)
@@ -294,7 +280,6 @@ export const createOrderService = async (
       data: populatedOrder,
     };
   } catch (error: any) {
-    console.error("Create order service error:", error);
     return {
       success: false,
       message: error.message || "Failed to create order",
@@ -432,9 +417,6 @@ export const approveOrderService = async (orderId: string) => {
         endDate = new Date(
           existingActiveOrder.endDate.getTime() + 90 * 24 * 60 * 60 * 1000
         );
-        console.log(
-          `Extending quarterly subscription from ${existingActiveOrder.endDate} to ${endDate}`
-        );
       } else {
         // New subscription - 3 months from now
         endDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
@@ -475,9 +457,6 @@ export const approveOrderService = async (orderId: string) => {
           accessEndDate: endDate, // null = lifetime
           purchaseType: "single",
         });
-        console.log(
-          `Enrollment created for user ${order.userId} in course ${order.courseId}`
-        );
       } else {
         // Update existing enrollment with new access dates
         await Enrollment.findByIdAndUpdate(existingEnrollment._id, {
@@ -521,9 +500,6 @@ export const approveOrderService = async (orderId: string) => {
 
         if (enrollmentUpdates.length > 0) {
           await Enrollment.bulkWrite(enrollmentUpdates as any);
-          console.log(
-            `Enrollments created for user ${order.userId} in combo ${order.comboId}`
-          );
         }
       }
     }
@@ -820,7 +796,6 @@ export const getEnrolledStudentsService = async (
       },
     };
   } catch (error: any) {
-    console.error("Get enrolled students error:", error);
     return {
       success: false,
       message: error.message || "Failed to fetch enrolled students",

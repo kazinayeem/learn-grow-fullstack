@@ -33,7 +33,6 @@ export const getAllCourses = async (filters: any = {}) => {
 
     // If student requesting enrolled courses only
     if (filters.enrolledOnly && filters.studentId) {
-      console.log("[getAllCourses] Processing enrolled courses for student:", filters.studentId);
       
       // Get orders for this student with approved payment and active status
       const Order = require("../../order/model/order.model").Order;
@@ -43,23 +42,13 @@ export const getAllCourses = async (filters: any = {}) => {
         isActive: true,
       });
 
-      console.log("[getAllCourses] Found orders:", orders.length, orders.map((o: any) => ({
-        id: o._id,
-        planType: o.planType,
-        courseId: o.courseId,
-      })));
-
       // Extract course IDs from orders
       const enrolledCourseIds = orders
         .filter((order: any) => order.courseId) // Filter orders with courseId (single purchases)
         .map((order: any) => order.courseId);
 
-      console.log("[getAllCourses] Enrolled course IDs:", enrolledCourseIds);
-
       // Check for quarterly (all access) subscription
       const hasQuarterly = orders.some((order: any) => order.planType === "quarterly");
-
-      console.log("[getAllCourses] Has quarterly?", hasQuarterly);
 
       if (hasQuarterly) {
         // If student has quarterly subscription, show all published and approved courses
@@ -72,7 +61,6 @@ export const getAllCourses = async (filters: any = {}) => {
         query.isAdminApproved = true;
       } else {
         // No active orders, return empty result
-        console.log("[getAllCourses] No active orders found, returning empty");
         return {
           courses: [],
           pagination: {
@@ -175,7 +163,6 @@ export const getCourseById = async (
 
   if (options?.userId) {
     // Debug Log
-    console.log(`[getCourseById] Checking enrollment. CourseId: ${id}, UserId: ${options.userId}`);
 
     const enrollment = await Enrollment.findOne({
       courseId: new Types.ObjectId(id),
@@ -183,12 +170,10 @@ export const getCourseById = async (
     }).lean();
 
     if (enrollment) {
-      console.log(`[getCourseById] Enrollment found. ID: ${(enrollment as any)._id}`);
       isEnrolled = true;
       completedLessonIds = enrollment.completedLessons?.map(id => id.toString()) || [];
       completedModuleIds = enrollment.completedModules?.map(id => id.toString()) || [];
     } else {
-      console.log(`[getCourseById] No enrollment found.`);
     }
 
     // Check for quarterly (all-access) subscription
@@ -202,12 +187,10 @@ export const getCourseById = async (
     }).lean();
 
     if (quarterlyOrder) {
-      console.log(`[getCourseById] Quarterly subscription found for user ${options.userId}`);
       isEnrolled = true;
       hasQuarterlyAccess = true;
     }
   } else {
-    console.log(`[getCourseById] No User ID provided in options.`);
   }
 
   const courseInstructorId =
@@ -218,8 +201,6 @@ export const getCourseById = async (
     options?.userRole === "admin" ||
     (options?.userRole === "instructor" &&
       courseInstructorId === options.userId);
-
-  console.log(`[getCourseById] Privileged: ${isPrivileged}, Enrolled: ${isEnrolled}`);
 
   // 2. Fetch Modules & Lessons
   const modules = await Module.find({ courseId: id })
@@ -471,7 +452,6 @@ export const getCourseStats = async (courseId: string) => {
       engagedStudents: engagedCount
     };
   } catch (error: any) {
-    console.error(`[getCourseStats] Error calculating stats for course ${courseId}:`, error.message);
     throw new Error(`Failed to get course stats: ${error.message}`);
   }
 };

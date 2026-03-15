@@ -142,11 +142,8 @@ export const optionalAuth = async (
     // Prefer Authorization header, fall back to cookies
     const token = bearerToken || cookieToken || cookieTokenHttpOnly;
 
-    console.log(`[optionalAuth] Header: ${!!bearerToken}, Cookie: ${!!cookieToken}, CookieHttp: ${!!cookieTokenHttpOnly}`);
-
     if (token) {
       const decoded = verifyAccessToken(token);
-      console.log(`[optionalAuth] Decoded:`, decoded);
 
       if (decoded && decoded.id) {
         const user = await User.findById(decoded.id).lean();

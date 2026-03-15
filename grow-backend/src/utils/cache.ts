@@ -11,8 +11,8 @@ const redis = new Redis({
   }
 });
 
-redis.on('connect', () => console.log('✅ Redis connected'));
-redis.on('error', (err) => console.error('❌ Redis error:', err));
+
+
 
 export class CacheService {
   /**
@@ -23,7 +23,6 @@ export class CacheService {
       const data = await redis.get(key);
       return data ? JSON.parse(data) : null;
     } catch (error) {
-      console.error('Cache get error:', error);
       return null;
     }
   }
@@ -35,7 +34,6 @@ export class CacheService {
     try {
       await redis.setex(key, ttlSeconds, JSON.stringify(value));
     } catch (error) {
-      console.error('Cache set error:', error);
     }
   }
 
@@ -46,7 +44,6 @@ export class CacheService {
     try {
       await redis.del(key);
     } catch (error) {
-      console.error('Cache delete error:', error);
     }
   }
 
@@ -60,7 +57,6 @@ export class CacheService {
         await redis.del(...keys);
       }
     } catch (error) {
-      console.error('Cache delete pattern error:', error);
     }
   }
 }

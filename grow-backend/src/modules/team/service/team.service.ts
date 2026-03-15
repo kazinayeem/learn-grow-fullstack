@@ -156,7 +156,6 @@ class TeamService {
                     
                     // Skip if image is too large (>1MB)
                     if (imageSize > 1048576) {
-                        console.warn(`Image for ${instructor.name} exceeds 1MB, skipping`);
                         continue;
                     }
                 }

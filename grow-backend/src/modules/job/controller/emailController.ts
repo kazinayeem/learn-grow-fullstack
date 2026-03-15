@@ -30,7 +30,6 @@ export async function sendEmail(req: Request, res: Response) {
         data: result,
       });
     } catch (error: any) {
-      console.error("Send email error:", error);
       res.status(500).json({
         success: false,
         message: error.message || "Failed to send email",
@@ -59,7 +58,6 @@ export async function getEmailHistory(req: Request, res: Response) {
       data: emails,
     });
   } catch (error: any) {
-    console.error("Get email history error:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Failed to fetch email history",
@@ -88,7 +86,6 @@ export async function getLatestEmail(req: Request, res: Response) {
       data: email,
     });
   } catch (error: any) {
-    console.error("Get latest email error:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Failed to fetch latest email",
@@ -115,7 +112,6 @@ export async function testConnection(req: Request, res: Response) {
       });
     }
   } catch (error: any) {
-    console.error("Email test error:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Failed to test email service",

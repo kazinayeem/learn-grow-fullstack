@@ -69,8 +69,6 @@ export const createOrder = async (req: Request, res: Response) => {
       });
     }
 
-    console.log("Creating order for user:", userId, "with data:", req.body);
-
     const result = await createOrderService(userId, req.body);
 
     if (!result.success) {
@@ -80,15 +78,12 @@ export const createOrder = async (req: Request, res: Response) => {
       });
     }
 
-    console.log("Order created successfully:", result.data?._id);
-
     return res.status(201).json({
       success: true,
       message: "অর্ডার সফলভাবে তৈরি হয়েছে! প্রশাসকের অনুমোদনের অপেক্ষায়। | Order created successfully! Waiting for admin approval.",
       data: result.data,
     });
   } catch (error: any) {
-    console.error("Create order error:", error);
     res.status(500).json({ 
       success: false, 
       message: "Failed to create order", 
@@ -121,7 +116,6 @@ export const getAllOrders = async (req: Request, res: Response) => {
       pagination: result.pagination,
     });
   } catch (error: any) {
-    console.error("Get all orders error:", error);
     res.status(500).json({ success: false, message: "Failed to fetch orders", error: error.message });
   }
 };
@@ -147,7 +141,6 @@ export const getOrderById = async (req: Request, res: Response) => {
 
     res.json({ order });
   } catch (error: any) {
-    console.error("Get order by ID error:", error);
     res.status(500).json({ message: "Failed to fetch order", error: error.message });
   }
 };
@@ -171,7 +164,6 @@ export const getUserOrders = async (req: Request, res: Response) => {
 
     return res.json({ success: true, orders: result.data, data: result.data, pagination: result.pagination });
   } catch (error: any) {
-    console.error("Get user orders error:", error);
     res.status(500).json({ success: false, message: "Failed to fetch orders", error: error.message });
   }
 };
@@ -193,7 +185,6 @@ export const approveOrder = async (req: Request, res: Response) => {
 
     return res.json({ success: true, message: result.message, order: result.data, data: result.data });
   } catch (error: any) {
-    console.error("Approve order error:", error);
     res.status(500).json({ success: false, message: "Failed to approve order", error: error.message });
   }
 };
@@ -240,7 +231,6 @@ export const rejectOrder = async (req: Request, res: Response) => {
       data: order,
     });
   } catch (error: any) {
-    console.error("Reject order error:", error);
     res.status(500).json({ success: false, message: "Failed to reject order", error: error.message });
   }
 };
@@ -275,7 +265,6 @@ export const deleteOrder = async (req: Request, res: Response) => {
       data: { id },
     });
   } catch (error: any) {
-    console.error("Delete order error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to delete order",
@@ -374,13 +363,11 @@ export const emailOrderAction = async (req: Request, res: Response) => {
         }
       }
     } catch (mailErr) {
-      console.error("Failed to send user notification:", mailErr);
     }
 
     // Simple HTML response for email clients
     return res.send(`<!doctype html><html><head><meta charset="utf-8"><title>Order ${action}</title></head><body style="font-family:Arial;max-width:640px;margin:40px auto;padding:20px;border:1px solid #eee;border-radius:8px"><h2>Order ${action === "approve" ? "Approved" : "Rejected"}</h2><p>Order ID: ${String(orderId)}</p><p>Status updated successfully.</p><p>You may close this window.</p></body></html>`);
   } catch (error: any) {
-    console.error("Email order action error:", error);
     return res.status(500).send("Server error");
   }
 };
@@ -441,7 +428,6 @@ export const checkActiveSubscription = async (req: Request, res: Response) => {
       expired: false,
     });
   } catch (error: any) {
-    console.error("Check subscription error:", error);
     res.status(500).json({ message: "Failed to check subscription", error: error.message });
   }
 };
@@ -596,7 +582,6 @@ export const getUserPurchasedCourses = async (req: Request, res: Response) => {
       hasQuarterlyAccess: !!quarterlyOrder,
     });
   } catch (error: any) {
-    console.error("Get purchased courses error:", error);
     res.status(500).json({ message: "Failed to fetch purchased courses", error: error.message });
   }
 };
@@ -625,7 +610,6 @@ export const getEnrolledStudents = async (req: Request, res: Response) => {
 
     return res.json(result);
   } catch (error: any) {
-    console.error("Get enrolled students error:", error);
     res.status(500).json({ 
       success: false, 
       message: "Failed to fetch enrolled students", 
@@ -775,7 +759,6 @@ export const sendOrderEmail = async (req: Request, res: Response) => {
       message: "Email sent successfully"
     });
   } catch (error: any) {
-    console.error("Send order email error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to send email",
@@ -791,11 +774,6 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
     const userRole = req.userRole;
     const { studentId: queryStudentId } = req.query;
 
-    console.log(`[GuardianAPI] ========== REQUEST START ==========`);
-    console.log(`[GuardianAPI] userId from token: ${userId}, userRole: ${userRole}`);
-    console.log(`[GuardianAPI] queryStudentId from params: ${queryStudentId}`);
-    console.log(`[GuardianAPI] Full query params:`, req.query);
-
     if (!userId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
@@ -806,18 +784,12 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
 
     let studentIdToFetch = userId;
 
-    console.log(`[GuardianAPI] userId: ${userId}, userRole: ${userRole}, queryStudentId: ${queryStudentId}`);
-
     // If guardian, get their linked child (student) from GuardianProfile
     if (userRole === "guardian") {
       const { GuardianProfile } = await import("../../user/model/guardianProfile.model");
       
       // Query GuardianProfile to get the authoritative student link
       const guardianProfiles = await GuardianProfile.find({ userId }).select("studentId");
-      
-      console.log(`[GuardianAPI] guardianId: ${userId}`);
-      console.log(`[GuardianAPI] Found ${guardianProfiles.length} guardian profile(s)`);
-      console.log(`[GuardianAPI] Guardian profile studentIds:`, guardianProfiles.map((gp: any) => gp.studentId?.toString()));
 
       if (!guardianProfiles || guardianProfiles.length === 0) {
         return res.json({ 
@@ -836,12 +808,8 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
           gp.studentId?.toString()
         );
         
-        console.log(`[GuardianAPI] Verifying if ${queryStudentId} is linked to guardian ${userId}`);
-        console.log(`[GuardianAPI] Guardian's linked students:`, linkedStudentIds);
-        
         if (linkedStudentIds.includes(queryStudentId)) {
           studentIdToFetch = queryStudentId;
-          console.log(`[GuardianAPI] Guardian ${userId} verified access to student: ${studentIdToFetch}`);
         } else {
           return res.status(403).json({ 
             success: false, 
@@ -852,14 +820,12 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
         // Otherwise, get their first linked student from GuardianProfile
         const firstProfile = guardianProfiles[0];
         studentIdToFetch = firstProfile.studentId?.toString() || (firstProfile.studentId ? firstProfile.studentId.toString() : '');
-        console.log(`[GuardianAPI] Guardian ${userId} accessing default linked student: ${studentIdToFetch}`);
       }
     }
     // If student, verify they're trying to access their own data
     else if (userRole === "student") {
       // Student can only view their own data
       studentIdToFetch = userId;
-      console.log(`[GuardianAPI] Student accessing own data: ${studentIdToFetch}`);
     } else {
       // Other roles not allowed
       return res.status(403).json({ success: false, message: "Forbidden" });
@@ -871,9 +837,6 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
       .populate("paymentMethodId", "name accountNumber")
       .sort({ createdAt: -1 })
       .lean();
-    
-    console.log(`[GuardianAPI] Found ${orders.length} orders for student ${studentIdToFetch}`);
-    console.log(`[GuardianAPI] Order course IDs:`, orders.map((o: any) => o.courseId?._id || o.courseId));
 
     // Get student's enrollments
     const enrollments = await Enrollment.find({ studentId: studentIdToFetch })
@@ -881,18 +844,7 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
       .sort({ createdAt: -1 })
       .lean();
     
-    console.log(`[GuardianAPI] Query filter: studentId = ${studentIdToFetch}`);
-    console.log(`[GuardianAPI] Found ${enrollments.length} enrollments for student ${studentIdToFetch}`);
-    
     if (enrollments.length > 0) {
-      console.log(`[GuardianAPI] Enrollment details:`, enrollments.map((e: any) => ({
-        _id: e._id,
-        studentId: e.studentId,
-        courseTitle: e.courseId?.title,
-        courseId: e.courseId?._id,
-        progress: e.progress,
-        createdAt: e.createdAt
-      })));
     }
 
     // Check for quarterly (all-access) subscription
@@ -911,7 +863,6 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
     // If student has quarterly subscription, fetch all published courses
     if (quarterlyOrder) {
       hasQuarterlyAccess = true;
-      console.log(`[GuardianAPI] Student has quarterly subscription, fetching all courses`);
       
       const allPublishedCourses = await Course.find({
         isPublished: true,
@@ -945,7 +896,6 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
       }));
 
       allCourseEnrollments = [...enrollments, ...quarterlyEnrollments];
-      console.log(`[GuardianAPI] Total courses with quarterly access: ${allCourseEnrollments.length}`);
     }
 
     // Fetch module data for each course to calculate progress
@@ -989,7 +939,6 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
             accessType: enrollment.accessType || "enrollment",
           };
         } catch (enrollmentError) {
-          console.error("Error processing enrollment:", enrollmentError);
           return null;
         }
       })
@@ -1016,7 +965,6 @@ export const getStudentOrdersForGuardian = async (req: Request, res: Response) =
       }
     });
   } catch (error: any) {
-    console.error("Get student orders error:", error);
     res.status(500).json({ 
       success: false, 
       message: "Failed to fetch student data", 
@@ -1055,7 +1003,6 @@ export const setAccessDuration = async (req: Request, res: Response) => {
 
     return res.json(result);
   } catch (error: any) {
-    console.error("Set access duration error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to set access duration",
@@ -1093,7 +1040,6 @@ export const extendAccess = async (req: Request, res: Response) => {
 
     return res.json(result);
   } catch (error: any) {
-    console.error("Extend access error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to extend access",
@@ -1131,7 +1077,6 @@ export const reduceAccess = async (req: Request, res: Response) => {
 
     return res.json(result);
   } catch (error: any) {
-    console.error("Reduce access error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to reduce access",
@@ -1158,7 +1103,6 @@ export const getUserCourseAccess = async (req: Request, res: Response) => {
 
     return res.json(result);
   } catch (error: any) {
-    console.error("Get user course access error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to fetch user course access",

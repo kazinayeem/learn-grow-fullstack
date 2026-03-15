@@ -194,7 +194,6 @@ export const getAnalytics = async (req: Request, res: Response) => {
       data: analytics
     });
   } catch (error: any) {
-    console.error('Error getting analytics:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve analytics',

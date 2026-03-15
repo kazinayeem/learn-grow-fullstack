@@ -29,7 +29,6 @@ export const createLiveClass = async (req: Request, res: Response) => {
       data: liveClass,
     });
   } catch (error) {
-    console.error("Create live class error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to create live class",
@@ -52,7 +51,6 @@ export const getLiveClassById = async (req: Request, res: Response) => {
       data: liveClass,
     });
   } catch (error) {
-    console.error("Get live class error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get live class",
@@ -89,7 +87,6 @@ export const getLiveClassesByInstructor = async (req: Request, res: Response) =>
       ...result,
     });
   } catch (error) {
-    console.error("Get instructor classes error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get live classes",
@@ -108,7 +105,6 @@ export const getLiveClassesByCourse = async (req: Request, res: Response) => {
       data: classes,
     });
   } catch (error) {
-    console.error("Get course classes error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get live classes",
@@ -124,21 +120,14 @@ export const updateLiveClass = async (req: Request, res: Response) => {
     const userRole = (req as any).user?.role;
 
     if (!instructorId) {
-      console.error("❌ No instructorId found in request");
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
     // Check if instructor owns this class
     const liveClass = await LiveClassService.getLiveClassById(id);
     if (!liveClass) {
-      console.error("❌ Live class not found:", id);
       return res.status(404).json({ success: false, message: "Live class not found" });
     }
-
-    console.log("🔍 Authorization check:");
-    console.log(`   Class instructorId: ${liveClass.instructorId.toString()}`);
-    console.log(`   User instructorId: ${instructorId.toString()}`);
-    console.log(`   User role: ${userRole}`);
 
     // Allow instructors to update their own classes, or admins/managers to update any class
     // Handle both populated (object) and non-populated (ObjectId) instructorId
@@ -149,7 +138,6 @@ export const updateLiveClass = async (req: Request, res: Response) => {
     const isAdmin = userRole === "admin" || userRole === "manager";
 
     if (!isOwner && !isAdmin) {
-      console.error("❌ Authorization failed - User doesn't own this class and is not an admin");
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
 
@@ -161,7 +149,6 @@ export const updateLiveClass = async (req: Request, res: Response) => {
       data: updated,
     });
   } catch (error) {
-    console.error("Update live class error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to update live class",
@@ -205,7 +192,6 @@ export const deleteLiveClass = async (req: Request, res: Response) => {
       message: "Live class deleted successfully",
     });
   } catch (error) {
-    console.error("Delete live class error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to delete live class",
@@ -224,7 +210,6 @@ export const getUpcomingClasses = async (req: Request, res: Response) => {
       data: classes,
     });
   } catch (error) {
-    console.error("Get upcoming classes error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get upcoming classes",
@@ -239,8 +224,6 @@ export const getAllLiveClasses = async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 10;
     const userId = (req as any).userId;
     const userRole = (req as any).userRole;
-
-    console.log(`[getAllLiveClasses] userId: ${userId}, userRole: ${userRole}`);
 
     // For students, filter by enrolled courses only
     const enrolledOnly = userRole === "student";
@@ -260,7 +243,6 @@ export const getAllLiveClasses = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error("Get all live classes error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get live classes",
@@ -286,7 +268,6 @@ export const approveLiveClass = async (req: Request, res: Response) => {
       data: updated,
     });
   } catch (error) {
-    console.error("Approve live class error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to approve live class",
@@ -311,7 +292,6 @@ export const rejectLiveClass = async (req: Request, res: Response) => {
       message: "Live class rejected and deleted successfully",
     });
   } catch (error) {
-    console.error("Reject live class error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to reject live class",
@@ -347,7 +327,6 @@ export const getPendingLiveClasses = async (req: Request, res: Response) => {
       ...result,
     });
   } catch (error) {
-    console.error("Get pending live classes error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to get pending live classes",
@@ -393,7 +372,6 @@ export const updateRecordedLink = async (req: Request, res: Response) => {
       data: updated,
     });
   } catch (error) {
-    console.error("Update recorded link error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to update recorded link",

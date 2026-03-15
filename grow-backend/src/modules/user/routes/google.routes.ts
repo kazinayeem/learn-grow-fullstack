@@ -29,7 +29,6 @@ router.get(
 
       // Safety check
       if (!user || !user._id) {
-        console.error("Google callback: user object is invalid", user);
         res.redirect(`${ENV.FRONTEND_URL}/login?error=authentication_failed`);
         return;
       }
@@ -68,7 +67,6 @@ router.get(
       const redirectUrl = `${ENV.FRONTEND_URL}/auth-callback?accessToken=${accessToken}&refreshToken=${refreshToken}&role=${user.role}&redirect=${redirectPath}`;
       res.redirect(redirectUrl);
     } catch (error) {
-      console.error("Google callback error:", error);
       res.redirect(`${ENV.FRONTEND_URL}/login?error=authentication_failed`);
     }
   }

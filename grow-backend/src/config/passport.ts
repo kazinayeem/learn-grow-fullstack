@@ -103,20 +103,15 @@ if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
             await guardian.save();
 
             if (email) {
-              sendGuardianCredentialsEmail(email, name || "Student", guardianEmail, guardianPasswordPlain).catch((err) =>
-                console.error("Failed to send guardian credentials (Google signup):", err)
-              );
+              sendGuardianCredentialsEmail(email, name || "Student", guardianEmail, guardianPasswordPlain);
             }
           } catch (err) {
-            console.error("Guardian auto-create (Google signup) failed:", err);
           }
         })();
 
         // Send welcome email (non-blocking)
         if (email) {
-          sendWelcomeEmail(email, name || "Student", "student").catch((err) =>
-            console.error("Welcome email (Google signup) failed:", err)
-          );
+          sendWelcomeEmail(email, name || "Student", "student");
         }
 
         const expressUser = { 
@@ -134,7 +129,6 @@ if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
   )
   );
 } else {
-  console.warn('⚠️  Google OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env file.');
 }
 
 passport.serializeUser((user: any, done) => {

@@ -117,7 +117,6 @@ export const sendOtp = async (
       message: "Email or phone is required",
     };
   } catch (error: any) {
-    console.error("Send OTP error:", error);
     return {
       success: false,
       message: error.message || "Failed to send OTP",
@@ -176,7 +175,6 @@ export const verifyOtp = async (
 
     return { success: true, message: "OTP verified successfully" };
   } catch (error: any) {
-    console.error("Verify OTP error:", error);
     return {
       success: false,
       message: error.message || "Failed to verify OTP",
@@ -264,9 +262,7 @@ export const register = async (input: RegisterInput): Promise<AuthResponse> => {
 
     // Send welcome email (don't fail registration if email fails)
     if (email) {
-      sendWelcomeEmail(email, name, role).catch(err => 
-        console.error('Failed to send welcome email:', err)
-      );
+      sendWelcomeEmail(email, name, role);
     }
 
     // Auto-create guardian account for students (1:1 relationship)
@@ -309,12 +305,9 @@ export const register = async (input: RegisterInput): Promise<AuthResponse> => {
 
         // Send guardian credentials email
         if (email) {
-          sendGuardianCredentialsEmail(email, name, guardianEmail, guardianPasswordPlain).catch(err =>
-            console.error("Failed to send guardian credentials email:", err)
-          );
+          sendGuardianCredentialsEmail(email, name, guardianEmail, guardianPasswordPlain);
         }
       } catch (err) {
-        console.error("Guardian auto-create failed:", err);
       }
     }
 
@@ -335,7 +328,6 @@ export const register = async (input: RegisterInput): Promise<AuthResponse> => {
       },
     };
   } catch (error: any) {
-    console.error("Register error:", error);
     return {
       success: false,
       message: error.message || "Registration failed",
@@ -424,7 +416,6 @@ export const login = async (input: LoginInput): Promise<AuthResponse> => {
       },
     };
   } catch (error: any) {
-    console.error("Login error:", error);
     return {
       success: false,
       message: error.message || "Login failed",
@@ -494,7 +485,6 @@ export const refreshAccessToken = async (
       },
     };
   } catch (error: any) {
-    console.error("Refresh token error:", error);
     return {
       success: false,
       message: error.message || "Failed to refresh token",
@@ -514,7 +504,6 @@ export const logout = async (userId: string): Promise<{ success: boolean; messag
       message: "Logged out successfully",
     };
   } catch (error: any) {
-    console.error("Logout error:", error);
     return {
       success: false,
       message: error.message || "Logout failed",
@@ -556,7 +545,6 @@ export const changePassword = async (
 
     return { success: true, message: "Password changed successfully" };
   } catch (error: any) {
-    console.error("Change password error:", error);
     return {
       success: false,
       message: error.message || "Failed to change password",
@@ -617,7 +605,6 @@ export const sendPasswordChangeOtp = async (
 
     return { success: false, message: "No email or phone found for user" };
   } catch (error: any) {
-    console.error("Send password change OTP error:", error);
     return {
       success: false,
       message: error.message || "Failed to send OTP",
@@ -661,7 +648,6 @@ export const verifyPasswordChangeOtp = async (
 
     return { success: true, message: "Password changed successfully" };
   } catch (error: any) {
-    console.error("Verify password change OTP error:", error);
     return {
       success: false,
       message: error.message || "Failed to change password",
@@ -692,7 +678,6 @@ export const updatePhoneNumber = async (
 
     return { success: true, message: "Phone number updated successfully" };
   } catch (error: any) {
-    console.error("Update phone number error:", error);
     return {
       success: false,
       message: error.message || "Failed to update phone number",
@@ -761,7 +746,6 @@ export const getAllInstructors = async (params?: {
       },
     };
   } catch (error: any) {
-    console.error("Get instructors error:", error);
     return {
       success: false,
       message: error.message || "Failed to get instructors",
@@ -788,7 +772,6 @@ export const getApprovedInstructorsPublic = async (): Promise<{
       data: instructors,
     };
   } catch (error: any) {
-    console.error("Get approved instructors error:", error);
     return {
       success: false,
       message: error.message || "Failed to get approved instructors",
@@ -821,9 +804,7 @@ export const approveInstructor = async (
 
     // Send approval email
     if (instructor.email) {
-      sendInstructorApprovalEmail(instructor.email, instructor.name, true).catch(err =>
-        console.error('Failed to send approval email:', err)
-      );
+      sendInstructorApprovalEmail(instructor.email, instructor.name, true);
     }
 
     return {
@@ -837,7 +818,6 @@ export const approveInstructor = async (
       },
     };
   } catch (error: any) {
-    console.error("Approve instructor error:", error);
     return {
       success: false,
       message: error.message || "Failed to approve instructor",
@@ -870,9 +850,7 @@ export const rejectInstructor = async (
 
     // Send rejection/revocation email
     if (instructor.email) {
-      sendInstructorApprovalEmail(instructor.email, instructor.name, false).catch(err =>
-        console.error('Failed to send rejection email:', err)
-      );
+      sendInstructorApprovalEmail(instructor.email, instructor.name, false);
     }
 
     return {
@@ -886,7 +864,6 @@ export const rejectInstructor = async (
       },
     };
   } catch (error: any) {
-    console.error("Reject instructor error:", error);
     return {
       success: false,
       message: error.message || "Failed to reject instructor",
@@ -951,7 +928,6 @@ export const getUserProfile = async (userId: string): Promise<AuthResponse> => {
       },
     };
   } catch (error: any) {
-    console.error("Get profile error:", error);
     return {
       success: false,
       message: error.message || "Failed to get profile",
@@ -1010,14 +986,14 @@ export const connectChildAsGuardian = async (
       { userId: student._id },
       { $setOnInsert: { userId: student._id }, $set: { guardianId: guardian._id } },
       { upsert: true }
-    ).catch(err => console.error("Failed to upsert student profile guardian (manual link):", err));
+    )
 
     // Upsert guardian profile with studentId pointer (non-blocking)
     GuardianProfile.findOneAndUpdate(
       { userId: guardian._id },
       { $setOnInsert: { userId: guardian._id }, $set: { studentId: student._id } },
       { upsert: true }
-    ).catch(err => console.error("Failed to upsert guardian profile (manual link):", err));
+    )
 
     return {
       success: true,
@@ -1038,7 +1014,6 @@ export const connectChildAsGuardian = async (
       },
     };
   } catch (error: any) {
-    console.error("Connect child error:", error);
     return { success: false, message: error.message || "Failed to connect child", error: error.message };
   }
 };
@@ -1094,7 +1069,6 @@ export const listUsersAdmin = async (params: { page?: number; limit?: number; se
       counts,
     };
   } catch (error: any) {
-    console.error("List users error:", error);
     return { success: false, message: error.message || "Failed to list users" };
   }
 };
@@ -1115,7 +1089,6 @@ export const createUserAdmin = async (input: { name: string; email?: string; pho
     const safe = await User.findById(user._id).select("-password -otp -otpExpiresAt -refreshToken -verificationToken");
     return { success: true, message: "User created", data: safe };
   } catch (error: any) {
-    console.error("Create user error:", error);
     return { success: false, message: error.message || "Failed to create user" };
   }
 };
@@ -1319,7 +1292,6 @@ export const getInstructorDashboardStats = async (instructorId: string) => {
       },
     };
   } catch (error: any) {
-    console.error("Error fetching instructor stats:", error);
     return {
       success: false,
       message: error.message || "Failed to fetch instructor stats",
@@ -1379,7 +1351,6 @@ export const selectRoleForGoogleUser = async (
       },
     };
   } catch (error: any) {
-    console.error("Error selecting role:", error);
     return {
       success: false,
       message: error.message || "Failed to select role",
@@ -1413,14 +1384,11 @@ export const forgotPassword = async (email: string): Promise<{ success: boolean;
     // Send OTP via email
     await sendOTPEmail(email, otp, "password reset");
 
-    console.log(`Password reset OTP sent to ${email}: ${otp}`);
-
     return {
       success: true,
       message: "OTP sent to your email",
     };
   } catch (error: any) {
-    console.error("Error in forgotPassword:", error);
     return {
       success: false,
       message: error.message || "Failed to send OTP",
@@ -1463,7 +1431,6 @@ export const verifyForgotPasswordOtp = async (
       message: "OTP verified",
     };
   } catch (error: any) {
-    console.error("Error in verifyForgotPasswordOtp:", error);
     return {
       success: false,
       message: error.message || "Failed to verify OTP",
@@ -1520,7 +1487,6 @@ export const resetPassword = async (
       message: "Password reset successfully",
     };
   } catch (error: any) {
-    console.error("Error in resetPassword:", error);
     return {
       success: false,
       message: error.message || "Failed to reset password",
@@ -1582,7 +1548,6 @@ export const updateProfile = async (
       data: user,
     };
   } catch (error: any) {
-    console.error("Error in updateProfile:", error);
     return {
       success: false,
       message: error.message || "Failed to update profile",
@@ -1614,7 +1579,6 @@ export const updateProfilePhoto = async (
       data: user,
     };
   } catch (error: any) {
-    console.error("Error in updateProfilePhoto:", error);
     return {
       success: false,
       message: error.message || "Failed to update profile photo",
@@ -1662,14 +1626,14 @@ export const studentAcceptGuardian = async (studentId: string, guardianId: strin
       { userId: student._id },
       { $setOnInsert: { userId: student._id }, $set: { guardianId: guardian._id } },
       { upsert: true }
-    ).catch(err => console.error("Failed to upsert student profile (accept guardian):", err));
+    )
 
     // Upsert guardian profile with studentId pointer (non-blocking)
     GuardianProfile.findOneAndUpdate(
       { userId: guardian._id },
       { $setOnInsert: { userId: guardian._id }, $set: { studentId: student._id } },
       { upsert: true }
-    ).catch(err => console.error("Failed to upsert guardian profile (accept guardian):", err));
+    )
 
     return {
       success: true,
@@ -1776,7 +1740,6 @@ export const getAdminDashboardStats = async () => {
       },
     };
   } catch (error: any) {
-    console.error("Dashboard stats error:", error);
     return { success: false, message: error.message || "Failed to get stats" };
   }
 };

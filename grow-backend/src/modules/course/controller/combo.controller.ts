@@ -36,7 +36,6 @@ export const createCombo = async (req: Request, res: Response) => {
 
     return res.status(201).json(result);
   } catch (error: any) {
-    console.error("Create combo error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to create combo",
@@ -60,7 +59,6 @@ export const getActiveCombos = async (req: Request, res: Response) => {
 
     return res.json(result);
   } catch (error: any) {
-    console.error("Get combos error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to fetch combos",
@@ -84,7 +82,6 @@ export const getAllCombos = async (req: Request, res: Response) => {
 
     return res.json(result);
   } catch (error: any) {
-    console.error("Get all combos error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to fetch combos",
@@ -108,7 +105,6 @@ export const getComboById = async (req: Request, res: Response) => {
 
     return res.json(result);
   } catch (error: any) {
-    console.error("Get combo error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to fetch combo",
@@ -133,7 +129,6 @@ export const updateCombo = async (req: Request, res: Response) => {
 
     return res.json(result);
   } catch (error: any) {
-    console.error("Update combo error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to update combo",
@@ -157,7 +152,6 @@ export const disableCombo = async (req: Request, res: Response) => {
 
     return res.json(result);
   } catch (error: any) {
-    console.error("Disable combo error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to disable combo",
@@ -181,7 +175,6 @@ export const toggleComboStatus = async (req: Request, res: Response) => {
 
     return res.json(result);
   } catch (error: any) {
-    console.error("Toggle combo status error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to toggle combo status",
@@ -205,7 +198,6 @@ export const deleteCombo = async (req: Request, res: Response) => {
 
     return res.json(result);
   } catch (error: any) {
-    console.error("Delete combo error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to delete combo",
@@ -237,7 +229,6 @@ export const enrollInCombo = async (req: Request, res: Response) => {
 
     return res.json(result);
   } catch (error: any) {
-    console.error("Enroll in combo error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to enroll in combo",
@@ -272,7 +263,6 @@ export const extendComboAccess = async (req: Request, res: Response) => {
 
     return res.json(result);
   } catch (error: any) {
-    console.error("Extend combo access error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to extend combo access",
@@ -299,7 +289,6 @@ export const getUserComboPurchases = async (req: Request, res: Response) => {
 
     return res.json(result);
   } catch (error: any) {
-    console.error("Get user combo purchases error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to fetch combo purchases",

@@ -141,7 +141,6 @@ export const emailService = {
       await transporter.verify();
       return true;
     } catch (error) {
-      console.error("Email connection test failed:", error);
       return false;
     }
   },

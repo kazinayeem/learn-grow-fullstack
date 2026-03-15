@@ -189,7 +189,6 @@ export const getSMTPTransporter = async () => {
       },
     });
   } catch (error: any) {
-    console.error("SMTP Configuration Error:", error.message);
     throw error;
   }
 };

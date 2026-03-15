@@ -20,11 +20,8 @@ export const cacheMiddleware = (ttl: number = 300) => {
       const cachedResponse = await CacheService.get(cacheKey);
       
       if (cachedResponse) {
-        console.log(`✅ Cache HIT: ${cacheKey}`);
         return res.json(cachedResponse);
       }
-
-      console.log(`❌ Cache MISS: ${cacheKey}`);
 
       // Store original json method
       const originalJson = res.json.bind(res);
@@ -32,14 +29,13 @@ export const cacheMiddleware = (ttl: number = 300) => {
       // Override json method to cache response
       res.json = function(data: any) {
         // Cache the response
-        CacheService.set(cacheKey, data, ttl).catch(console.error);
+        CacheService.set(cacheKey, data, ttl);
         // Send response
         return originalJson(data);
       };
 
       next();
     } catch (error) {
-      console.error('Cache middleware error:', error);
       next();
     }
   };

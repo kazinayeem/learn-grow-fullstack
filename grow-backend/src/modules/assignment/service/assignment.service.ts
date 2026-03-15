@@ -96,7 +96,6 @@ export const getAssignments = async (
       data: assignmentsWithCounts,
     };
   } catch (error: any) {
-    console.error("Get assignments error:", error);
     return {
       success: false,
       message: error.message || "Failed to fetch assignments",

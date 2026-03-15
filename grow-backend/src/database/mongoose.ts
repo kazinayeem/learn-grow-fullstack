@@ -32,12 +32,7 @@ export const connectDB = async () => {
     await mongoose.connect(MONGODB_URI);
 
     const maskedUri = MONGODB_URI.replace(/\/\/.*:(.*)@/, "//user:***@");
-    
-    console.log("✅ MongoDB Connected Successfully");
-    console.log(`📍 URI: ${maskedUri}`);
-    console.log("📅 Time: UTC ISO strings enabled");
   } catch (error: any) {
-    console.error("❌ MongoDB connection error:", error.message);
     process.exit(1);
   }
 };

@@ -130,7 +130,6 @@ router.patch("/:id/extend", requireAuth, requireRoles("admin", "manager"), async
       data: order,
     });
   } catch (error: any) {
-    console.error("Extend subscription error:", error);
     res.status(500).json({ success: false, message: "Failed to extend subscription", error: error.message });
   }
 });
@@ -176,7 +175,6 @@ router.patch("/:id/extend-days", requireAuth, requireRoles("admin", "manager"), 
       data: order,
     });
   } catch (error: any) {
-    console.error("Extend days error:", error);
     res.status(500).json({ success: false, message: "Failed to extend access", error: error.message });
   }
 });

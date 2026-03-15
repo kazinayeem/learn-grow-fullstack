@@ -44,7 +44,6 @@ export const createTicket = async (req: Request, res: Response) => {
       data: populatedTicket,
     });
   } catch (error: any) {
-    console.error("Create ticket error:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Failed to create ticket",
@@ -101,7 +100,6 @@ export const getAllTickets = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error("Get tickets error:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Failed to fetch tickets",
@@ -153,7 +151,6 @@ export const getTicketById = async (req: Request, res: Response) => {
       data: ticket,
     });
   } catch (error: any) {
-    console.error("Get ticket error:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Failed to fetch ticket",
@@ -211,7 +208,6 @@ export const addReply = async (req: Request, res: Response) => {
       data: updatedTicket,
     });
   } catch (error: any) {
-    console.error("Add reply error:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Failed to add reply",
@@ -265,7 +261,6 @@ export const updateTicketStatus = async (req: Request, res: Response) => {
       data: ticket,
     });
   } catch (error: any) {
-    console.error("Update ticket status error:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Failed to update ticket status",
@@ -310,7 +305,6 @@ export const assignTicket = async (req: Request, res: Response) => {
       data: ticket,
     });
   } catch (error: any) {
-    console.error("Assign ticket error:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Failed to assign ticket",
@@ -345,7 +339,6 @@ export const deleteTicket = async (req: Request, res: Response) => {
       message: "Ticket deleted successfully",
     });
   } catch (error: any) {
-    console.error("Delete ticket error:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Failed to delete ticket",
@@ -392,7 +385,6 @@ export const getTicketStats = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error("Get ticket stats error:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Failed to fetch ticket statistics",

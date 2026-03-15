@@ -55,7 +55,6 @@ export async function getGuardianLinkedStudents(guardianId: string) {
       students,
     };
   } catch (error: any) {
-    console.error("Error getting guardian linked students:", error);
     return {
       success: false,
       message: error.message || "Failed to get linked students",
@@ -99,7 +98,6 @@ export async function validateGuardianCanAccessStudent(
 
     return { authorized: true };
   } catch (error: any) {
-    console.error("Error validating guardian-student access:", error);
     return {
       authorized: false,
       reason: error.message || "Validation failed",
@@ -140,7 +138,6 @@ export async function getGuardianPrimaryStudent(guardianId: string) {
       studentId: guardianProfile.studentId.toString(),
     };
   } catch (error: any) {
-    console.error("Error getting guardian primary student:", error);
     return {
       success: false,
       message: error.message || "Failed to get primary student",
@@ -186,7 +183,6 @@ export async function getStudentLinkedGuardians(studentId: string) {
       guardians: [studentProfile.guardianId],
     };
   } catch (error: any) {
-    console.error("Error getting student linked guardians:", error);
     return {
       success: false,
       message: error.message || "Failed to get linked guardians",
@@ -237,7 +233,6 @@ export async function validateStudentDataAccess(
       reason: `Role '${requesterRole}' is not authorized to access student data`,
     };
   } catch (error: any) {
-    console.error("Error validating student data access:", error);
     return {
       authorized: false,
       reason: error.message || "Access validation failed",
@@ -312,7 +307,6 @@ export async function syncGuardianStudentRelationship(
       },
     };
   } catch (error: any) {
-    console.error("Error syncing guardian-student relationship:", error);
     return {
       success: false,
       message: error.message || "Failed to sync relationship",

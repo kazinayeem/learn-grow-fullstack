@@ -112,7 +112,6 @@ export class LiveClassService {
     }
 
     // For students: get enrolled courses from orders
-    console.log(`[getAllLiveClasses] Filtering for student: ${options.studentId}`);
 
     const orders = await Order.find({
       userId: new Types.ObjectId(options.studentId),
@@ -122,8 +121,6 @@ export class LiveClassService {
       path: "comboId",
       select: "courses",
     });
-
-    console.log(`[getAllLiveClasses] Found ${orders.length} approved orders`);
 
     // Get enrolled courseIds from single purchases
     const enrolledCourseIds = orders
@@ -142,8 +139,6 @@ export class LiveClassService {
 
     // Check if student has quarterly subscription (access to all courses)
     const hasQuarterly = orders.some((order) => order.planType === "quarterly");
-
-    console.log(`[getAllLiveClasses] enrolledCourseIds: ${enrolledCourseIds.length}, hasQuarterly: ${hasQuarterly}`);
 
     let query: any = { isApproved: true };
 
@@ -167,8 +162,6 @@ export class LiveClassService {
       .limit(limit);
 
     const total = await LiveClass.countDocuments(query);
-
-    console.log(`[getAllLiveClasses] Returning ${classes.length} classes out of ${total} total`);
 
     return { classes, total };
   }

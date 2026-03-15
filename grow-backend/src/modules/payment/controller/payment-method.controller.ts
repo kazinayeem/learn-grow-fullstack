@@ -49,7 +49,6 @@ export const getAllPaymentMethods = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error("Get all payment methods error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to retrieve payment methods",
@@ -79,7 +78,6 @@ export const getPaymentMethodById = async (req: Request, res: Response) => {
       data: paymentMethod,
     });
   } catch (error) {
-    console.error("Get payment method error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to retrieve payment method",
@@ -129,7 +127,6 @@ export const createPaymentMethod = async (req: Request, res: Response) => {
       data: paymentMethod,
     });
   } catch (error) {
-    console.error("Create payment method error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to create payment method",
@@ -183,7 +180,6 @@ export const updatePaymentMethod = async (req: Request, res: Response) => {
       data: paymentMethod,
     });
   } catch (error) {
-    console.error("Update payment method error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to update payment method",
@@ -212,7 +208,6 @@ export const deletePaymentMethod = async (req: Request, res: Response) => {
       message: "Payment method deleted successfully",
     });
   } catch (error) {
-    console.error("Delete payment method error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to delete payment method",
@@ -245,7 +240,6 @@ export const togglePaymentMethod = async (req: Request, res: Response) => {
       data: paymentMethod,
     });
   } catch (error) {
-    console.error("Toggle payment method error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to toggle payment method",
@@ -279,7 +273,6 @@ export const reorderPaymentMethods = async (req: Request, res: Response) => {
       message: "Payment methods reordered successfully",
     });
   } catch (error) {
-    console.error("Reorder payment methods error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to reorder payment methods",

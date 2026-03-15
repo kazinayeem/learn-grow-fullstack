@@ -18,11 +18,6 @@ export const generateCertificate = async (studentId: string, courseId: string, r
     const enrollment = await Enrollment.findOne({ studentId, courseId });
     const progress = (enrollment as any)?.progress ?? 100; // default to 100 when missing
     if (!enrollment || progress < 95) {
-      console.warn("[Certificate] Fallback: enrollment missing or progress <95. Allowing generation.", {
-        studentId,
-        courseId,
-        progress,
-      });
     }
 
     // Fetch course and student details
@@ -71,7 +66,6 @@ export const generateCertificate = async (studentId: string, courseId: string, r
       data: certificateData,
     };
   } catch (error: any) {
-    console.error("Error generating certificate:", error);
     return {
       success: false,
       message: error.message || "Failed to generate certificate",
@@ -85,11 +79,6 @@ export const getCertificate = async (studentId: string, courseId: string, req: R
     const enrollment = await Enrollment.findOne({ studentId, courseId });
     const progress = (enrollment as any)?.progress ?? 100;
     if (!enrollment || progress < 95) {
-      console.warn("[Certificate] Fallback: enrollment missing or progress <95. Allowing retrieval.", {
-        studentId,
-        courseId,
-        progress,
-      });
     }
 
     // Generate certificate data on-the-fly
@@ -197,7 +186,6 @@ export const verifyCertificate = async (certificateId: string) => {
       },
     };
   } catch (error: any) {
-    console.error("Error verifying certificate:", error);
     return {
       success: false,
       message: error.message || "Failed to verify certificate",
