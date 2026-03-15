@@ -8,7 +8,7 @@ const start = async () => {
     const dbConnectionEnv = config.MONGODB_URI;
     console.log("Database connection string:", dbConnectionEnv);
 
-    await connectDB(config.MONGODB_URI);
+    await connectDB();
     const app = createApp();
     app.listen(config.PORT, () => {
       console.log(`🚀 Server listening on port ${config.PORT}`);
