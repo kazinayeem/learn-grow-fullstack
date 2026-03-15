@@ -67,7 +67,7 @@ export const createApp = () => {
         "http://localhost:3001",
         "http://localhost:3002",
         "https://learnandgrow.io",
-        "http://104.207.70.54:5000"
+        "https://www.learnandgrow.io"
        
       ];
 
@@ -160,42 +160,42 @@ export const createApp = () => {
     res.status(200).json({ time: new Date().toISOString() });
   });
 
+  const mountApiRoute = (path: string, routeHandler: express.Handler) => {
+    // Primary route namespace.
+    app.use(`/api${path}`, routeHandler);
+    // Compatibility for proxies that strip /api.
+    app.use(path, routeHandler);
+  };
+
   // Authentication routes
-  app.use("/api/auth", googleRoutes);
-  app.use("/api/users", userRoutes);
+  mountApiRoute("/auth", googleRoutes);
+  mountApiRoute("/users", userRoutes);
 
   // Other routes
-  app.use("/api/category", categoryRoutes);
-  app.use("/api/blog", blogRoutes);
-  app.use("/api/events", eventRoutes);
-  app.use("/api/payment-methods", paymentMethodRoutes);
-  app.use("/api/orders", orderRoutes);
-  app.use("/api/team", teamRoutes);
-  app.use("/api/roles", roleRoutes);
-  app.use("/api/job", jobRoutes);
-  app.use("/api/course", courseRoutes);
-  app.use("/api/combo", comboRoutes);
-  app.use("/api/live-classes", liveClassRoutes);
-  app.use("/api/assessment", assessmentRoutes);
-  app.use("/api/quiz", quizRoutes);
-  app.use("/api/assignment", assignmentRoutes);
-  app.use("/api/status", statusRoutes);
-  app.use("/api/v1/status", statusRoutes);
-  app.use("/api/analytics", analyticsRoutes);
-  app.use("/api/tickets", ticketRoutes); // Ticket system routes
-  app.use("/api/contact", contactRoutes); // Contact form routes
-  app.use("/api/certificates", certificateRoutes); // Certificate system routes
-  // Site Content (public + admin upsert)
-  app.use("/api/site-content", siteContentRoutes);
-  app.use("/api/v1/site-content", siteContentRoutes);
-  // Settings (commission)
-  app.use("/api/settings", settingsRoutes);
-  app.use("/api/v1/settings", settingsRoutes);
-  app.use("/api/site-content", siteContentRoutes);
-  app.use("/api/settings", settingsRoutes);
-  // Legacy v1 base for frontend expectations
-  app.use("/api/v1/site-content", siteContentRoutes);
-  app.use("/api/v1/settings", settingsRoutes);
+  mountApiRoute("/category", categoryRoutes);
+  mountApiRoute("/blog", blogRoutes);
+  mountApiRoute("/events", eventRoutes);
+  mountApiRoute("/payment-methods", paymentMethodRoutes);
+  mountApiRoute("/orders", orderRoutes);
+  mountApiRoute("/team", teamRoutes);
+  mountApiRoute("/roles", roleRoutes);
+  mountApiRoute("/job", jobRoutes);
+  mountApiRoute("/course", courseRoutes);
+  mountApiRoute("/combo", comboRoutes);
+  mountApiRoute("/live-classes", liveClassRoutes);
+  mountApiRoute("/assessment", assessmentRoutes);
+  mountApiRoute("/quiz", quizRoutes);
+  mountApiRoute("/assignment", assignmentRoutes);
+  mountApiRoute("/status", statusRoutes);
+  mountApiRoute("/v1/status", statusRoutes);
+  mountApiRoute("/analytics", analyticsRoutes);
+  mountApiRoute("/tickets", ticketRoutes);
+  mountApiRoute("/contact", contactRoutes);
+  mountApiRoute("/certificates", certificateRoutes);
+  mountApiRoute("/site-content", siteContentRoutes);
+  mountApiRoute("/v1/site-content", siteContentRoutes);
+  mountApiRoute("/settings", settingsRoutes);
+  mountApiRoute("/v1/settings", settingsRoutes);
 
   // 404 handler - Ensure CORS headers on 404
   app.use((_req, res) => {

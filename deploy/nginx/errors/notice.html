@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Learn & Grow | Please Wait</title>
+  <style>
+    :root {
+      --bg1: #0f172a;
+      --bg2: #1e293b;
+      --card: rgba(15, 23, 42, 0.82);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #f59e0b;
+      --button: #22c55e;
+      --button-hover: #16a34a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 20% 20%, #1d4ed8 0%, transparent 45%),
+        radial-gradient(circle at 80% 15%, #059669 0%, transparent 42%),
+        linear-gradient(155deg, var(--bg1), var(--bg2));
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .panel {
+      width: 100%;
+      max-width: 680px;
+      background: var(--card);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 20px;
+      backdrop-filter: blur(8px);
+      padding: 34px 28px;
+      box-shadow: 0 22px 44px rgba(2, 6, 23, 0.42);
+      text-align: center;
+    }
+
+    .status {
+      display: inline-block;
+      font-size: 0.82rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #f8fafc;
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid rgba(245, 158, 11, 0.55);
+      border-radius: 999px;
+      padding: 6px 12px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(1.5rem, 2.9vw, 2.25rem);
+      line-height: 1.2;
+      color: #f8fafc;
+    }
+
+    p {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.65;
+      color: var(--muted);
+    }
+
+    .message {
+      margin-top: 14px;
+      color: var(--text);
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+
+    .cta {
+      margin-top: 26px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      min-width: 190px;
+      text-decoration: none;
+      background: var(--button);
+      color: #052e16;
+      font-weight: 800;
+      border-radius: 999px;
+      padding: 12px 20px;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .cta:hover {
+      background: var(--button-hover);
+      transform: translateY(-1px);
+    }
+
+    .brand {
+      margin-top: 20px;
+      font-size: 0.95rem;
+      color: #cbd5e1;
+      letter-spacing: 0.02em;
+    }
+
+    @media (max-width: 640px) {
+      .panel {
+        padding: 26px 20px;
+      }
+
+      p {
+        font-size: 0.95rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="panel">
+    <div class="status">Server Update In Progress</div>
+    <h1>Our server is being improved</h1>
+    <p>Please await the Learn and Grow team while we complete this update.</p>
+    <p class="message">Please wait. We will be back shortly.</p>
+    <a class="cta" href="/" onclick="window.location.reload(); return false;">Reload & Continue</a>
+    <p class="brand">Bornosoft by Mentatines · Please wait</p>
+  </main>
+</body>
+</html>

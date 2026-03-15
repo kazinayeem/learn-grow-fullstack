@@ -314,7 +314,7 @@ export const changePassword = async (
  * Login with Google OAuth
  */
 export const loginWithGoogle = () => {
-  window.location.href = `${API_URL.replace("/api", "")}/api/auth/google`;
+  window.location.href = `${API_CONFIG.ORIGIN}/api/auth/google`;
 };
 
 /**
