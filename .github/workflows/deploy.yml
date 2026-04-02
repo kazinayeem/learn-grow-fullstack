@@ -4,6 +4,9 @@ on:
   push:
     branches: [ main ]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -23,80 +26,64 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no root@${{ secrets.VPS_HOST }} << 'EOF'
 
-            set -e
+            set -ex
 
-            echo "🚀 Starting optimized deployment..."
+            echo "🚀 Starting deployment..."
 
+            # Clone if first time
             if [ ! -d "/root/learn-grow-fullstack" ]; then
-              echo "📥 Cloning repository..."
               git clone https://github.com/kazinayeem/learn-grow-fullstack.git /root/learn-grow-fullstack
             fi
 
             cd /root/learn-grow-fullstack
 
             echo "🧹 Cleaning repo"
-            git reset --hard
+            git fetch origin
+            git reset --hard origin/main
             git clean -fd
 
-            echo "🔄 Pulling latest code"
-            git pull origin main
-
-            # ======== NGINX SETUP ========
-            echo "🌐 Setting up optimized Nginx..."
-            if ! command -v nginx >/dev/null 2>&1; then
-              apt-get update
-              apt-get install -y nginx
-            fi
-
-            # Create cache directories for Nginx proxy caching
-            mkdir -p /var/cache/nginx/production
-            mkdir -p /var/cache/nginx/static
-            mkdir -p /var/www/learn-grow-errors
-            chmod -R 755 /var/cache/nginx
-            chmod -R 755 /var/www/learn-grow-errors
-
-            # Deploy optimized Nginx config
-            cp deploy/nginx/learnandgrow-optimized.conf /etc/nginx/sites-available/learn-grow
-            rm -f /etc/nginx/sites-enabled/learn-grow
-            ln -sf /etc/nginx/sites-available/learn-grow /etc/nginx/sites-enabled/learn-grow
-            nginx -t && systemctl reload nginx
-
-            # ======== MONGODB OPTIMIZATION ========
-            echo "⚙️ Optimizing MongoDB..."
-            if command -v mongod >/dev/null 2>&1; then
-              systemctl stop mongodb || true
-              cp deploy/mongodb-optimized.conf /etc/mongod.conf
-              chown mongodb:mongodb /etc/mongod.conf
-              systemctl start mongodb
-            fi
-
-            # ======== BACKEND BUILD ========
+            # ================= BACKEND =================
             echo "📦 Building backend..."
             cd grow-backend
-            npm install --prefer-offline
+
+            rm -rf node_modules
+            rm -rf dist
+
+            npm ci
             npm run build
+
             cd ..
 
-            # ======== FRONTEND BUILD ========
+            # ================= FRONTEND =================
             echo "📦 Building frontend..."
             cd learn-grow
-            npm install --prefer-offline
+
+            rm -rf node_modules
+            rm -rf dist
+            rm -rf build
+
+            npm ci
             npm run build
+
             cd ..
 
-            # ======== PM2 CLUSTER DEPLOYMENT ========
-            echo "🔄 Deploying PM2 cluster mode (4 instances)..."
-            pm2 delete ecosystem.config.js 2>/dev/null || true
-            pm2 start ecosystem.config.js
+            # ================= PM2 =================
+            echo "🔄 Restarting PM2 (fresh deploy)..."
+
+            pm2 delete all || true
+            pm2 start ecosystem.config.js --update-env
             pm2 save
 
-            # ======== VERIFICATION ========
-            echo "✅ Verifying services..."
-            pm2 status
-            nginx -t
-            echo "🌐 nginx: $(systemctl is-active nginx)"
-            echo "💾 mongodb: $(systemctl is-active mongodb)"
+            # ================= NGINX =================
+            echo "🌐 Reloading nginx..."
+            nginx -t && systemctl reload nginx
 
-            
+            # ================= VERIFY =================
+            echo "✅ Checking services..."
+            pm2 status
+            echo "🌐 nginx: $(systemctl is-active nginx)"
+
+            echo "✅ Deployment completed successfully!"
 
           EOF
+
