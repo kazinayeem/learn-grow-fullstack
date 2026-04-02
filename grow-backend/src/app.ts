@@ -138,6 +138,12 @@ export const createApp = () => {
     app.get("/", (_req, res) => {
       res.status(200).json({ message: "Welcome to Learn & Grow API" });
     });
+  app.get(["/api", "/api/"], (_req, res) => {
+    res.status(200).json({
+      success: true,
+      message: "Learn & Grow API is running",
+    });
+  });
   // Do not enable Passport sessions; app uses stateless JWT
 
   // ====================================
