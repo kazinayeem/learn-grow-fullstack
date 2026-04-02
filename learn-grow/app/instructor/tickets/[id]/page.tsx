@@ -27,11 +27,9 @@ import {
   useAddReplyMutation,
 } from "@/redux/features/ticketApi";
 import { toast } from "react-hot-toast";
-import dynamic from "next/dynamic";
+import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 import RequireAuth from "@/components/Auth/RequireAuth";
-
-const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
 const statusConfig = {
   open: { color: "primary" as const, icon: FaClock, label: "Open" },

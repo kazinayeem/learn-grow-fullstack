@@ -11,6 +11,7 @@ import {
   Input,
 } from "@nextui-org/react";
 import dynamic from "next/dynamic";
+import { useEffect } from "react";
 import "react-quill-new/dist/quill.snow.css";
 import {
   FaTicketAlt,
@@ -83,6 +84,13 @@ export default function CreateTicketModal({
   const [category, setCategory] = useState("other");
   const [imageUrl, setImageUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [showEditor, setShowEditor] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setShowEditor(true);
+    }
+  }, [isOpen]);
 
   const handleSubmit = () => {
     let finalDescription = description;
@@ -224,16 +232,22 @@ export default function CreateTicketModal({
                     Description <span className="text-danger">*</span>
                   </label>
                   <div className="border-2 border-gray-200 rounded-lg overflow-hidden hover:border-primary-300 transition-colors">
-                    <ReactQuill
-                      theme="snow"
-                      value={description}
-                      onChange={setDescription}
-                      modules={modules}
-                      formats={formats}
-                      placeholder="Describe your issue in detail... Include steps to reproduce, error messages, or any relevant information."
-                      className="bg-white"
-                      style={{ height: "200px", marginBottom: "50px" }}
-                    />
+                    {showEditor ? (
+                      <ReactQuill
+                        theme="snow"
+                        value={description}
+                        onChange={setDescription}
+                        modules={modules}
+                        formats={formats}
+                        placeholder="Describe your issue in detail... Include steps to reproduce, error messages, or any relevant information."
+                        className="bg-white"
+                        style={{ height: "200px", marginBottom: "50px" }}
+                      />
+                    ) : (
+                      <div className="h-[250px] bg-white flex items-center justify-center text-sm text-gray-500">
+                        Opening the editor...
+                      </div>
+                    )}
                   </div>
                 </div>
 

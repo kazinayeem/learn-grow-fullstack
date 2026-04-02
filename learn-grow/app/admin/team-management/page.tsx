@@ -139,7 +139,8 @@ function SortableRoleItem({ role, onDelete }: { role: Role; onDelete: (id: strin
                 color="danger"
                 variant="flat"
                 isIconOnly
-                onClick={() => onDelete(role._id)}
+                aria-label={`Delete role ${role.name}`}
+                onPress={() => onDelete(role._id)}
             >
                 <FaTrash className="text-sm" />
             </Button>
@@ -251,7 +252,7 @@ function SortableMemberItem({
                                 size="sm"
                                 variant="flat"
                                 color={member.showOnHome ? "default" : "success"}
-                                onClick={() => onToggleShow(member._id, member.showOnHome)}
+                                onPress={() => onToggleShow(member._id, member.showOnHome)}
                                 className="w-full min-h-[36px] text-xs px-1"
                             >
                                 {member.showOnHome ? "Hide" : "Show"}
@@ -260,7 +261,8 @@ function SortableMemberItem({
                                 size="sm"
                                 variant="flat"
                                 color="primary"
-                                onClick={() => onEdit(member)}
+                                aria-label={`Edit ${member.name}`}
+                                onPress={() => onEdit(member)}
                                 isIconOnly
                                 className="w-full min-h-[36px]"
                             >
@@ -270,7 +272,8 @@ function SortableMemberItem({
                                 size="sm"
                                 variant="flat"
                                 color="danger"
-                                onClick={() => onDelete(member._id, member.name)}
+                                aria-label={`Delete ${member.name}`}
+                                onPress={() => onDelete(member._id, member.name)}
                                 isIconOnly
                                 className="w-full min-h-[36px]"
                             >
@@ -979,7 +982,7 @@ export default function TeamManagementPage() {
                                             <Button
                                                 size="lg"
                                                 color="primary"
-                                                onClick={handleImportInstructors}
+                                                onPress={handleImportInstructors}
                                                 isLoading={importLoading}
                                                 className="w-full font-bold shadow-lg min-h-[44px] text-sm sm:text-base"
                                                 isDisabled={selectedInstructors.length === 0}
