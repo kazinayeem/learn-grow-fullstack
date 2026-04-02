@@ -41,11 +41,14 @@ import {
   FaTags,
   FaInfoCircle,
   FaCalendarAlt,
-  FaClock
+  FaClock,
+  FaCloudUploadAlt,
+  FaTrash
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 
 const ACCESS_DURATIONS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "lifetime"];
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api").replace(/\/+$/, "");
 
 function EditCourseContent() {
   const router = useRouter();
@@ -69,6 +72,10 @@ function EditCourseContent() {
   const categories = Array.isArray(categoriesData) ? categoriesData : [];
 
   const [updateCourse, { isLoading: isUpdating }] = useUpdateCourseMutation();
+  const [thumbnailPreview, setThumbnailPreview] = useState("");
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+  const [isDraggingThumbnail, setIsDraggingThumbnail] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -104,8 +111,86 @@ function EditCourseContent() {
         registrationDeadline: course.registrationDeadline ? new Date(course.registrationDeadline).toISOString().split('T')[0] : "",
         isPublished: course.isPublished ?? true,
       });
+      setThumbnailPreview(course.thumbnail || "");
+      setThumbnailFile(null);
     }
   }, [course]);
+
+  const handleThumbnailFileSelect = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    if (file.size > 1024 * 1024) {
+      toast.error("Image must be less than 1MB");
+      return;
+    }
+
+    setThumbnailFile(file);
+
+    const reader = new FileReader();
+    reader.onload = (e) => setThumbnailPreview((e.target?.result as string) || "");
+    reader.readAsDataURL(file);
+  };
+
+  const handleThumbnailUpload = async () => {
+    if (!thumbnailFile || !courseId) return;
+
+    setIsUploadingThumbnail(true);
+    try {
+      const body = new FormData();
+      body.append("thumbnail", thumbnailFile);
+
+      const response = await fetch(`${API_BASE_URL}/course/upload-thumbnail/${courseId}`, {
+        method: "POST",
+        body,
+        credentials: "include",
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        toast.error(result?.message || "Failed to upload thumbnail");
+        return;
+      }
+
+      setFormData((prev) => ({ ...prev, thumbnail: result.data.thumbnailUrl }));
+      setThumbnailPreview(result.data.thumbnailUrl);
+      setThumbnailFile(null);
+      toast.success("Thumbnail uploaded successfully");
+    } catch (error: any) {
+      toast.error(error?.message || "Thumbnail upload failed");
+    } finally {
+      setIsUploadingThumbnail(false);
+    }
+  };
+
+  const handleThumbnailDelete = async () => {
+    if (!courseId || !formData.thumbnail) return;
+
+    setIsUploadingThumbnail(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/course/delete-thumbnail/${courseId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        toast.error(result?.message || "Failed to delete thumbnail");
+        return;
+      }
+
+      setFormData((prev) => ({ ...prev, thumbnail: "" }));
+      setThumbnailPreview("");
+      setThumbnailFile(null);
+      toast.success("Thumbnail deleted");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to delete thumbnail");
+    } finally {
+      setIsUploadingThumbnail(false);
+    }
+  };
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) {
@@ -367,7 +452,7 @@ function EditCourseContent() {
 
               {formData.thumbnail ? (
                 <div className="w-full aspect-video rounded-xl overflow-hidden border border-gray-200 mb-4 bg-gray-50 relative group">
-                  <img src={formData.thumbnail} alt="Thumbnail Preview" className="w-full h-full object-cover" />
+                  <img src={thumbnailPreview || formData.thumbnail} alt="Thumbnail Preview" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs">
                     Preview
                   </div>
@@ -379,14 +464,65 @@ function EditCourseContent() {
                 </div>
               )}
 
-              <Input
-                label="Thumbnail URL"
-                name="thumbnail"
-                value={formData.thumbnail}
-                onChange={handleChange}
-                variant="bordered"
-                startContent={<FaImage className="text-gray-400" />}
-              />
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDraggingThumbnail(true);
+                }}
+                onDragLeave={() => setIsDraggingThumbnail(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDraggingThumbnail(false);
+                  const dropped = e.dataTransfer.files?.[0];
+                  if (dropped) handleThumbnailFileSelect(dropped);
+                }}
+                className={`rounded-xl border-2 border-dashed p-4 text-center mb-4 transition-colors ${
+                  isDraggingThumbnail ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-gray-50"
+                }`}
+              >
+                <FaCloudUploadAlt className="mx-auto mb-2 text-gray-500" size={22} />
+                <p className="text-sm text-gray-700 mb-2">Drag and drop image here</p>
+                <label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const selected = e.target.files?.[0];
+                      if (selected) handleThumbnailFileSelect(selected);
+                    }}
+                  />
+                  <Button as="span" color="primary" variant="flat" size="sm" className="cursor-pointer">
+                    Choose Image
+                  </Button>
+                </label>
+              </div>
+
+              {thumbnailFile && (
+                <Button
+                  color="warning"
+                  variant="flat"
+                  className="w-full mb-3"
+                  onPress={handleThumbnailUpload}
+                  isLoading={isUploadingThumbnail}
+                >
+                  Upload Selected Image
+                </Button>
+              )}
+
+              {formData.thumbnail && !thumbnailFile && (
+                <Button
+                  color="danger"
+                  variant="flat"
+                  className="w-full mb-3"
+                  startContent={<FaTrash />}
+                  onPress={handleThumbnailDelete}
+                  isLoading={isUploadingThumbnail}
+                >
+                  Delete Current Image
+                </Button>
+              )}
+
             </CardBody>
           </Card>
 

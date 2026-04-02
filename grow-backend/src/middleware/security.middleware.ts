@@ -177,14 +177,15 @@ export const validateContentType = (req: Request, res: Response, next: NextFunct
       });
     }
 
-    // Allow JSON and form-urlencoded
+    // Allow JSON, form-urlencoded, and multipart (for file uploads)
     if (
       !contentType.includes('application/json') &&
-      !contentType.includes('application/x-www-form-urlencoded')
+      !contentType.includes('application/x-www-form-urlencoded') &&
+      !contentType.includes('multipart/form-data')
     ) {
       return res.status(415).json({
         success: false,
-        message: 'Content-Type must be application/json or application/x-www-form-urlencoded',
+        message: 'Content-Type must be application/json, application/x-www-form-urlencoded, or multipart/form-data',
       });
     }
   }

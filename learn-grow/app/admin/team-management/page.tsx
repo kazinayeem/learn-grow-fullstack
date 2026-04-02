@@ -102,6 +102,13 @@ interface Instructor {
     profileImage?: string;
 }
 
+const resolveImageSrc = (value?: string) => {
+    if (!value || value === "placeholder") return "";
+    if (value.startsWith("data:image")) return value;
+    if (value.startsWith("http")) return value;
+    return `data:image/jpeg;base64,${value}`;
+};
+
 // Sortable Role Item Component
 function SortableRoleItem({ role, onDelete }: { role: Role; onDelete: (id: string) => void }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -157,6 +164,7 @@ function SortableMemberItem({
     });
 
     const displayImage = member.image || member.profileImage || "";
+    const displayImageSrc = resolveImageSrc(displayImage);
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -173,13 +181,9 @@ function SortableMemberItem({
             <Card className="shadow-none">
                 <CardBody className="p-0">
                     <div className="relative h-48 bg-gray-100 overflow-hidden">
-                        {displayImage && displayImage !== "placeholder" ? (
+                        {displayImageSrc ? (
                             <Image
-                                src={
-                                    displayImage.startsWith("http")
-                                        ? displayImage
-                                        : `data:image/jpeg;base64,${displayImage}`
-                                }
+                                src={displayImageSrc}
                                 alt={member.name}
                                 width="100%"
                                 height="100%"
@@ -319,6 +323,58 @@ export default function TeamManagementPage() {
     });
     const [imageUrl, setImageUrl] = useState<string>("");
 
+    const fileToDataUrl = (file: File) =>
+        new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve((reader.result as string) || "");
+            reader.onerror = () => reject(new Error("Failed to read file"));
+            reader.readAsDataURL(file);
+        });
+
+    const toBase64Payload = (value: string) => {
+        if (value.startsWith("data:image") && value.includes(",")) {
+            return value.split(",")[1] || "";
+        }
+        return value;
+    };
+
+    const validateImageFile = (file: File) => {
+        if (!file.type.startsWith("image/")) {
+            toast.error("Please select an image file");
+            return false;
+        }
+        if (file.size > 1024 * 1024) {
+            toast.error("Image must be 1MB or smaller");
+            return false;
+        }
+        return true;
+    };
+
+    const handleAddImageUpload = async (file: File) => {
+        if (!validateImageFile(file)) return;
+        try {
+            const dataUrl = await fileToDataUrl(file);
+            setImageUrl(toBase64Payload(dataUrl));
+            toast.success("Image selected");
+        } catch {
+            toast.error("Failed to process image");
+        }
+    };
+
+    const handleEditImageUpload = async (file: File) => {
+        if (!editingMember || !validateImageFile(file)) return;
+        try {
+            const dataUrl = await fileToDataUrl(file);
+            setEditingMember({
+                ...editingMember,
+                image: toBase64Payload(dataUrl),
+            });
+            toast.success("Image selected");
+        } catch {
+            toast.error("Failed to process image");
+        }
+    };
+
     const teamMembers = (teamData?.data || []) as TeamMember[];
     const roles = (rolesData?.data || []) as Role[];
     const instructors = (instructorsData?.data || []) as Instructor[];
@@ -450,7 +506,7 @@ export default function TeamManagementPage() {
     // Handle Add Member
     const handleAddMember = async () => {
         if (!formData.name || !formData.role || !imageUrl) {
-            toast.error("Name, Role, and Image URL are required");
+            toast.error("Name, Role, and Image are required");
             return;
         }
 
@@ -778,16 +834,22 @@ export default function TeamManagementPage() {
                                     />
 
                                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
-                                        <p className="text-sm font-semibold text-gray-600">Profile Picture URL *</p>
-                                        <Input
-                                            placeholder="https://example.com/image.jpg"
-                                            value={imageUrl}
-                                            onChange={(e) => setImageUrl(e.target.value)}
-                                            variant="bordered"
-                                        />
+                                        <p className="text-sm font-semibold text-gray-600">Profile Picture *</p>
+                                        <div>
+                                            <p className="text-xs text-gray-500 mb-2">Upload image (max 1MB)</p>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handleAddImageUpload(file);
+                                                }}
+                                                className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-emerald-100 file:px-3 file:py-2 file:text-emerald-700 hover:file:bg-emerald-200"
+                                            />
+                                        </div>
                                         {imageUrl && (
                                             <Image
-                                                src={imageUrl}
+                                                src={resolveImageSrc(imageUrl)}
                                                 alt="Preview"
                                                 width={160}
                                                 height={160}
@@ -1033,9 +1095,7 @@ export default function TeamManagementPage() {
                                         <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-2">
                                             {(editingMember.image || editingMember.profileImage) && (
                                                 <Image
-                                                    src={(editingMember.image || editingMember.profileImage || "").startsWith("http")
-                                                        ? (editingMember.image || editingMember.profileImage || "")
-                                                        : `data:image/jpeg;base64,${editingMember.image || editingMember.profileImage}`}
+                                                    src={resolveImageSrc(editingMember.image || editingMember.profileImage || "")}
                                                     alt={editingMember.name}
                                                     width={48}
                                                     height={48}
@@ -1106,31 +1166,30 @@ export default function TeamManagementPage() {
                                             />
                                         </div>
                                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
-                                            <p className="text-sm font-semibold text-gray-600">Profile Image URL</p>
-                                            <Input
-                                                placeholder="https://example.com/image.jpg or base64"
-                                                value={editingMember.image || ""}
-                                                onChange={(e) =>
-                                                    setEditingMember({
-                                                        ...editingMember,
-                                                        image: e.target.value,
-                                                    })
-                                                }
-                                                variant="bordered"
-                                            />
+                                            <p className="text-sm font-semibold text-gray-600">Profile Image</p>
+                                            <div>
+                                                <p className="text-xs text-gray-500 mb-2">Upload image (max 1MB)</p>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) handleEditImageUpload(file);
+                                                    }}
+                                                    className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-blue-100 file:px-3 file:py-2 file:text-blue-700 hover:file:bg-blue-200"
+                                                />
+                                            </div>
                                             {editingMember.image && (
                                                 <div className="flex items-center gap-3">
                                                     <Image
-                                                        src={editingMember.image.startsWith("http")
-                                                            ? editingMember.image
-                                                            : `data:image/jpeg;base64,${editingMember.image}`}
+                                                        src={resolveImageSrc(editingMember.image)}
                                                         alt={editingMember.name}
                                                         width={120}
                                                         height={120}
                                                         className="rounded-xl border"
                                                     />
                                                     <div className="flex-1">
-                                                        <p className="text-sm text-gray-500">Preview of provided image URL</p>
+                                                        <p className="text-sm text-gray-500">Preview of uploaded image</p>
                                                     </div>
                                                 </div>
                                             )}

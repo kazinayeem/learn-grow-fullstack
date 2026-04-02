@@ -42,6 +42,8 @@ import {
     FaCheckCircle,
     FaCloudUploadAlt,
     FaLink,
+    FaTimesCircle,
+    FaStar,
 } from "react-icons/fa";
 import {
     useGetCourseByIdQuery,
@@ -60,6 +62,16 @@ import { useGetQuizzesByCourseQuery } from "@/redux/api/quizApi";
 import { useGetAssignmentsByCourseQuery } from "@/redux/api/assignmentApi";
 import { toast } from "react-toastify";
 import DOMPurify from "isomorphic-dompurify";
+import ReactQuill from "react-quill-new";
+import "react-quill-new/dist/quill.snow.css";
+
+interface ContentLink {
+    id?: string;
+    title: string;
+    url: string;
+    type: "video" | "drive" | "pdf" | "resource" | "other";
+    isPrimary?: boolean;
+}
 
 interface Lesson {
     id: string;
@@ -67,6 +79,7 @@ interface Lesson {
     type: "video" | "pdf" | "quiz" | "assignment";
     description?: string;
     contentUrl?: string;
+    contentLinks?: ContentLink[];
     isFreePreview?: boolean;
     isPublished?: boolean;
 }
@@ -173,6 +186,7 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
     const [newLesson, setNewLesson] = useState<Partial<Lesson>>({ type: "video" });
     const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
     const [lessonErrors, setLessonErrors] = useState<Record<string, string>>({});
+    const [contentLinks, setContentLinks] = useState<ContentLink[]>([]);
 
     // Fetch quizzes and assignments for this course
     const { data: quizzesResp } = useGetQuizzesByCourseQuery(courseId, { skip: !courseId });
@@ -298,6 +312,7 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                     type: newLesson.type,
                     description: newLesson.description,
                     contentUrl: newLesson.contentUrl,
+                    contentLinks: contentLinks.length > 0 ? contentLinks : undefined,
                     isFreePreview: newLesson.isFreePreview,
                 }).unwrap();
                 toast.success("Lesson updated successfully!");
@@ -312,12 +327,14 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                     type: newLesson.type,
                     description: newLesson.description,
                     contentUrl: newLesson.contentUrl,
+                    contentLinks: contentLinks.length > 0 ? contentLinks : undefined,
                     isFreePreview: newLesson.isFreePreview,
                     orderIndex: lessonCount,
                 }).unwrap();
                 toast.success("Lesson created successfully!");
             }
             setNewLesson({ type: "video" });
+            setContentLinks([]);
             setEditingLessonId(null);
             onCloseLessonModal();
             // Non-blocking refetch to prevent hanging
@@ -808,6 +825,7 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                                                                 setCurrentModuleId(module.id);
                                                                 setEditingLessonId(lesson.id);
                                                                 setNewLesson(lesson);
+                                                                setContentLinks(lesson.contentLinks || []);
                                                                 onOpenLessonModal();
                                                             }}
                                                         >
@@ -833,6 +851,7 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                                                     setCurrentModuleId(module.id);
                                                     setEditingLessonId(null);
                                                     setNewLesson({ type: "video" });
+                                                    setContentLinks([]);
                                                     onOpenLessonModal();
                                                 }}
                                             >
@@ -1033,66 +1052,203 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
             </Modal>
 
             {/* Lesson Modal */}
-            <Modal isOpen={isLessonModalOpen} onClose={onCloseLessonModal} size="2xl">
+            <Modal isOpen={isLessonModalOpen} onClose={onCloseLessonModal} size="4xl">
                 <ModalContent>
                     <ModalHeader>{editingLessonId ? "Edit Lesson" : "Add New Lesson"}</ModalHeader>
-                    <ModalBody>
+                    <ModalBody className="overflow-y-auto max-h-[80vh]">
+                        {/* Lesson Title */}
                         <Input
-                            label="Lesson Title"
-                            placeholder="e.g., CSS Selectors"
+                            label="Lesson Title *"
+                            placeholder="e.g., CSS Selectors Introduction"
                             value={newLesson.title || ""}
                             onChange={(e) => setNewLesson({ ...newLesson, title: e.target.value })}
                             isRequired
+                            size="lg"
+                            className="font-semibold"
                         />
-                        <div className="flex gap-4">
-                            <div className="flex-1">
-                                <label className="text-sm font-medium mb-1 block">Type</label>
-                                <div className="flex gap-2">
-                                    <Button
-                                        size="sm"
-                                        color={newLesson.type === "video" ? "primary" : "default"}
-                                        variant={newLesson.type === "video" ? "solid" : "bordered"}
-                                        onPress={() => setNewLesson({ ...newLesson, type: "video" })}
-                                        startContent={<FaVideo />}
-                                    >
-                                        Video
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        color={newLesson.type === "pdf" ? "primary" : "default"}
-                                        variant={newLesson.type === "pdf" ? "solid" : "bordered"}
-                                        onPress={() => setNewLesson({ ...newLesson, type: "pdf" })}
-                                        startContent={<FaFileAlt />}
-                                    >
-                                        Article
-                                    </Button>
-                                </div>
-                            </div>
-                            <div className="flex-1">
-                                <Textarea
-                                    label="Description"
-                                    placeholder="Enter content details..."
-                                    minRows={1}
-                                    value={newLesson.description || ""}
-                                    onChange={(e) => setNewLesson({ ...newLesson, description: e.target.value })}
-                                />
+
+                        {/* Lesson Type */}
+                        <div className="mt-4">
+                            <label className="text-sm font-medium block mb-2">Content Type *</label>
+                            <div className="flex gap-3 flex-wrap">
+                                <Button
+                                    size="sm"
+                                    color={newLesson.type === "video" ? "primary" : "default"}
+                                    variant={newLesson.type === "video" ? "solid" : "bordered"}
+                                    onPress={() => setNewLesson({ ...newLesson, type: "video" })}
+                                    startContent={<FaVideo />}
+                                    className="font-semibold"
+                                >
+                                    Video
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    color={newLesson.type === "pdf" ? "primary" : "default"}
+                                    variant={newLesson.type === "pdf" ? "solid" : "bordered"}
+                                    onPress={() => setNewLesson({ ...newLesson, type: "pdf" })}
+                                    startContent={<FaFileAlt />}
+                                    className="font-semibold"
+                                >
+                                    Article
+                                </Button>
                             </div>
                         </div>
 
-                        {/* Content Material Section */}
-                        <div className="mt-2">
-                            <label className="text-sm font-medium mb-2 block">Content Material</label>
+                        {/* Rich Text Description Editor */}
+                        <div className="mt-4">
+                            <label className="text-sm font-semibold block mb-2">Description</label>
+                            <div className="border rounded-lg overflow-hidden bg-white">
+                                <ReactQuill
+                                    value={newLesson.description || ""}
+                                    onChange={(value) => setNewLesson({ ...newLesson, description: value })}
+                                    theme="snow"
+                                    modules={{
+                                        toolbar: [
+                                            ["bold", "italic", "underline", "strike"],
+                                            [{ list: "ordered" }, { list: "bullet" }],
+                                            ["blockquote", "code-block"],
+                                            ["link"],
+                                            ["clean"],
+                                        ],
+                                    }}
+                                    style={{ minHeight: "150px" }}
+                                />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">Add detailed description with formatting</p>
+                        </div>
+
+                        {/* Primary Content URL */}
+                        <div className="mt-4">
+                            <label className="text-sm font-semibold block mb-2">Primary Content URL</label>
                             <Input
-                                label="External URL"
-                                placeholder="http://localhost:3000/instructor/courses/6950d2a7eb35fc97e3791a70/"
+                                placeholder="e.g., https://www.youtube.com/watch?v=..."
                                 startContent={<FaLink className="text-gray-400" />}
                                 value={newLesson.contentUrl || ""}
                                 onChange={(e) => setNewLesson({ ...newLesson, contentUrl: e.target.value })}
-                                description="Direct link to video (YouTube/Vimeo) or document"
+                                description="Primary video/document link"
+                                size="sm"
                             />
                         </div>
 
-                        <div className="flex items-center gap-2 mt-2">
+                        {/* Additional Content Links */}
+                        <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <div className="flex items-center justify-between mb-4">
+                                <h4 className="font-semibold text-sm flex items-center gap-2">
+                                    <FaPlus className="text-sm" /> Additional Resources
+                                </h4>
+                                <Button
+                                    size="sm"
+                                    color="primary"
+                                    variant="flat"
+                                    startContent={<FaPlus />}
+                                    onPress={() => {
+                                        setContentLinks([
+                                            ...contentLinks,
+                                            { title: "", url: "", type: "other", isPrimary: false },
+                                        ]);
+                                    }}
+                                >
+                                    Add Link
+                                </Button>
+                            </div>
+
+                            {contentLinks.length === 0 ? (
+                                <p className="text-xs text-gray-500 italic">No additional links added yet. Click "Add Link" to include Google Drive, documents, or other resources.</p>
+                            ) : (
+                                <div className="space-y-3">
+                                    {contentLinks.map((link, idx) => (
+                                        <div key={idx} className="p-3 bg-white border border-gray-200 rounded-lg">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
+                                                {/* Link Title */}
+                                                <Input
+                                                    size="sm"
+                                                    placeholder="e.g., Lecture Notes"
+                                                    value={link.title}
+                                                    onChange={(e) => {
+                                                        const updated = [...contentLinks];
+                                                        updated[idx].title = e.target.value;
+                                                        setContentLinks(updated);
+                                                    }}
+                                                    label="Title"
+                                                />
+
+                                                {/* Link Type */}
+                                                <select
+                                                    className="h-10 px-3 rounded-lg border border-gray-300 bg-white text-sm"
+                                                    value={link.type}
+                                                    onChange={(e) => {
+                                                        const updated = [...contentLinks];
+                                                        updated[idx].type = e.target.value as any;
+                                                        setContentLinks(updated);
+                                                    }}
+                                                >
+                                                    <option value="video">Video</option>
+                                                    <option value="drive">Google Drive</option>
+                                                    <option value="pdf">PDF</option>
+                                                    <option value="resource">Resource</option>
+                                                    <option value="other">Other</option>
+                                                </select>
+
+                                                {/* Delete Button */}
+                                                <div className="flex items-end gap-1">
+                                                    <Button
+                                                        isIconOnly
+                                                        size="sm"
+                                                        color="danger"
+                                                        variant="light"
+                                                        onPress={() => {
+                                                            setContentLinks(contentLinks.filter((_, i) => i !== idx));
+                                                        }}
+                                                        className="flex-1"
+                                                    >
+                                                        <FaTrash className="text-sm" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+
+                                            {/* Link URL */}
+                                            <Input
+                                                size="sm"
+                                                placeholder="https://drive.google.com/..."
+                                                value={link.url}
+                                                onChange={(e) => {
+                                                    const updated = [...contentLinks];
+                                                    updated[idx].url = e.target.value;
+                                                    setContentLinks(updated);
+                                                }}
+                                                startContent={<FaLink className="text-gray-400 text-xs" />}
+                                                label="URL"
+                                                className="mb-2"
+                                            />
+
+                                            {/* Primary Link Checkbox */}
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="checkbox"
+                                                    id={`primary-${idx}`}
+                                                    checked={link.isPrimary || false}
+                                                    onChange={(e) => {
+                                                        const updated = [...contentLinks];
+                                                        updated[idx].isPrimary = e.target.checked;
+                                                        setContentLinks(updated);
+                                                    }}
+                                                    className="w-4 h-4 text-primary rounded"
+                                                />
+                                                <label
+                                                    htmlFor={`primary-${idx}`}
+                                                    className="text-xs cursor-pointer flex items-center gap-1 select-none"
+                                                >
+                                                    <FaStar className="text-yellow-500 text-xs" /> Mark as primary
+                                                </label>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Free Preview Toggle */}
+                        <div className="mt-4 flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
                             <input
                                 type="checkbox"
                                 id="freePreview"
@@ -1100,12 +1256,18 @@ export default function InstructorCourseDashboardClient({ params }: { params: { 
                                 onChange={(e) => setNewLesson({ ...newLesson, isFreePreview: e.target.checked })}
                                 className="w-4 h-4 text-primary rounded"
                             />
-                            <label htmlFor="freePreview" className="text-sm select-none cursor-pointer">Make this lesson free for preview</label>
+                            <label htmlFor="freePreview" className="text-sm select-none cursor-pointer font-medium">
+                                Make this lesson free for preview (allow non-enrolled users to view)
+                            </label>
                         </div>
                     </ModalBody>
                     <ModalFooter>
-                        <Button color="danger" variant="light" onPress={onCloseLessonModal}>Cancel</Button>
-                        <Button color="primary" onPress={handleSaveLesson}>Save Lesson</Button>
+                        <Button color="danger" variant="light" onPress={onCloseLessonModal}>
+                            Cancel
+                        </Button>
+                        <Button color="primary" onPress={handleSaveLesson}>
+                            {editingLessonId ? "Update Lesson" : "Create Lesson"}
+                        </Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>

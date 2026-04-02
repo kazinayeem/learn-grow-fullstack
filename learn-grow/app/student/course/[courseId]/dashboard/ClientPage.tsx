@@ -10,18 +10,18 @@ import {
     Accordion,
     AccordionItem,
     Spinner,
-    Modal,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalFooter,
-    useDisclosure,
     Tabs,
     Tab,
     Avatar,
     Divider,
     CircularProgress,
     ScrollShadow,
+    Modal,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
+    useDisclosure,
 } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import {
@@ -45,7 +45,9 @@ import {
     FaBars,
     FaTimes,
     FaChevronRight,
+    FaLink,
 } from "react-icons/fa";
+import DOMPurify from "isomorphic-dompurify";
 import { useGetCourseByIdQuery } from "@/redux/api/courseApi";
 import { useGetQuizzesByCourseQuery } from "@/redux/api/quizApi";
 import { useGetAssignmentsByCourseQuery } from "@/redux/api/assignmentApi";
@@ -63,6 +65,12 @@ interface Lesson {
     type: "video" | "pdf" | "quiz" | "assignment" | "article";
     description?: string;
     contentUrl?: string;
+    contentLinks?: Array<{
+        title: string;
+        url: string;
+        type?: "video" | "drive" | "pdf" | "resource" | "other";
+        isPrimary?: boolean;
+    }>;
     duration?: number;
     isLocked: boolean;
     isCompleted: boolean;
@@ -90,7 +98,12 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
     const [activeTab, setActiveTab] = useState("overview");
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const { isOpen, onOpen, onClose } = useDisclosure();
+    const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+    const {
+        isOpen: isCompleteConfirmOpen,
+        onOpen: onOpenCompleteConfirm,
+        onClose: onCloseCompleteConfirm,
+    } = useDisclosure();
 
     // Auth check - must be logged in
     useEffect(() => {
@@ -175,6 +188,119 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
 
     const modules: Module[] = courseData?.modules || [];
 
+    const decodeHtmlEntities = (value: string) => {
+        if (typeof window === "undefined") return value;
+        const textarea = document.createElement("textarea");
+        textarea.innerHTML = value;
+        return textarea.value;
+    };
+
+    const normalizeRichHtml = (value?: string) => {
+        let normalized = String(value || "");
+        for (let i = 0; i < 2; i += 1) {
+            const decoded = decodeHtmlEntities(normalized);
+            if (decoded === normalized) break;
+            normalized = decoded;
+        }
+        return normalized;
+    };
+
+    const toPlainText = (html?: string) =>
+        DOMPurify.sanitize(normalizeRichHtml(html), { ALLOWED_TAGS: [] })
+            .replace(/\u00a0/g, " ")
+            .replace(/&nbsp;/g, " ")
+            .trim();
+
+    const resolveLessonContentUrl = (lesson: Lesson | null) => {
+        if (!lesson) return "";
+        if (lesson.contentUrl) return lesson.contentUrl;
+
+        const links = Array.isArray(lesson.contentLinks) ? lesson.contentLinks : [];
+        if (links.length === 0) return "";
+
+        const primary = links.find((l) => l?.isPrimary && l?.url);
+        if (primary?.url) return primary.url;
+
+        const preferred = links.find((l) => l?.url && (l.type === "video" || l.type === "drive" || l.type === "pdf"));
+        if (preferred?.url) return preferred.url;
+
+        return links.find((l) => l?.url)?.url || "";
+    };
+
+    const normalizeDrivePreviewUrl = (url: string) => {
+        if (!url.includes("drive.google.com")) return url;
+        const fileIdMatch = url.match(/\/d\/([^/]+)/);
+        if (fileIdMatch?.[1]) {
+            return `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`;
+        }
+        return url;
+    };
+
+    const getContentLinkLabel = (type?: string) => {
+        switch (type) {
+            case "video":
+                return "Video";
+            case "drive":
+                return "Google Drive";
+            case "pdf":
+                return "PDF";
+            case "resource":
+                return "Resource";
+            default:
+                return "Link";
+        }
+    };
+
+    const getContentLinkIcon = (type?: string) => {
+        switch (type) {
+            case "video":
+                return <FaVideo className="text-blue-600" />;
+            case "drive":
+                return <FaFileAlt className="text-emerald-600" />;
+            case "pdf":
+                return <FaFileAlt className="text-rose-600" />;
+            default:
+                return <FaLink className="text-violet-600" />;
+        }
+    };
+
+    const handleMarkLessonComplete = async () => {
+        if (!currentLesson) return;
+
+        try {
+            const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/course/complete-lesson/${currentLesson.id}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                toast.success("Lesson marked as complete!");
+                onCloseCompleteConfirm();
+                refetch();
+            } else {
+                const error = await response.json();
+                toast.error(error.message || "Failed to mark lesson as complete");
+            }
+        } catch (error) {
+            toast.error("Failed to mark lesson as complete");
+        }
+    };
+
+    const handleNextLessonClick = () => {
+        if (!currentLesson) return;
+
+        if (!currentLesson.isCompleted) {
+            toast.warning("Please mark this lesson as completed before moving to the next one.");
+            return;
+        }
+
+        goToNextLesson();
+    };
+
     // Calculate progress
     const totalLessons = modules.reduce((sum, mod) => sum + mod.lessons.length, 0);
     const completedLessons = modules.reduce(
@@ -216,9 +342,10 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
             } else {
                 router.push(`/student/assignment/${lesson.id}`);
             }
-        } else if (lesson.contentUrl) {
+        } else if (resolveLessonContentUrl(lesson)) {
             setCurrentLesson(lesson);
             setActiveTab("lessons"); // Switch to lessons tab to show preview
+            setIsDescriptionExpanded(false);
         } else {
             toast.info("No content available for this lesson yet");
         }
@@ -249,6 +376,32 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
         }
     };
 
+    const goToPreviousLesson = () => {
+        if (!currentLesson) return;
+        const flatLessons = modules.flatMap((m) => m.lessons);
+        const currentIndex = flatLessons.findIndex((l) => l.id === currentLesson.id);
+        if (currentIndex <= 0) {
+            toast.info("This is the first lesson.");
+            return;
+        }
+
+        const previousLesson = [...flatLessons.slice(0, currentIndex)].reverse().find((l) => !l.isLocked);
+        if (!previousLesson) {
+            toast.info("No previous lesson available.");
+            return;
+        }
+
+        if (previousLesson.type === "quiz") {
+            router.push(`/quiz/${previousLesson.id}`);
+        } else if (previousLesson.type === "assignment") {
+            router.push(`/student/assignment/${previousLesson.id}`);
+        } else {
+            setCurrentLesson(previousLesson);
+            setActiveTab("lessons");
+            setIsDescriptionExpanded(false);
+        }
+    };
+
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
     };
@@ -266,15 +419,17 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
             );
         }
 
-        if (currentLesson.type === "video") {
+        const resolvedUrl = normalizeDrivePreviewUrl(resolveLessonContentUrl(currentLesson));
+
+        if (currentLesson?.type === "video") {
             // Check if YouTube or Google Drive or other video URL
-            const isYouTube = currentLesson.contentUrl?.includes("youtube.com") || currentLesson.contentUrl?.includes("youtu.be");
-            const isGoogleDrive = currentLesson.contentUrl?.includes("drive.google.com");
+            const isYouTube = resolvedUrl?.includes("youtube.com") || resolvedUrl?.includes("youtu.be");
+            const isGoogleDrive = resolvedUrl?.includes("drive.google.com");
             
             if (isYouTube) {
                 // Extract YouTube video ID
                 let videoId = "";
-                const url = currentLesson.contentUrl || "";
+                const url = resolvedUrl || "";
                 if (url.includes("youtube.com/watch?v=")) {
                     videoId = url.split("v=")[1]?.split("&")[0] || "";
                 } else if (url.includes("youtu.be/")) {
@@ -284,11 +439,11 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                 }
 
                 return (
-                    <div className="h-full w-full bg-black rounded-lg overflow-hidden flex items-center justify-center">
+                    <div className="w-full h-full bg-black rounded-lg overflow-hidden">
                         <iframe
                             className="w-full h-full"
                             src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
-                            title={currentLesson.title}
+                            title={currentLesson?.title}
                             frameBorder="0"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                             allowFullScreen
@@ -297,14 +452,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                 );
             } else if (isGoogleDrive) {
                 // Convert Google Drive view link to preview link
-                let embedUrl = currentLesson.contentUrl || "";
-                if (embedUrl.includes("/file/d/")) {
-                    const fileId = embedUrl.split("/file/d/")[1]?.split("/")[0];
-                    embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-                } else if (embedUrl.includes("open?id=")) {
-                    const fileId = embedUrl.split("open?id=")[1]?.split("&")[0];
-                    embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-                }
+                const embedUrl = resolvedUrl;
 
                 return (
                     <div className="h-full w-full bg-black rounded-lg overflow-hidden">
@@ -324,27 +472,20 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                             controls
                             controlsList="nodownload"
                             className="w-full h-full"
-                            src={currentLesson.contentUrl}
+                                src={resolvedUrl}
                         >
                             Your browser does not support the video tag.
                         </video>
                     </div>
                 );
             }
-        } else if (currentLesson.type === "pdf" || currentLesson.type === "article") {
+        } else if (currentLesson?.type === "pdf" || currentLesson?.type === "article") {
             // Check if Google Drive link
-            const isGoogleDrive = currentLesson.contentUrl?.includes("drive.google.com");
+            const isGoogleDrive = resolvedUrl?.includes("drive.google.com");
             
             if (isGoogleDrive) {
                 // Convert Google Drive view link to embed link
-                let embedUrl = currentLesson.contentUrl || "";
-                if (embedUrl.includes("/file/d/")) {
-                    const fileId = embedUrl.split("/file/d/")[1]?.split("/")[0];
-                    embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-                } else if (embedUrl.includes("open?id=")) {
-                    const fileId = embedUrl.split("open?id=")[1]?.split("&")[0];
-                    embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-                }
+                const embedUrl = resolvedUrl;
 
                 return (
                     <div className="h-full w-full bg-gray-100 rounded-lg overflow-hidden">
@@ -356,14 +497,14 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                         ></iframe>
                     </div>
                 );
-            } else if (currentLesson.contentUrl?.endsWith('.pdf')) {
+            } else if (resolvedUrl?.endsWith('.pdf')) {
                 // Direct PDF link
                 return (
                     <div className="h-full w-full bg-gray-100 rounded-lg overflow-hidden">
                         <iframe
-                            src={currentLesson.contentUrl}
+                            src={resolvedUrl}
                             className="w-full h-full"
-                            title={currentLesson.title}
+                            title={currentLesson?.title}
                             frameBorder="0"
                         ></iframe>
                     </div>
@@ -373,15 +514,20 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                     <div className="h-full flex items-center justify-center p-8 bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-lg">
                         <div className="text-center">
                             <FaFileAlt className="text-6xl text-blue-400 mx-auto mb-4" />
-                            <p className="text-lg font-medium mb-4">{currentLesson.title}</p>
-                            {currentLesson.description && (
-                                <p className="text-sm text-gray-600 mb-6 max-w-md">{currentLesson.description}</p>
+                            <p className="text-lg font-medium mb-4">{currentLesson?.title}</p>
+                            {currentLesson?.description && (
+                                <div
+                                    className="text-sm text-gray-600 mb-6 max-w-md prose prose-sm"
+                                    dangerouslySetInnerHTML={{
+                                        __html: DOMPurify.sanitize(normalizeRichHtml(currentLesson?.description)),
+                                    }}
+                                />
                             )}
                             <Button
                                 color="primary"
                                 size="lg"
                                 startContent={<FaExternalLinkAlt />}
-                                onPress={() => window.open(currentLesson.contentUrl, "_blank")}
+                                onPress={() => window.open(resolvedUrl, "_blank")}
                             >
                                 Open Document in New Tab
                             </Button>
@@ -392,6 +538,78 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
         }
 
         return null;
+    };
+
+    const renderContentLinks = () => {
+        if (!currentLesson?.contentLinks?.length) return null;
+
+        return (
+            <div className="mt-4 rounded-2xl border border-blue-100 bg-gradient-to-br from-white to-blue-50/40 p-3 md:p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                    <div>
+                        <p className="text-sm font-semibold text-gray-900">Resources</p>
+                        <p className="text-xs text-gray-500">Open the files or links attached to this lesson</p>
+                    </div>
+                    <Chip size="sm" variant="flat" color="primary">
+                        {currentLesson?.contentLinks?.length} link{(currentLesson?.contentLinks?.length || 0) > 1 ? "s" : ""}
+                    </Chip>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {currentLesson?.contentLinks?.map((link, index) => {
+                        const href = link?.url?.trim();
+                        if (!href) return null;
+
+                        return (
+                            <Card key={`${href}-${index}`} className={`border-2 ${link.isPrimary ? "border-blue-300 bg-blue-50/60" : "border-gray-200 bg-white"} shadow-sm`}>
+                                <CardBody className="p-3">
+                                    <div className="flex items-start gap-3">
+                                        <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm border border-gray-100 flex-shrink-0">
+                                            {getContentLinkIcon(link.type)}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <p className="font-semibold text-sm text-gray-900 truncate">
+                                                    {link.title || "Untitled link"}
+                                                </p>
+                                                <Chip size="sm" variant="flat" className="capitalize">
+                                                    {getContentLinkLabel(link.type)}
+                                                </Chip>
+                                                {link.isPrimary && (
+                                                    <Chip size="sm" color="primary" variant="flat">
+                                                        Primary
+                                                    </Chip>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-1 break-all line-clamp-2">
+                                                {href}
+                                            </p>
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                <Button
+                                                    size="sm"
+                                                    color="primary"
+                                                    variant="flat"
+                                                    startContent={<FaExternalLinkAlt />}
+                                                    onPress={() => window.open(href, "_blank", "noopener,noreferrer")}
+                                                >
+                                                    Open link
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="light"
+                                                    onPress={() => navigator.clipboard.writeText(href).then(() => toast.success("Link copied"))}
+                                                >
+                                                    Copy URL
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardBody>
+                            </Card>
+                        );
+                    })}
+                </div>
+            </div>
+        );
     };
 
     if (!authChecked) {
@@ -708,53 +926,17 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                 )}
             </div>
 
-            {/* Lesson Content Modal */}
-            <Modal isOpen={isOpen} onClose={onClose} size="5xl" scrollBehavior="inside">
+            <Modal isOpen={isCompleteConfirmOpen} onClose={onCloseCompleteConfirm} size="md">
                 <ModalContent>
-                    <ModalHeader>
-                        <div>
-                            <h3 className="text-xl font-bold">{currentLesson?.title}</h3>
-                            {currentLesson?.description && (
-                                <p className="text-sm text-gray-500 font-normal mt-1">
-                                    {currentLesson.description}
-                                </p>
-                            )}
-                        </div>
-                    </ModalHeader>
-                    <ModalBody className="p-6">
-                        {renderLessonContent()}
+                    <ModalHeader>Complete this lesson?</ModalHeader>
+                    <ModalBody>
+                        <p className="text-sm text-gray-600">
+                            Mark <span className="font-semibold">{currentLesson?.title || "this lesson"}</span> as completed?
+                        </p>
                     </ModalBody>
                     <ModalFooter>
-                        <Button color="danger" variant="light" onPress={onClose}>
-                            Close
-                        </Button>
-                        {currentLesson && !currentLesson.isCompleted && (
-                            <Button color="success" onPress={async () => {
-                                try {
-                                    const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
-                                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/course/complete-lesson/${currentLesson.id}`, {
-                                        method: 'POST',
-                                        headers: {
-                                            'Authorization': `Bearer ${token}`,
-                                            'Content-Type': 'application/json'
-                                        }
-                                    });
-                                    
-                                    if (response.ok) {
-                                        toast.success("Lesson marked as complete!");
-                                        onClose();
-                                        refetch();
-                                    } else {
-                                        const error = await response.json();
-                                        toast.error(error.message || "Failed to mark lesson as complete");
-                                    }
-                                } catch (error) {
-                                    toast.error("Failed to mark lesson as complete");
-                                }
-                            }}>
-                                Mark as Complete
-                            </Button>
-                        )}
+                        <Button variant="light" onPress={onCloseCompleteConfirm}>Cancel</Button>
+                        <Button color="success" onPress={handleMarkLessonComplete}>Yes, Mark Complete</Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>
@@ -879,7 +1061,7 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                         </Chip>
                                         <h3 className="text-xl font-bold mb-2">{nextLesson.title}</h3>
                                         {nextLesson.description && (
-                                            <p className="text-gray-600 mb-4">{nextLesson.description}</p>
+                                            <p className="text-gray-600 mb-4">{toPlainText(nextLesson.description)}</p>
                                         )}
                                         <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
                                             {getLessonIcon(nextLesson.type)}
@@ -1123,21 +1305,16 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                                 <h3 className="text-base md:text-lg font-bold mb-1 line-clamp-1">
                                                     {currentLesson.title}
                                                 </h3>
-                                                {currentLesson.description && (
-                                                    <p className="text-xs md:text-sm text-gray-600 line-clamp-2">
-                                                        {currentLesson.description}
-                                                    </p>
-                                                )}
                                                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                                                     <Chip size="sm" variant="flat" className="capitalize">
-                                                        {currentLesson.type}
+                                                        {currentLesson?.type}
                                                     </Chip>
-                                                    {currentLesson.duration && (
+                                                    {currentLesson?.duration && (
                                                         <Chip size="sm" variant="flat" startContent={<FaClock />}>
-                                                            {currentLesson.duration} min
+                                                            {currentLesson?.duration} min
                                                         </Chip>
                                                     )}
-                                                    {currentLesson.isCompleted && (
+                                                    {currentLesson?.isCompleted && (
                                                         <Chip size="sm" color="success" variant="flat" startContent={<FaCheckCircle />}>
                                                             Completed
                                                         </Chip>
@@ -1145,85 +1322,103 @@ export default function StudentCourseDashboardClient({ params }: { params: { cou
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2 flex-shrink-0">
-                                                {!currentLesson.isCompleted && (
+                                                {!currentLesson?.isCompleted && (
                                                     <Button
                                                         size="sm"
                                                         color="success"
                                                         variant="flat"
                                                         isIconOnly
                                                         className="hidden md:flex"
-                                                        onPress={async () => {
-                                                            try {
-                                                                const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
-                                                                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/course/complete-lesson/${currentLesson.id}`, {
-                                                                    method: 'POST',
-                                                                    headers: {
-                                                                        'Authorization': `Bearer ${token}`,
-                                                                        'Content-Type': 'application/json'
-                                                                    }
-                                                                });
-                                                                
-                                                                if (response.ok) {
-                                                                    toast.success("Lesson marked as complete!");
-                                                                    goToNextLesson();
-                                                                    refetch();
-                                                                } else {
-                                                                    const error = await response.json();
-                                                                    toast.error(error.message || "Failed to mark lesson as complete");
-                                                                }
-                                                            } catch (error) {
-                                                                toast.error("Failed to mark lesson as complete");
-                                                            }
-                                                        }}
+                                                        onPress={onOpenCompleteConfirm}
                                                     >
                                                         <FaCheckCircle />
                                                     </Button>
                                                 )}
+                                                <Button
+                                                    size="sm"
+                                                    color="default"
+                                                    variant="flat"
+                                                    onPress={goToPreviousLesson}
+                                                >
+                                                    Previous
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    color="primary"
+                                                    variant="flat"
+                                                    onPress={handleNextLessonClick}
+                                                >
+                                                    Next
+                                                </Button>
                                             </div>
                                         </div>
                                         {/* Mobile Mark Complete Button */}
-                                        {!currentLesson.isCompleted && (
-                                            <Button
-                                                size="sm"
-                                                color="success"
-                                                variant="flat"
-                                                fullWidth
-                                                className="mt-3 md:hidden"
-                                                startContent={<FaCheckCircle />}
-                                                onPress={async () => {
-                                                    try {
-                                                        const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
-                                                        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/course/complete-lesson/${currentLesson.id}`, {
-                                                            method: 'POST',
-                                                            headers: {
-                                                                'Authorization': `Bearer ${token}`,
-                                                                'Content-Type': 'application/json'
-                                                            }
-                                                        });
-                                                        
-                                                        if (response.ok) {
-                                                            toast.success("Lesson marked as complete!");
-                                                            goToNextLesson();
-                                                            refetch();
-                                                        } else {
-                                                            const error = await response.json();
-                                                            toast.error(error.message || "Failed to mark lesson as complete");
-                                                        }
-                                                    } catch (error) {
-                                                        toast.error("Failed to mark lesson as complete");
-                                                    }
-                                                }}
-                                            >
-                                                Mark as Complete
-                                            </Button>
+                                        {!currentLesson?.isCompleted && (
+                                            <div className="mt-3 grid grid-cols-3 gap-2 md:hidden">
+                                                <Button
+                                                    size="sm"
+                                                    color="success"
+                                                    variant="flat"
+                                                    startContent={<FaCheckCircle />}
+                                                    onPress={onOpenCompleteConfirm}
+                                                >
+                                                    Mark as Complete
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    color="default"
+                                                    variant="flat"
+                                                    onPress={goToPreviousLesson}
+                                                >
+                                                    Previous
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    color="primary"
+                                                    variant="flat"
+                                                    onPress={handleNextLessonClick}
+                                                >
+                                                    Next
+                                                </Button>
+                                            </div>
                                         )}
                                     </div>
                                 )}
 
                                 {/* Preview Content */}
-                                <div className="flex-1 p-3 md:p-4 overflow-hidden">
-                                    <div className="h-full rounded-lg overflow-hidden">
-                                        {renderLessonContent()}
+                                <div className="flex-1 p-3 md:p-4 overflow-hidden flex flex-col">
+                                    <div className="flex-0 w-full overflow-hidden rounded-lg">
+                                        <div className="w-full h-[700px] md:h-[800px]">
+                                            {renderLessonContent()}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 overflow-auto mt-4">
+                                        <div className="rounded-2xl border border-gray-200 bg-white p-4 md:p-5 shadow-sm space-y-4">
+                                            {currentLesson?.description && (
+                                                <div>
+                                                    <div className="flex items-center justify-between gap-3 mb-2">
+                                                        <p className="text-sm font-semibold text-gray-900">Description</p>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="light"
+                                                            className="h-auto px-0 text-blue-600 font-medium"
+                                                            onPress={() => setIsDescriptionExpanded((prev) => !prev)}
+                                                        >
+                                                            {isDescriptionExpanded ? "Show less" : "Show all"}
+                                                        </Button>
+                                                    </div>
+                                                    <div
+                                                        className={`text-sm md:text-base text-gray-600 prose prose-sm max-w-none ${isDescriptionExpanded ? "" : "line-clamp-3"}`}
+                                                        dangerouslySetInnerHTML={{
+                                                            __html: DOMPurify.sanitize(normalizeRichHtml(currentLesson?.description)),
+                                                        }}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {renderContentLinks()}
+                                        </div>
                                     </div>
                                 </div>
                             </CardBody>

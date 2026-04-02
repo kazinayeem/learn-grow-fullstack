@@ -4,6 +4,7 @@ interface ITeamMember extends Document {
     name: string;
     role: string;
     image: string; // Image URL
+    imagePublicId?: string;
     imageSize: number; // Size in bytes (deprecated, kept for backward compatibility)
     linkedIn?: string;
     twitter?: string;
@@ -31,6 +32,10 @@ const TeamMemberSchema = new Schema<ITeamMember>(
             type: String,
             required: false,
             default: "placeholder",
+        },
+        imagePublicId: {
+            type: String,
+            default: "",
         },
         imageSize: {
             type: Number,

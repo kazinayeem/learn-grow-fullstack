@@ -220,7 +220,8 @@ export const getCourseById = async (
         id: module._id.toString(),
         lessons: lessons.map((lesson) => ({
           ...lesson,
-          id: lesson._id.toString()
+          id: lesson._id.toString(),
+          contentLinks: lesson.contentLinks || []
         })),
       };
     })
@@ -294,9 +295,12 @@ export const getCourseById = async (
       const { resources: _ignored, ...safeLessonFields } = lesson as any;
       const resultLesson: any = {
         ...safeLessonFields,
+        id: lesson._id.toString(),
         isLocked: isLessonLocked,
         lockReason: isLessonLocked ? lessonLockReason : undefined,
-        isCompleted: isThisLessonCompleted
+        isCompleted: isThisLessonCompleted,
+        // Explicitly include contentLinks if it exists
+        contentLinks: lesson.contentLinks || []
       };
 
       // Remove contentUrl for locked lessons (but keep for privileged users)
@@ -540,12 +544,38 @@ export const deleteModule = (id: string) => {
 
 // ===== LESSON SERVICES =====
 
-export const createLesson = async (data: Partial<ILesson>) => {
-  return Lesson.create(data);
+export const createLesson = async (data: Partial<ILesson> & { isFree?: boolean; isPreview?: boolean; contentLinks?: any[] }) => {
+  const normalizedData: any = {
+    ...data,
+    isFreePreview: data.isFreePreview ?? data.isFree ?? data.isPreview ?? false,
+  };
+
+  if (Array.isArray(data.contentLinks)) {
+    normalizedData.contentLinks = data.contentLinks
+      .filter((l: any) => l && l.url)
+      .map((l: any) => ({
+        title: l.title || "Resource",
+        url: l.url,
+        type: l.type || "other",
+        isPrimary: !!l.isPrimary,
+      }));
+  }
+
+  return Lesson.create(normalizedData);
 };
 
 export const getLessonsByModule = (moduleId: string) => {
-  return Lesson.find({ moduleId }).sort({ orderIndex: 1 });
+  return Lesson.find({ moduleId })
+    .sort({ orderIndex: 1 })
+    .lean()
+    .then((lessons: any[]) =>
+      lessons.map((lesson) => ({
+        ...lesson,
+        id: lesson._id?.toString?.() || lesson.id,
+        isFreePreview: lesson.isFreePreview ?? lesson.isFree ?? lesson.isPreview ?? false,
+        contentLinks: Array.isArray(lesson.contentLinks) ? lesson.contentLinks : [],
+      }))
+    );
 };
 
 export const completeLesson = async (userId: string, lessonId: string) => {
@@ -646,7 +676,15 @@ export const getLessonById = async (
     userRole === "admin" ||
     (userRole === "instructor" && courseInstructorId === userId);
 
-  if (isPrivileged) return lesson;
+  if (isPrivileged) {
+    const plain = lesson.toObject();
+    return {
+      ...plain,
+      id: plain._id?.toString?.() || id,
+      isFreePreview: plain.isFreePreview ?? (plain as any).isFree ?? (plain as any).isPreview ?? false,
+      contentLinks: Array.isArray((plain as any).contentLinks) ? (plain as any).contentLinks : [],
+    };
+  }
 
   // 3. User Checks
   if (!userId) {
@@ -710,8 +748,27 @@ export const getLessonById = async (
   }
 };
 
-export const updateLesson = async (id: string, data: Partial<ILesson>) => {
-  return Lesson.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+export const updateLesson = async (id: string, data: Partial<ILesson> & { isFree?: boolean; isPreview?: boolean; contentLinks?: any[] }) => {
+  const normalizedData: any = {
+    ...data,
+  };
+
+  if (data.isFreePreview !== undefined || data.isFree !== undefined || data.isPreview !== undefined) {
+    normalizedData.isFreePreview = data.isFreePreview ?? data.isFree ?? data.isPreview;
+  }
+
+  if (Array.isArray(data.contentLinks)) {
+    normalizedData.contentLinks = data.contentLinks
+      .filter((l: any) => l && l.url)
+      .map((l: any) => ({
+        title: l.title || "Resource",
+        url: l.url,
+        type: l.type || "other",
+        isPrimary: !!l.isPrimary,
+      }));
+  }
+
+  return Lesson.findByIdAndUpdate(id, normalizedData, { new: true, runValidators: true });
 };
 
 export const deleteLesson = (id: string) => {
@@ -719,7 +776,7 @@ export const deleteLesson = (id: string) => {
 };
 
 export const getFreeLessons = () => {
-  return Lesson.find({ isFree: true }).lean();
+  return Lesson.find({ isFreePreview: true }).lean();
 };
 
 // ===== COURSE PUBLISHING & APPROVAL SERVICES =====

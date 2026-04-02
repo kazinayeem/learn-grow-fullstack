@@ -1,10 +1,13 @@
 import express from "express";
+import multer from "multer";
 import * as controller from "../controller/course.controller";
+import * as thumbnailController from "../controller/thumbnail.controller";
 import * as schema from "../schema/course.schema";
 import { validate } from "@/middleware/validate";
 import { requireAuth, requireRoles, requireApprovedInstructor, optionalAuth } from "@/middleware/auth";
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1 * 1024 * 1024 } });
 
 // ===== COURSE ROUTES =====
 
@@ -211,6 +214,23 @@ router.patch(
   requireRoles("admin", "manager"),
   validate(schema.adminSetRegistrationSchema),
   controller.adminSetRegistration
+);
+
+// ===== COURSE THUMBNAIL ROUTES =====
+
+router.post(
+  "/upload-thumbnail/:courseId",
+  requireAuth,
+  requireRoles("admin", "instructor"),
+  upload.single("thumbnail"),
+  thumbnailController.uploadCourseThumbnail
+);
+
+router.delete(
+  "/delete-thumbnail/:courseId",
+  requireAuth,
+  requireRoles("admin", "instructor"),
+  thumbnailController.deleteCourseThumbnail
 );
 
 export default router;

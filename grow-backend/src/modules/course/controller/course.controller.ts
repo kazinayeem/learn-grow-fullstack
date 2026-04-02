@@ -4,6 +4,7 @@ import { parsePagination } from "@/utils/pagination";
 import { Course } from "../model/course.model";
 import { Module } from "../model/module.model";
 import { Lesson } from "../model/lesson.model";
+import { deleteFromCloudinary } from "@/utils/cloudinary";
 
 // Helpers to enforce instructor ownership
 const ensureCourseAccess = async (
@@ -345,6 +346,23 @@ export const deleteCourse = async (req: Request, res: Response) => {
       return res.status(access.status).json({ success: false, message: access.message });
     }
 
+    // Clean up Cloudinary thumbnail if this course uses one
+    try {
+      const thumbnail = access.course.thumbnail;
+      if (thumbnail && thumbnail.includes("res.cloudinary.com")) {
+        const publicId = thumbnail
+          .split("/upload/")[1]
+          ?.replace(/^v\d+\//, "")
+          ?.replace(/\.[^/.]+$/, "");
+
+        if (publicId) {
+          await deleteFromCloudinary(publicId);
+        }
+      }
+    } catch (cleanupError) {
+      console.log("Could not delete course thumbnail from Cloudinary:", cleanupError);
+    }
+
     await service.deleteCourse(req.params.id);
     res.json({
       success: true,
@@ -549,11 +567,32 @@ export const createLesson = async (req: Request, res: Response) => {
       return res.status(moduleCheck.status).json({ success: false, message: moduleCheck.message });
     }
 
-    const lesson = await service.createLesson(req.body);
+    const normalizedBody: any = {
+      ...req.body,
+      isFreePreview: req.body.isFreePreview ?? req.body.isFree ?? req.body.isPreview ?? false,
+    };
+
+    if (Array.isArray(req.body.contentLinks)) {
+      normalizedBody.contentLinks = req.body.contentLinks
+        .filter((l: any) => l && l.url)
+        .map((l: any) => ({
+          title: l.title || "Resource",
+          url: l.url,
+          type: l.type || "other",
+          isPrimary: !!l.isPrimary,
+        }));
+    }
+
+    const lesson = await service.createLesson(normalizedBody);
+    const lessonData: any = (lesson as any)?.toObject ? (lesson as any).toObject() : lesson;
     res.status(201).json({
       success: true,
       message: "Lesson created successfully",
-      data: lesson,
+      data: {
+        ...lessonData,
+        isFreePreview: lessonData?.isFreePreview ?? false,
+        contentLinks: Array.isArray(lessonData?.contentLinks) ? lessonData.contentLinks : [],
+      },
     });
   } catch (error: any) {
     res.status(500).json({
@@ -638,11 +677,39 @@ export const updateLesson = async (req: Request, res: Response) => {
       return res.status(access.status).json({ success: false, message: access.message });
     }
 
-    const lesson = await service.updateLesson(req.params.id, req.body);
+    const normalizedBody: any = {
+      ...req.body,
+    };
+
+    if (
+      req.body.isFreePreview !== undefined ||
+      req.body.isFree !== undefined ||
+      req.body.isPreview !== undefined
+    ) {
+      normalizedBody.isFreePreview = req.body.isFreePreview ?? req.body.isFree ?? req.body.isPreview;
+    }
+
+    if (Array.isArray(req.body.contentLinks)) {
+      normalizedBody.contentLinks = req.body.contentLinks
+        .filter((l: any) => l && l.url)
+        .map((l: any) => ({
+          title: l.title || "Resource",
+          url: l.url,
+          type: l.type || "other",
+          isPrimary: !!l.isPrimary,
+        }));
+    }
+
+    const lesson = await service.updateLesson(req.params.id, normalizedBody);
+    const lessonData: any = (lesson as any)?.toObject ? (lesson as any).toObject() : lesson;
     res.json({
       success: true,
       message: "Lesson updated successfully",
-      data: lesson,
+      data: {
+        ...lessonData,
+        isFreePreview: lessonData?.isFreePreview ?? false,
+        contentLinks: Array.isArray(lessonData?.contentLinks) ? lessonData.contentLinks : [],
+      },
     });
   } catch (error: any) {
     res.status(500).json({

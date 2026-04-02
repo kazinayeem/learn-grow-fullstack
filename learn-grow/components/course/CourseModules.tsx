@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useCompleteLessonMutation } from "@/redux/api/courseApi";
+import DOMPurify from "isomorphic-dompurify";
 import {
     FaLock,
     FaCheckCircle,
@@ -27,6 +28,12 @@ interface LessonFromApi {
     duration?: number;
     type?: "video" | "pdf" | "quiz" | "assignment" | "article";
     contentUrl?: string;
+    contentLinks?: Array<{
+        title: string;
+        url: string;
+        type?: "video" | "drive" | "pdf" | "resource" | "other";
+        isPrimary?: boolean;
+    }>;
     isPublished?: boolean;
     // New fields
     isLocked?: boolean;
@@ -129,6 +136,55 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
         return `${hours}h ${mins}m`;
     };
 
+    const decodeHtmlEntities = (value: string) => {
+        if (typeof window === "undefined") return value;
+        const textarea = document.createElement("textarea");
+        textarea.innerHTML = value;
+        return textarea.value;
+    };
+
+    const normalizeRichHtml = (value?: string) => {
+        let normalized = String(value || "");
+        // Some lessons are double-encoded (e.g., &lt;p&gt;...&amp;nbsp;...), decode a couple passes.
+        for (let i = 0; i < 2; i += 1) {
+            const decoded = decodeHtmlEntities(normalized);
+            if (decoded === normalized) break;
+            normalized = decoded;
+        }
+        return normalized;
+    };
+
+    const toPlainText = (html?: string) =>
+        DOMPurify.sanitize(normalizeRichHtml(html), { ALLOWED_TAGS: [] })
+            .replace(/\u00a0/g, " ")
+            .replace(/&nbsp;/g, " ")
+            .trim();
+
+    const resolveLessonContentUrl = (lesson: LessonFromApi | null) => {
+        if (!lesson) return "";
+        if (lesson.contentUrl) return lesson.contentUrl;
+
+        const links = Array.isArray(lesson.contentLinks) ? lesson.contentLinks : [];
+        if (links.length === 0) return "";
+
+        const primary = links.find((l) => l?.isPrimary && l?.url);
+        if (primary?.url) return primary.url;
+
+        const preferred = links.find((l) => l?.url && (l.type === "video" || l.type === "drive" || l.type === "pdf"));
+        if (preferred?.url) return preferred.url;
+
+        return links.find((l) => l?.url)?.url || "";
+    };
+
+    const normalizeDrivePreviewUrl = (url: string) => {
+        if (!url.includes("drive.google.com")) return url;
+        const fileIdMatch = url.match(/\/d\/([^/]+)/);
+        if (fileIdMatch?.[1]) {
+            return `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`;
+        }
+        return url;
+    };
+
     const getLessonIcon = (type: string) => {
         switch (type) {
             case "video":
@@ -146,12 +202,10 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
         const id = lesson._id || lesson.id;
         setOpeningLessonId(id || null);
 
-        if (!hasAccess && !lesson.isFreePreview) {
-            setOpeningLessonId(null);
-            return;
-        }
+        // Determine if lesson is really locked (respecting canViewPreview and isFreePreview)
+        const isReallyLocked = canViewPreview ? !!lesson.isLocked : (!lesson.isFreePreview && !hasAccess);
 
-        if (lesson.isLocked) {
+        if (isReallyLocked) {
             setOpeningLessonId(null);
             return;
         }
@@ -349,7 +403,7 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
 
                                                     {lesson.description && (
                                                         <p className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2 line-clamp-1">
-                                                            {lesson.description}
+                                                            {toPlainText(lesson.description)}
                                                         </p>
                                                     )}
 
@@ -479,73 +533,88 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                         <div className="px-4 sm:px-6 py-4 max-h-[80vh] overflow-y-auto space-y-4" style={{ WebkitOverflowScrolling: 'touch' }}>
                             {selectedLesson.description && (
                                 <div className="bg-blue-50 p-4 rounded-lg">
-                                    <p className="text-sm text-gray-700">{selectedLesson.description}</p>
+                                    <div
+                                        className="prose prose-sm max-w-none text-gray-700"
+                                        dangerouslySetInnerHTML={{
+                                            __html: DOMPurify.sanitize(normalizeRichHtml(selectedLesson.description)),
+                                        }}
+                                    />
                                 </div>
                             )}
 
-                            {/* Content Display */}
-                            {selectedLesson.type === "video" && selectedLesson.contentUrl && (() => {
-                                const url = selectedLesson.contentUrl;
-                                let embedUrl = url;
-                                
-                                // Extract YouTube video ID
-                                if (url.includes("youtube.com") || url.includes("youtu.be")) {
-                                    let videoId = "";
-                                    if (url.includes("youtube.com/watch?v=")) {
-                                        videoId = url.split("v=")[1]?.split("&")[0] || "";
-                                    } else if (url.includes("youtu.be/")) {
-                                        videoId = url.split("youtu.be/")[1]?.split("?")[0] || "";
-                                    } else if (url.includes("youtube.com/embed/")) {
-                                        videoId = url.split("embed/")[1]?.split("?")[0] || "";
-                                    }
-                                    
-                                    if (videoId) {
-                                        // Use youtube-nocookie.com to avoid bot detection
-                                        embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`;
-                                    }
-                                }
-                                
-                                return (
-                                    <div className="aspect-video bg-black rounded-lg overflow-hidden">
-                                        {(url.includes("youtube.com") || url.includes("youtu.be")) ? (
-                                            <iframe
-                                                src={embedUrl}
-                                                className="w-full h-full"
-                                                allowFullScreen
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                                                style={{ border: 'none' }}
-                                                title={selectedLesson.title}
-                                                loading="lazy"
-                                                referrerPolicy="strict-origin-when-cross-origin"
-                                            />
-                                        ) : url.includes("vimeo.com") ? (
-                                            <iframe
-                                                src={url.includes("/video/") ? url : url.replace("vimeo.com/", "player.vimeo.com/video/")}
-                                                className="w-full h-full"
-                                                allowFullScreen
-                                                allow="autoplay; fullscreen; picture-in-picture"
-                                                style={{ border: 'none' }}
-                                                title={selectedLesson.title}
-                                                loading="lazy"
-                                            />
-                                        ) : (
-                                            <video
-                                                src={url}
-                                                controls
-                                                className="w-full h-full"
-                                                playsInline
-                                                controlsList="nodownload"
-                                                preload="metadata"
-                                                style={{ objectFit: 'contain' }}
-                                            >
-                                                Your browser does not support the video tag.
-                                            </video>
-                                        )}
-                                    </div>
-                                );
-                            })()}
+                            {/* Content Display - Wrapped with key to force full remount on lesson change */}
+                            {selectedLesson.type === "video" && resolveLessonContentUrl(selectedLesson) && (
+                                <div key={`video-player-${selectedLesson._id || selectedLesson.id}`}>
+                                    {(() => {
+                                        const url = normalizeDrivePreviewUrl(resolveLessonContentUrl(selectedLesson));
+                                        let embedUrl = url;
+                                        
+                                        // Extract YouTube video ID
+                                        if (url.includes("youtube.com") || url.includes("youtu.be")) {
+                                            let videoId = "";
+                                            if (url.includes("youtube.com/watch?v=")) {
+                                                videoId = url.split("v=")[1]?.split("&")[0] || "";
+                                            } else if (url.includes("youtu.be/")) {
+                                                videoId = url.split("youtu.be/")[1]?.split("?")[0] || "";
+                                            } else if (url.includes("youtube.com/embed/")) {
+                                                videoId = url.split("embed/")[1]?.split("?")[0] || "";
+                                            }
+                                            
+                                            if (videoId) {
+                                                // Use youtube-nocookie.com to avoid bot detection and add cache-buster
+                                                const timestamp = Date.now();
+                                                embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}&_=${timestamp}`;
+                                            }
+                                        }
+                                        
+                                        return (
+                                            <div className="aspect-video bg-black rounded-lg overflow-hidden" key={`container-${selectedLesson._id || selectedLesson.id}`}>
+                                                {(url.includes("youtube.com") || url.includes("youtu.be")) ? (
+                                                    <iframe
+                                                        key={`iframe-${selectedLesson._id || selectedLesson.id}-${Date.now()}`}
+                                                        src={embedUrl}
+                                                        className="w-full h-full"
+                                                        allowFullScreen
+                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                                                        style={{ border: 'none' }}
+                                                        title={selectedLesson.title}
+                                                        loading="eager"
+                                                        referrerPolicy="strict-origin-when-cross-origin"
+                                                    />
+                                                ) : url.includes("vimeo.com") || url.includes("drive.google.com") ? (
+                                                    <iframe
+                                                        key={`vimeo-${selectedLesson._id || selectedLesson.id}-${Date.now()}`}
+                                                        src={url.includes("vimeo.com")
+                                                            ? (url.includes("/video/") ? url : url.replace("vimeo.com/", "player.vimeo.com/video/"))
+                                                            : url}
+                                                        className="w-full h-full"
+                                                        allowFullScreen
+                                                        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                                                        style={{ border: 'none' }}
+                                                        title={selectedLesson.title}
+                                                        loading="eager"
+                                                    />
+                                                ) : (
+                                                    <video
+                                                        key={`video-${selectedLesson._id || selectedLesson.id}-${Date.now()}`}
+                                                        src={url}
+                                                        controls
+                                                        className="w-full h-full"
+                                                        playsInline
+                                                        controlsList="nodownload"
+                                                        preload="auto"
+                                                        style={{ objectFit: 'contain' }}
+                                                    >
+                                                        Your browser does not support the video tag.
+                                                    </video>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+                            )}
 
-                            {selectedLesson.type === "pdf" && selectedLesson.contentUrl && (
+                            {selectedLesson.type === "pdf" && resolveLessonContentUrl(selectedLesson) && (
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
                                         <div className="flex items-center gap-3">
@@ -558,14 +627,14 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                         <div className="flex gap-2">
                                             <button
                                                 type="button"
-                                                onClick={() => window.open(selectedLesson.contentUrl, "_blank")}
+                                                onClick={() => window.open(resolveLessonContentUrl(selectedLesson), "_blank")}
                                                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 transition"
                                             >
                                                 <FaExpand />
                                                 Open
                                             </button>
                                             <a
-                                                href={selectedLesson.contentUrl}
+                                                href={resolveLessonContentUrl(selectedLesson)}
                                                 download
                                                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 transition"
                                             >
@@ -575,27 +644,28 @@ export default function CourseModules({ courseId, isEnrolled, modulesFromApi, ha
                                         </div>
                                     </div>
                                     <iframe
-                                        src={`${selectedLesson.contentUrl}#toolbar=0`}
+                                        src={`${resolveLessonContentUrl(selectedLesson)}#toolbar=0`}
                                         className="w-full h-[600px] border rounded-lg"
                                     />
                                 </div>
                             )}
 
-                            {selectedLesson.type === "article" && selectedLesson.contentUrl && (
+                            {selectedLesson.type === "article" && resolveLessonContentUrl(selectedLesson) && (
                                 <div className="prose max-w-none">
                                     <iframe
-                                        src={selectedLesson.contentUrl}
+                                        src={resolveLessonContentUrl(selectedLesson)}
                                         className="w-full h-[600px] border rounded-lg"
                                     />
                                 </div>
                             )}
 
-                            {!selectedLesson.contentUrl && (
+                            {!resolveLessonContentUrl(selectedLesson) && (
                                 <div className="text-center py-12 text-gray-500">
                                     <FaBook className="text-6xl mx-auto mb-4 text-gray-300" />
                                     <p>Content not available yet</p>
                                 </div>
                             )}
+
                         </div>
 
                         <div className="flex items-center justify-end gap-2 px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50">

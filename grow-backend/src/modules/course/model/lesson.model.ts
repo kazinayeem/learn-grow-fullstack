@@ -1,11 +1,19 @@
 import { Schema, model, Types } from "mongoose";
 
+export interface IContentLink {
+  title: string;
+  url: string;
+  type: "video" | "drive" | "pdf" | "resource" | "other";
+  isPrimary?: boolean;
+}
+
 export interface ILesson {
   moduleId: Types.ObjectId;
   title: string;
   description?: string;
   type: "video" | "pdf" | "quiz" | "assignment" | "article";
   contentUrl?: string;
+  contentLinks?: IContentLink[];
   duration?: number;
   orderIndex: number;
   isPublished?: boolean;
@@ -34,6 +42,25 @@ const lessonSchema = new Schema<ILesson>(
       required: true,
     },
     contentUrl: String,
+    contentLinks: [{
+      title: {
+        type: String,
+        required: true,
+      },
+      url: {
+        type: String,
+        required: true,
+      },
+      type: {
+        type: String,
+        enum: ["video", "drive", "pdf", "resource", "other"],
+        default: "other",
+      },
+      isPrimary: {
+        type: Boolean,
+        default: false,
+      },
+    }],
     duration: {
       type: Number,
       min: 0,

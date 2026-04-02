@@ -80,17 +80,25 @@ export const moduleIdSchema = z.object({
   }),
 });
 
+const contentLinkSchema = z.object({
+  title: z.string().min(1),
+  url: z.string().min(1),
+  type: z.enum(["video", "drive", "pdf", "resource", "other"]).optional(),
+  isPrimary: z.boolean().optional(),
+});
+
 export const createLessonSchema = z.object({
   body: z.object({
     moduleId: z.string().length(24, "Invalid module ID"),
     title: z.string().min(3).max(200),
     description: z.string().optional(),
-    type: z.enum(["video", "pdf", "quiz", "assignment"]),
+    type: z.enum(["video", "pdf", "quiz", "assignment", "article"]),
     contentUrl: z.string().optional(),
+    contentLinks: z.array(contentLinkSchema).optional(),
     duration: z.number().min(0).optional(),
     orderIndex: z.number().min(0),
-    isPreview: z.boolean().optional().default(false),
-    isFree: z.boolean().optional().default(false),
+    isFreePreview: z.boolean().optional().default(false),
+    isPublished: z.boolean().optional(),
   }),
 });
 
@@ -101,12 +109,13 @@ export const updateLessonSchema = z.object({
   body: z.object({
     title: z.string().min(3).max(200).optional(),
     description: z.string().optional(),
-    type: z.enum(["video", "pdf", "quiz", "assignment"]).optional(),
+    type: z.enum(["video", "pdf", "quiz", "assignment", "article"]).optional(),
     contentUrl: z.string().optional(),
+    contentLinks: z.array(contentLinkSchema).optional(),
     duration: z.number().min(0).optional(),
     orderIndex: z.number().min(0).optional(),
-    isPreview: z.boolean().optional(),
-    isFree: z.boolean().optional(),
+    isFreePreview: z.boolean().optional(),
+    isPublished: z.boolean().optional(),
   }),
 });
 

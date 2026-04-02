@@ -19,6 +19,13 @@ interface TeamMember {
     twitter?: string;
 }
 
+const resolveImageSrc = (value?: string) => {
+    if (!value || value === "placeholder") return "";
+    if (value.startsWith("data:image")) return value;
+    if (value.startsWith("http")) return value;
+    return `data:image/jpeg;base64,${value}`;
+};
+
 export default function TeamClient({ content }: TeamClientProps) {
     const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,6 +49,7 @@ export default function TeamClient({ content }: TeamClientProps) {
 
     const MemberCard = ({ member, color }: { member: TeamMember; color: string }) => {
         const [imageError, setImageError] = React.useState(false);
+        const imageSrc = resolveImageSrc(member.image);
 
         const getInitials = (name: string) => {
             return name
@@ -61,9 +69,9 @@ export default function TeamClient({ content }: TeamClientProps) {
                 <CardBody className="p-4 sm:p-6 text-center">
                     <div className="mb-4 flex justify-center">
                         <div className="w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0">
-                            {member.image && !imageError ? (
+                            {imageSrc && !imageError ? (
                                 <Image
-                                    src={member.image}
+                                    src={imageSrc}
                                     alt={member.name}
                                     className="w-full h-full rounded-full object-cover border-4"
                                     style={{ borderColor: color }}
@@ -209,6 +217,7 @@ export default function TeamClient({ content }: TeamClientProps) {
                                 .toUpperCase()
                                 .slice(0, 2);
                         };
+                        const selectedImageSrc = resolveImageSrc(selectedMember?.image);
 
                         return (
                             <>
@@ -221,9 +230,9 @@ export default function TeamClient({ content }: TeamClientProps) {
                                             {/* Profile Image or Initials */}
                                             <div className="flex justify-center">
                                                 <div className="w-40 h-40">
-                                                    {selectedMember.image ? (
+                                                    {selectedImageSrc ? (
                                                         <Image
-                                                            src={selectedMember.image}
+                                                            src={selectedImageSrc}
                                                             alt={selectedMember.name}
                                                             className="w-full h-full rounded-full object-cover border-4 border-blue-200 shadow-lg"
                                                         />

@@ -1,17 +1,35 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import "react-quill-new/dist/quill.snow.css";
-import { Card, CardBody, CardHeader, Input, Textarea, Button, Select, SelectItem, Switch, Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@nextui-org/react";
+import {
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Input,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  Select,
+  SelectItem,
+  Spinner,
+  Switch,
+  useDisclosure,
+} from "@nextui-org/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { FaCloudUploadAlt, FaPlus, FaTrash } from "react-icons/fa";
 import { useGetCourseByIdQuery, useUpdateCourseMutation } from "@/redux/api/courseApi";
-import { useGetAllCategoriesQuery, useCreateCategoryMutation } from "@/redux/api/categoryApi";
-import { FaPlus } from "react-icons/fa";
+import { useCreateCategoryMutation, useGetAllCategoriesQuery } from "@/redux/api/categoryApi";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
 const ACCESS_DURATIONS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "lifetime"];
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api").replace(/\/+$/, "");
 
 function EditInstructorCourseContent() {
   const router = useRouter();
@@ -20,15 +38,22 @@ function EditInstructorCourseContent() {
 
   const { data: courseData, isLoading: isFetching } = useGetCourseByIdQuery(courseId ?? "", { skip: !courseId });
   const course = courseData?.data;
+
   const { data: categoriesData, isLoading: isCategoriesLoading } = useGetAllCategoriesQuery(undefined);
+  const categories = Array.isArray(categoriesData) ? categoriesData : [];
+
+  const [updateCourse, { isLoading: isUpdating }] = useUpdateCourseMutation();
   const [createCategory, { isLoading: isCreatingCategory }] = useCreateCategoryMutation();
+
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryDescription, setNewCategoryDescription] = useState("");
 
-  const categories = Array.isArray(categoriesData) ? categoriesData : [];
+  const [thumbnailPreview, setThumbnailPreview] = useState<string>("");
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+  const [isDraggingThumbnail, setIsDraggingThumbnail] = useState(false);
 
-  const [updateCourse, { isLoading: isUpdating }] = useUpdateCourseMutation();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -44,40 +69,117 @@ function EditInstructorCourseContent() {
   });
 
   useEffect(() => {
-    if (course) {
-      // Handle category: if it's an object with _id, use _id; otherwise use the string value
-      const categoryValue = typeof course.category === 'object' && course.category?._id 
-        ? course.category._id 
-        : course.category || "";
-        
-      setFormData({
-        title: course.title || "",
-        description: course.description || "",
-        price: String(course.price || ""),
-        level: course.level || "Beginner",
-        category: categoryValue,
-        thumbnail: course.thumbnail || "",
-        type: course.type || "recorded",
-        accessDuration: course.accessDuration || "lifetime",
-        isRegistrationOpen: !!course.isRegistrationOpen,
-        registrationDeadline: course.registrationDeadline ? new Date(course.registrationDeadline).toISOString().slice(0, 10) : "",
-        isPublished: course.isPublished ?? true,
-      });
-    }
+    if (!course) return;
+
+    const categoryValue = typeof course.category === "object" && course.category?._id
+      ? course.category._id
+      : course.category || "";
+
+    setFormData({
+      title: course.title || "",
+      description: course.description || "",
+      price: String(course.price || ""),
+      level: course.level || "Beginner",
+      category: categoryValue,
+      thumbnail: course.thumbnail || "",
+      type: course.type || "recorded",
+      accessDuration: course.accessDuration || "lifetime",
+      isPublished: course.isPublished ?? true,
+      isRegistrationOpen: !!course.isRegistrationOpen,
+      registrationDeadline: course.registrationDeadline ? new Date(course.registrationDeadline).toISOString().slice(0, 10) : "",
+    });
+    setThumbnailPreview(course.thumbnail || "");
   }, [course]);
+
+  const handleThumbnailFileSelect = (file: File) => {
+    if (file.size > 1024 * 1024) {
+      alert("File size must be less than 1MB");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
+      return;
+    }
+
+    setThumbnailFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setThumbnailPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleThumbnailUpload = async () => {
+    if (!thumbnailFile || !courseId) return;
+
+    setIsUploadingThumbnail(true);
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append("thumbnail", thumbnailFile);
+
+      const response = await fetch(`${API_BASE_URL}/course/upload-thumbnail/${courseId}`, {
+        method: "POST",
+        body: formDataToSend,
+        credentials: "include",
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        alert(result?.message || "Failed to upload thumbnail");
+        return;
+      }
+
+      setFormData((prev) => ({ ...prev, thumbnail: result.data.thumbnailUrl }));
+      setThumbnailFile(null);
+      alert("Thumbnail uploaded successfully");
+    } catch (error: any) {
+      alert(`Upload failed: ${error?.message || "Unknown error"}`);
+    } finally {
+      setIsUploadingThumbnail(false);
+    }
+  };
+
+  const handleThumbnailDelete = async () => {
+    if (!courseId || !formData.thumbnail) return;
+    if (!confirm("Are you sure you want to delete the thumbnail?")) return;
+
+    setIsUploadingThumbnail(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/course/delete-thumbnail/${courseId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        alert(result?.message || "Failed to delete thumbnail");
+        return;
+      }
+
+      setFormData((prev) => ({ ...prev, thumbnail: "" }));
+      setThumbnailPreview("");
+      setThumbnailFile(null);
+      alert("Thumbnail deleted successfully");
+    } catch (error: any) {
+      alert(`Delete failed: ${error?.message || "Unknown error"}`);
+    } finally {
+      setIsUploadingThumbnail(false);
+    }
+  };
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) {
       alert("Category name is required");
       return;
     }
+
     try {
       const result = await createCategory({
         name: newCategoryName,
         description: newCategoryDescription,
       }).unwrap();
+
       const newCategoryId = result.data?._id || result._id;
-      setFormData({ ...formData, category: newCategoryId });
+      setFormData((prev) => ({ ...prev, category: newCategoryId }));
       setNewCategoryName("");
       setNewCategoryDescription("");
       onClose();
@@ -89,14 +191,21 @@ function EditInstructorCourseContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!courseId) return;
+
     try {
-      // Convert registration deadline date to ISO string with time at start of day (UTC)
-      const deadline = formData.registrationDeadline 
-        ? new Date(formData.registrationDeadline + "T00:00:00.000Z").toISOString()
+      const deadline = formData.registrationDeadline
+        ? new Date(`${formData.registrationDeadline}T00:00:00.000Z`).toISOString()
         : undefined;
-      const payload = { id: courseId, ...formData, price: Number(formData.price), registrationDeadline: deadline } as any;
+
+      const payload = {
+        id: courseId,
+        ...formData,
+        price: Number(formData.price),
+        registrationDeadline: deadline,
+      } as any;
+
       await updateCourse(payload).unwrap();
-      alert("Course updated successfully!");
+      alert("Course updated successfully");
       router.push("/instructor/courses");
     } catch (error: any) {
       alert(`Failed to update course: ${error?.data?.message || error?.message}`);
@@ -104,7 +213,7 @@ function EditInstructorCourseContent() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   if (isFetching) {
@@ -120,8 +229,8 @@ function EditInstructorCourseContent() {
   }
 
   return (
-    <div className="container mx-auto px-6 py-8 max-w-4xl">
-      <div className="flex gap-3 mb-6">
+    <div className="container mx-auto max-w-4xl px-6 py-8">
+      <div className="mb-6 flex gap-3">
         <Button variant="light" onPress={() => router.back()}>← Back</Button>
         <Button variant="flat" onPress={() => router.push("/instructor/courses")}>Back to My Courses</Button>
       </div>
@@ -131,14 +240,16 @@ function EditInstructorCourseContent() {
           <h1 className="text-2xl font-bold">Edit Course</h1>
           <p className="text-gray-600">Update course details</p>
         </CardHeader>
+
         <CardBody className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input label="Course Title" name="title" value={formData.title} onChange={handleChange} isRequired variant="bordered" />
+
             <div>
-              <label className="block text-sm font-medium mb-2">Description (Rich Text)</label>
-              <ReactQuill 
-                value={formData.description} 
-                onChange={(html) => setFormData({ ...formData, description: html })}
+              <label className="mb-2 block text-sm font-medium">Description (Rich Text)</label>
+              <ReactQuill
+                value={formData.description}
+                onChange={(html) => setFormData((prev) => ({ ...prev, description: html }))}
                 modules={{
                   toolbar: [
                     [{ header: [1, 2, 3, false] }],
@@ -155,24 +266,29 @@ function EditInstructorCourseContent() {
                 theme="snow"
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <Input type="number" label="Price (BDT)" name="price" value={formData.price} onChange={handleChange} isRequired variant="bordered" />
-              <Select label="Level" selectedKeys={new Set([formData.level])} onSelectionChange={(keys) => {
-                const value = Array.from(keys)[0] as string;
-                setFormData({ ...formData, level: value });
-              }} variant="bordered">
+
+              <Select
+                label="Level"
+                selectedKeys={new Set([formData.level])}
+                onSelectionChange={(keys) => setFormData((prev) => ({ ...prev, level: Array.from(keys)[0] as string }))}
+                variant="bordered"
+              >
                 <SelectItem key="Beginner" value="Beginner">Beginner</SelectItem>
                 <SelectItem key="Intermediate" value="Intermediate">Intermediate</SelectItem>
                 <SelectItem key="Advanced" value="Advanced">Advanced</SelectItem>
               </Select>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="flex gap-2">
-                <Select 
-                  label="Category" 
+                <Select
+                  label="Category"
                   placeholder={isCategoriesLoading ? "Loading..." : "Select a category"}
-                  selectedKeys={formData.category ? new Set([formData.category]) : new Set()} 
-                  onSelectionChange={(keys) => setFormData({ ...formData, category: Array.from(keys)[0] as string })}
+                  selectedKeys={formData.category ? new Set([formData.category]) : new Set()}
+                  onSelectionChange={(keys) => setFormData((prev) => ({ ...prev, category: Array.from(keys)[0] as string }))}
                   variant="bordered"
                   className="flex-1"
                   isLoading={isCategoriesLoading}
@@ -181,41 +297,146 @@ function EditInstructorCourseContent() {
                     <SelectItem key={cat._id} value={cat._id}>{cat.name}</SelectItem>
                   ))}
                 </Select>
-                <Button 
-                  isIconOnly 
-                  color="primary" 
-                  variant="flat" 
-                  onPress={onOpen}
-                  className="mt-6"
-                  title="Create new category"
-                >
+
+                <Button isIconOnly color="primary" variant="flat" onPress={onOpen} className="mt-6" title="Create new category">
                   <FaPlus />
                 </Button>
               </div>
-              <Select label="Course Type" selectedKeys={new Set([formData.type])} onSelectionChange={(keys) => {
-                const value = Array.from(keys)[0] as string;
-                setFormData({ ...formData, type: value });
-              }} variant="bordered">
+
+              <Select
+                label="Course Type"
+                selectedKeys={new Set([formData.type])}
+                onSelectionChange={(keys) => setFormData((prev) => ({ ...prev, type: Array.from(keys)[0] as string }))}
+                variant="bordered"
+              >
                 <SelectItem key="live" value="live">Live</SelectItem>
                 <SelectItem key="recorded" value="recorded">Recorded</SelectItem>
               </Select>
-              <Select label="Access Duration" selectedKeys={new Set([formData.accessDuration])} onSelectionChange={(keys) => {
-                const value = Array.from(keys)[0] as string;
-                setFormData({ ...formData, accessDuration: value });
-              }} variant="bordered">
-                {ACCESS_DURATIONS.map((duration) => (<SelectItem key={duration}>{duration === "lifetime" ? "Lifetime Access" : `${duration} Month${duration !== "1" ? "s" : ""}`}</SelectItem>))}
+
+              <Select
+                label="Access Duration"
+                selectedKeys={new Set([formData.accessDuration])}
+                onSelectionChange={(keys) => setFormData((prev) => ({ ...prev, accessDuration: Array.from(keys)[0] as string }))}
+                variant="bordered"
+              >
+                {ACCESS_DURATIONS.map((duration) => (
+                  <SelectItem key={duration}>
+                    {duration === "lifetime" ? "Lifetime Access" : `${duration} Month${duration !== "1" ? "s" : ""}`}
+                  </SelectItem>
+                ))}
               </Select>
+
               <div className="flex items-center gap-2">
                 <span className="text-sm">Open Registration?</span>
-                <Switch isSelected={!!formData.isRegistrationOpen} onValueChange={(isSelected) => setFormData({ ...formData, isRegistrationOpen: isSelected })} />
+                <Switch
+                  isSelected={!!formData.isRegistrationOpen}
+                  onValueChange={(isSelected) => setFormData((prev) => ({ ...prev, isRegistrationOpen: isSelected }))}
+                />
               </div>
             </div>
-            <Input label="Registration Deadline" type="date" name="registrationDeadline" value={formData.registrationDeadline} onChange={handleChange} variant="bordered" description="Optional: deadline to allow registrations (for live courses)" />
-            <Input label="Thumbnail URL" name="thumbnail" value={formData.thumbnail} onChange={handleChange} variant="bordered" />
+
+            <Input
+              label="Registration Deadline"
+              type="date"
+              name="registrationDeadline"
+              value={formData.registrationDeadline}
+              onChange={handleChange}
+              variant="bordered"
+              description="Optional: deadline to allow registrations (for live courses)"
+            />
+
+            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50">
+              <CardHeader className="flex-col items-start p-6 pb-2">
+                <h3 className="text-lg font-semibold">Course Thumbnail</h3>
+                <p className="text-sm text-gray-600">Max size: 1MB (JPEG, PNG, WebP)</p>
+              </CardHeader>
+
+              <CardBody className="space-y-4 p-6">
+                {thumbnailPreview && (
+                  <div className="relative h-48 w-full overflow-hidden rounded-lg bg-gray-200">
+                    <Image
+                      src={thumbnailPreview}
+                      alt="Thumbnail preview"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 900px"
+                    />
+                  </div>
+                )}
+
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDraggingThumbnail(true);
+                  }}
+                  onDragLeave={() => setIsDraggingThumbnail(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDraggingThumbnail(false);
+                    const dropped = e.dataTransfer.files?.[0];
+                    if (dropped) handleThumbnailFileSelect(dropped);
+                  }}
+                  className={`rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
+                    isDraggingThumbnail ? "border-blue-500 bg-blue-100" : "border-gray-300 bg-gray-50 hover:border-blue-400"
+                  }`}
+                >
+                  <FaCloudUploadAlt className="mx-auto mb-3 text-4xl text-gray-400" />
+                  <p className="mb-1 font-medium text-gray-700">Drag and drop your thumbnail here</p>
+                  <p className="mb-4 text-sm text-gray-500">or</p>
+                  <label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const selected = e.target.files?.[0];
+                        if (selected) handleThumbnailFileSelect(selected);
+                      }}
+                    />
+                    <Button as="span" color="primary" variant="flat" className="cursor-pointer">Choose Image</Button>
+                  </label>
+                </div>
+
+                {thumbnailFile && (
+                  <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+                    <p className="mb-3 text-sm text-yellow-800">
+                      <strong>Ready:</strong> {thumbnailFile.name} ({(thumbnailFile.size / 1024).toFixed(1)} KB)
+                    </p>
+                    <Button
+                      color="warning"
+                      size="sm"
+                      fullWidth
+                      onClick={handleThumbnailUpload}
+                      isLoading={isUploadingThumbnail}
+                    >
+                      Upload Thumbnail
+                    </Button>
+                  </div>
+                )}
+
+                {formData.thumbnail && !thumbnailFile && (
+                  <Button
+                    color="danger"
+                    variant="flat"
+                    size="sm"
+                    startContent={<FaTrash />}
+                    onClick={handleThumbnailDelete}
+                    isLoading={isUploadingThumbnail}
+                  >
+                    Delete Current Thumbnail
+                  </Button>
+                )}
+              </CardBody>
+            </Card>
+
             <div className="flex items-center gap-2">
               <span className="text-sm">Is Published?</span>
-              <Switch isSelected={formData.isPublished} onValueChange={(isSelected) => setFormData({ ...formData, isPublished: isSelected })} />
+              <Switch
+                isSelected={formData.isPublished}
+                onValueChange={(isSelected) => setFormData((prev) => ({ ...prev, isPublished: isSelected }))}
+              />
             </div>
+
             <div className="flex gap-4 pt-4">
               <Button type="submit" color="primary" size="lg" className="flex-1" isLoading={isUpdating}>Update Course</Button>
               <Button type="button" variant="bordered" size="lg" onPress={() => router.back()}>Cancel</Button>
@@ -224,7 +445,6 @@ function EditInstructorCourseContent() {
         </CardBody>
       </Card>
 
-      {/* Create Category Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="md">
         <ModalContent>
           <ModalHeader>Create New Category</ModalHeader>
@@ -245,9 +465,7 @@ function EditInstructorCourseContent() {
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={onClose}>Cancel</Button>
-            <Button color="primary" onPress={handleCreateCategory} isLoading={isCreatingCategory}>
-              Create Category
-            </Button>
+            <Button color="primary" onPress={handleCreateCategory} isLoading={isCreatingCategory}>Create Category</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
