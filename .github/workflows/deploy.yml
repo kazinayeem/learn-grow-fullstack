@@ -97,7 +97,6 @@ jobs:
             echo "🌐 nginx: $(systemctl is-active nginx)"
             echo "💾 mongodb: $(systemctl is-active mongodb)"
 
-            echo "✅ Optimized deployment completed!"
-            echo "📊 Monitor with: ./deploy/monitor.sh"
+            
 
           EOF

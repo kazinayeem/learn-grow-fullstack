@@ -12,12 +12,19 @@ export default function Error({
   useEffect(() => {
     // Log the error to an error reporting service
     /* eslint-disable no-console */
+    const message = error?.message || "";
+    if (message.includes("ChunkLoadError") || message.includes("Loading chunk") || message.includes("Failed to load chunk")) {
+      window.location.reload();
+    }
   }, [error]);
 
   return (
     <div className="container mx-auto px-6 py-10 max-w-4xl">
       <h2 className="text-3xl font-bold mb-3">Something went wrong!</h2>
       <p className="text-gray-700 mb-4">{error?.message || "Unexpected error"}</p>
+      {(error?.message || "").includes("ChunkLoadError") && (
+        <p className="text-sm text-gray-500 mb-4">Reloading the page to fetch the latest app bundle...</p>
+      )}
       {error?.stack && (
         <pre className="bg-gray-100 p-4 rounded text-sm overflow-x-auto mb-6">
           {error.stack}
