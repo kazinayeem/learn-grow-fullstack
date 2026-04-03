@@ -1,11 +1,14 @@
 import { baseApi } from "./baseApi";
+import { API_CONFIG } from "@/config/apiConfig";
+
+const eventApiUrl = (path: string) => `${API_CONFIG.BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 
 export const eventApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
     // Public endpoints
     getAllEvents: build.query({
       query: (params = {}) => ({
-        url: "/events",
+        url: eventApiUrl("/events"),
         method: "GET",
         params,
       }),
@@ -13,13 +16,13 @@ export const eventApi = baseApi.injectEndpoints({
     }),
     
     getEventById: build.query({
-      query: (id: string) => ({ url: `/events/${id}`, method: "GET" }),
+      query: (id: string) => ({ url: eventApiUrl(`/events/${id}`), method: "GET" }),
       providesTags: (result, error, id) => [{ type: "Event", id }],
     }),
     
     registerForEvent: build.mutation({
       query: ({ eventId, ...data }) => ({
-        url: `/events/${eventId}/register`,
+        url: eventApiUrl(`/events/${eventId}/register`),
         method: "POST",
         body: data,
       }),
@@ -28,13 +31,13 @@ export const eventApi = baseApi.injectEndpoints({
     
     // Admin endpoints - Events
     createEvent: build.mutation({
-      query: (data) => ({ url: "/events/create", method: "POST", body: data }),
+      query: (data) => ({ url: eventApiUrl("/events/create"), method: "POST", body: data }),
       invalidatesTags: ["Event"],
     }),
     
     updateEvent: build.mutation({
       query: ({ id, ...data }) => ({
-        url: `/events/${id}`,
+        url: eventApiUrl(`/events/${id}`),
         method: "PATCH",
         body: data,
       }),
@@ -42,13 +45,13 @@ export const eventApi = baseApi.injectEndpoints({
     }),
     
     deleteEvent: build.mutation({
-      query: (id: string) => ({ url: `/events/${id}`, method: "DELETE" }),
+      query: (id: string) => ({ url: eventApiUrl(`/events/${id}`), method: "DELETE" }),
       invalidatesTags: ["Event"],
     }),
     
     addGuestsToEvent: build.mutation({
       query: ({ eventId, guestIds }) => ({
-        url: `/events/${eventId}/guests`,
+        url: eventApiUrl(`/events/${eventId}/guests`),
         method: "POST",
         body: { guestIds },
       }),
@@ -57,7 +60,7 @@ export const eventApi = baseApi.injectEndpoints({
     
     removeGuestFromEvent: build.mutation({
       query: ({ eventId, guestId }) => ({
-        url: `/events/${eventId}/guests/${guestId}`,
+        url: eventApiUrl(`/events/${eventId}/guests/${guestId}`),
         method: "DELETE",
       }),
       invalidatesTags: (result, error, { eventId }) => [{ type: "Event", id: eventId }],
@@ -65,7 +68,7 @@ export const eventApi = baseApi.injectEndpoints({
     
     updateMeetingLink: build.mutation({
       query: ({ eventId, meetingLink, platformInstructions }) => ({
-        url: `/events/${eventId}/meeting-link`,
+        url: eventApiUrl(`/events/${eventId}/meeting-link`),
         method: "PATCH",
         body: { meetingLink, platformInstructions },
       }),
@@ -75,7 +78,7 @@ export const eventApi = baseApi.injectEndpoints({
     // Admin endpoints - Guests
     getAllGuests: build.query({
       query: (params = {}) => ({
-        url: "/events/guests/list",
+        url: eventApiUrl("/events/guests/list"),
         method: "GET",
         params,
       }),
@@ -83,18 +86,18 @@ export const eventApi = baseApi.injectEndpoints({
     }),
     
     getGuestById: build.query({
-      query: (id: string) => ({ url: `/events/guests/${id}`, method: "GET" }),
+      query: (id: string) => ({ url: eventApiUrl(`/events/guests/${id}`), method: "GET" }),
       providesTags: (result, error, id) => [{ type: "EventGuest", id }],
     }),
     
     createGuest: build.mutation({
-      query: (data) => ({ url: "/events/guests/create", method: "POST", body: data }),
+      query: (data) => ({ url: eventApiUrl("/events/guests/create"), method: "POST", body: data }),
       invalidatesTags: ["EventGuest"],
     }),
     
     updateGuest: build.mutation({
       query: ({ id, ...data }) => ({
-        url: `/events/guests/${id}`,
+        url: eventApiUrl(`/events/guests/${id}`),
         method: "PATCH",
         body: data,
       }),
@@ -102,14 +105,14 @@ export const eventApi = baseApi.injectEndpoints({
     }),
     
     deleteGuest: build.mutation({
-      query: (id: string) => ({ url: `/events/guests/${id}`, method: "DELETE" }),
+      query: (id: string) => ({ url: eventApiUrl(`/events/guests/${id}`), method: "DELETE" }),
       invalidatesTags: ["EventGuest"],
     }),
     
     // Admin endpoints - Registrations
     getEventRegistrations: build.query({
       query: ({ eventId, ...params }) => ({
-        url: `/events/${eventId}/registrations`,
+        url: eventApiUrl(`/events/${eventId}/registrations`),
         method: "GET",
         params,
       }),
@@ -118,7 +121,7 @@ export const eventApi = baseApi.injectEndpoints({
     
     getAllRegistrations: build.query({
       query: (params = {}) => ({
-        url: "/events/admin/registrations",
+        url: eventApiUrl("/events/admin/registrations"),
         method: "GET",
         params,
       }),
@@ -127,7 +130,7 @@ export const eventApi = baseApi.injectEndpoints({
     
     deleteRegistration: build.mutation({
       query: (id: string) => ({
-        url: `/events/registrations/${id}`,
+        url: eventApiUrl(`/events/registrations/${id}`),
         method: "DELETE",
       }),
       invalidatesTags: ["EventRegistration", "Event"],
@@ -135,7 +138,7 @@ export const eventApi = baseApi.injectEndpoints({
 
     updateRegistration: build.mutation({
       query: ({ id, ...data }) => ({
-        url: `/events/registrations/${id}`,
+        url: eventApiUrl(`/events/registrations/${id}`),
         method: "PATCH",
         body: data,
       }),
@@ -144,7 +147,7 @@ export const eventApi = baseApi.injectEndpoints({
 
     sendRegistrationEmails: build.mutation({
       query: ({ eventId, subject, content, registrationIds }) => ({
-        url: `/events/${eventId}/registrations/send-email`,
+        url: eventApiUrl(`/events/${eventId}/registrations/send-email`),
         method: "POST",
         body: { subject, content, registrationIds },
       }),
@@ -153,7 +156,7 @@ export const eventApi = baseApi.injectEndpoints({
 
     getEventEmailHistory: build.query({
       query: ({ eventId, ...params }) => ({
-        url: `/events/${eventId}/registrations/email-history`,
+        url: eventApiUrl(`/events/${eventId}/registrations/email-history`),
         method: "GET",
         params,
       }),

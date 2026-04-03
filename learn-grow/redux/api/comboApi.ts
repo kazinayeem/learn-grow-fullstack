@@ -3,6 +3,7 @@ import { ICombo, IComboOrder, IUserAccessStatus } from "@/types/combo.types";
 import { API_CONFIG } from "@/config/apiConfig";
 
 const API_URL = API_CONFIG.BASE_URL;
+const comboApiUrl = (path: string) => `${API_URL}${path.startsWith("/") ? path : `/${path}`}`;
 
 export const comboApi = createApi({
   reducerPath: "comboApi",
@@ -25,7 +26,7 @@ export const comboApi = createApi({
       { page?: number; limit?: number }
     >({
       query: ({ page = 1, limit = 10 }) =>
-        `/combo/list?page=${page}&limit=${limit}`,
+        comboApiUrl(`/combo/list?page=${page}&limit=${limit}`),
       providesTags: ["Combo"],
     }),
 
@@ -35,13 +36,13 @@ export const comboApi = createApi({
       { page?: number; limit?: number }
     >({
       query: ({ page = 1, limit = 10 }) =>
-        `/combo/all?page=${page}&limit=${limit}`,
+        comboApiUrl(`/combo/all?page=${page}&limit=${limit}`),
       providesTags: ["Combo"],
     }),
 
     // Get combo by ID
     getComboById: builder.query<{ success: boolean; data: ICombo }, string>({
-      query: (comboId) => `/combo/${comboId}`,
+      query: (comboId) => comboApiUrl(`/combo/${comboId}`),
       providesTags: ["Combo"],
     }),
 
@@ -51,7 +52,7 @@ export const comboApi = createApi({
       Omit<ICombo, "_id" | "createdAt" | "updatedAt">
     >({
       query: (combo) => ({
-        url: "/combo/create",
+        url: comboApiUrl("/combo/create"),
         method: "POST",
         body: combo,
       }),
@@ -64,7 +65,7 @@ export const comboApi = createApi({
       { comboId: string; data: Partial<ICombo> }
     >({
       query: ({ comboId, data }) => ({
-        url: `/combo/${comboId}`,
+        url: comboApiUrl(`/combo/${comboId}`),
         method: "PATCH",
         body: data,
       }),
@@ -77,7 +78,7 @@ export const comboApi = createApi({
       string
     >({
       query: (comboId) => ({
-        url: `/combo/${comboId}`,
+        url: comboApiUrl(`/combo/${comboId}`),
         method: "DELETE",
       }),
       invalidatesTags: ["Combo"],
@@ -89,7 +90,7 @@ export const comboApi = createApi({
       string
     >({
       query: (comboId) => ({
-        url: `/combo/${comboId}/toggle-status`,
+        url: comboApiUrl(`/combo/${comboId}/toggle-status`),
         method: "PATCH",
       }),
       invalidatesTags: ["Combo"],
@@ -101,7 +102,7 @@ export const comboApi = createApi({
       string
     >({
       query: (comboId) => ({
-        url: `/combo/${comboId}/permanent`,
+        url: comboApiUrl(`/combo/${comboId}/permanent`),
         method: "DELETE",
       }),
       invalidatesTags: ["Combo"],
@@ -112,7 +113,7 @@ export const comboApi = createApi({
       { success: boolean; data: IComboOrder[] },
       void
     >({
-      query: () => `/combo/my/purchases`,
+      query: () => comboApiUrl(`/combo/my/purchases`),
       providesTags: ["UserCombos"],
     }),
 
@@ -126,7 +127,7 @@ export const comboApi = createApi({
       }
     >({
       query: (data) => ({
-        url: `/combo/extend-access`,
+        url: comboApiUrl(`/combo/extend-access`),
         method: "POST",
         body: data,
       }),
@@ -139,7 +140,7 @@ export const comboApi = createApi({
       { comboId: string }
     >({
       query: (data) => ({
-        url: `/combo/enroll`,
+        url: comboApiUrl(`/combo/enroll`),
         method: "POST",
         body: data,
       }),
