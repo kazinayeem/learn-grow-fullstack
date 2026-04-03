@@ -921,7 +921,9 @@ export default function TeamManagementPage() {
                                             </div>
                                             <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar border border-gray-200 rounded-xl p-2 mb-4 bg-gray-50/50">
                                                 {instructors.map((instructor) => {
-                                                    const hasProfileImage = instructor.profileImage && instructor.profileImage.trim() !== '';
+                                                    const profileImage = instructor.profileImage?.trim();
+                                                    const hasProfileImage = Boolean(profileImage);
+                                                    const profileImageSrc = resolveImageSrc(profileImage);
                                                     
                                                     return (
                                                         <div
@@ -952,9 +954,7 @@ export default function TeamManagementPage() {
                                                             />
                                                             {hasProfileImage ? (
                                                                 <Image
-                                                                    src={instructor.profileImage.startsWith("http")
-                                                                        ? instructor.profileImage
-                                                                        : `data:image/jpeg;base64,${instructor.profileImage}`}
+                                                                    src={profileImageSrc}
                                                                     alt={instructor.name}
                                                                     width={48}
                                                                     height={48}
