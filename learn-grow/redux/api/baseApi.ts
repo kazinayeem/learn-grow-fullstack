@@ -2,10 +2,37 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import Cookies from "js-cookie";
 import { API_CONFIG } from "@/config/apiConfig";
 
+const API_ORIGIN = API_CONFIG.ORIGIN;
 const API_BASE_URL = API_CONFIG.BASE_URL;
 
+const isAbsoluteUrl = (value: string): boolean => /^https?:\/\//i.test(value);
+
+const withApiPrefix = (url: string): string => {
+    if (isAbsoluteUrl(url) || url.startsWith("/api")) {
+        return url;
+    }
+
+    const normalized = url.startsWith("/") ? url : `/${url}`;
+    return `/api${normalized}`;
+};
+
+const normalizeBaseQueryArgs = (args: any) => {
+    if (typeof args === "string") {
+        return withApiPrefix(args);
+    }
+
+    if (args && typeof args === "object" && typeof args.url === "string") {
+        return {
+            ...args,
+            url: withApiPrefix(args.url),
+        };
+    }
+
+    return args;
+};
+
 const baseQuery = fetchBaseQuery({
-    baseUrl: API_BASE_URL,
+    baseUrl: API_ORIGIN,
     credentials: "include", // send cookies with every request so server can validate session
     prepareHeaders: (headers) => {
         const tokenFromCookie = Cookies.get("accessToken");
@@ -92,6 +119,8 @@ const isTokenExpiringSoon = (): boolean => {
 };
 
 const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
+    const normalizedArgs = normalizeBaseQueryArgs(args);
+
     // Proactively refresh if token is within 5 minutes of expiry, but not more than once per minute
     if (isTokenExpiringSoon()) {
         const now = Date.now();
@@ -100,14 +129,14 @@ const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
             await refreshAccessToken();
         }
     }
-    let result = await baseQuery(args, api, extraOptions);
+    let result = await baseQuery(normalizedArgs, api, extraOptions);
 
     if (result.error && result.error.status === 401) {
         const refreshed = await refreshAccessToken();
 
         if (refreshed) {
             // Retry the original request with the new token available via prepareHeaders
-            result = await baseQuery(args, api, extraOptions);
+            result = await baseQuery(normalizedArgs, api, extraOptions);
         }
 
         // If still unauthorized after refresh attempt, clear tokens but DON'T force redirect
