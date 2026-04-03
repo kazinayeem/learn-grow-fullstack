@@ -57,8 +57,11 @@ jobs:
 
             # Deploy optimized Nginx config
             cp deploy/nginx/learnandgrow-optimized.conf /etc/nginx/sites-available/learn-grow
+            rm -f /etc/nginx/sites-enabled/default
             rm -f /etc/nginx/sites-enabled/learn-grow
             ln -sf /etc/nginx/sites-available/learn-grow /etc/nginx/sites-enabled/learn-grow
+            echo "📄 Enabled nginx sites:"
+            ls -la /etc/nginx/sites-enabled || true
             nginx -t && systemctl reload nginx
 
             # ======== MONGODB OPTIMIZATION ========
@@ -105,29 +108,29 @@ jobs:
               exit 1
             fi
 
-            DOMAIN_COMBO_STATUS=$(curl -k -s -o /tmp/domain_combo_check.out -w "%{http_code}" "https://learnandgrow.io/api/combo/list?page=1&limit=1")
-            if [ "$DOMAIN_COMBO_STATUS" -lt 200 ] || [ "$DOMAIN_COMBO_STATUS" -ge 400 ]; then
-              echo "❌ Domain /api combo check failed: HTTP $DOMAIN_COMBO_STATUS"
-              cat /tmp/domain_combo_check.out || true
+            NGINX_COMBO_STATUS=$(curl -s -o /tmp/nginx_combo_check.out -w "%{http_code}" -H "Host: learnandgrow.io" "http://127.0.0.1/api/combo/list?page=1&limit=1")
+            if [ "$NGINX_COMBO_STATUS" -lt 200 ] || [ "$NGINX_COMBO_STATUS" -ge 400 ]; then
+              echo "❌ Nginx /api combo check failed: HTTP $NGINX_COMBO_STATUS"
+              cat /tmp/nginx_combo_check.out || true
               exit 1
             fi
 
-            if grep -qi "<!DOCTYPE html>" /tmp/domain_combo_check.out; then
-              echo "❌ Domain /api combo check returned HTML (likely frontend fallback), expected backend JSON"
-              head -n 20 /tmp/domain_combo_check.out || true
+            if grep -qi "<!DOCTYPE html>" /tmp/nginx_combo_check.out; then
+              echo "❌ Nginx /api combo check returned HTML (likely frontend fallback), expected backend JSON"
+              head -n 20 /tmp/nginx_combo_check.out || true
               exit 1
             fi
 
-            DOMAIN_GUESTS_STATUS=$(curl -k -s -o /tmp/domain_guests_check.out -w "%{http_code}" "https://learnandgrow.io/api/events/guests/list?page=1&limit=1")
-            if [ "$DOMAIN_GUESTS_STATUS" -lt 200 ] || [ "$DOMAIN_GUESTS_STATUS" -ge 400 ]; then
-              echo "❌ Domain /api guests check failed: HTTP $DOMAIN_GUESTS_STATUS"
-              cat /tmp/domain_guests_check.out || true
+            NGINX_GUESTS_STATUS=$(curl -s -o /tmp/nginx_guests_check.out -w "%{http_code}" -H "Host: learnandgrow.io" "http://127.0.0.1/api/events/guests/list?page=1&limit=1")
+            if [ "$NGINX_GUESTS_STATUS" -lt 200 ] || [ "$NGINX_GUESTS_STATUS" -ge 400 ]; then
+              echo "❌ Nginx /api guests check failed: HTTP $NGINX_GUESTS_STATUS"
+              cat /tmp/nginx_guests_check.out || true
               exit 1
             fi
 
-            if grep -qi "<!DOCTYPE html>" /tmp/domain_guests_check.out; then
-              echo "❌ Domain /api guests check returned HTML (likely frontend fallback), expected backend JSON"
-              head -n 20 /tmp/domain_guests_check.out || true
+            if grep -qi "<!DOCTYPE html>" /tmp/nginx_guests_check.out; then
+              echo "❌ Nginx /api guests check returned HTML (likely frontend fallback), expected backend JSON"
+              head -n 20 /tmp/nginx_guests_check.out || true
               exit 1
             fi
 
