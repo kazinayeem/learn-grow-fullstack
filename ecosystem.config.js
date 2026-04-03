@@ -3,8 +3,8 @@ module.exports = {
     {
       name: "next-app",
       script: ".next/standalone/server.js",
-      cwd: "/root/learn-grow-fullstack/learn-grow", // ✅ FIXED
-      instances: 2, // (4 না, তোমার VPS 2 core)
+      cwd: "/root/learn-grow-fullstack/learn-grow", 
+      instances: 1, 
       exec_mode: "cluster",
 
       env: {
@@ -19,7 +19,7 @@ module.exports = {
       script: "/root/learn-grow-fullstack/grow-backend/dist/server.js", // ✅ FIXED
       cwd: "/root/learn-grow-fullstack/grow-backend",
 
-      instances: 1,
+      instances: 2,
       exec_mode: "fork",
 
       env: {
