@@ -147,12 +147,33 @@ export const hidePoweredBy = (req: Request, res: Response, next: NextFunction) =
 
 // 10. HTTPS Redirect (for production)
 export const enforceHttps = (req: Request, res: Response, next: NextFunction) => {
-  if (process.env.NODE_ENV === 'production') {
-    if (req.header('x-forwarded-proto') !== 'https') {
-      return res.redirect(`https://${req.header('host')}${req.url}`);
-    }
+  if (process.env.NODE_ENV !== 'production') {
+    return next();
   }
-  next();
+
+  const host = (req.get('x-forwarded-host') || req.get('host') || '').toLowerCase();
+  const protocol = (req.get('x-forwarded-proto') || req.protocol || '').toLowerCase();
+
+  const isLocalRequest =
+    host.startsWith('localhost') ||
+    host.startsWith('127.0.0.1') ||
+    host.startsWith('::1') ||
+    host.startsWith('0.0.0.0') ||
+    host.endsWith('.local');
+
+  if (isLocalRequest) {
+    return next();
+  }
+
+  if (protocol === 'https' || req.secure) {
+    return next();
+  }
+
+  if (!host) {
+    return next();
+  }
+
+  return res.redirect(301, `https://${host}${req.originalUrl}`);
 };
 
 // 11. Validate Content-Type

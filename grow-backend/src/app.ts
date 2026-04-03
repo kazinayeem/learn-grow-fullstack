@@ -40,7 +40,6 @@ import {
   mongoSanitize,
   securityHeaders,
   hidePoweredBy,
-  enforceHttps,
   validateContentType,
   requestTimeout,
   securityLogger,
@@ -101,7 +100,6 @@ export const createApp = () => {
   app.use(helmetConfig); // Security headers
   app.use(securityHeaders); // Custom security headers
   app.use(hidePoweredBy); // Hide server info
-  app.use(enforceHttps); // HTTPS redirect in production
 
   // ====================================
   // SECURITY LAYER 2: Rate Limiting & DDoS Protection

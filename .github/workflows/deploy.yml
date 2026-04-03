@@ -57,11 +57,30 @@ jobs:
 
             # Deploy optimized Nginx config
             cp deploy/nginx/learnandgrow-optimized.conf /etc/nginx/sites-available/learn-grow
+
+            # Remove default and any conflicting enabled site links.
             rm -f /etc/nginx/sites-enabled/default
+            find /etc/nginx/sites-enabled -mindepth 1 -maxdepth 1 ! -name "learn-grow" -exec rm -f {} \; || true
+
+            # Disable conflicting server blocks for learnandgrow.io outside our managed file.
+            for conf in /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*.conf; do
+              [ -e "$conf" ] || continue
+              if [ "$conf" = "/etc/nginx/sites-enabled/learn-grow" ]; then
+                continue
+              fi
+
+              if grep -qiE "server_name[[:space:]].*learnandgrow\.io" "$conf"; then
+                echo "⚠️ Disabling conflicting nginx config: $conf"
+                mv "$conf" "${conf}.disabled-by-deploy" || true
+              fi
+            done
+
             rm -f /etc/nginx/sites-enabled/learn-grow
             ln -sf /etc/nginx/sites-available/learn-grow /etc/nginx/sites-enabled/learn-grow
             echo "📄 Enabled nginx sites:"
             ls -la /etc/nginx/sites-enabled || true
+            echo "🔎 learnandgrow.io server_name declarations:"
+            grep -RniE "server_name[[:space:]].*learnandgrow\.io" /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null || true
             nginx -t && systemctl reload nginx
 
             # ======== MONGODB OPTIMIZATION ========
@@ -101,14 +120,14 @@ jobs:
             echo "💾 mongodb: $(systemctl is-active mongodb)"
 
             echo "🧪 Running API smoke checks..."
-            BACKEND_API_STATUS=$(curl -s -o /tmp/backend_api_check.out -w "%{http_code}" "http://127.0.0.1:5000/api")
+            BACKEND_API_STATUS=$(curl --retry 10 --retry-delay 2 --retry-connrefused -s -o /tmp/backend_api_check.out -w "%{http_code}" "http://127.0.0.1:5000/api" || echo "000")
             if [ "$BACKEND_API_STATUS" -lt 200 ] || [ "$BACKEND_API_STATUS" -ge 400 ]; then
               echo "❌ Backend API health failed: HTTP $BACKEND_API_STATUS"
               cat /tmp/backend_api_check.out || true
               exit 1
             fi
 
-            NGINX_COMBO_STATUS=$(curl -s -o /tmp/nginx_combo_check.out -w "%{http_code}" -H "Host: learnandgrow.io" "http://127.0.0.1/api/combo/list?page=1&limit=1")
+            NGINX_COMBO_STATUS=$(curl --retry 10 --retry-delay 2 --retry-connrefused -s -o /tmp/nginx_combo_check.out -w "%{http_code}" -H "Host: learnandgrow.io" "http://127.0.0.1/api/combo/list?page=1&limit=1" || echo "000")
             if [ "$NGINX_COMBO_STATUS" -lt 200 ] || [ "$NGINX_COMBO_STATUS" -ge 400 ]; then
               echo "❌ Nginx /api combo check failed: HTTP $NGINX_COMBO_STATUS"
               cat /tmp/nginx_combo_check.out || true
@@ -121,7 +140,7 @@ jobs:
               exit 1
             fi
 
-            NGINX_GUESTS_STATUS=$(curl -s -o /tmp/nginx_guests_check.out -w "%{http_code}" -H "Host: learnandgrow.io" "http://127.0.0.1/api/events/guests/list?page=1&limit=1")
+            NGINX_GUESTS_STATUS=$(curl --retry 10 --retry-delay 2 --retry-connrefused -s -o /tmp/nginx_guests_check.out -w "%{http_code}" -H "Host: learnandgrow.io" "http://127.0.0.1/api/events/guests/list?page=1&limit=1" || echo "000")
             if [ "$NGINX_GUESTS_STATUS" -lt 200 ] || [ "$NGINX_GUESTS_STATUS" -ge 400 ]; then
               echo "❌ Nginx /api guests check failed: HTTP $NGINX_GUESTS_STATUS"
               cat /tmp/nginx_guests_check.out || true
