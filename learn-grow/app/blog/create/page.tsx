@@ -127,6 +127,10 @@ export default function CreateBlogPage() {
   };
 
   const handleSubmit = async (publish: boolean = false) => {
+    // Guard against duplicate submissions while a request is in flight.
+    if (isCreating) {
+      return;
+    }
     if (!formData.title.trim()) {
       toast.error("Title is required");
       return;
@@ -158,10 +162,30 @@ export default function CreateBlogPage() {
       };
 
       await createBlog(payload).unwrap();
-      toast.success(
-        publish ? "Blog published successfully!" : "Blog saved as draft!"
-      );
-      router.push("/blog");
+      if (publish) {
+        toast.success("Blog submitted successfully! It will appear publicly once approved.");
+      } else {
+        toast.success("Blog saved as draft!");
+      }
+      // New blogs are pending approval (isApproved: false) and therefore do
+      // NOT appear in the public /blog listing (approved-only). Redirect to
+      // the role-appropriate "My Blogs" list, which queries with
+      // includeUnpublished and shows pending blogs.
+      try {
+        const userStr = localStorage.getItem("user");
+        const role = userStr ? JSON.parse(userStr).role : null;
+        if (role === "admin") {
+          router.push("/admin/blog");
+        } else if (role === "instructor") {
+          router.push("/instructor/blogs");
+        } else if (role === "student") {
+          router.push("/student/blogs");
+        } else {
+          router.push("/blog");
+        }
+      } catch {
+        router.push("/blog");
+      }
     } catch (err: any) {
       const errorMsg = err?.data?.message || "Failed to save blog";
       toast.error(errorMsg);
@@ -291,6 +315,7 @@ export default function CreateBlogPage() {
                     size="lg"
                     className="w-full font-bold shadow-lg bg-gradient-to-r from-blue-600 to-indigo-600"
                     isLoading={isCreating}
+                    isDisabled={isCreating}
                     startContent={<FaPaperPlane />}
                     onPress={() => handleSubmit(true)}
                   >
@@ -302,6 +327,7 @@ export default function CreateBlogPage() {
                     size="lg"
                     className="w-full font-medium"
                     isLoading={isCreating}
+                    isDisabled={isCreating}
                     startContent={<FaSave />}
                     onPress={() => handleSubmit(false)}
                   >

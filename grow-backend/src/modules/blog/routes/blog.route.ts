@@ -14,32 +14,10 @@ router.post(
   controller.createBlog
 );
 
-// Get all blogs (public - only published & approved, with optional filters)
+// Get all blogs (public - only published & approved by default, with optional filters)
 router.get("/", optionalAuth, controller.getAllBlogs);
 
-// Get blog by ID (public)
-router.get("/:id", controller.getBlogById);
-
-// Get blog by slug (public)
-router.get("/slug/:slug", controller.getBlogBySlug);
-
-// Update blog (authenticated: owner or admin)
-router.patch(
-  "/:id",
-  requireAuth,
-  requireRoles("student", "instructor", "admin"),
-  controller.updateBlog
-);
-
-// Delete blog (authenticated: owner or admin)
-router.delete(
-  "/:id",
-  requireAuth,
-  requireRoles("student", "instructor", "admin"),
-  controller.deleteBlog
-);
-
-// ===== ADMIN ROUTES =====
+// ===== SPECIFIC ROUTES (must be registered before "/:id" param routes) =====
 
 // Get pending approval blogs
 router.get(
@@ -48,6 +26,27 @@ router.get(
   requireRoles("admin"),
   controller.getApprovalPendingBlogs
 );
+
+// Get blog by slug (public)
+router.get("/slug/:slug", controller.getBlogBySlug);
+
+// Get all categories (public)
+router.get("/category/list", controller.getAllCategories);
+
+// Create category (authenticated users)
+router.post(
+  "/category/create",
+  requireAuth,
+  requireRoles("student", "instructor", "admin"),
+  controller.createCategory
+);
+
+// ===== PARAM ROUTES =====
+
+// Get blog by ID (public)
+router.get("/:id", controller.getBlogById);
+
+// ===== ADMIN ROUTES =====
 
 // Approve blog
 router.patch(
@@ -67,17 +66,6 @@ router.patch(
 
 // ===== CATEGORY ROUTES =====
 
-// Create category (authenticated users)
-router.post(
-  "/category/create",
-  requireAuth,
-  requireRoles("student", "instructor", "admin"),
-  controller.createCategory
-);
-
-// Get all categories (public)
-router.get("/category/list", controller.getAllCategories);
-
 // Update category (admin only)
 router.patch(
   "/category/:id",
@@ -92,6 +80,24 @@ router.delete(
   requireAuth,
   requireRoles("admin"),
   controller.deleteCategory
+);
+
+// ===== BLOG PARAM MUTATIONS (registered last so specific paths above take precedence) =====
+
+// Update blog (authenticated: owner or admin)
+router.patch(
+  "/:id",
+  requireAuth,
+  requireRoles("student", "instructor", "admin"),
+  controller.updateBlog
+);
+
+// Delete blog (authenticated: owner or admin)
+router.delete(
+  "/:id",
+  requireAuth,
+  requireRoles("student", "instructor", "admin"),
+  controller.deleteBlog
 );
 
 export default router;

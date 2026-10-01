@@ -54,6 +54,7 @@ export default function EditBlogPage() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [blogId, setBlogId] = useState<string | null>(null);
   const [isEditorReady, setIsEditorReady] = useState(false);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -134,6 +135,9 @@ export default function EditBlogPage() {
         metaTags: blog.metaTags?.join(", ") || "",
         isPublished: blog.isPublished ?? true,
       });
+      // The update endpoint is PATCH /blog/:id and expects a Mongo ObjectId.
+      // The page URL carries the slug, so keep the resolved _id separately.
+      setBlogId(blog._id || blog.id || null);
       
       // Set editor ready after data is loaded
       setTimeout(() => setIsEditorReady(true), 100);
@@ -196,15 +200,19 @@ export default function EditBlogPage() {
         toast.error("Excerpt is required");
         return;
       }
+      if (!blogId) {
+        toast.error("Blog is still loading. Please try again.");
+        return;
+      }
 
       await updateBlog({
-        id: blogSlug,
+        id: blogId,
         title: formData.title,
         slug: formData.slug,
         excerpt: formData.excerpt,
         content: formData.content,
         image: formData.image,
-        categoryId: formData.categoryId,
+        category: formData.categoryId,
         metaTags: formData.metaTags
           .split(",")
           .map((tag: string) => tag.trim())
@@ -403,6 +411,7 @@ export default function EditBlogPage() {
                 <Button
                   color="primary"
                   isLoading={isUpdating}
+                  isDisabled={isUpdating}
                   onPress={handleSubmit}
                   className="flex-1"
                 >

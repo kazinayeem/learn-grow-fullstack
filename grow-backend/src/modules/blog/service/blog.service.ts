@@ -54,10 +54,39 @@ export const getBlogBySlug = async (slug: string) => {
 export const getAllBlogs = async (filters: any = {}) => {
   const query: any = {};
 
-  // Public blogs (published and approved)
-  if (!filters.includeUnpublished) {
-    query.isPublished = true;
-    query.isApproved = true;
+  // NOTE: req.query values arrive as strings. Parse explicitly so that
+  // includeUnpublished="false" does NOT accidentally disable the filter
+  // (any non-empty string is truthy in JS).
+  const includeUnpublished =
+    filters.includeUnpublished === true ||
+    filters.includeUnpublished === "true" ||
+    filters.includeUnpublished === 1 ||
+    filters.includeUnpublished === "1";
+
+  // Public blogs (published and approved) by default.
+  // An explicit `status` param is honoured so frontend filters such as
+  // `?status=approved` map to the real schema fields instead of being ignored.
+  if (!includeUnpublished) {
+    const status =
+      typeof filters.status === "string" ? filters.status.toLowerCase() : undefined;
+
+    if (!status || status === "approved") {
+      query.isPublished = true;
+      query.isApproved = true;
+    } else if (status === "pending") {
+      query.isPublished = true;
+      query.isApproved = false;
+    } else if (status === "published") {
+      query.isPublished = true;
+    } else if (status === "draft") {
+      query.isPublished = false;
+    } else if (status === "all") {
+      // No publish/approval constraint.
+    } else {
+      // Unknown status value: fall back to safe public default.
+      query.isPublished = true;
+      query.isApproved = true;
+    }
   }
 
   // Filter by role/author
